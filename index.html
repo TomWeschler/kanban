@@ -188,27 +188,10 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 <div id="authScreen">
   <div class="auth-box">
     <div class="auth-logo">◆ KANBAN OPS</div>
-    <p class="auth-desc">
-      Outil autonome — authentification directe avec Google Drive.<br>
-      Renseignez votre <strong>OAuth Client ID</strong> et l'<strong>ID du fichier CSV</strong> Drive.
-    </p>
-    <div class="setup-fields">
-      <div class="setup-field">
-        <label>Google OAuth 2.0 Client ID</label>
-        <input type="text" id="cfgClientId" placeholder="xxxxxxxxxxxx.apps.googleusercontent.com"/>
-      </div>
-      <div class="setup-field">
-        <label>Drive File ID (CSV)</label>
-        <input type="text" id="cfgFileId" placeholder="1mrZb9XsxQR9Ejnf6f2NoZFfiu5qmXdut"/>
-      </div>
-    </div>
-    <button class="btn-nav" onclick="startAuth()" style="width:100%;margin-top:0.25rem">SE CONNECTER AVEC GOOGLE</button>
-    <div class="auth-help">
-      <strong>Setup :</strong> Google Cloud Console → APIs → OAuth 2.0 Client IDs → Web App.<br>
-      Authorized JS Origins : <code>https://votre-domaine.com</code> (ou <code>http://localhost</code> pour tests).<br>
-      Scopes : <code>https://www.googleapis.com/auth/drive.file</code><br>
-      File ID déjà créé : <code>1mrZb9XsxQR9Ejnf6f2NoZFfiu5qmXdut</code>
-    </div>
+    <p class="auth-desc">Connecte ton compte Google pour accéder à tes tâches.</p>
+    <button class="btn-nav" onclick="startAuth()" style="width:100%;margin-top:0.5rem;padding:0.7rem;font-size:0.85rem">
+      SE CONNECTER AVEC GOOGLE
+    </button>
   </div>
 </div>
 
@@ -294,10 +277,15 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 // ════════════════════════════════════════════════════
 const COLUMNS = ['BackLog','Ce mois','Cette semaine','Demain',"Aujourd'hui"];
 const PROJECTS = ['DCB','GLD','Airside'];
-const LS_CFG = 'kanban_cfg_v2';
-const LS_CACHE = 'kanban_cache_v2';
+const LS_CACHE = 'kanban_cache_v3';
 
-let cfg = { clientId: '', fileId: '1mrZb9XsxQR9Ejnf6f2NoZFfiu5qmXdut' };
+// ── Credentials hardcodés ──────────────────────────
+const cfg = {
+  clientId: '43084703914-45j926vjo82u4k2tcj9enbtftvtqalul.apps.googleusercontent.com',
+  fileId:   '19GYFVeXdSpG2fHz6fDKFDeUflK4g_8My'
+};
+// ──────────────────────────────────────────────────
+
 let accessToken = null;
 let allTasks = [];   // includes completed
 let tasks = [];      // active only
@@ -312,11 +300,6 @@ let tokenClient = null;
 // INIT
 // ════════════════════════════════════════════════════
 function init() {
-  // Load saved config
-  try { const s = localStorage.getItem(LS_CFG); if (s) cfg = Object.assign(cfg, JSON.parse(s)); } catch(e){}
-  if (cfg.clientId) document.getElementById('cfgClientId').value = cfg.clientId;
-  if (cfg.fileId) document.getElementById('cfgFileId').value = cfg.fileId;
-
   // Load from cache for instant render
   try {
     const cached = JSON.parse(localStorage.getItem(LS_CACHE) || '[]');
@@ -325,7 +308,8 @@ function init() {
     render();
   } catch(e){}
 
-  // Check if we can silently refresh token (if GIS loads)
+  // Auth screen hidden — auto-connect
+  document.getElementById('authScreen').style.display = 'none';
   preloadGIS();
 }
 
@@ -345,10 +329,11 @@ function preloadGIS() {
 function initTokenClient() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: cfg.clientId,
-    scope: 'https://www.googleapis.com/auth/drive.file',
+    scope: 'https://www.googleapis.com/auth/drive',
     callback: async (resp) => {
       if (resp.error) {
-        // Silent failed → need interaction, keep auth screen
+        // Silent auth failed → show connect button
+        document.getElementById('authScreen').style.display = 'flex';
         return;
       }
       accessToken = resp.access_token;
@@ -363,21 +348,12 @@ function initTokenClient() {
 }
 
 async function startAuth() {
-  cfg.clientId = document.getElementById('cfgClientId').value.trim();
-  cfg.fileId = document.getElementById('cfgFileId').value.trim() || '1mrZb9XsxQR9Ejnf6f2NoZFfiu5qmXdut';
-  if (!cfg.clientId) { toast('Client ID requis', 'err'); return; }
-  localStorage.setItem(LS_CFG, JSON.stringify(cfg));
-
   if (!gisLoaded) {
-    const s = document.createElement('script');
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = () => { gisLoaded = true; initTokenClient(); tokenClient.requestAccessToken({ prompt: 'consent' }); };
-    s.onerror = () => toast('Erreur chargement Google Auth', 'err');
-    document.head.appendChild(s);
-  } else {
-    if (!tokenClient) initTokenClient();
-    tokenClient.requestAccessToken({ prompt: 'consent' });
+    toast('Google Auth en cours de chargement, réessaie dans 2s', 'info');
+    return;
   }
+  if (!tokenClient) initTokenClient();
+  tokenClient.requestAccessToken({ prompt: 'consent' });
 }
 
 function logout() {
