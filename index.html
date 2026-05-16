@@ -142,8 +142,8 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .hab-date-label{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.85rem}
 .hab-empty{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;color:var(--text-dim);opacity:0.45;text-align:center;padding:3rem 0}
 
-.hab-item{display:flex;align-items:center;gap:0.85rem;padding:0.7rem 0.9rem;background:var(--surface);border:1px solid var(--border);margin-bottom:0.4rem;transition:border-color 0.15s,opacity 0.2s;position:relative;overflow:hidden;animation:cardIn 0.15s ease-out}
-.hab-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.hab-item{display:flex;align-items:center;gap:0.85rem;padding:0.7rem 0.9rem 0.7rem 1.2rem;background:var(--surface);border:1px solid var(--border);margin-bottom:0.4rem;transition:border-color 0.15s,opacity 0.2s;position:relative;overflow:hidden;animation:cardIn 0.15s ease-out}
+.hab-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6px}
 .hab-item.Finance::before{background:var(--cat-finance)}
 .hab-item.Esprit::before{background:var(--cat-esprit)}
 .hab-item.Santé::before{background:var(--cat-sante)}
@@ -633,6 +633,49 @@ function getStreak(habitId, freq) {
   return streak;
 }
 
+function habitIcon(title) {
+  const t = title.toLowerCase();
+  if (/médit|meditat|pleine.conscience|mindful/.test(t)) return '🧘';
+  if (/yoga/.test(t)) return '🧘';
+  if (/course|running|jogg|sprint/.test(t)) return '🏃';
+  if (/vélo|cycling|bike/.test(t)) return '🚴';
+  if (/nage|piscine|natation|swim/.test(t)) return '🏊';
+  if (/gym|muscul|fitness|haltère|poids|sport/.test(t)) return '💪';
+  if (/marche|walk|pas quotid/.test(t)) return '🚶';
+  if (/stretch|étirement|mobilité/.test(t)) return '🤸';
+  if (/lecture|lire|livre|bouquin|read/.test(t)) return '📚';
+  if (/journal|diary|écriture|écrire/.test(t)) return '✍️';
+  if (/gratitude/.test(t)) return '🙏';
+  if (/podcast|audio/.test(t)) return '🎧';
+  if (/musique|guitare|piano|instrument/.test(t)) return '🎵';
+  if (/eau|hydrat/.test(t)) return '💧';
+  if (/sommeil|dorm|coucher|réveil/.test(t)) return '😴';
+  if (/douche|froid|cold/.test(t)) return '🚿';
+  if (/respir|breath|cohérence|cardiac/.test(t)) return '🌬️';
+  if (/vitamine|complément|supplé|pilule/.test(t)) return '💊';
+  if (/budget|bilan financ|compt|dépense/.test(t)) return '📊';
+  if (/invest|bourse|épargn|économi/.test(t)) return '📈';
+  if (/argent|finance|revenu/.test(t)) return '💰';
+  if (/code|program|develop|projet/.test(t)) return '💻';
+  if (/apprend|cours|étude|study|formation/.test(t)) return '🎓';
+  if (/anglais|espagnol|allemand|langue|vocabul/.test(t)) return '🌍';
+  if (/réseau|network|linkedin|contact/.test(t)) return '🤝';
+  if (/planif|agenda|to.do|tâche|revue/.test(t)) return '📋';
+  if (/email|mail|inbox/.test(t)) return '📧';
+  if (/objectif|goal|cible/.test(t)) return '🎯';
+  if (/nettoy|ménage|rangement/.test(t)) return '🧹';
+  if (/cuisine|repas|manger|cuisson/.test(t)) return '🍳';
+  if (/légume|fruit|salade|healthy/.test(t)) return '🥗';
+  if (/protéine|protein/.test(t)) return '🥩';
+  if (/café|thé|infusion/.test(t)) return '☕';
+  if (/famille|parent|enfant|ami|appel|téléphon/.test(t)) return '📞';
+  if (/no.sugar|sucre|sans sucre/.test(t)) return '🚫';
+  if (/no.alcool|alcool|sans alcool/.test(t)) return '🍷';
+  if (/soleil|air.frais|dehors|nature/.test(t)) return '☀️';
+  if (/créat|dessiner|sketch|art/.test(t)) return '🎨';
+  return '✦';
+}
+
 function freqLabel(freq) {
   const found = FREQ_OPTS.find(([v]) => v === freq);
   return found ? found[1] : freq;
@@ -715,7 +758,7 @@ function renderHabBody() {
     item.className = `hab-item ${h.category}${isDone?' done':''}`;
     item.innerHTML = `
       <div class="hab-check${isDone?' checked':''}" onclick="toggleHabit(${h.id})"></div>
-      <div class="hab-title">${h.title}</div>
+      <div class="hab-title"><span style="margin-right:0.4rem;font-size:0.95rem">${habitIcon(h.title)}</span>${h.title}</div>
       <div class="hab-streak">${streak > 0 ? `🔥 <b>${streak}</b>` : '—'}</div>
       <div class="hab-freq">${freqLabel(h.frequency)}</div>
       <div class="hab-cat-badge ${h.category}">${h.category}</div>
