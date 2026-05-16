@@ -16,7 +16,7 @@
   --green:#4ade80;--warn:#fbbf24;--danger:#f87171;
   --dcb:#38bdf8;--gld:#fcd34d;--air:#6ee7b7;
   --imp1:#4ade80;--imp2:#a3e635;--imp3:#fbbf24;--imp4:#fb923c;--imp5:#f87171;
-  --cat-finance:#fcd34d;--cat-esprit:#a78bfa;--cat-sante:#4ade80;--cat-prod:#38bdf8;
+  --cat-finance:#fcd34d;--cat-esprit:#a78bfa;--cat-sante:#4ade80;--cat-prod:#38bdf8;--cat-autre:#94a3b8;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -76,11 +76,11 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .card.dragging{opacity:0.2;transform:rotate(1.5deg)}
 .card-tag{position:absolute;top:0;right:0;font-family:'Space Mono',monospace;font-size:0.48rem;font-weight:700;letter-spacing:0.1em;padding:2px 6px}
 .card-tag.dcb{background:rgba(56,189,248,0.18);color:var(--dcb);border-bottom:1px solid rgba(56,189,248,0.4);border-left:1px solid rgba(56,189,248,0.4)}.card-tag.gld{background:rgba(252,211,77,0.18);color:var(--gld);border-bottom:1px solid rgba(252,211,77,0.4);border-left:1px solid rgba(252,211,77,0.4)}.card-tag.air{background:rgba(110,231,183,0.18);color:var(--air);border-bottom:1px solid rgba(110,231,183,0.4);border-left:1px solid rgba(110,231,183,0.4)}
-.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6px}
 .card[data-imp="1"]::before{background:var(--imp1)}.card[data-imp="2"]::before{background:var(--imp2)}.card[data-imp="3"]::before{background:var(--imp3)}.card[data-imp="4"]::before{background:var(--imp4)}.card[data-imp="5"]::before{background:var(--imp5)}
 .card.a-warn{border-color:rgba(251,191,36,0.43)}.card.a-danger{border-color:rgba(248,113,113,0.62);box-shadow:0 0 9px rgba(248,113,113,0.11)}
-.card-title{font-size:0.78rem;font-weight:600;line-height:1.35;color:var(--text);padding-left:6px;margin-bottom:0.45rem;word-break:break-word;padding-right:2rem}
-.card-meta{display:flex;align-items:center;justify-content:space-between;padding-left:6px}
+.card-title{font-size:0.78rem;font-weight:600;line-height:1.35;color:var(--text);padding-left:10px;margin-bottom:0.45rem;word-break:break-word;padding-right:2rem}
+.card-meta{display:flex;align-items:center;justify-content:space-between;padding-left:10px}
 .imp-dots{display:flex;gap:3px}
 .idot{width:7px;height:7px;border-radius:50%;opacity:0.18}.idot.on{opacity:1}
 .idot-1{background:var(--imp1)}.idot-2{background:var(--imp2)}.idot-3{background:var(--imp3)}.idot-4{background:var(--imp4)}.idot-5{background:var(--imp5)}
@@ -135,6 +135,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .hab-filter.active.Esprit{background:var(--cat-esprit)}
 .hab-filter.active.Santé{background:var(--cat-sante);color:#09090e}
 .hab-filter.active.Productivité{background:var(--cat-prod);color:#09090e}
+.hab-filter.active.Autre{background:var(--cat-autre);color:#09090e}
 .hab-toolbar-sep{flex:1}
 
 .hab-body{flex:1;padding:1.1rem 1.5rem 3rem;overflow-y:auto}
@@ -147,6 +148,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .hab-item.Esprit::before{background:var(--cat-esprit)}
 .hab-item.Santé::before{background:var(--cat-sante)}
 .hab-item.Productivité::before{background:var(--cat-prod)}
+.hab-item.Autre::before{background:var(--cat-autre)}
 .hab-item:hover{border-color:var(--border2)}
 .hab-item.done{opacity:0.42}
 .hab-item.done .hab-title{text-decoration:line-through;text-decoration-color:var(--text-dim)}
@@ -165,6 +167,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .hab-cat-badge.Esprit{background:rgba(167,139,250,0.1);color:var(--cat-esprit)}
 .hab-cat-badge.Santé{background:rgba(74,222,128,0.1);color:var(--cat-sante)}
 .hab-cat-badge.Productivité{background:rgba(56,189,248,0.1);color:var(--cat-prod)}
+.hab-cat-badge.Autre{background:rgba(148,163,184,0.1);color:var(--cat-autre)}
 .hab-reward{font-family:'Space Mono',monospace;font-size:0.7rem;font-weight:700;color:var(--green);white-space:nowrap;min-width:52px;text-align:right}
 .hab-edit-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.35rem;transition:color 0.12s;opacity:0;flex-shrink:0}
 .hab-item:hover .hab-edit-btn{opacity:1}
@@ -200,6 +203,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .cat-btn.sel.Esprit{background:rgba(167,139,250,0.12);border-color:var(--cat-esprit);color:var(--cat-esprit)}
 .cat-btn.sel.Santé{background:rgba(74,222,128,0.12);border-color:var(--cat-sante);color:var(--cat-sante)}
 .cat-btn.sel.Productivité{background:rgba(56,189,248,0.12);border-color:var(--cat-prod);color:var(--cat-prod)}
+.cat-btn.sel.Autre{background:rgba(148,163,184,0.12);border-color:var(--cat-autre);color:var(--cat-autre)}
 
 /* AUTH SCREEN */
 #authScreen{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem}
@@ -361,7 +365,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 // ════════════════════════════════════════════════════
 const COLUMNS  = ["Aujourd'hui",'Demain','Cette semaine','Ce mois','BackLog'];
 const PROJECTS = ['DCB','GLD','Airside'];
-const CATEGORIES = ['Finance','Esprit','Santé','Productivité'];
+const CATEGORIES = ['Finance','Esprit','Santé','Productivité','Autre'];
 const LS_CACHE = 'kanban_cache_v3';
 
 const FREQ_OPTS = [
@@ -981,7 +985,7 @@ function renderHeatmaps() {
     Finance:[252,211,77], Esprit:[167,139,250], Santé:[74,222,128], Productivité:[56,189,248]
   };
 
-  el.innerHTML = CATEGORIES.map(cat => {
+  el.innerHTML = CATEGORIES.filter(c => c !== 'Autre').map(cat => {
     const [r,g,b] = catRGB[cat];
     const counts = catCounts[cat];
 
