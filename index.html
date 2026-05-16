@@ -219,6 +219,19 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .toast.ok{border-left:3px solid var(--green)}.toast.err{border-left:3px solid var(--danger)}.toast.info{border-left:3px solid var(--accent)}
 @keyframes tin{from{transform:translateX(12px);opacity:0}to{opacity:1;transform:none}}
 @keyframes tout{to{opacity:0;transform:translateX(12px)}}
+/* HEATMAPS */
+.heatmaps-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-top:0.85rem}
+.hm-box{background:var(--surface);border:1px solid var(--border);padding:1rem 1.1rem}
+.hm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.7rem}
+.hm-title{font-family:'Space Mono',monospace;font-size:0.57rem;letter-spacing:0.18em;font-weight:700}
+.hm-legend{display:flex;align-items:center;gap:3px}
+.hm-legend-label{font-family:'Space Mono',monospace;font-size:0.48rem;color:var(--text-dim);margin-left:4px}
+.hm-scroll{overflow-x:auto}
+.hm-scroll::-webkit-scrollbar{height:3px}
+.hm-grid{display:grid;grid-template-rows:repeat(7,10px);grid-auto-flow:column;grid-auto-columns:10px;gap:2px;min-width:max-content;padding-bottom:2px}
+.hm-cell{border-radius:2px;cursor:default}
+.hm-cell:hover{filter:brightness(1.3)}
+
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2)}
 </style>
 </head>
@@ -271,6 +284,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
   <div class="dash-grid" id="dashKpis"></div>
   <div class="proj-row" id="projRow"></div>
   <div class="charts-row" id="chartsRow"></div>
+  <div class="heatmaps-grid" id="dashHeatmaps"></div>
 </div>
 
 <!-- HABITUDES PAGE -->
@@ -364,6 +378,9 @@ const FREQ_OPTS = [
   ['monthly:first:4',  '1er jeudi du mois'],
   ['monthly:first:5',  '1er vendredi du mois'],
   ['monthly:first:6',  '1er samedi du mois'],
+  ['weekly:1,3,5',     'Lun, Mer, Ven'],
+  ['weekly:3,6',       'Mer, Sam'],
+  ['weekly:2,4',       'Mar, Jeu'],
 ];
 
 const cfg = {
@@ -937,7 +954,70 @@ async function persist(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>save
 // ════════════════════════════════════════════════════
 // DASHBOARD
 // ════════════════════════════════════════════════════
-function renderDash(){ renderKpis(); renderProj(); renderCharts(); }
+function renderDash(){ renderKpis(); renderProj(); renderCharts(); renderHeatmaps(); }
+
+function renderHeatmaps() {
+  const el = document.getElementById('dashHeatmaps');
+  if (!el) return;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - 364);
+
+  // Align start to the Monday on or before cutoff
+  const start = new Date(cutoff);
+  const dow = start.getDay();
+  start.setDate(start.getDate() - (dow === 0 ? 6 : dow - 1));
+
+  // Count completions per category per date
+  const catCounts = {};
+  CATEGORIES.forEach(c => { catCounts[c] = {}; });
+  habitsLog.forEach(l => {
+    if (catCounts[l.category]) {
+      catCounts[l.category][l.date] = (catCounts[l.category][l.date] || 0) + 1;
+    }
+  });
+
+  const catRGB = {
+    Finance:[252,211,77], Esprit:[167,139,250], Santé:[74,222,128], Productivité:[56,189,248]
+  };
+
+  el.innerHTML = CATEGORIES.map(cat => {
+    const [r,g,b] = catRGB[cat];
+    const counts = catCounts[cat];
+
+    const cells = [];
+    const d = new Date(start);
+    while (d <= today) {
+      const ds = d.toISOString().split('T')[0];
+      const inRange = d >= cutoff;
+      cells.push({ ds, count: inRange ? (counts[ds] || 0) : -1 });
+      d.setDate(d.getDate() + 1);
+    }
+    while (cells.length % 7 !== 0) cells.push({ ds:'', count:-1 });
+
+    const cellsHtml = cells.map(({ds, count}) => {
+      let bg;
+      if (count < 0) bg = 'transparent';
+      else if (count === 0) bg = 'rgba(255,255,255,0.04)';
+      else { const t = Math.min((count-1)/3, 1); bg = `rgba(${r},${g},${b},${0.25 + t*0.75})`; }
+      const tip = ds ? (count > 0 ? `${ds} · ${count} habitude${count>1?'s':''}` : ds) : '';
+      return `<div class="hm-cell" style="background:${bg}" title="${tip}"></div>`;
+    }).join('');
+
+    const legendHtml = [0,1,2,3,4].map(n => {
+      const bg = n === 0 ? 'rgba(255,255,255,0.04)' : `rgba(${r},${g},${b},${0.25+(n-1)/3*0.75})`;
+      return `<div class="hm-cell" style="background:${bg}"></div>`;
+    }).join('');
+
+    return `<div class="hm-box">
+      <div class="hm-header">
+        <span class="hm-title" style="color:rgba(${r},${g},${b},0.9)">${cat.toUpperCase()}</span>
+        <div class="hm-legend">${legendHtml}<span class="hm-legend-label">1 → 4+</span></div>
+      </div>
+      <div class="hm-scroll"><div class="hm-grid">${cellsHtml}</div></div>
+    </div>`;
+  }).join('');
+}
 
 function renderKpis(){
   const now=new Date();now.setHours(0,0,0,0);
