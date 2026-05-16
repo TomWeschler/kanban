@@ -161,11 +161,6 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .auth-logo{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700;letter-spacing:0.3em;color:var(--accent);margin-bottom:0.5rem}
 .auth-desc{font-size:0.82rem;color:var(--text-mid);line-height:1.65;text-align:left}
 .auth-desc code{font-family:'Space Mono',monospace;font-size:0.7rem;background:var(--surface2);padding:1px 5px;color:var(--accent)}
-.setup-fields{width:100%;display:flex;flex-direction:column;gap:0.7rem}
-.setup-field label{display:block;font-family:'Space Mono',monospace;font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.28rem}
-.setup-field input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:0.68rem;padding:0.42rem 0.65rem;outline:none;transition:border-color 0.12s}
-.setup-field input:focus{border-color:var(--accent)}
-.auth-help{font-family:'Space Mono',monospace;font-size:0.54rem;color:var(--text-dim);line-height:1.65;text-align:left;width:100%}
 
 /* LOADING */
 #loadOverlay{position:fixed;inset:0;z-index:350;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem}
@@ -278,11 +273,14 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 const COLUMNS = ['BackLog','Ce mois','Cette semaine','Demain',"Aujourd'hui"];
 const PROJECTS = ['DCB','GLD','Airside'];
 const LS_CACHE = 'kanban_cache_v3';
+const SHEET_RANGE = 'tasks!A:H';
+const SHEET_HEADER = ['id','title','column','importance','due_date','created_at','completed_at','notes'];
 
 // ── Credentials hardcodés ──────────────────────────
 const cfg = {
-  clientId: '43084703914-45j926vjo82u4k2tcj9enbtftvtqalul.apps.googleusercontent.com',
-  fileId:   '19GYFVeXdSpG2fHz6fDKFDeUflK4g_8My'
+  clientId:      '43084703914-45j926vjo82u4k2tcj9enbtftvtqalul.apps.googleusercontent.com',
+  spreadsheetId: '1W3S_g5SjFo9Dx2rpVgx35mD_fWq1bC3NEG6DF3lbdJA',
+  sheetName:     'tasks'
 };
 // ──────────────────────────────────────────────────
 
@@ -300,7 +298,6 @@ let tokenClient = null;
 // INIT
 // ════════════════════════════════════════════════════
 function init() {
-  // Load from cache for instant render
   try {
     const cached = JSON.parse(localStorage.getItem(LS_CACHE) || '[]');
     allTasks = cached;
@@ -308,7 +305,6 @@ function init() {
     render();
   } catch(e){}
 
-  // Auth screen hidden — auto-connect
   document.getElementById('authScreen').style.display = 'none';
   preloadGIS();
 }
@@ -320,7 +316,6 @@ function preloadGIS() {
   s.onload = () => {
     gisLoaded = true;
     initTokenClient();
-    // Try silent auth (no prompt)
     tokenClient.requestAccessToken({ prompt: '' });
   };
   document.head.appendChild(s);
@@ -329,10 +324,9 @@ function preloadGIS() {
 function initTokenClient() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: cfg.clientId,
-    scope: 'https://www.googleapis.com/auth/drive',
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
     callback: async (resp) => {
       if (resp.error) {
-        // Silent auth failed → show connect button
         document.getElementById('authScreen').style.display = 'flex';
         return;
       }
@@ -340,7 +334,7 @@ function initTokenClient() {
       document.getElementById('authScreen').style.display = 'none';
       document.getElementById('btnLogout').style.display = 'block';
       showLoad(true);
-      await loadFromDrive();
+      await loadFromSheets();
       showLoad(false);
       render();
     }
@@ -364,42 +358,87 @@ function logout() {
 }
 
 // ════════════════════════════════════════════════════
-// GOOGLE DRIVE
+// GOOGLE SHEETS
 // ════════════════════════════════════════════════════
-async function loadFromDrive() {
+async function loadFromSheets() {
   try {
-    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${cfg.fileId}?alt=media`, {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${cfg.sheetName}!A:H`;
+    const r = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
     if (!r.ok) throw new Error(r.status);
-    const csv = await r.text();
-    allTasks = parseCSV(csv);
+    const data = await r.json();
+    const rows = data.values || [];
+    // rows[0] is the header; skip it (or handle empty sheet)
+    if (rows.length <= 1) {
+      allTasks = [];
+    } else {
+      allTasks = rows.slice(1).map(p => ({
+        id:           parseInt(p[0]) || Date.now(),
+        title:        p[1] || '',
+        column:       p[2] || 'BackLog',
+        importance:   parseInt(p[3]) || 3,
+        due_date:     p[4] || '',
+        created_at:   p[5] || td(),
+        completed_at: p[6] || '',
+        notes:        p[7] || ''
+      }));
+    }
     tasks = allTasks.filter(t => !t.completed_at);
     localStorage.setItem(LS_CACHE, JSON.stringify(allTasks));
-    setSyncStatus('ok','SYNCED');
+    setSyncStatus('ok', 'SYNCED');
   } catch(e) {
-    setSyncStatus('error','CACHE');
-    toast('Drive inaccessible — cache local utilisé','err');
+    setSyncStatus('error', 'CACHE');
+    toast('Sheets inaccessible — cache local utilisé', 'err');
   }
 }
 
-async function saveToDrive() {
+async function saveToSheets() {
   if (!accessToken) return;
-  setSyncStatus('syncing','SAVING...');
+  setSyncStatus('syncing', 'SAVING...');
   try {
-    const csv = toCSV(allTasks);
-    const r = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${cfg.fileId}?uploadType=media`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'text/csv; charset=utf-8' },
-      body: csv
+    const base = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}`;
+    const range = `${cfg.sheetName}!A:H`;
+
+    // Clear existing data first to avoid stale rows
+    await fetch(`${base}/values/${encodeURIComponent(range)}:clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` }
     });
+
+    // Write header + all task rows
+    const values = [
+      SHEET_HEADER,
+      ...allTasks.map(t => [
+        String(t.id),
+        t.title,
+        t.column,
+        String(t.importance),
+        t.due_date || '',
+        t.created_at || '',
+        t.completed_at || '',
+        t.notes || ''
+      ])
+    ];
+
+    const r = await fetch(
+      `${base}/values/${encodeURIComponent(`${cfg.sheetName}!A1`)}?valueInputOption=RAW`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ values })
+      }
+    );
     if (!r.ok) throw new Error(r.status);
     localStorage.setItem(LS_CACHE, JSON.stringify(allTasks));
-    setSyncStatus('ok','SYNCED');
-    toast('💾 Sauvegardé','ok');
+    setSyncStatus('ok', 'SYNCED');
+    toast('💾 Sauvegardé', 'ok');
   } catch(e) {
-    setSyncStatus('error','ERREUR SYNC');
-    toast('Erreur sauvegarde Drive','err');
+    setSyncStatus('error', 'ERREUR SYNC');
+    toast('Erreur sauvegarde Sheets', 'err');
   }
 }
 
@@ -410,24 +449,8 @@ function setSyncStatus(state, label) {
 }
 
 // ════════════════════════════════════════════════════
-// CSV
+// UTILS
 // ════════════════════════════════════════════════════
-function parseCSV(csv) {
-  return csv.trim().split('\n').slice(1).map(line => {
-    const p = csvSplit(line);
-    return { id: parseInt(p[0])||Date.now(), title:p[1]||'', column:p[2]||'BackLog', importance:parseInt(p[3])||3, due_date:p[4]||'', created_at:p[5]||td(), completed_at:p[6]||'', notes:p[7]||'' };
-  });
-}
-function csvSplit(l) {
-  const r=[]; let c='',q=false;
-  for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"'){q=!q;continue}if(ch===','&&!q){r.push(c);c='';continue}c+=ch}r.push(c);return r;
-}
-function esc(v){ v=String(v||''); return(v.includes(',')||v.includes('"')||v.includes('\n'))?'"'+v.replace(/"/g,'""')+'"':v; }
-function toCSV(arr){
-  return ['id,title,column,importance,due_date,created_at,completed_at,notes',
-    ...arr.map(t=>[t.id,t.title,t.column,t.importance,t.due_date,t.created_at,t.completed_at,t.notes].map(esc).join(','))
-  ].join('\n');
-}
 function td(){ return new Date().toISOString().split('T')[0]; }
 function plusDays(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split('T')[0]; }
 
@@ -457,11 +480,9 @@ function render() {
 function mkCard(t, now) {
   const c = document.createElement('div');
   c.className='card'; c.dataset.id=t.id; c.dataset.imp=t.importance; c.draggable=true;
-  // proj tag
   const proj = PROJECTS.find(p=>t.title.startsWith(p+' :')||t.title.startsWith(p+':'));
   const cls = proj?(proj==='Airside'?'air':proj.toLowerCase()):'';
   const tag = proj?`<div class="card-tag ${cls}">${proj.toUpperCase()}</div>`:'';
-  // due badge
   let badge='',ac='';
   if(t.due_date){
     const due=new Date(t.due_date); due.setHours(0,0,0,0);
@@ -595,7 +616,7 @@ async function saveTask(){
 let saveTimer;
 async function persist(){
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>saveToDrive(),700);
+  saveTimer=setTimeout(()=>saveToSheets(),700);
 }
 
 // ════════════════════════════════════════════════════
@@ -637,7 +658,6 @@ function renderCharts(){
     <div class="chart-box"><div class="chart-title">RÉPARTITION PAR COLONNE</div><div class="chart-wrap"><canvas id="cCols"></canvas></div></div>
     <div class="chart-box"><div class="chart-title">DISTRIBUTION PAR IMPORTANCE</div><div class="chart-wrap"><canvas id="cImp"></canvas></div></div>`;
 
-  // Completed per day
   const labels=[],vals=[];
   for(let i=29;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);d.setHours(0,0,0,0);
@@ -652,7 +672,6 @@ function renderCharts(){
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{family:'Space Mono',size:9},maxTicksLimit:10},grid:{color:'#1c1c28'}},y:{ticks:{font:{family:'Space Mono',size:9},stepSize:1},grid:{color:'#1c1c28'}}}}
   });
 
-  // By column
   const cVals=COLUMNS.map(c=>tasks.filter(t=>t.column===c).length);
   charts.cols=new Chart(document.getElementById('cCols'),{
     type:'doughnut',
@@ -660,7 +679,6 @@ function renderCharts(){
     options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{font:{family:'Space Mono',size:8},boxWidth:9,padding:6}}}}
   });
 
-  // By importance
   const iVals=[1,2,3,4,5].map(i=>tasks.filter(t=>t.importance===i).length);
   charts.imp=new Chart(document.getElementById('cImp'),{
     type:'bar',
