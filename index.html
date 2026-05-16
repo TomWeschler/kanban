@@ -1068,12 +1068,20 @@ function renderHeatmaps() {
 
 function renderKpis(){
   const now=new Date();now.setHours(0,0,0,0);
-  const done=allTasks.filter(t=>t.completed_at).length;
+  const todayStr=td();
+  const thisMonth=todayStr.slice(0,7);
+  const dow=now.getDay();
+  const mon=new Date(now);mon.setDate(now.getDate()-(dow===0?6:dow-1));
+  const monStr=mon.toISOString().split('T')[0];
+  const doneToday=allTasks.filter(t=>t.completed_at===todayStr).length;
+  const doneWeek=allTasks.filter(t=>t.completed_at&&t.completed_at>=monStr&&t.completed_at<=todayStr).length;
+  const doneMonth=allTasks.filter(t=>t.completed_at&&t.completed_at.startsWith(thisMonth)).length;
   const urg=tasks.filter(t=>{if(!t.due_date)return false;const d=new Date(t.due_date);d.setHours(0,0,0,0);return Math.ceil((d-now)/86400000)<=1}).length;
   const late=tasks.filter(t=>{if(!t.due_date)return false;const d=new Date(t.due_date);d.setHours(0,0,0,0);return d<now}).length;
+  const mini=(label,val)=>`<div><div style="font-family:'Space Mono',monospace;font-size:0.47rem;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.2rem">${label}</div><div style="font-family:'Space Mono',monospace;font-size:1.5rem;font-weight:700;color:var(--green);line-height:1">${val}</div></div>`;
   document.getElementById('dashKpis').innerHTML=`
     <div class="kpi c-accent"><div class="kpi-label">EN COURS</div><div class="kpi-value">${tasks.length}</div><div class="kpi-sub">tâches actives</div></div>
-    <div class="kpi c-green"><div class="kpi-label">TERMINÉES</div><div class="kpi-value">${done}</div><div class="kpi-sub">historique total</div></div>
+    <div class="kpi c-green"><div class="kpi-label">TERMINÉES</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin-top:0.5rem">${mini("AUJOURD'HUI",doneToday)}${mini('SEMAINE',doneWeek)}${mini('CE MOIS',doneMonth)}</div></div>
     <div class="kpi c-warn"><div class="kpi-label">URGENTES</div><div class="kpi-value">${urg}</div><div class="kpi-sub">échéance ≤ 1 jour</div></div>
     <div class="kpi c-danger"><div class="kpi-label">EN RETARD</div><div class="kpi-value">${late}</div><div class="kpi-sub">date dépassée</div></div>`;
 }
@@ -1094,14 +1102,16 @@ function renderCharts(){
     <div class="chart-box"><div class="chart-title">TÂCHES TERMINÉES PAR JOUR — 30 DERNIERS JOURS</div><div class="chart-wrap tall"><canvas id="cDone"></canvas></div></div>
     <div class="chart-box"><div class="chart-title">RÉPARTITION PAR COLONNE</div><div class="chart-wrap"><canvas id="cCols"></canvas></div></div>
     <div class="chart-box"><div class="chart-title">DISTRIBUTION PAR IMPORTANCE</div><div class="chart-wrap"><canvas id="cImp"></canvas></div></div>`;
-  const labels=[],vals=[];
+  const labels=[],vals=[],titlesByDay=[];
   for(let i=29;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);d.setHours(0,0,0,0);
     const ds=d.toISOString().split('T')[0];labels.push(ds.slice(5));
-    vals.push(allTasks.filter(t=>t.completed_at===ds).length);
+    const done=allTasks.filter(t=>t.completed_at===ds);
+    vals.push(done.length);
+    titlesByDay.push(done.map(t=>t.title));
   }
   Chart.defaults.color='#60607a';
-  charts.done=new Chart(document.getElementById('cDone'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:vals.map(v=>v>0?'rgba(124,106,255,0.72)':'rgba(124,106,255,0.1)'),borderColor:'rgba(124,106,255,0.85)',borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{family:'Space Mono',size:9},maxTicksLimit:10},grid:{color:'#1c1c28'}},y:{ticks:{font:{family:'Space Mono',size:9},stepSize:1},grid:{color:'#1c1c28'}}}}});
+  charts.done=new Chart(document.getElementById('cDone'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:vals.map(v=>v>0?'rgba(124,106,255,0.72)':'rgba(124,106,255,0.1)'),borderColor:'rgba(124,106,255,0.85)',borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{afterBody:(items)=>{const titles=titlesByDay[items[0].dataIndex]||[];return titles.length?titles.map(t=>'• '+(t.length>45?t.slice(0,45)+'…':t)):['—'];},label:()=>null}}},scales:{x:{ticks:{font:{family:'Space Mono',size:9},maxTicksLimit:10},grid:{color:'#1c1c28'}},y:{ticks:{font:{family:'Space Mono',size:9},stepSize:1},grid:{color:'#1c1c28'}}}}});
   const cVals=COLUMNS.map(c=>tasks.filter(t=>t.column===c).length);
   charts.cols=new Chart(document.getElementById('cCols'),{type:'doughnut',data:{labels:COLUMNS,datasets:[{data:cVals,backgroundColor:['rgba(58,58,85,0.85)','rgba(99,102,241,0.8)','rgba(139,92,246,0.8)','rgba(251,191,36,0.8)','rgba(248,113,113,0.8)'],borderColor:'#09090e',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{font:{family:'Space Mono',size:8},boxWidth:9,padding:6}}}}});
   const iVals=[1,2,3,4,5].map(i=>tasks.filter(t=>t.importance===i).length);
