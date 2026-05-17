@@ -14,7 +14,7 @@
   --accent:#7c6aff;--accent-dim:rgba(124,106,255,0.12);
   --text:#e4e4f0;--text-dim:#60607a;--text-mid:#9898b8;
   --green:#4ade80;--warn:#fbbf24;--danger:#f87171;
-  --dcb:#38bdf8;--gld:#fcd34d;--air:#6ee7b7;
+  --dcb:#38bdf8;--gld:#fcd34d;--air:#6ee7b7;--perso:#c084fc;
   --imp1:#4ade80;--imp2:#a3e635;--imp3:#fbbf24;--imp4:#fb923c;--imp5:#f87171;
   --cat-finance:#fcd34d;--cat-esprit:#a78bfa;--cat-sante:#4ade80;--cat-prod:#38bdf8;--cat-autre:#94a3b8;
 }
@@ -36,6 +36,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .proj-btn.dcb{color:var(--dcb);border-color:rgba(56,189,248,0.28);background:rgba(56,189,248,0.06)}.proj-btn.dcb:hover{background:rgba(56,189,248,0.14)}
 .proj-btn.gld{color:var(--gld);border-color:rgba(252,211,77,0.28);background:rgba(252,211,77,0.06)}.proj-btn.gld:hover{background:rgba(252,211,77,0.14)}
 .proj-btn.air{color:var(--air);border-color:rgba(110,231,183,0.28);background:rgba(110,231,183,0.06)}.proj-btn.air:hover{background:rgba(110,231,183,0.14)}
+.proj-btn.perso{color:var(--perso);border-color:rgba(192,132,252,0.28);background:rgba(192,132,252,0.06)}.proj-btn.perso:hover{background:rgba(192,132,252,0.14)}
 .header-right{display:flex;align-items:center;gap:0.75rem;margin-left:auto;flex-shrink:0}
 .sync-status{font-family:'Space Mono',monospace;font-size:0.56rem;letter-spacing:0.07em;color:var(--text-dim);display:flex;align-items:center;gap:0.3rem;white-space:nowrap}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
@@ -53,7 +54,8 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .page.active{display:flex;flex-direction:column}
 
 /* BOARD */
-#pageboard{overflow-x:auto;overflow-y:hidden}
+#pageboard{overflow:hidden}
+.board-scroll{flex:1;overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:column}
 .board{display:grid;grid-template-columns:repeat(5,minmax(200px,1fr));gap:0.65rem;padding:0.9rem 1rem 2rem;min-width:1080px;height:100%}
 .column{background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:border-color 0.17s}
 .column.drag-over{border-color:var(--accent);box-shadow:inset 0 0 28px rgba(124,106,255,0.05)}
@@ -74,8 +76,8 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .card:hover{border-color:rgba(124,106,255,0.33);box-shadow:0 4px 18px rgba(0,0,0,0.42);transform:translateY(-1px)}
 .card:active{cursor:grabbing}
 .card.dragging{opacity:0.2;transform:rotate(1.5deg)}
-.card-tag{position:absolute;top:0;right:0;font-family:'Space Mono',monospace;font-size:0.48rem;font-weight:700;letter-spacing:0.1em;padding:2px 6px}
-.card-tag.dcb{background:rgba(56,189,248,0.18);color:var(--dcb);border-bottom:1px solid rgba(56,189,248,0.4);border-left:1px solid rgba(56,189,248,0.4)}.card-tag.gld{background:rgba(252,211,77,0.18);color:var(--gld);border-bottom:1px solid rgba(252,211,77,0.4);border-left:1px solid rgba(252,211,77,0.4)}.card-tag.air{background:rgba(110,231,183,0.18);color:var(--air);border-bottom:1px solid rgba(110,231,183,0.4);border-left:1px solid rgba(110,231,183,0.4)}
+.card-tag{position:absolute;top:0;right:0;font-family:'Space Mono',monospace;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;padding:4px 10px}
+.card-tag.dcb{background:rgba(56,189,248,0.18);color:var(--dcb);border-bottom:1px solid rgba(56,189,248,0.4);border-left:1px solid rgba(56,189,248,0.4)}.card-tag.gld{background:rgba(252,211,77,0.18);color:var(--gld);border-bottom:1px solid rgba(252,211,77,0.4);border-left:1px solid rgba(252,211,77,0.4)}.card-tag.air{background:rgba(110,231,183,0.18);color:var(--air);border-bottom:1px solid rgba(110,231,183,0.4);border-left:1px solid rgba(110,231,183,0.4)}.card-tag.perso{background:rgba(192,132,252,0.18);color:var(--perso);border-bottom:1px solid rgba(192,132,252,0.4);border-left:1px solid rgba(192,132,252,0.4)}
 .card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6px}
 .card[data-imp="1"]::before{background:var(--imp1)}.card[data-imp="2"]::before{background:var(--imp2)}.card[data-imp="3"]::before{background:var(--imp3)}.card[data-imp="4"]::before{background:var(--imp4)}.card[data-imp="5"]::before{background:var(--imp5)}
 .card.a-warn{border-color:rgba(251,191,36,0.43)}.card.a-danger{border-color:rgba(248,113,113,0.62);box-shadow:0 0 9px rgba(248,113,113,0.11)}
@@ -91,6 +93,17 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .btn-done{background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.22);color:var(--green);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.07em;padding:2px 7px;cursor:pointer;text-transform:uppercase;transition:background 0.11s}.btn-done:hover{background:rgba(74,222,128,0.17)}
 .btn-edit{background:rgba(255,255,255,0.02);border:1px solid var(--border);color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.07em;padding:2px 7px;cursor:pointer;text-transform:uppercase;transition:background 0.11s,color 0.11s}.btn-edit:hover{background:rgba(255,255,255,0.06);color:var(--text)}
 .col-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.12em;opacity:0.38}
+
+/* BOARD FILTER BAR */
+.board-filters{flex-shrink:0;display:flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;border-bottom:1px solid var(--border);background:rgba(9,9,14,0.7)}
+.board-filter{font-family:'Space Mono',monospace;font-size:0.56rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.26rem 0.7rem;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%);transition:all 0.13s}
+.board-filter:hover{color:var(--text);border-color:var(--text-mid)}
+.board-filter.active{color:var(--bg);border-color:transparent;background:var(--text-mid)}
+.board-filter.active.f-all{background:var(--accent)}
+.board-filter.active.f-dcb{background:var(--dcb);color:#09090e}
+.board-filter.active.f-gld{background:var(--gld);color:#09090e}
+.board-filter.active.f-air{background:var(--air);color:#09090e}
+.board-filter.active.f-perso{background:var(--perso)}
 
 /* DASHBOARD */
 #pagedash{overflow-y:auto;padding:1.25rem 1.5rem 3rem;gap:1.1rem;flex-direction:column}
@@ -267,10 +280,12 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
     <button class="proj-btn dcb" onclick="quickTask('DCB')">+ DCB</button>
     <button class="proj-btn gld" onclick="quickTask('GLD')">+ GLD</button>
     <button class="proj-btn air" onclick="quickTask('Airside')">+ AIRSIDE</button>
+    <button class="proj-btn perso" onclick="quickTask('Perso')">+ PERSO</button>
   </div>
   <div class="header-right">
     <div class="hstat">ACTIVES <b id="hTotal">0</b></div>
     <div class="hstat">AUJ. <b id="hToday">0</b></div>
+    <div class="hstat" style="color:var(--green)">✓ <b id="hDoneToday">0</b></div>
     <div class="hstat" style="color:var(--danger)">URGENTES <b id="hUrgent">0</b></div>
     <div class="sync-status"><div class="sync-dot ok" id="syncDot"></div><span id="syncLabel">PRÊT</span></div>
     <button class="btn-nav" onclick="openModal()">+ TÂCHE</button>
@@ -280,7 +295,16 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 
 <!-- BOARD PAGE -->
 <div class="page active" id="pageboard">
-  <div class="board" id="board"></div>
+  <div class="board-filters" id="boardFilters">
+    <button class="board-filter f-all active" onclick="setBoardFilter('all')">TOUS</button>
+    <button class="board-filter f-dcb" onclick="setBoardFilter('DCB')">DCB</button>
+    <button class="board-filter f-gld" onclick="setBoardFilter('GLD')">GLD</button>
+    <button class="board-filter f-air" onclick="setBoardFilter('Airside')">AIRSIDE</button>
+    <button class="board-filter f-perso" onclick="setBoardFilter('Perso')">PERSO</button>
+  </div>
+  <div class="board-scroll">
+    <div class="board" id="board"></div>
+  </div>
 </div>
 
 <!-- DASHBOARD PAGE -->
@@ -364,7 +388,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 // CONFIG & CONSTANTS
 // ════════════════════════════════════════════════════
 const COLUMNS  = ["Aujourd'hui",'Demain','Cette semaine','Ce mois','BackLog'];
-const PROJECTS = ['DCB','GLD','Airside'];
+const PROJECTS = ['DCB','GLD','Airside','Perso'];
 const CATEGORIES = ['Finance','Esprit','Santé','Productivité','Autre'];
 const LS_CACHE = 'kanban_cache_v3';
 
@@ -407,6 +431,7 @@ let selImp = 3, selCat = 'Finance';
 let dragSrcId = null, charts = {}, curPage = 'board';
 let gisLoaded = false, tokenClient = null;
 let habCatFilter = 'all';
+let boardFilter = 'all';
 
 // ════════════════════════════════════════════════════
 // INIT
@@ -870,12 +895,33 @@ function setHabFilter(cat) {
 // ════════════════════════════════════════════════════
 // BOARD RENDER
 // ════════════════════════════════════════════════════
+function setBoardFilter(f) {
+  boardFilter = f;
+  document.querySelectorAll('.board-filter').forEach(b => {
+    const isActive = (f === 'all' && b.classList.contains('f-all')) ||
+                     (f === 'DCB' && b.classList.contains('f-dcb')) ||
+                     (f === 'GLD' && b.classList.contains('f-gld')) ||
+                     (f === 'Airside' && b.classList.contains('f-air')) ||
+                     (f === 'Perso' && b.classList.contains('f-perso'));
+    b.classList.toggle('active', isActive);
+  });
+  render();
+}
+
+function filterTasksByBoard(list) {
+  if (boardFilter === 'all') return list;
+  return list.filter(t => {
+    const proj = PROJECTS.find(p => t.title.startsWith(p+' :') || t.title.startsWith(p+':'));
+    return proj === boardFilter;
+  });
+}
+
 function render() {
   const board = document.getElementById('board');
   board.innerHTML = '';
   const now = new Date(); now.setHours(0,0,0,0);
   COLUMNS.forEach(col => {
-    const ct = tasks.filter(t=>t.column===col);
+    const ct = filterTasksByBoard(tasks.filter(t=>t.column===col));
     const el = document.createElement('div');
     el.className='column'; el.dataset.col=col;
     el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over')});
@@ -918,8 +964,10 @@ function mkCard(t, now) {
 
 function updateHStats(){
   const now=new Date();now.setHours(0,0,0,0);
+  const todayStr=td();
   document.getElementById('hTotal').textContent=tasks.length;
   document.getElementById('hToday').textContent=tasks.filter(t=>t.column==="Aujourd'hui").length;
+  document.getElementById('hDoneToday').textContent=allTasks.filter(t=>t.completed_at===todayStr).length;
   document.getElementById('hUrgent').textContent=tasks.filter(t=>{
     if(!t.due_date)return false;const d=new Date(t.due_date);d.setHours(0,0,0,0);return Math.ceil((d-now)/86400000)<=1;
   }).length;
