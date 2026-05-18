@@ -1454,6 +1454,13 @@ function calcPortfolioValue() {
   return total;
 }
 
+function calcFirstPosFinale() {
+  // First non-null "Position Finale" value across the entire document (chronological)
+  const withPF = cryptoTrades.filter(t => t.posFinale !== null && t.date);
+  if (!withPF.length) return null;
+  return [...withPF].sort((a,b) => a.date < b.date ? -1 : 1)[0].posFinale;
+}
+
 const crpSign = v => v >= 0 ? '+' : '';
 const crpFmt = v => `${crpSign(v)}${v.toFixed(2)}$`;
 const crpCol = v => v >= 0 ? 'var(--green)' : 'var(--danger)';
@@ -1489,7 +1496,9 @@ function renderCryptoBanner() {
   const active = CRYPTOS.map(c => ({ c, n: getCryptoStats(c.sym).totalNet })).filter(x => x.n !== 0);
   const best = [...active].sort((a,b) => b.n - a.n)[0];
   const portfolio = calcPortfolioValue();
+  const firstPF = calcFirstPosFinale();
   const portfolioStr = portfolio > 0 ? portfolio.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'$' : '—';
+  const portfolioPct = (portfolio > 0 && firstPF > 0) ? (portfolio - firstPF) / firstPF * 100 : null;
 
   document.getElementById('crpBanner').innerHTML = `
     <div class="crp-kpi">
@@ -1512,8 +1521,8 @@ function renderCryptoBanner() {
     </div>
     <div class="crp-kpi">
       <div class="crp-kpi-lbl">PORTEFEUILLE GLOBAL</div>
-      <div class="crp-kpi-val" style="color:var(--gld);font-size:1.3rem">${portfolioStr}</div>
-      <div class="crp-kpi-sub">Σ (dernière ligne · col M × col F)</div>
+      <div class="crp-kpi-val" style="color:var(--gld);font-size:1.3rem">${portfolioStr}${portfolioPct!=null?`<span style="font-size:0.9rem;margin-left:0.4rem;color:${portfolioPct>=0?'var(--green)':'var(--danger)'}">${crpSign(portfolioPct)}${portfolioPct.toFixed(2)}%</span>`:''}</div>
+      <div class="crp-kpi-sub">vs première Position Finale · col M×F</div>
     </div>
     <div class="crp-kpi">
       <div class="crp-kpi-lbl">MEILLEURE CRYPTO</div>
