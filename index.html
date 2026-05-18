@@ -1569,13 +1569,47 @@ function renderCryptoCards() {
   }).join('');
 }
 
+// ────────────────────────────────────────────────────
+// Shared helper: annotate every posFinale-bearing trade
+// with its P&L delta (posFinale − prev posFinale for that crypto,
+// prev = 0 for the very first trade of each crypto).
+// Falls back to t.net when posFinale column absent from sheet.
+// ────────────────────────────────────────────────────
+function computeTradePnLs() {
+  const withPF = cryptoTrades.filter(t => t.posFinale !== null && t.date)
+    .sort((a,b) => a.date < b.date ? -1 : 1);
+  if (!withPF.length) {
+    // Fallback: annotate all dated trades with t.net as delta
+    return [...cryptoTrades].filter(t => t.date)
+      .sort((a,b) => a.date < b.date ? -1 : 1)
+      .map(t => ({ ...t, pnlDelta: t.net, usingFallback: true }));
+  }
+  const prevPF = {};
+  return withPF.map(t => {
+    const prev = prevPF[t.symbol] ?? 0;
+    const pnlDelta = t.posFinale - prev;
+    prevPF[t.symbol] = t.posFinale;
+    return { ...t, pnlDelta };
+  });
+}
+
+// Bot ROI% for chart B2: calcNetPnL / first posFinale for that crypto
+function calcBotRoiPct(sym) {
+  const trades = cryptoTrades.filter(t => t.symbol === sym && t.posFinale !== null && t.date)
+    .sort((a,b) => a.date < b.date ? -1 : 1);
+  if (!trades.length) { const g = getCryptoStats(sym); return g.pct; }
+  const firstPF = trades[0].posFinale;
+  if (!firstPF) return null;
+  return calcNetPnL(sym) / Math.abs(firstPF) * 100;
+}
+
 function renderCryptoChartsA() {
   // Chart A1: Cumulative P&L line  |  Chart A2: P&L total par crypto bar
   ['cCrpCumul','cCrpComp'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
 
   document.getElementById('crpChartsA').innerHTML = `
     <div class="crp-box">
-      <div class="crp-box-hdr"><span class="crp-box-ttl">ÉVOLUTION CUMULATIVE DU P&L NET</span></div>
+      <div class="crp-box-hdr"><span class="crp-box-ttl">ÉVOLUTION CUMULATIVE DU P&L (POSITION FINALE)</span></div>
       <div class="crp-wrap tall"><canvas id="cCrpCumul"></canvas></div>
     </div>
     <div class="crp-box">
@@ -1583,17 +1617,14 @@ function renderCryptoChartsA() {
       <div class="crp-wrap tall"><canvas id="cCrpComp"></canvas></div>
     </div>`;
 
-  // Cumulative P&L — sorted by date
-  const sorted = [...cryptoTrades].sort((a,b) => {
-    if (!a.date && !b.date) return 0; if (!a.date) return 1; if (!b.date) return -1;
-    return a.date < b.date ? -1 : 1;
-  });
+  // A1 — Cumulative: walk through pnlDelta in chronological order
+  const tradePnLs = computeTradePnLs();
   let cumul = 0;
   const cumulLabels = [], cumulVals = [], cumulPtColors = [];
-  sorted.forEach(t => {
-    cumul += t.net; cumul = parseFloat(cumul.toFixed(2));
-    cumulLabels.push(t.date ? dateLabel(t.date) : `#${t.idx+1}`);
-    cumulVals.push(cumul);
+  tradePnLs.forEach(t => {
+    cumul = parseFloat((cumul + t.pnlDelta).toFixed(4));
+    cumulLabels.push(dateLabel(t.date));
+    cumulVals.push(parseFloat(cumul.toFixed(2)));
     const cc = CRYPTOS.find(x => x.sym === t.symbol);
     cumulPtColors.push(cc ? `rgba(${cc.rgb},0.9)` : 'rgba(124,106,255,0.9)');
   });
@@ -1604,11 +1635,19 @@ function renderCryptoChartsA() {
       data: { labels: cumulLabels, datasets: [{ data: cumulVals,
         borderColor: 'rgba(124,106,255,0.9)', backgroundColor: 'rgba(124,106,255,0.06)',
         borderWidth: 2, fill: true, tension: 0.3,
-        pointBackgroundColor: cumulPtColors, pointRadius: cumulVals.length > 60 ? 2 : 4, pointHoverRadius: 6 }] },
+        pointBackgroundColor: cumulPtColors,
+        pointRadius: cumulVals.length > 80 ? 2 : 4, pointHoverRadius: 6 }] },
       options: { responsive:true, maintainAspectRatio:false,
         plugins: { legend:{display:false}, tooltip:{ callbacks:{
-          label: i => ` Cumul: ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$`,
-          title: items => { const t = sorted[items[0].dataIndex]; return t ? `${t.symbol} · ${t.date||''}` : ''; },
+          label: i => ` Cumul P&L: ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$`,
+          afterLabel: i => {
+            const t = tradePnLs[i.dataIndex];
+            if (!t) return '';
+            const delta = t.pnlDelta >= 0 ? `+${t.pnlDelta.toFixed(2)}` : t.pnlDelta.toFixed(2);
+            const pf = t.posFinale != null ? ` · Pos: ${t.posFinale.toFixed(2)}$` : '';
+            return ` Δ ${delta}$${pf}`;
+          },
+          title: items => { const t = tradePnLs[items[0].dataIndex]; return t ? `${t.symbol} · ${t.date||''}` : ''; },
         }}},
         scales: {
           x: { ticks:{font:{family:'Space Mono',size:8},maxTicksLimit:10}, grid:{color:'#1c1c28'} },
@@ -1618,17 +1657,19 @@ function renderCryptoChartsA() {
     });
   }
 
-  // P&L par crypto bar
-  const compVals = CRYPTOS.map(c => parseFloat(getCryptoStats(c.sym).totalNet.toFixed(2)));
+  // A2 — P&L par crypto (calcNetPnL via Position Finale)
+  const compVals = CRYPTOS.map(c => parseFloat(calcNetPnL(c.sym).toFixed(2)));
   cryptoCharts.cCrpComp = new Chart(document.getElementById('cCrpComp'), {
     type: 'bar',
     data: { labels: CRYPTOS.map(c=>c.sym), datasets: [{
       data: compVals,
-      backgroundColor: CRYPTOS.map(c => compVals[CRYPTOS.indexOf(c)] >= 0 ? `rgba(${c.rgb},0.72)` : `rgba(${c.rgb},0.35)`),
+      backgroundColor: CRYPTOS.map((c,i) => compVals[i] >= 0 ? `rgba(${c.rgb},0.72)` : `rgba(${c.rgb},0.32)`),
       borderColor: CRYPTOS.map(c=>c.hex), borderWidth:1, borderRadius:3
     }]},
     options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: i => ` ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$` }}},
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{
+        label: i => ` P&L: ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$ (last−first Pos. Finale)`
+      }}},
       scales:{
         x:{ticks:{font:{family:'Space Mono',size:9}},grid:{display:false}},
         y:{ticks:{font:{family:'Space Mono',size:9},callback:v=>`${v}$`},grid:{color:'#1c1c28'}}
@@ -1638,7 +1679,7 @@ function renderCryptoChartsA() {
 }
 
 function renderCryptoChartsB() {
-  // Chart B1: P&L par trade (last 50)  |  Chart B2: Bot ROI vs HODL
+  // Chart B1: P&L par trade (50 derniers)  |  Chart B2: Bot ROI% vs HODL%
   ['cCrpTrades','cCrpHodl'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
 
   const hodlAvail = CRYPTOS.some(c => cryptoPrices[c.sym]?.hodlPct != null);
@@ -1646,7 +1687,7 @@ function renderCryptoChartsB() {
 
   document.getElementById('crpChartsB').innerHTML = `
     <div class="crp-box">
-      <div class="crp-box-hdr"><span class="crp-box-ttl">P&L PAR TRADE (50 DERNIERS)</span></div>
+      <div class="crp-box-hdr"><span class="crp-box-ttl">Δ POSITION FINALE PAR TRADE (50 DERNIERS)</span></div>
       <div class="crp-wrap"><canvas id="cCrpTrades"></canvas></div>
     </div>
     <div class="crp-box">
@@ -1655,26 +1696,36 @@ function renderCryptoChartsB() {
       <div class="crp-hodl-note">HODL : ${hodlNote}</div>
     </div>`;
 
-  // P&L per trade (last 50, sorted by date)
-  const sorted50 = [...cryptoTrades].sort((a,b) => {
-    if (!a.date&&!b.date) return 0; if (!a.date) return 1; if (!b.date) return -1;
-    return a.date < b.date ? -1 : 1;
-  }).slice(-50);
+  // B1 — delta posFinale per trade, last 50
+  const tradePnLs = computeTradePnLs();
+  const last50 = tradePnLs.slice(-50);
 
-  if (sorted50.length) {
+  if (last50.length) {
     cryptoCharts.cCrpTrades = new Chart(document.getElementById('cCrpTrades'), {
       type: 'bar',
-      data: { labels: sorted50.map((t,i) => t.date ? dateLabel(t.date).slice(5) : `#${i+1}`),
-        datasets: [{ data: sorted50.map(t => parseFloat(t.net.toFixed(2))),
-          backgroundColor: sorted50.map(t => { const cc=CRYPTOS.find(x=>x.sym===t.symbol); return t.net>=0 ? `rgba(${cc?.rgb||'124,106,255'},0.72)` : `rgba(${cc?.rgb||'248,113,113'},0.4)`; }),
-          borderColor: sorted50.map(t => { const cc=CRYPTOS.find(x=>x.sym===t.symbol); return cc?.hex||'#7c6aff'; }),
+      data: {
+        labels: last50.map((t,i) => dateLabel(t.date).slice(5) || `#${i+1}`),
+        datasets: [{ data: last50.map(t => parseFloat(t.pnlDelta.toFixed(2))),
+          backgroundColor: last50.map(t => {
+            const cc = CRYPTOS.find(x=>x.sym===t.symbol);
+            return t.pnlDelta >= 0 ? `rgba(${cc?.rgb||'124,106,255'},0.72)` : `rgba(${cc?.rgb||'248,113,113'},0.38)`;
+          }),
+          borderColor: last50.map(t => CRYPTOS.find(x=>x.sym===t.symbol)?.hex || '#7c6aff'),
           borderWidth:1, borderRadius:2
         }]
       },
       options:{ responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{ callbacks:{
-          label: i => ` ${sorted50[i.dataIndex].symbol} · ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$`,
-          title: items => sorted50[items[0].dataIndex]?.date || ''
+          label: i => {
+            const t = last50[i.dataIndex];
+            const d = i.raw >= 0 ? `+${i.raw.toFixed(2)}` : i.raw.toFixed(2);
+            return ` ${t.symbol} · Δ ${d}$`;
+          },
+          afterLabel: i => {
+            const t = last50[i.dataIndex];
+            return t.posFinale != null ? ` Pos. Finale: ${t.posFinale.toFixed(2)}$` : '';
+          },
+          title: items => last50[items[0].dataIndex]?.date || ''
         }}},
         scales:{
           x:{ticks:{font:{family:'Space Mono',size:7},maxRotation:45,maxTicksLimit:15},grid:{color:'#1c1c28'}},
@@ -1684,10 +1735,15 @@ function renderCryptoChartsB() {
     });
   }
 
-  // Bot ROI% vs HODL%
+  // B2 — Bot ROI% (calcNetPnL / first posFinale) vs HODL% (CoinGecko)
   const activeCryptos = CRYPTOS.filter(c => getCryptoStats(c.sym).count > 0);
-  const botRoiVals = activeCryptos.map(c => { const g=getCryptoStats(c.sym); return g.pct !== null ? parseFloat(g.pct.toFixed(2)) : 0; });
-  const hodlVals   = activeCryptos.map(c => cryptoPrices[c.sym]?.hodlPct != null ? parseFloat(cryptoPrices[c.sym].hodlPct.toFixed(2)) : null);
+  const botRoiVals = activeCryptos.map(c => {
+    const roi = calcBotRoiPct(c.sym);
+    return roi != null ? parseFloat(roi.toFixed(2)) : null;
+  });
+  const hodlVals = activeCryptos.map(c =>
+    cryptoPrices[c.sym]?.hodlPct != null ? parseFloat(cryptoPrices[c.sym].hodlPct.toFixed(2)) : null
+  );
 
   cryptoCharts.cCrpHodl = new Chart(document.getElementById('cCrpHodl'), {
     type: 'bar',
