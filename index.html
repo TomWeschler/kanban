@@ -1334,11 +1334,12 @@ async function loadCryptoData() {
         symbol:    sym,
         action:    colMap.action >= 0 ? r[colMap.action] || '' : '',
         price:     parseNum(r[1]),               // col B — buy price
-        colF:      parseNum(r[5]),               // col F — qty/amount
+        colD:      parseNum(r[3]),               // col D — initial quantity (B×D = initial investment)
+        colF:      parseNum(r[5]),               // col F — current qty/amount
         net:       parseNum(r[6]),               // col G — net P&L after tax
         pct:       parseNum(r[7]),               // col H — % gain/loss
         invested:  colMap.invested >= 0 ? parseNum(r[colMap.invested]) : 0,
-        colM:      parseNum(r[12]),              // col M — current qty
+        colM:      parseNum(r[12]),              // col M — current qty (M×F = current position value)
         posFinale,                               // "Position Finale" column (auto-detected)
       };
     }).filter(t => t.symbol);
@@ -1390,20 +1391,21 @@ async function fetchHodlComparison() {
 // ════════════════════════════════════════════════════
 // CRYPTOBOT — UTILITIES
 // ════════════════════════════════════════════════════
-// P&L for one crypto (or global) via "Position Finale":
-//   last(posFinale) − first(posFinale), with first=0 when only 1 row exists
-//   Falls back to summing col G if "Position Finale" column not found in sheet
+// P&L for one crypto (or global):
+//   last_row(M × F)  −  first_row(B × D)
+//   = current position value − initial investment value
+//   Falls back to summing col G if both sides are 0 (missing data)
 function calcNetPnL(sym) {
   if (!sym) return CRYPTOS.reduce((s, c) => s + calcNetPnL(c.sym), 0);
   const trades = cryptoTrades.filter(t => t.symbol === sym && t.date);
-  const withPF = trades.filter(t => t.posFinale !== null);
-  if (withPF.length > 0) {
-    const sorted = [...withPF].sort((a,b) => a.date < b.date ? -1 : 1);
-    const first = sorted.length === 1 ? 0 : (sorted[0].posFinale ?? 0);
-    const last  = sorted[sorted.length - 1].posFinale ?? 0;
-    return last - first;
-  }
-  // Fallback: sum col G (net P&L per trade)
+  if (!trades.length) return 0;
+  const sorted = [...trades].sort((a,b) => a.date < b.date ? -1 : 1);
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+  const initialVal  = (first.price || 0) * (first.colD || 0);  // B × D — first row
+  const currentVal  = (last.colM  || 0) * (last.colF  || 0);   // M × F — last row
+  if (currentVal > 0 || initialVal > 0) return currentVal - initialVal;
+  // Fallback: sum col G
   return trades.reduce((s, t) => s + t.net, 0);
 }
 
@@ -1455,10 +1457,16 @@ function calcPortfolioValue() {
 }
 
 function calcFirstPosFinale() {
-  // First non-null "Position Finale" value across the entire document (chronological)
-  const withPF = cryptoTrades.filter(t => t.posFinale !== null && t.date);
-  if (!withPF.length) return null;
-  return [...withPF].sort((a,b) => a.date < b.date ? -1 : 1)[0].posFinale;
+  // Total initial investment = Σ first_row(B×D) per crypto (matches calcNetPnL reference)
+  let total = 0;
+  CRYPTOS.forEach(c => {
+    const trades = cryptoTrades.filter(t => t.symbol === c.sym && t.date);
+    if (!trades.length) return;
+    const first = [...trades].sort((a,b) => a.date < b.date ? -1 : 1)[0];
+    const val = (first.price || 0) * (first.colD || 0);
+    if (val > 0 && isFinite(val)) total += val;
+  });
+  return total > 0 ? total : null;
 }
 
 const crpSign = v => v >= 0 ? '+' : '';
