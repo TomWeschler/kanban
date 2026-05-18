@@ -1305,15 +1305,18 @@ async function loadCryptoData() {
 
     // Confirmed column layout (user):
     //   B=1  buy price  |  C=2  open datetime  |  E=4  close datetime
-    //   F=5  qty/amount |  G=6  net P&L (after tax) |  M=12 current qty
+    //   F=5  qty/amount |  G=6  net P&L (after tax) |  H=7 % gain/loss
+    //   M=12 current qty | "Position Finale" = auto-detected by header
     const hdr = rows[0].map(h => String(h).toLowerCase().trim());
     const colIdx = (...names) => { for (const n of names) { const i = hdr.findIndex(h => h.includes(n)); if (i >= 0) return i; } return -1; };
     const colMap = {
-      date:     2,  // col C — confirmed DD/MM/YYYY, HH:mm:ss
-      symbol:   colIdx('symbol','crypto','coin','pair','asset','devise','paire'),
-      action:   colIdx('action','side','type','direction','sens','order'),
-      invested: colIdx('invest','amount','capital','montant','buy_amount','mise'),
-      net:      6,  // col G — confirmed
+      date:      2,  // col C — confirmed DD/MM/YYYY, HH:mm:ss
+      symbol:    colIdx('symbol','crypto','coin','pair','asset','devise','paire'),
+      action:    colIdx('action','side','type','direction','sens','order'),
+      invested:  colIdx('invest','amount','capital','montant','buy_amount','mise'),
+      net:       6,  // col G — net P&L after tax
+      pct:       7,  // col H — % gain/loss (confirmed by user)
+      posFinale: colIdx('position finale','pos finale','final position','valeur finale','position_finale','pos_finale'),
     };
 
     const parseNum = raw => parseFloat(String(raw||'').replace(',','.').replace(/[^0-9.\-]/g,'')) || 0;
@@ -1322,19 +1325,23 @@ async function loadCryptoData() {
       // Symbol: clean up pair notation (ADA/USDT → ADA)
       const rawSym = (colMap.symbol >= 0 ? r[colMap.symbol] || '' : '').toUpperCase().replace(/[\/-]?USDT?$|[\/-]?BUSD$|[\/-]?USD$/,'').trim();
       const sym = CRYPTOS.find(c => rawSym.includes(c.sym))?.sym || (rawSym || 'ADA');
+      const posFinaleRaw = colMap.posFinale >= 0 ? r[colMap.posFinale] : '';
+      const posFinale = posFinaleRaw !== '' && posFinaleRaw != null ? parseNum(posFinaleRaw) : null;
       return {
-        idx:      i,
-        date:     parseTradeDate(r[2] || ''),   // col C — open datetime
-        dateClose:parseTradeDate(r[4] || ''),   // col E — close datetime
-        symbol:   sym,
-        action:   colMap.action >= 0 ? r[colMap.action] || '' : '',
-        price:    parseNum(r[1]),               // col B — buy price
-        colF:     parseNum(r[5]),               // col F — qty/amount
-        net:      parseNum(r[6]),               // col G — net P&L after tax
-        invested: colMap.invested >= 0 ? parseNum(r[colMap.invested]) : 0,
-        colM:     parseNum(r[12]),              // col M — current qty
+        idx:       i,
+        date:      parseTradeDate(r[2] || ''),   // col C — open datetime
+        dateClose: parseTradeDate(r[4] || ''),   // col E — close datetime
+        symbol:    sym,
+        action:    colMap.action >= 0 ? r[colMap.action] || '' : '',
+        price:     parseNum(r[1]),               // col B — buy price
+        colF:      parseNum(r[5]),               // col F — qty/amount
+        net:       parseNum(r[6]),               // col G — net P&L after tax
+        pct:       parseNum(r[7]),               // col H — % gain/loss
+        invested:  colMap.invested >= 0 ? parseNum(r[colMap.invested]) : 0,
+        colM:      parseNum(r[12]),              // col M — current qty
+        posFinale,                               // "Position Finale" column (auto-detected)
       };
-    }).filter(t => t.net !== 0 || t.symbol);
+    }).filter(t => t.symbol);
 
     cryptoLoaded = true;
   } catch(e) {
@@ -1383,33 +1390,53 @@ async function fetchHodlComparison() {
 // ════════════════════════════════════════════════════
 // CRYPTOBOT — UTILITIES
 // ════════════════════════════════════════════════════
+// P&L for one crypto (or global) via "Position Finale":
+//   last(posFinale) − first(posFinale), with first=0 when only 1 row exists
+//   Falls back to summing col G if "Position Finale" column not found in sheet
+function calcNetPnL(sym) {
+  if (!sym) return CRYPTOS.reduce((s, c) => s + calcNetPnL(c.sym), 0);
+  const trades = cryptoTrades.filter(t => t.symbol === sym && t.date);
+  const withPF = trades.filter(t => t.posFinale !== null);
+  if (withPF.length > 0) {
+    const sorted = [...withPF].sort((a,b) => a.date < b.date ? -1 : 1);
+    const first = sorted.length === 1 ? 0 : (sorted[0].posFinale ?? 0);
+    const last  = sorted[sorted.length - 1].posFinale ?? 0;
+    return last - first;
+  }
+  // Fallback: sum col G (net P&L per trade)
+  return trades.reduce((s, t) => s + t.net, 0);
+}
+
 function getCryptoStats(sym) {
   const list = sym ? cryptoTrades.filter(t => t.symbol === sym) : cryptoTrades;
-  const winList  = list.filter(t => t.net > 0);
-  const lossList = list.filter(t => t.net < 0);
-  const totalNet = list.reduce((s, t) => s + t.net, 0);
-  const totalInvested = list.reduce((s, t) => s + t.invested, 0);
 
-  // Avg % gain / loss based on col G values directly (treated as % by user request)
-  const avgGainPct = winList.length  ? winList.reduce((s,t)  => s + t.net, 0) / winList.length  : null;
-  const avgLossPct = lossList.length ? lossList.reduce((s,t) => s + t.net, 0) / lossList.length : null;
+  // Win / loss determined by col H (%)
+  const winList  = list.filter(t => t.pct > 0);
+  const lossList = list.filter(t => t.pct < 0);
 
-  // P&L % from first to last price in col B (buy price tracked internally)
+  // Avg % gain / loss — col H as confirmed
+  const avgGainPct = winList.length  ? winList.reduce((s,t)  => s + t.pct, 0) / winList.length  : null;
+  const avgLossPct = lossList.length ? lossList.reduce((s,t) => s + t.pct, 0) / lossList.length : null;
+
+  // P&L via Position Finale
+  const totalNet = calcNetPnL(sym || null);
+
+  // P&L % from first to last price in col B (price evolution tracked internally)
   let pricePct = null;
   const withPrice = list.filter(t => t.price > 0 && t.date);
   if (withPrice.length >= 2) {
     const sortedP = [...withPrice].sort((a,b) => a.date < b.date ? -1 : 1);
-    const p0 = sortedP[0].price;
-    const pn = sortedP[sortedP.length - 1].price;
+    const p0 = sortedP[0].price, pn = sortedP[sortedP.length - 1].price;
     if (p0 > 0) pricePct = (pn - p0) / p0 * 100;
   }
 
+  const totalInvested = list.reduce((s, t) => s + t.invested, 0);
   return {
     count: list.length, wins: winList.length, losses: lossList.length,
     winRate: list.length ? Math.round(winList.length / list.length * 100) : 0,
     totalNet, totalInvested,
     pct: totalInvested > 0 ? totalNet / totalInvested * 100 : null,
-    avgNet: list.length ? totalNet / list.length : 0,
+    avgNet: list.length ? list.reduce((s,t) => s + t.net, 0) / list.length : 0,
     avgGainPct, avgLossPct, pricePct,
   };
 }
