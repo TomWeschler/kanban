@@ -250,6 +250,47 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .hm-cell:hover{filter:brightness(1.3)}
 
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* ═══════════════════════════════
+   CRYPTOBOT PAGE
+═══════════════════════════════ */
+#pagecrypto{overflow-y:auto;padding:1.25rem 1.5rem 3rem;gap:1rem;flex-direction:column}
+.crp-banner{display:grid;grid-template-columns:repeat(5,1fr);gap:0.85rem}
+.crp-kpi{background:var(--surface);border:1px solid var(--border);padding:1rem 1.2rem}
+.crp-kpi-lbl{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.4rem}
+.crp-kpi-val{font-family:'Space Mono',monospace;font-size:1.65rem;font-weight:700;line-height:1}
+.crp-kpi-sub{font-size:0.67rem;color:var(--text-dim);margin-top:0.25rem}
+.crp-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:0.85rem}
+.crp-card{background:var(--surface);border:1px solid var(--border);padding:1rem 1.1rem;position:relative;overflow:hidden;display:flex;flex-direction:column;transition:border-color 0.15s}
+.crp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.crp-card.ada::before{background:#3b82f6}.crp-card.sol::before{background:#a855f7}
+.crp-card.eth::before{background:#818cf8}.crp-card.xrp::before{background:#22d3ee}
+.crp-card.bnb::before{background:#eab308}
+.crp-card.nodata{opacity:0.48}
+.crp-sym{font-family:'Space Mono',monospace;font-size:0.82rem;font-weight:700;letter-spacing:0.22em;margin-bottom:0.12rem}
+.crp-name{font-size:0.62rem;color:var(--text-dim);margin-bottom:0.85rem}
+.crp-stat{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.28rem}
+.crp-stat-l{font-family:'Space Mono',monospace;font-size:0.47rem;letter-spacing:0.1em;color:var(--text-dim)}
+.crp-stat-v{font-family:'Space Mono',monospace;font-size:0.67rem;font-weight:700}
+.crp-sep{height:1px;background:var(--border);margin:0.55rem 0}
+.crp-badge{display:inline-block;font-family:'Space Mono',monospace;font-size:0.45rem;letter-spacing:0.08em;padding:2px 6px;border:1px solid;margin-top:0.6rem}
+.crp-badge.wait{color:var(--text-dim);border-color:var(--border)}
+.crp-badge.active{color:var(--green);border-color:rgba(74,222,128,0.3);background:rgba(74,222,128,0.05)}
+.crp-charts-a{display:grid;grid-template-columns:2fr 1fr;gap:0.85rem}
+.crp-charts-b{display:grid;grid-template-columns:2fr 1fr;gap:0.85rem}
+.crp-box{background:var(--surface);border:1px solid var(--border);padding:1.1rem}
+.crp-box-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem}
+.crp-box-ttl{font-family:'Space Mono',monospace;font-size:0.53rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid)}
+.crp-wrap{position:relative;height:190px}.crp-wrap.tall{height:220px}
+.crp-table{width:100%;border-collapse:collapse;font-family:'Space Mono',monospace;font-size:0.57rem}
+.crp-table th{text-align:left;color:var(--text-dim);letter-spacing:0.1em;font-weight:400;padding:0.28rem 0.6rem;border-bottom:1px solid var(--border)}
+.crp-table td{padding:0.32rem 0.6rem;border-bottom:1px solid rgba(37,37,53,0.4);color:var(--text)}
+.crp-table tr:last-child td{border-bottom:none}
+.crp-pos{color:var(--green)}.crp-neg{color:var(--danger)}
+.crp-btn{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.08em;padding:0.2rem 0.55rem;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all 0.12s}
+.crp-btn:hover{color:var(--text);border-color:var(--text-mid)}
+.crp-empty{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;color:var(--text-dim);opacity:0.42;text-align:center;padding:2.5rem 0}
+.crp-hodl-note{font-family:'Space Mono',monospace;font-size:0.46rem;letter-spacing:0.07em;color:var(--text-dim);margin-top:0.4rem}
 </style>
 </head>
 <body>
@@ -274,6 +315,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
     <button class="nav-tab active" data-page="board" onclick="switchPage('board')">BOARD</button>
     <button class="nav-tab" data-page="dash" onclick="switchPage('dash')">DASHBOARD</button>
     <button class="nav-tab" data-page="habits" onclick="switchPage('habits')">HABITUDES</button>
+    <button class="nav-tab" data-page="crypto" onclick="switchPage('crypto')">CRYPTOBOT</button>
   </nav>
   <div class="nav-sep"></div>
   <div class="proj-shortcuts">
@@ -320,6 +362,21 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
   <div class="hab-portfolio" id="habPortfolio"></div>
   <div class="hab-toolbar" id="habToolbar"></div>
   <div class="hab-body" id="habBody"></div>
+</div>
+
+<!-- CRYPTOBOT PAGE -->
+<div class="page" id="pagecrypto">
+  <div class="crp-banner" id="crpBanner"></div>
+  <div class="crp-cards" id="crpCards"></div>
+  <div class="crp-charts-a" id="crpChartsA"></div>
+  <div class="crp-charts-b" id="crpChartsB"></div>
+  <div class="crp-box" id="crpTableBox">
+    <div class="crp-box-hdr">
+      <span class="crp-box-ttl">HISTORIQUE DES TRADES</span>
+      <button class="crp-btn" onclick="reloadCryptoData()">↻ RAFRAÎCHIR</button>
+    </div>
+    <div id="crpTradeTable"></div>
+  </div>
 </div>
 
 <!-- TASK MODAL -->
@@ -1176,6 +1233,7 @@ function switchPage(name){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.page===name));
   if(name==='dash')renderDash();
   if(name==='habits')renderHabitsPage();
+  if(name==='crypto')renderCryptoBot();
 }
 
 // ════════════════════════════════════════════════════
@@ -1187,6 +1245,419 @@ function showLoad(v){ document.getElementById('loadOverlay').style.display=v?'fl
 function toast(msg,type='ok'){
   const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;
   document.getElementById('toasts').appendChild(t);setTimeout(()=>t.remove(),3200);
+}
+
+// ════════════════════════════════════════════════════
+// CRYPTOBOT — CONFIG & STATE
+// ════════════════════════════════════════════════════
+const CRYPTO_SHEET_ID = '14x4ppMmem8fEgTIjXEqTpnuDSKDmRpU4BK-6IMTtSE4';
+const CRYPTOS = [
+  { sym:'ADA', name:'Cardano',  hex:'#3b82f6', rgb:'59,130,246',  gecko:'cardano'     },
+  { sym:'SOL', name:'Solana',   hex:'#a855f7', rgb:'168,85,247',  gecko:'solana'      },
+  { sym:'ETH', name:'Ethereum', hex:'#818cf8', rgb:'129,140,248', gecko:'ethereum'    },
+  { sym:'XRP', name:'Ripple',   hex:'#22d3ee', rgb:'34,211,238',  gecko:'ripple'      },
+  { sym:'BNB', name:'BNB',      hex:'#eab308', rgb:'234,179,8',   gecko:'binancecoin' },
+];
+
+let cryptoTrades = [], cryptoLoaded = false, cryptoCharts = {}, cryptoPrices = {};
+
+// ════════════════════════════════════════════════════
+// CRYPTOBOT — DATA LOADING
+// ════════════════════════════════════════════════════
+function parseTradeDate(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  // Excel serial number (e.g. 45123)
+  if (/^\d{5}$/.test(s)) {
+    const d = new Date((parseInt(s) - 25569) * 86400000);
+    return d.toISOString().split('T')[0];
+  }
+  // DD/MM/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    const [d,m,y] = s.split('/'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  // Already ISO
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  const d = new Date(s);
+  return isNaN(d) ? s.slice(0,10) : d.toISOString().split('T')[0];
+}
+
+async function loadCryptoData() {
+  if (!accessToken) return;
+  try {
+    const r = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CRYPTO_SHEET_ID}/values/Data!A:Z`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    const rows = data.values || [];
+    if (rows.length < 2) { cryptoTrades = []; cryptoLoaded = true; return; }
+
+    // Auto-detect columns from header row
+    const hdr = rows[0].map(h => String(h).toLowerCase().trim());
+    const colIdx = (...names) => { for (const n of names) { const i = hdr.findIndex(h => h.includes(n)); if (i >= 0) return i; } return -1; };
+    const colMap = {
+      date:     colIdx('date','time','datetime','timestamp','jour','heure'),
+      symbol:   colIdx('symbol','crypto','coin','pair','asset','devise','paire'),
+      action:   colIdx('action','side','type','direction','sens','order'),
+      invested: colIdx('invest','amount','capital','montant','buy_amount','mise'),
+      net:      6, // Column G confirmed by user (index 6, 0-based)
+    };
+
+    cryptoTrades = rows.slice(1).filter(r => r.some(c => c !== '')).map((r, i) => {
+      // Symbol: clean up pair notation (ADA/USDT → ADA)
+      const rawSym = (colMap.symbol >= 0 ? r[colMap.symbol] || '' : '').toUpperCase().replace(/[\/-]?USDT?$|[\/-]?BUSD$|[\/-]?USD$/,'').trim();
+      const sym = CRYPTOS.find(c => rawSym.includes(c.sym))?.sym || (rawSym || 'ADA');
+      // Net P&L (col G = index 6)
+      const netRaw = String(r[6] || '').replace(',','.').replace(/[^0-9.\-]/g,'');
+      const net = parseFloat(netRaw) || 0;
+      // Invested amount
+      const invRaw = colMap.invested >= 0 ? String(r[colMap.invested] || '').replace(',','.').replace(/[^0-9.]/g,'') : '';
+      const invested = parseFloat(invRaw) || 0;
+      return {
+        idx:      i,
+        date:     parseTradeDate(colMap.date >= 0 ? r[colMap.date] : ''),
+        symbol:   sym,
+        action:   colMap.action >= 0 ? r[colMap.action] || '' : '',
+        invested,
+        net,
+      };
+    }).filter(t => t.net !== 0 || t.symbol);
+
+    cryptoLoaded = true;
+  } catch(e) {
+    console.error('Crypto load error', e);
+    toast('Erreur chargement données CryptoBot', 'err');
+    cryptoLoaded = true;
+  }
+}
+
+async function fetchCryptoPrices() {
+  try {
+    const ids = CRYPTOS.map(c => c.gecko).join(',');
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+    if (!r.ok) return;
+    const data = await r.json();
+    CRYPTOS.forEach(c => {
+      if (data[c.gecko]) cryptoPrices[c.sym] = { price: data[c.gecko].usd, change24h: data[c.gecko].usd_24h_change };
+    });
+  } catch(e) { /* silent — market data is optional */ }
+}
+
+async function fetchHodlComparison() {
+  // For each active crypto: fetch price at first trade date → compute HODL % vs bot ROI
+  const active = CRYPTOS.filter(c => cryptoTrades.some(t => t.symbol === c.sym && t.date));
+  for (const c of active) {
+    try {
+      const dates = cryptoTrades.filter(t => t.symbol === c.sym && t.date).map(t => t.date).sort();
+      const firstDate = dates[0];
+      if (!firstDate || !cryptoPrices[c.sym]?.price) continue;
+      const [y,m,d] = firstDate.split('-');
+      const geckoDate = `${d}-${m}-${y}`;
+      const r = await fetch(`https://api.coingecko.com/api/v3/coins/${c.gecko}/history?date=${geckoDate}&localization=false`);
+      if (!r.ok) continue;
+      const data = await r.json();
+      const histPrice = data.market_data?.current_price?.usd;
+      if (histPrice) {
+        const nowPrice = cryptoPrices[c.sym].price;
+        cryptoPrices[c.sym].firstPrice = histPrice;
+        cryptoPrices[c.sym].firstDate = firstDate;
+        cryptoPrices[c.sym].hodlPct = (nowPrice - histPrice) / histPrice * 100;
+      }
+    } catch(e) { /* rate limit / offline — skip */ }
+  }
+}
+
+// ════════════════════════════════════════════════════
+// CRYPTOBOT — UTILITIES
+// ════════════════════════════════════════════════════
+function getCryptoStats(sym) {
+  const list = sym ? cryptoTrades.filter(t => t.symbol === sym) : cryptoTrades;
+  const wins = list.filter(t => t.net > 0).length;
+  const totalNet = list.reduce((s, t) => s + t.net, 0);
+  const totalInvested = list.reduce((s, t) => s + t.invested, 0);
+  return {
+    count: list.length, wins, losses: list.filter(t => t.net < 0).length,
+    winRate: list.length ? Math.round(wins / list.length * 100) : 0,
+    totalNet, totalInvested,
+    pct: totalInvested > 0 ? totalNet / totalInvested * 100 : null,
+    avgNet: list.length ? totalNet / list.length : 0,
+  };
+}
+
+const crpSign = v => v >= 0 ? '+' : '';
+const crpFmt = v => `${crpSign(v)}${v.toFixed(2)}$`;
+const crpCol = v => v >= 0 ? 'var(--green)' : 'var(--danger)';
+
+// ════════════════════════════════════════════════════
+// CRYPTOBOT — RENDER
+// ════════════════════════════════════════════════════
+async function renderCryptoBot() {
+  if (!cryptoLoaded) {
+    showLoad(true);
+    await loadCryptoData();
+    await fetchCryptoPrices();
+    showLoad(false);
+    // HODL comparison in background (may be slow / rate-limited)
+    fetchHodlComparison().then(() => { try { renderCryptoChartsB(); } catch(e){} });
+  }
+  renderCryptoBanner();
+  renderCryptoCards();
+  renderCryptoChartsA();
+  renderCryptoChartsB();
+  renderCryptoTable();
+}
+
+async function reloadCryptoData() {
+  cryptoLoaded = false; cryptoPrices = {}; cryptoTrades = [];
+  Object.values(cryptoCharts).forEach(c => { try { c.destroy(); } catch(e){} });
+  cryptoCharts = {};
+  renderCryptoBot();
+}
+
+function renderCryptoBanner() {
+  const g = getCryptoStats(null);
+  const active = CRYPTOS.map(c => ({ c, n: getCryptoStats(c.sym).totalNet })).filter(x => x.n !== 0);
+  const best = active.sort((a,b) => b.n - a.n)[0];
+  const invested = g.totalInvested;
+  const pctStr = g.pct !== null ? `${crpSign(g.pct)}${g.pct.toFixed(2)}%` : '—';
+
+  document.getElementById('crpBanner').innerHTML = `
+    <div class="crp-kpi">
+      <div class="crp-kpi-lbl">P&L NET TOTAL</div>
+      <div class="crp-kpi-val" style="color:${crpCol(g.totalNet)}">${crpFmt(g.totalNet)}</div>
+      <div class="crp-kpi-sub">après taxes · ${pctStr} sur capital</div>
+    </div>
+    <div class="crp-kpi">
+      <div class="crp-kpi-lbl">TRADES TOTAL</div>
+      <div class="crp-kpi-val" style="color:var(--accent)">${g.count}</div>
+      <div class="crp-kpi-sub">${g.wins} gagnants · ${g.losses} perdants</div>
+    </div>
+    <div class="crp-kpi">
+      <div class="crp-kpi-lbl">WIN RATE</div>
+      <div class="crp-kpi-val" style="color:${g.winRate>=50?'var(--green)':'var(--warn)'}">${g.winRate}%</div>
+      <div class="crp-kpi-sub">moy. ${crpFmt(g.avgNet)} / trade</div>
+    </div>
+    <div class="crp-kpi">
+      <div class="crp-kpi-lbl">CAPITAL ENGAGÉ</div>
+      <div class="crp-kpi-val" style="color:var(--text)">${invested > 0 ? invested.toFixed(0)+'$' : '—'}</div>
+      <div class="crp-kpi-sub">${new Set(cryptoTrades.map(t=>t.symbol)).size} crypto(s) tradées</div>
+    </div>
+    <div class="crp-kpi">
+      <div class="crp-kpi-lbl">MEILLEURE CRYPTO</div>
+      <div class="crp-kpi-val" style="color:${best ? CRYPTOS.find(c=>c.sym===best.c.sym).hex : 'var(--text-dim)'}">${best ? best.c.sym : '—'}</div>
+      <div class="crp-kpi-sub">${best ? crpFmt(best.n)+' net' : 'aucune donnée'}</div>
+    </div>`;
+}
+
+function renderCryptoCards() {
+  document.getElementById('crpCards').innerHTML = CRYPTOS.map(c => {
+    const g = getCryptoStats(c.sym);
+    const hasData = g.count > 0;
+    const price = cryptoPrices[c.sym];
+
+    const priceBlock = price ? `
+      <div class="crp-sep"></div>
+      <div class="crp-stat"><span class="crp-stat-l">PRIX USD</span>
+        <span class="crp-stat-v" style="font-size:0.6rem">$${price.price < 1 ? price.price.toFixed(4) : price.price.toLocaleString('en-US',{maximumFractionDigits:2})}</span></div>
+      <div class="crp-stat"><span class="crp-stat-l">24H</span>
+        <span class="crp-stat-v" style="color:${price.change24h>=0?'var(--green)':'var(--danger)'};font-size:0.6rem">${crpSign(price.change24h??0)}${(price.change24h??0).toFixed(2)}%</span></div>
+      ${price.hodlPct!=null ? `<div class="crp-stat"><span class="crp-stat-l">HODL (période)</span><span class="crp-stat-v" style="color:${price.hodlPct>=0?'var(--green)':'var(--danger)'};font-size:0.6rem">${crpSign(price.hodlPct)}${price.hodlPct.toFixed(2)}%</span></div>` : ''}
+    ` : '';
+
+    const statsBlock = hasData ? `
+      <div class="crp-stat"><span class="crp-stat-l">P&L NET</span>
+        <span class="crp-stat-v" style="color:${crpCol(g.totalNet)}">${crpFmt(g.totalNet)}</span></div>
+      <div class="crp-stat"><span class="crp-stat-l">TRADES</span>
+        <span class="crp-stat-v">${g.count}</span></div>
+      <div class="crp-stat"><span class="crp-stat-l">WIN RATE</span>
+        <span class="crp-stat-v" style="color:${g.winRate>=50?'var(--green)':'var(--warn)'}">${g.winRate}%</span></div>
+      <div class="crp-stat"><span class="crp-stat-l">MOY./TRADE</span>
+        <span class="crp-stat-v" style="color:${crpCol(g.avgNet)};font-size:0.6rem">${crpFmt(g.avgNet)}</span></div>
+      ${g.pct !== null ? `<div class="crp-stat"><span class="crp-stat-l">ROI BOT</span>
+        <span class="crp-stat-v" style="color:${crpCol(g.pct)};font-size:0.62rem">${crpSign(g.pct)}${g.pct.toFixed(2)}%</span></div>` : ''}
+    ` : `<div class="crp-empty" style="padding:1.2rem 0;font-size:0.5rem">AUCUN TRADE</div>`;
+
+    return `<div class="crp-card ${c.sym.toLowerCase()}${!hasData?' nodata':''}">
+      <div class="crp-sym" style="color:${c.hex}">${c.sym}</div>
+      <div class="crp-name">${c.name}</div>
+      ${statsBlock}${priceBlock}
+      <div class="crp-badge ${hasData?'active':'wait'}">${hasData?'ACTIF':'EN ATTENTE'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCryptoChartsA() {
+  // Chart A1: Cumulative P&L line  |  Chart A2: P&L total par crypto bar
+  ['cCrpCumul','cCrpComp'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
+
+  document.getElementById('crpChartsA').innerHTML = `
+    <div class="crp-box">
+      <div class="crp-box-hdr"><span class="crp-box-ttl">ÉVOLUTION CUMULATIVE DU P&L NET</span></div>
+      <div class="crp-wrap tall"><canvas id="cCrpCumul"></canvas></div>
+    </div>
+    <div class="crp-box">
+      <div class="crp-box-hdr"><span class="crp-box-ttl">P&L TOTAL PAR CRYPTO</span></div>
+      <div class="crp-wrap tall"><canvas id="cCrpComp"></canvas></div>
+    </div>`;
+
+  // Cumulative P&L — sorted by date
+  const sorted = [...cryptoTrades].sort((a,b) => {
+    if (!a.date && !b.date) return 0; if (!a.date) return 1; if (!b.date) return -1;
+    return a.date < b.date ? -1 : 1;
+  });
+  let cumul = 0;
+  const cumulLabels = [], cumulVals = [], cumulPtColors = [];
+  sorted.forEach(t => {
+    cumul += t.net; cumul = parseFloat(cumul.toFixed(2));
+    cumulLabels.push(t.date ? t.date.slice(0,10) : `#${t.idx+1}`);
+    cumulVals.push(cumul);
+    const cc = CRYPTOS.find(x => x.sym === t.symbol);
+    cumulPtColors.push(cc ? `rgba(${cc.rgb},0.9)` : 'rgba(124,106,255,0.9)');
+  });
+
+  if (cumulVals.length) {
+    cryptoCharts.cCrpCumul = new Chart(document.getElementById('cCrpCumul'), {
+      type: 'line',
+      data: { labels: cumulLabels, datasets: [{ data: cumulVals,
+        borderColor: 'rgba(124,106,255,0.9)', backgroundColor: 'rgba(124,106,255,0.06)',
+        borderWidth: 2, fill: true, tension: 0.3,
+        pointBackgroundColor: cumulPtColors, pointRadius: cumulVals.length > 60 ? 2 : 4, pointHoverRadius: 6 }] },
+      options: { responsive:true, maintainAspectRatio:false,
+        plugins: { legend:{display:false}, tooltip:{ callbacks:{
+          label: i => ` Cumul: ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$`,
+          title: items => { const t = sorted[items[0].dataIndex]; return t ? `${t.symbol} · ${t.date||''}` : ''; }
+        }}},
+        scales: {
+          x: { ticks:{font:{family:'Space Mono',size:8},maxTicksLimit:10}, grid:{color:'#1c1c28'} },
+          y: { ticks:{font:{family:'Space Mono',size:9},callback:v=>`${v}$`}, grid:{color:'#1c1c28'} }
+        }
+      }
+    });
+  }
+
+  // P&L par crypto bar
+  const compVals = CRYPTOS.map(c => parseFloat(getCryptoStats(c.sym).totalNet.toFixed(2)));
+  cryptoCharts.cCrpComp = new Chart(document.getElementById('cCrpComp'), {
+    type: 'bar',
+    data: { labels: CRYPTOS.map(c=>c.sym), datasets: [{
+      data: compVals,
+      backgroundColor: CRYPTOS.map(c => compVals[CRYPTOS.indexOf(c)] >= 0 ? `rgba(${c.rgb},0.72)` : `rgba(${c.rgb},0.35)`),
+      borderColor: CRYPTOS.map(c=>c.hex), borderWidth:1, borderRadius:3
+    }]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: i => ` ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$` }}},
+      scales:{
+        x:{ticks:{font:{family:'Space Mono',size:9}},grid:{display:false}},
+        y:{ticks:{font:{family:'Space Mono',size:9},callback:v=>`${v}$`},grid:{color:'#1c1c28'}}
+      }
+    }
+  });
+}
+
+function renderCryptoChartsB() {
+  // Chart B1: P&L par trade (last 50)  |  Chart B2: Bot ROI vs HODL
+  ['cCrpTrades','cCrpHodl'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
+
+  const hodlAvail = CRYPTOS.some(c => cryptoPrices[c.sym]?.hodlPct != null);
+  const hodlNote = hodlAvail ? 'depuis le premier trade détecté' : 'chargement données marché...';
+
+  document.getElementById('crpChartsB').innerHTML = `
+    <div class="crp-box">
+      <div class="crp-box-hdr"><span class="crp-box-ttl">P&L PAR TRADE (50 DERNIERS)</span></div>
+      <div class="crp-wrap"><canvas id="cCrpTrades"></canvas></div>
+    </div>
+    <div class="crp-box">
+      <div class="crp-box-hdr"><span class="crp-box-ttl">BOT ROI% vs HODL%</span></div>
+      <div class="crp-wrap"><canvas id="cCrpHodl"></canvas></div>
+      <div class="crp-hodl-note">HODL : ${hodlNote}</div>
+    </div>`;
+
+  // P&L per trade (last 50, sorted by date)
+  const sorted50 = [...cryptoTrades].sort((a,b) => {
+    if (!a.date&&!b.date) return 0; if (!a.date) return 1; if (!b.date) return -1;
+    return a.date < b.date ? -1 : 1;
+  }).slice(-50);
+
+  if (sorted50.length) {
+    cryptoCharts.cCrpTrades = new Chart(document.getElementById('cCrpTrades'), {
+      type: 'bar',
+      data: { labels: sorted50.map((t,i) => t.date ? t.date.slice(5) : `#${i+1}`),
+        datasets: [{ data: sorted50.map(t => parseFloat(t.net.toFixed(2))),
+          backgroundColor: sorted50.map(t => { const cc=CRYPTOS.find(x=>x.sym===t.symbol); return t.net>=0 ? `rgba(${cc?.rgb||'124,106,255'},0.72)` : `rgba(${cc?.rgb||'248,113,113'},0.4)`; }),
+          borderColor: sorted50.map(t => { const cc=CRYPTOS.find(x=>x.sym===t.symbol); return cc?.hex||'#7c6aff'; }),
+          borderWidth:1, borderRadius:2
+        }]
+      },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{
+          label: i => ` ${sorted50[i.dataIndex].symbol} · ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$`,
+          title: items => sorted50[items[0].dataIndex]?.date || ''
+        }}},
+        scales:{
+          x:{ticks:{font:{family:'Space Mono',size:7},maxRotation:45,maxTicksLimit:15},grid:{color:'#1c1c28'}},
+          y:{ticks:{font:{family:'Space Mono',size:9},callback:v=>`${v}$`},grid:{color:'#1c1c28'}}
+        }
+      }
+    });
+  }
+
+  // Bot ROI% vs HODL%
+  const activeCryptos = CRYPTOS.filter(c => getCryptoStats(c.sym).count > 0);
+  const botRoiVals = activeCryptos.map(c => { const g=getCryptoStats(c.sym); return g.pct !== null ? parseFloat(g.pct.toFixed(2)) : 0; });
+  const hodlVals   = activeCryptos.map(c => cryptoPrices[c.sym]?.hodlPct != null ? parseFloat(cryptoPrices[c.sym].hodlPct.toFixed(2)) : null);
+
+  cryptoCharts.cCrpHodl = new Chart(document.getElementById('cCrpHodl'), {
+    type: 'bar',
+    data: {
+      labels: activeCryptos.map(c=>c.sym),
+      datasets: [
+        { label: 'Bot ROI %', data: botRoiVals,
+          backgroundColor: activeCryptos.map(c=>`rgba(${c.rgb},0.75)`),
+          borderColor: activeCryptos.map(c=>c.hex), borderWidth:1, borderRadius:3 },
+        { label: 'HODL %', data: hodlVals,
+          backgroundColor: 'rgba(255,255,255,0.1)', borderColor:'rgba(255,255,255,0.28)',
+          borderWidth:1, borderRadius:3 }
+      ]
+    },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:true, labels:{font:{family:'Space Mono',size:8},boxWidth:9,color:'#60607a',padding:8} },
+        tooltip:{ callbacks:{ label: i => ` ${i.dataset.label}: ${i.raw!=null?(i.raw>=0?'+':'')+i.raw.toFixed(2)+'%':'N/A'}` }}
+      },
+      scales:{
+        x:{ticks:{font:{family:'Space Mono',size:9}},grid:{display:false}},
+        y:{ticks:{font:{family:'Space Mono',size:9},callback:v=>v+'%'},grid:{color:'#1c1c28'}}
+      }
+    }
+  });
+}
+
+function renderCryptoTable() {
+  const el = document.getElementById('crpTradeTable');
+  if (!cryptoTrades.length) {
+    el.innerHTML = '<div class="crp-empty">AUCUN TRADE CHARGÉ</div>'; return;
+  }
+  const sorted = [...cryptoTrades].sort((a,b) => {
+    if (!a.date&&!b.date) return 0; if (!a.date) return 1; if (!b.date) return -1;
+    return a.date > b.date ? -1 : 1;
+  });
+  const rows = sorted.slice(0, 100).map(t => {
+    const cc = CRYPTOS.find(x => x.sym === t.symbol);
+    const cls = t.net >= 0 ? 'crp-pos' : 'crp-neg';
+    return `<tr>
+      <td>${t.date||'—'}</td>
+      <td style="color:${cc?.hex||'var(--text)'};font-weight:700">${t.symbol}</td>
+      <td style="color:var(--text-dim)">${t.action||'—'}</td>
+      <td>${t.invested > 0 ? t.invested.toFixed(2)+'$' : '—'}</td>
+      <td class="${cls}">${crpFmt(t.net)}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `<table class="crp-table">
+    <thead><tr><th>DATE</th><th>CRYPTO</th><th>ACTION</th><th>INVESTI</th><th>NET P&L</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>${sorted.length > 100 ? `<div class="crp-hodl-note" style="text-align:right;margin-top:0.5rem">Affichage des 100 trades les plus récents sur ${sorted.length}</div>` : ''}`;
 }
 
 // ════════════════════════════════════════════════════
