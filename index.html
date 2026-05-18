@@ -1265,22 +1265,31 @@ let cryptoTrades = [], cryptoLoaded = false, cryptoCharts = {}, cryptoPrices = {
 // CRYPTOBOT — DATA LOADING
 // ════════════════════════════════════════════════════
 function parseTradeDate(raw) {
+  // Returns "YYYY-MM-DD HH:mm:ss" for correct lexicographic sort (or "YYYY-MM-DD" if no time)
   if (!raw) return '';
   const s = String(raw).trim();
+  // DD/MM/YYYY, HH:mm:ss  or  DD/MM/YYYY HH:mm:ss  (confirmed format for cols C & E)
+  const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (m1) {
+    const [,d,mo,y,h,min,sec='00'] = m1;
+    return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')} ${h.padStart(2,'0')}:${min}:${sec}`;
+  }
   // Excel serial number (e.g. 45123)
   if (/^\d{5}$/.test(s)) {
     const d = new Date((parseInt(s) - 25569) * 86400000);
     return d.toISOString().split('T')[0];
   }
-  // DD/MM/YYYY
+  // DD/MM/YYYY (without time)
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
-    const [d,m,y] = s.split('/'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+    const [d,mo,y] = s.split('/'); return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
   }
-  // Already ISO
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  // Already ISO-like
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,19);
   const d = new Date(s);
-  return isNaN(d) ? s.slice(0,10) : d.toISOString().split('T')[0];
+  return isNaN(d) ? s.slice(0,19) : d.toISOString().replace('T',' ').slice(0,19);
 }
+// Display-only: strips time part for chart labels
+const dateLabel = dt => dt ? dt.slice(0,10) : '';
 
 async function loadCryptoData() {
   if (!accessToken) return;
@@ -1294,34 +1303,36 @@ async function loadCryptoData() {
     const rows = data.values || [];
     if (rows.length < 2) { cryptoTrades = []; cryptoLoaded = true; return; }
 
-    // Auto-detect columns from header row
+    // Confirmed column layout (user):
+    //   B=1  buy price  |  C=2  open datetime  |  E=4  close datetime
+    //   F=5  qty/amount |  G=6  net P&L (after tax) |  M=12 current qty
     const hdr = rows[0].map(h => String(h).toLowerCase().trim());
     const colIdx = (...names) => { for (const n of names) { const i = hdr.findIndex(h => h.includes(n)); if (i >= 0) return i; } return -1; };
     const colMap = {
-      date:     colIdx('date','time','datetime','timestamp','jour','heure'),
+      date:     2,  // col C — confirmed DD/MM/YYYY, HH:mm:ss
       symbol:   colIdx('symbol','crypto','coin','pair','asset','devise','paire'),
       action:   colIdx('action','side','type','direction','sens','order'),
       invested: colIdx('invest','amount','capital','montant','buy_amount','mise'),
-      net:      6, // Column G confirmed by user (index 6, 0-based)
+      net:      6,  // col G — confirmed
     };
+
+    const parseNum = raw => parseFloat(String(raw||'').replace(',','.').replace(/[^0-9.\-]/g,'')) || 0;
 
     cryptoTrades = rows.slice(1).filter(r => r.some(c => c !== '')).map((r, i) => {
       // Symbol: clean up pair notation (ADA/USDT → ADA)
       const rawSym = (colMap.symbol >= 0 ? r[colMap.symbol] || '' : '').toUpperCase().replace(/[\/-]?USDT?$|[\/-]?BUSD$|[\/-]?USD$/,'').trim();
       const sym = CRYPTOS.find(c => rawSym.includes(c.sym))?.sym || (rawSym || 'ADA');
-      // Net P&L (col G = index 6)
-      const netRaw = String(r[6] || '').replace(',','.').replace(/[^0-9.\-]/g,'');
-      const net = parseFloat(netRaw) || 0;
-      // Invested amount
-      const invRaw = colMap.invested >= 0 ? String(r[colMap.invested] || '').replace(',','.').replace(/[^0-9.]/g,'') : '';
-      const invested = parseFloat(invRaw) || 0;
       return {
         idx:      i,
-        date:     parseTradeDate(colMap.date >= 0 ? r[colMap.date] : ''),
+        date:     parseTradeDate(r[2] || ''),   // col C — open datetime
+        dateClose:parseTradeDate(r[4] || ''),   // col E — close datetime
         symbol:   sym,
         action:   colMap.action >= 0 ? r[colMap.action] || '' : '',
-        invested,
-        net,
+        price:    parseNum(r[1]),               // col B — buy price
+        colF:     parseNum(r[5]),               // col F — qty/amount
+        net:      parseNum(r[6]),               // col G — net P&L after tax
+        invested: colMap.invested >= 0 ? parseNum(r[colMap.invested]) : 0,
+        colM:     parseNum(r[12]),              // col M — current qty
       };
     }).filter(t => t.net !== 0 || t.symbol);
 
@@ -1351,7 +1362,7 @@ async function fetchHodlComparison() {
   for (const c of active) {
     try {
       const dates = cryptoTrades.filter(t => t.symbol === c.sym && t.date).map(t => t.date).sort();
-      const firstDate = dates[0];
+      const firstDate = dateLabel(dates[0]); // date part only for CoinGecko
       if (!firstDate || !cryptoPrices[c.sym]?.price) continue;
       const [y,m,d] = firstDate.split('-');
       const geckoDate = `${d}-${m}-${y}`;
@@ -1374,16 +1385,46 @@ async function fetchHodlComparison() {
 // ════════════════════════════════════════════════════
 function getCryptoStats(sym) {
   const list = sym ? cryptoTrades.filter(t => t.symbol === sym) : cryptoTrades;
-  const wins = list.filter(t => t.net > 0).length;
+  const winList  = list.filter(t => t.net > 0);
+  const lossList = list.filter(t => t.net < 0);
   const totalNet = list.reduce((s, t) => s + t.net, 0);
   const totalInvested = list.reduce((s, t) => s + t.invested, 0);
+
+  // Avg % gain / loss based on col G values directly (treated as % by user request)
+  const avgGainPct = winList.length  ? winList.reduce((s,t)  => s + t.net, 0) / winList.length  : null;
+  const avgLossPct = lossList.length ? lossList.reduce((s,t) => s + t.net, 0) / lossList.length : null;
+
+  // P&L % from first to last price in col B (buy price tracked internally)
+  let pricePct = null;
+  const withPrice = list.filter(t => t.price > 0 && t.date);
+  if (withPrice.length >= 2) {
+    const sortedP = [...withPrice].sort((a,b) => a.date < b.date ? -1 : 1);
+    const p0 = sortedP[0].price;
+    const pn = sortedP[sortedP.length - 1].price;
+    if (p0 > 0) pricePct = (pn - p0) / p0 * 100;
+  }
+
   return {
-    count: list.length, wins, losses: list.filter(t => t.net < 0).length,
-    winRate: list.length ? Math.round(wins / list.length * 100) : 0,
+    count: list.length, wins: winList.length, losses: lossList.length,
+    winRate: list.length ? Math.round(winList.length / list.length * 100) : 0,
     totalNet, totalInvested,
     pct: totalInvested > 0 ? totalNet / totalInvested * 100 : null,
     avgNet: list.length ? totalNet / list.length : 0,
+    avgGainPct, avgLossPct, pricePct,
   };
+}
+
+function calcPortfolioValue() {
+  // For each crypto: last row (by date) → col M × col F = position value
+  let total = 0;
+  CRYPTOS.forEach(c => {
+    const trades = cryptoTrades.filter(t => t.symbol === c.sym && t.date);
+    if (!trades.length) return;
+    const last = [...trades].sort((a,b) => a.date < b.date ? -1 : 1).at(-1);
+    const val = (last.colM || 0) * (last.colF || 0);
+    if (val > 0 && isFinite(val)) total += val;
+  });
+  return total;
 }
 
 const crpSign = v => v >= 0 ? '+' : '';
@@ -1419,15 +1460,15 @@ async function reloadCryptoData() {
 function renderCryptoBanner() {
   const g = getCryptoStats(null);
   const active = CRYPTOS.map(c => ({ c, n: getCryptoStats(c.sym).totalNet })).filter(x => x.n !== 0);
-  const best = active.sort((a,b) => b.n - a.n)[0];
-  const invested = g.totalInvested;
-  const pctStr = g.pct !== null ? `${crpSign(g.pct)}${g.pct.toFixed(2)}%` : '—';
+  const best = [...active].sort((a,b) => b.n - a.n)[0];
+  const portfolio = calcPortfolioValue();
+  const portfolioStr = portfolio > 0 ? portfolio.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'$' : '—';
 
   document.getElementById('crpBanner').innerHTML = `
     <div class="crp-kpi">
       <div class="crp-kpi-lbl">P&L NET TOTAL</div>
       <div class="crp-kpi-val" style="color:${crpCol(g.totalNet)}">${crpFmt(g.totalNet)}</div>
-      <div class="crp-kpi-sub">après taxes · ${pctStr} sur capital</div>
+      <div class="crp-kpi-sub">après taxes · moy. ${crpFmt(g.avgNet)} / trade</div>
     </div>
     <div class="crp-kpi">
       <div class="crp-kpi-lbl">TRADES TOTAL</div>
@@ -1437,12 +1478,15 @@ function renderCryptoBanner() {
     <div class="crp-kpi">
       <div class="crp-kpi-lbl">WIN RATE</div>
       <div class="crp-kpi-val" style="color:${g.winRate>=50?'var(--green)':'var(--warn)'}">${g.winRate}%</div>
-      <div class="crp-kpi-sub">moy. ${crpFmt(g.avgNet)} / trade</div>
+      <div class="crp-kpi-sub">
+        ${g.avgGainPct!=null?`moy. gain ${crpSign(g.avgGainPct)}${g.avgGainPct.toFixed(2)}%`:''}&nbsp;
+        ${g.avgLossPct!=null?`· perte ${g.avgLossPct.toFixed(2)}%`:''}
+      </div>
     </div>
     <div class="crp-kpi">
-      <div class="crp-kpi-lbl">CAPITAL ENGAGÉ</div>
-      <div class="crp-kpi-val" style="color:var(--text)">${invested > 0 ? invested.toFixed(0)+'$' : '—'}</div>
-      <div class="crp-kpi-sub">${new Set(cryptoTrades.map(t=>t.symbol)).size} crypto(s) tradées</div>
+      <div class="crp-kpi-lbl">PORTEFEUILLE GLOBAL</div>
+      <div class="crp-kpi-val" style="color:var(--gld);font-size:1.3rem">${portfolioStr}</div>
+      <div class="crp-kpi-sub">Σ (dernière ligne · col M × col F)</div>
     </div>
     <div class="crp-kpi">
       <div class="crp-kpi-lbl">MEILLEURE CRYPTO</div>
@@ -1470,20 +1514,21 @@ function renderCryptoCards() {
       <div class="crp-stat"><span class="crp-stat-l">P&L NET</span>
         <span class="crp-stat-v" style="color:${crpCol(g.totalNet)}">${crpFmt(g.totalNet)}</span></div>
       <div class="crp-stat"><span class="crp-stat-l">TRADES</span>
-        <span class="crp-stat-v">${g.count}</span></div>
+        <span class="crp-stat-v">${g.count} <span style="color:var(--text-dim);font-size:0.52rem">(${g.wins}W/${g.losses}L)</span></span></div>
       <div class="crp-stat"><span class="crp-stat-l">WIN RATE</span>
         <span class="crp-stat-v" style="color:${g.winRate>=50?'var(--green)':'var(--warn)'}">${g.winRate}%</span></div>
-      <div class="crp-stat"><span class="crp-stat-l">MOY./TRADE</span>
-        <span class="crp-stat-v" style="color:${crpCol(g.avgNet)};font-size:0.6rem">${crpFmt(g.avgNet)}</span></div>
-      ${g.pct !== null ? `<div class="crp-stat"><span class="crp-stat-l">ROI BOT</span>
-        <span class="crp-stat-v" style="color:${crpCol(g.pct)};font-size:0.62rem">${crpSign(g.pct)}${g.pct.toFixed(2)}%</span></div>` : ''}
+      ${g.avgGainPct!=null?`<div class="crp-stat"><span class="crp-stat-l">MOY. GAINS %</span>
+        <span class="crp-stat-v" style="color:var(--green);font-size:0.62rem">${crpSign(g.avgGainPct)}${g.avgGainPct.toFixed(2)}%</span></div>`:''}
+      ${g.avgLossPct!=null?`<div class="crp-stat"><span class="crp-stat-l">MOY. PERTES %</span>
+        <span class="crp-stat-v" style="color:var(--danger);font-size:0.62rem">${g.avgLossPct.toFixed(2)}%</span></div>`:''}
+      ${g.pricePct!=null?`<div class="crp-stat"><span class="crp-stat-l">P&L PRIX (B)</span>
+        <span class="crp-stat-v" style="color:${crpCol(g.pricePct)};font-size:0.62rem">${crpSign(g.pricePct)}${g.pricePct.toFixed(2)}%</span></div>`:''}
     ` : `<div class="crp-empty" style="padding:1.2rem 0;font-size:0.5rem">AUCUN TRADE</div>`;
 
     return `<div class="crp-card ${c.sym.toLowerCase()}${!hasData?' nodata':''}">
       <div class="crp-sym" style="color:${c.hex}">${c.sym}</div>
       <div class="crp-name">${c.name}</div>
       ${statsBlock}${priceBlock}
-      <div class="crp-badge ${hasData?'active':'wait'}">${hasData?'ACTIF':'EN ATTENTE'}</div>
     </div>`;
   }).join('');
 }
@@ -1511,7 +1556,7 @@ function renderCryptoChartsA() {
   const cumulLabels = [], cumulVals = [], cumulPtColors = [];
   sorted.forEach(t => {
     cumul += t.net; cumul = parseFloat(cumul.toFixed(2));
-    cumulLabels.push(t.date ? t.date.slice(0,10) : `#${t.idx+1}`);
+    cumulLabels.push(t.date ? dateLabel(t.date) : `#${t.idx+1}`);
     cumulVals.push(cumul);
     const cc = CRYPTOS.find(x => x.sym === t.symbol);
     cumulPtColors.push(cc ? `rgba(${cc.rgb},0.9)` : 'rgba(124,106,255,0.9)');
@@ -1527,7 +1572,7 @@ function renderCryptoChartsA() {
       options: { responsive:true, maintainAspectRatio:false,
         plugins: { legend:{display:false}, tooltip:{ callbacks:{
           label: i => ` Cumul: ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$`,
-          title: items => { const t = sorted[items[0].dataIndex]; return t ? `${t.symbol} · ${t.date||''}` : ''; }
+          title: items => { const t = sorted[items[0].dataIndex]; return t ? `${t.symbol} · ${t.date||''}` : ''; },
         }}},
         scales: {
           x: { ticks:{font:{family:'Space Mono',size:8},maxTicksLimit:10}, grid:{color:'#1c1c28'} },
@@ -1583,7 +1628,7 @@ function renderCryptoChartsB() {
   if (sorted50.length) {
     cryptoCharts.cCrpTrades = new Chart(document.getElementById('cCrpTrades'), {
       type: 'bar',
-      data: { labels: sorted50.map((t,i) => t.date ? t.date.slice(5) : `#${i+1}`),
+      data: { labels: sorted50.map((t,i) => t.date ? dateLabel(t.date).slice(5) : `#${i+1}`),
         datasets: [{ data: sorted50.map(t => parseFloat(t.net.toFixed(2))),
           backgroundColor: sorted50.map(t => { const cc=CRYPTOS.find(x=>x.sym===t.symbol); return t.net>=0 ? `rgba(${cc?.rgb||'124,106,255'},0.72)` : `rgba(${cc?.rgb||'248,113,113'},0.4)`; }),
           borderColor: sorted50.map(t => { const cc=CRYPTOS.find(x=>x.sym===t.symbol); return cc?.hex||'#7c6aff'; }),
@@ -1647,7 +1692,7 @@ function renderCryptoTable() {
     const cc = CRYPTOS.find(x => x.sym === t.symbol);
     const cls = t.net >= 0 ? 'crp-pos' : 'crp-neg';
     return `<tr>
-      <td>${t.date||'—'}</td>
+      <td>${t.date ? dateLabel(t.date) : '—'}</td>
       <td style="color:${cc?.hex||'var(--text)'};font-weight:700">${t.symbol}</td>
       <td style="color:var(--text-dim)">${t.action||'—'}</td>
       <td>${t.invested > 0 ? t.invested.toFixed(2)+'$' : '—'}</td>
