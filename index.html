@@ -1911,7 +1911,7 @@ async function loadFinancesData() {
       titles.find(t => names.some(n => t.toLowerCase().includes(n.toLowerCase()))) ||
       null;
     const comptesSheet  = findSheet('Comptes','Compte','Accounts','comptes');
-    const financeSheet  = findSheet('Finance','Finances','Dépenses','Depenses','depenses','Expenses','Budget');
+    const financeSheet  = findSheet('Finances','Finance','Dépenses','Depenses','depenses','Expenses','Budget');
     finDebugInfo.comptesSheet = comptesSheet;
     finDebugInfo.financeSheet = financeSheet;
 
@@ -2139,8 +2139,8 @@ function renderFinCharts(comptes, depenses) {
     return found ? compteColorMap[found] : '#94a3b8';
   };
 
-  // All months sorted ascending (X axis)
-  const allMonths = [...new Set(depenses.map(d => d.date.slice(0,7)).filter(Boolean))].sort();
+  // All individual dates sorted ascending (col A — no aggregation)
+  const allDates   = [...new Set(depenses.map(d => d.date).filter(Boolean))].sort();
   // All unique comptes (each = one stacked area)
   const allComptes = [...new Set(depenses.map(d => d.compte).filter(Boolean))];
   // Category totals for doughnut
@@ -2151,9 +2151,10 @@ function renderFinCharts(comptes, depenses) {
   });
   const cats = Object.keys(byCat).sort((a,b) => byCat[b]-byCat[a]);
 
-  const monthLabel = m => {
-    const [,mo] = m.split('-');
-    return `${MONTHS_FR[parseInt(mo)-1]} ${m.slice(0,4)}`;
+  // Short label for X axis: "14 jan", "2 fév" etc.
+  const shortDateLabel = iso => {
+    const [,mo,day] = iso.split('-');
+    return `${parseInt(day)} ${MONTHS_FR[parseInt(mo)-1]}`;
   };
 
   document.getElementById('finCharts').innerHTML = `
@@ -2176,15 +2177,15 @@ function renderFinCharts(comptes, depenses) {
 
   // ── Stacked area chart ──
   const ctxArea = document.getElementById('finChartArea')?.getContext('2d');
-  if (ctxArea && allMonths.length) {
+  if (ctxArea && allDates.length) {
     const datasets = allComptes.map(compte => {
       const hex = compteColor(compte);
       const rgb = hex.replace('#','').match(/.{2}/g).map(x=>parseInt(x,16)).join(',');
       return {
         label: compte,
-        data: allMonths.map(m =>
+        data: allDates.map(date =>
           parseFloat(depenses
-            .filter(d => d.date.startsWith(m) && d.compte === compte)
+            .filter(d => d.date === date && d.compte === compte)
             .reduce((s,d) => s + Math.abs(d.amount), 0)
             .toFixed(2))
         ),
@@ -2200,7 +2201,7 @@ function renderFinCharts(comptes, depenses) {
 
     finCharts.area = new Chart(ctxArea, {
       type: 'line',
-      data: { labels: allMonths.map(monthLabel), datasets },
+      data: { labels: allDates.map(shortDateLabel), datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
@@ -2223,7 +2224,7 @@ function renderFinCharts(comptes, depenses) {
       }
     });
   } else if (ctxArea) {
-    ctxArea.canvas.parentElement.innerHTML = '<div class="fin-empty">Aucune donnée de dépenses</div>';
+    ctxArea.canvas.parentElement.innerHTML = '<div class="fin-empty">Aucune dépense trouvée</div>';
   }
 
   // ── Doughnut by category ──
