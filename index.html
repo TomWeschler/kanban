@@ -2204,7 +2204,7 @@ function renderFinCharts(comptes, depenses) {
     // Labels: "Début" + all individual dates
     const chartLabels = ['Début', ...allDates.map(shortDateLabel)];
 
-    const datasets = [...allComptes].reverse().map(compte => {
+    const datasets = allComptes.map(compte => {
       const hex = compteColor(compte);
       const rgb = hex.replace('#','').match(/.{2}/g).map(x=>parseInt(x,16)).join(',');
       const initial = getInitial(compte);
