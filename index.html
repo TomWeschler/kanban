@@ -2163,12 +2163,12 @@ function renderFinCharts(comptes, depenses) {
   document.getElementById('finCharts').innerHTML = `
     <div class="fin-section-lbl">ANALYSE DES DÉPENSES</div>
     <div class="fin-charts">
-      <div class="fin-box">
+      <div class="fin-box" style="display:flex;flex-direction:column">
         <div class="fin-box-hdr">
-          <span class="fin-box-ttl">DÉPENSES PAR MOIS · PAR COMPTE</span>
+          <span class="fin-box-ttl">ÉVOLUTION DU PATRIMOINE PAR COMPTE</span>
           <button class="crp-btn" onclick="reloadFinancesData()">↻ RAFRAÎCHIR</button>
         </div>
-        <div class="fin-wrap" style="height:220px"><canvas id="finChartArea"></canvas></div>
+        <div class="fin-wrap" style="flex:1;min-height:0"><canvas id="finChartArea"></canvas></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:0.85rem">
         <div class="fin-box" style="flex:1">
@@ -2238,15 +2238,33 @@ function renderFinCharts(comptes, depenses) {
       data: { labels: chartLabels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { position:'bottom', labels:{ font:{family:'Space Mono',size:8}, boxWidth:8, padding:5 } },
           tooltip: {
-            mode: 'index',
             callbacks: {
-              label: i => ` ${i.dataset.label}: ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})} €`,
+              // Suppress per-dataset lines — show transaction list instead
+              label: () => null,
+              afterBody: items => {
+                const di = items[0]?.dataIndex;
+                if (!di) return [' Point de départ (valeurs initiales)'];
+                const date = allDates[di - 1];
+                if (!date) return [];
+                const txns = depenses.filter(d => d.date === date);
+                if (!txns.length) return [' Aucune transaction'];
+                return txns.map(d => {
+                  const sign = d.amount >= 0 ? '+' : '';
+                  const amt  = d.amount.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+                  return ` ${d.desc || d.compte || '—'} : ${sign}${amt} €`;
+                });
+              },
               footer: items => {
-                const total = items.reduce((s,i) => s + i.raw, 0);
-                return `Total : ${total.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})} €`;
+                const di = items[0]?.dataIndex;
+                if (!di) return '';
+                const date = allDates[di - 1];
+                const net = depenses.filter(d => d.date === date).reduce((s,d) => s+d.amount, 0);
+                const sign = net >= 0 ? '+' : '';
+                return ` Net du jour : ${sign}${net.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €`;
               }
             }
           }
@@ -2265,30 +2283,55 @@ function renderFinCharts(comptes, depenses) {
 
   // ── Two doughnuts: dépenses (negative) and gains (positive) ──
   const CAT_COLORS = FIN_PALETTE.concat(['#94a3b8']);
-  const makePie = (id, cats, byMap, key) => {
+  const fmtK = v => v >= 1000
+    ? (v/1000).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+'K€'
+    : v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+'€';
+
+  const makePie = (id, cats, byMap, key, centerColor) => {
     const ctx = document.getElementById(id)?.getContext('2d');
     if (!ctx) return;
     if (!cats.length) { ctx.canvas.parentElement.innerHTML = `<div class="fin-empty" style="font-size:0.5rem">Aucun ${key}</div>`; return; }
+    const total = cats.reduce((s,c) => s + byMap[c], 0);
+
+    // Inline plugin: draw total in the center of the ring
+    const centerPlugin = {
+      id: 'center_' + key,
+      afterDraw(chart) {
+        const { width, ctx: c, chartArea } = chart;
+        if (!chartArea) return;
+        const cx = (chartArea.left + chartArea.right) / 2;
+        const cy = (chartArea.top  + chartArea.bottom) / 2;
+        c.save();
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.font = `bold 11px "Space Mono", monospace`;
+        c.fillStyle = centerColor;
+        c.fillText(fmtK(total), cx, cy);
+        c.restore();
+      }
+    };
+
     finCharts[key] = new Chart(ctx, {
       type: 'doughnut',
+      // Labels include the category name + its amount
       data: {
-        labels: cats,
+        labels: cats.map(c => `${c}  ${fmtK(byMap[c])}`),
         datasets: [{ data: cats.map(c => parseFloat(byMap[c].toFixed(2))),
           backgroundColor: cats.map((_,i) => CAT_COLORS[i % CAT_COLORS.length]),
           borderColor: '#09090e', borderWidth: 2,
         }]
       },
       options: {
-        responsive: true, maintainAspectRatio: false, cutout: '55%',
+        responsive: true, maintainAspectRatio: false, cutout: '58%',
         plugins: {
           legend: { position:'bottom', labels:{ font:{family:'Space Mono',size:7}, boxWidth:7, padding:4 } },
-          tooltip: { callbacks: { label: i => ` ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €` } }
+          tooltip: { callbacks: { label: i => ` ${cats[i.dataIndex]}  ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €` } }
         }
-      }
+      },
+      plugins: [centerPlugin]
     });
   };
-  makePie('finChartDep',  catsDep,  byCatDep,  'dep');
-  makePie('finChartGain', catsGain, byCatGain, 'gain');
+  makePie('finChartDep',  catsDep,  byCatDep,  'dep',  '#f87171');
+  makePie('finChartGain', catsGain, byCatGain, 'gain', '#4ade80');
 }
 
 // ════════════════════════════════════════════════════
