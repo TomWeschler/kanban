@@ -2175,25 +2175,50 @@ function renderFinCharts(comptes, depenses) {
 
   Chart.defaults.color = '#60607a';
 
-  // ── Stacked area chart ──
+  // ── Stacked area chart — cumulative patrimoine evolution ──
+  // Each compte starts at its initial value (col B of Comptes sheet).
+  // Each expense on that compte subtracts from the running total.
+  // A virtual "Début" point is prepended so the chart starts at the reference values.
   const ctxArea = document.getElementById('finChartArea')?.getContext('2d');
   if (ctxArea && allDates.length) {
+    // Build fuzzy initial-value map: compte name from Finance → initial € from Comptes
+    const getInitial = compteName => {
+      const exact = comptes.find(c => c.name === compteName);
+      if (exact) return exact.initial;
+      const fuzzy = comptes.find(c =>
+        c.name.toLowerCase().includes(compteName.toLowerCase()) ||
+        compteName.toLowerCase().includes(c.name.toLowerCase())
+      );
+      return fuzzy ? fuzzy.initial : 0;
+    };
+
+    // Labels: "Début" + all individual dates
+    const chartLabels = ['Début', ...allDates.map(shortDateLabel)];
+
     const datasets = allComptes.map(compte => {
       const hex = compteColor(compte);
       const rgb = hex.replace('#','').match(/.{2}/g).map(x=>parseInt(x,16)).join(',');
+      const initial = getInitial(compte);
+      let running = initial;
+
+      // First point = initial value; then subtract each day's expenses
+      const data = [parseFloat(initial.toFixed(2))];
+      allDates.forEach(date => {
+        const dayExp = depenses
+          .filter(d => d.date === date && d.compte === compte)
+          .reduce((s,d) => s + Math.abs(d.amount), 0);
+        running -= dayExp;
+        data.push(parseFloat(running.toFixed(2)));
+      });
+
       return {
         label: compte,
-        data: allDates.map(date =>
-          parseFloat(depenses
-            .filter(d => d.date === date && d.compte === compte)
-            .reduce((s,d) => s + Math.abs(d.amount), 0)
-            .toFixed(2))
-        ),
+        data,
         borderColor: hex,
-        backgroundColor: `rgba(${rgb},0.25)`,
+        backgroundColor: `rgba(${rgb},0.22)`,
         fill: true,
-        tension: 0.35,
-        pointRadius: 3,
+        tension: 0.3,
+        pointRadius: (ctx) => ctx.dataIndex === 0 ? 0 : 3,
         pointHoverRadius: 5,
         borderWidth: 2,
       };
@@ -2201,7 +2226,7 @@ function renderFinCharts(comptes, depenses) {
 
     finCharts.area = new Chart(ctxArea, {
       type: 'line',
-      data: { labels: allDates.map(shortDateLabel), datasets },
+      data: { labels: chartLabels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
@@ -2209,17 +2234,19 @@ function renderFinCharts(comptes, depenses) {
           tooltip: {
             mode: 'index',
             callbacks: {
-              label: i => ` ${i.dataset.label}: ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €`,
+              label: i => ` ${i.dataset.label}: ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})} €`,
               footer: items => {
-                const total = items.reduce((s,i) => s+i.raw, 0);
-                return `Total : ${total.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €`;
+                const total = items.reduce((s,i) => s + i.raw, 0);
+                return `Total : ${total.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})} €`;
               }
             }
           }
         },
         scales: {
-          x: { ticks:{ font:{family:'Space Mono',size:8}, maxRotation:35 }, grid:{ color:'rgba(37,37,53,0.5)' } },
-          y: { stacked: true, ticks:{ font:{family:'Space Mono',size:9}, callback: v=>`${v}€` }, grid:{ color:'rgba(37,37,53,0.5)' } }
+          x: { ticks:{ font:{family:'Space Mono',size:8}, maxRotation:40, maxTicksLimit:20 }, grid:{ color:'rgba(37,37,53,0.5)' } },
+          y: { stacked: true,
+               ticks:{ font:{family:'Space Mono',size:9}, callback: v => v.toLocaleString('fr-FR',{maximumFractionDigits:0})+'€' },
+               grid:{ color:'rgba(37,37,53,0.5)' } }
         }
       }
     });
