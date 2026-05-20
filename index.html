@@ -1931,44 +1931,45 @@ function finParseDate(raw) {
 }
 
 function parseComptes() {
-  if (finComptes.length < 2) return [];
-  const hdr = finComptes[0].map(h => String(h).toLowerCase().trim());
-  const find = (...terms) => { for (const t of terms) { const i = hdr.findIndex(h => h.includes(t)); if (i>=0) return i; } return -1; };
-  const iName    = find('nom','compte','name','libellé','label','account');
-  // User confirmed: col B (index 1) = valeur initiale/début 2026, col C (index 2) = valeur actuelle
-  // Smart detection with hardcoded fallback to B/C
-  const iInitial = (() => { const i = find('initial','début','depart','janv','2026','start','base','ref'); return i >= 0 ? i : 1; })();
-  const iCurrent = (() => { const i = find('actuel','current','solde','maintenant','maintenant','now','en cours'); return i >= 0 ? i : 2; })();
-  const iType    = find('type','catégor','categor');
-
-  return finComptes.slice(1)
+  if (!finComptes.length) return [];
+  // Auto-detect header: if col B of first row parses as a number it's data, otherwise it's a header
+  const firstB = finParseNum(finComptes[0][1]);
+  const firstC = finParseNum(finComptes[0][2]);
+  const dataRows = (firstB === 0 && firstC === 0) ? finComptes.slice(1) : finComptes;
+  // User confirmed: col A (0) = nom du compte, col B (1) = ref début 2026, col C (2) = valeur actuelle
+  return dataRows
     .filter(r => r.some(c => c !== ''))
     .map(r => ({
-      name:    (iName >= 0 ? r[iName] : r[0]) || '',
-      initial: finParseNum(r[iInitial]),   // col B
-      current: finParseNum(r[iCurrent]),   // col C
-      type:    (iType >= 0 ? r[iType] : '') || '',
+      name:    String(r[0] || '').trim(),
+      initial: finParseNum(r[1]),   // col B — référence début 2026
+      current: finParseNum(r[2]),   // col C — valeur actuelle
+      type:    String(r[3] || '').trim(),
     }))
-    // Exclude "Total" summary rows and blank names
-    .filter(c => c.name && !/^total$/i.test(c.name.trim()));
+    .filter(c => c.name && !/^total$/i.test(c.name));
 }
 
 function parseDepenses() {
-  if (finDepenses.length < 2) return [];
-  const hdr = finDepenses[0].map(h => String(h).toLowerCase().trim());
+  if (!finDepenses.length) return [];
+  const hdr  = finDepenses[0].map(h => String(h).toLowerCase().trim());
   const find = (...terms) => { for (const t of terms) { const i = hdr.findIndex(h => h.includes(t)); if (i>=0) return i; } return -1; };
-  const iDate   = find('date');
-  const iCat    = find('catégor','categor','cat','type','rubrique');
-  const iDesc   = find('descr','libellé','label','desc','détail','detail','intitulé');
-  const iAmount = find('montant','amount','€','eur','dépense','depense','coût','cout','débit','debit','somme');
 
-  return finDepenses.slice(1)
+  // Detection with guaranteed fallbacks so nothing is ever -1
+  const iDate   = (() => { const i = find('date'); return i >= 0 ? i : 0; })();
+  const iCat    = (() => { const i = find('catégor','categor','cat','rubrique','type'); return i >= 0 ? i : 1; })();
+  const iDesc   = (() => { const i = find('descr','libellé','label','desc','détail','detail','intitulé'); return i >= 0 ? i : 2; })();
+  const iAmount = (() => { const i = find('montant','amount','€','eur','dépense','depense','débit','debit','somme','prix'); return i >= 0 ? i : 3; })();
+
+  // Skip first row only if it looks like a header (date col doesn't parse as a real date)
+  const firstDate = finParseDate(finDepenses[0][iDate]);
+  const dataRows  = firstDate ? finDepenses : finDepenses.slice(1);
+
+  return dataRows
     .filter(r => r.some(c => c !== ''))
     .map(r => ({
-      date:   iDate   >= 0 ? finParseDate(r[iDate])   : '',
-      cat:    (iCat   >= 0 ? r[iCat]   : '') || 'Autre',
-      desc:   (iDesc  >= 0 ? r[iDesc]  : '') || '',
-      amount: iAmount >= 0 ? finParseNum(r[iAmount]) : 0,
+      date:   finParseDate(r[iDate]) || '',
+      cat:    String(r[iCat]  || '').trim() || 'Autre',
+      desc:   String(r[iDesc] || '').trim(),
+      amount: finParseNum(r[iAmount]),
     }))
     .filter(d => d.date);
 }
@@ -2002,8 +2003,17 @@ function renderFinBanner(comptes, depenses) {
 
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const monthDeps  = depenses.filter(d => d.date.startsWith(thisMonth) && Math.abs(d.amount) > 0);
+  // If current month has no data, fall back to the most recent month present
+  let monthDeps = depenses.filter(d => d.date.startsWith(thisMonth) && Math.abs(d.amount) > 0);
+  let shownMonth = thisMonth;
+  if (!monthDeps.length && depenses.length) {
+    const months = [...new Set(depenses.map(d => d.date.slice(0,7)))].filter(Boolean).sort();
+    shownMonth = months[months.length - 1] || thisMonth;
+    monthDeps  = depenses.filter(d => d.date.startsWith(shownMonth) && Math.abs(d.amount) > 0);
+  }
   const totalMonthDep = monthDeps.reduce((s, d) => s + Math.abs(d.amount), 0);
+  const MONTHS_FR2 = ['janv.','fév.','mars','avr.','mai','juin','juil.','août','sep.','oct.','nov.','déc.'];
+  const shownMonthLabel = (() => { const [y,m] = shownMonth.split('-'); return `${MONTHS_FR2[parseInt(m)-1]} ${y}`; })();
 
   const monthsElapsed = Math.max(1, (now - FIN_START_DATE) / (1000*60*60*24*30.44));
   const mthSavings = deltaEur / monthsElapsed;
@@ -2028,9 +2038,9 @@ function renderFinBanner(comptes, depenses) {
         <div class="fin-kpi-sub">${deltaEur>=0?'+':''}${deltaPct.toFixed(1)}% · moy. ${fmtEur(mthSavings)}/mois</div>
       </div>
       <div class="fin-kpi">
-        <div class="fin-kpi-lbl">Dépenses · ${new Date().toLocaleString('fr-FR',{month:'long',year:'numeric'})}</div>
+        <div class="fin-kpi-lbl">Dépenses · ${shownMonthLabel}</div>
         <div class="fin-kpi-val" style="color:var(--warn)">${fmtEur(totalMonthDep,false)}</div>
-        <div class="fin-kpi-sub">${monthDeps.length} opération${monthDeps.length>1?'s':''}</div>
+        <div class="fin-kpi-sub">${monthDeps.length} opération${monthDeps.length>1?'s':''}${shownMonth!==thisMonth?' · (dernier mois avec données)':''}</div>
       </div>
       <div class="fin-kpi">
         <div class="fin-kpi-lbl">Objectif 1 000 000 €</div>
