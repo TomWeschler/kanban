@@ -1935,19 +1935,22 @@ function parseComptes() {
   const hdr = finComptes[0].map(h => String(h).toLowerCase().trim());
   const find = (...terms) => { for (const t of terms) { const i = hdr.findIndex(h => h.includes(t)); if (i>=0) return i; } return -1; };
   const iName    = find('nom','compte','name','libellé','label','account');
-  const iInitial = find('initial','début','depart','janv','jan 2026','2026','start','base');
-  const iCurrent = find('actuel','current','solde','maintenant','valeur actuelle','now');
+  // User confirmed: col B (index 1) = valeur initiale/début 2026, col C (index 2) = valeur actuelle
+  // Smart detection with hardcoded fallback to B/C
+  const iInitial = (() => { const i = find('initial','début','depart','janv','2026','start','base','ref'); return i >= 0 ? i : 1; })();
+  const iCurrent = (() => { const i = find('actuel','current','solde','maintenant','maintenant','now','en cours'); return i >= 0 ? i : 2; })();
   const iType    = find('type','catégor','categor');
 
   return finComptes.slice(1)
     .filter(r => r.some(c => c !== ''))
     .map(r => ({
-      name:    (iName    >= 0 ? r[iName]    : r[0]) || '',
-      initial: iInitial  >= 0 ? finParseNum(r[iInitial]) : 0,
-      current: iCurrent  >= 0 ? finParseNum(r[iCurrent]) : 0,
-      type:    (iType    >= 0 ? r[iType]    : '') || '',
+      name:    (iName >= 0 ? r[iName] : r[0]) || '',
+      initial: finParseNum(r[iInitial]),   // col B
+      current: finParseNum(r[iCurrent]),   // col C
+      type:    (iType >= 0 ? r[iType] : '') || '',
     }))
-    .filter(c => c.name && (c.current > 0 || c.initial > 0));
+    // Exclude "Total" summary rows and blank names
+    .filter(c => c.name && !/^total$/i.test(c.name.trim()));
 }
 
 function parseDepenses() {
