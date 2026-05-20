@@ -2039,12 +2039,13 @@ function renderFinBanner(comptes, depenses) {
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   // If current month has no data, fall back to the most recent month present
-  let monthDeps = depenses.filter(d => d.date.startsWith(thisMonth) && Math.abs(d.amount) > 0);
+  // Dépenses = negative amounts only
+  let monthDeps = depenses.filter(d => d.date.startsWith(thisMonth) && d.amount < 0);
   let shownMonth = thisMonth;
   if (!monthDeps.length && depenses.length) {
-    const months = [...new Set(depenses.map(d => d.date.slice(0,7)))].filter(Boolean).sort();
+    const months = [...new Set(depenses.filter(d => d.amount < 0).map(d => d.date.slice(0,7)))].filter(Boolean).sort();
     shownMonth = months[months.length - 1] || thisMonth;
-    monthDeps  = depenses.filter(d => d.date.startsWith(shownMonth) && Math.abs(d.amount) > 0);
+    monthDeps  = depenses.filter(d => d.date.startsWith(shownMonth) && d.amount < 0);
   }
   const totalMonthDep = monthDeps.reduce((s, d) => s + Math.abs(d.amount), 0);
   const MONTHS_FR2 = ['janv.','fév.','mars','avr.','mai','juin','juil.','août','sep.','oct.','nov.','déc.'];
@@ -2143,13 +2144,15 @@ function renderFinCharts(comptes, depenses) {
   const allDates   = [...new Set(depenses.map(d => d.date).filter(Boolean))].sort();
   // All unique comptes (each = one stacked area)
   const allComptes = [...new Set(depenses.map(d => d.compte).filter(Boolean))];
-  // Category totals for doughnut
-  const byCat = {};
+  // Category totals split by sign: negative = dépense, positive = gain
+  const byCatDep = {}, byCatGain = {};
   depenses.forEach(d => {
     const cat = d.cat || 'Autre';
-    byCat[cat] = (byCat[cat]||0) + Math.abs(d.amount);
+    if (d.amount < 0) byCatDep[cat]  = (byCatDep[cat]  || 0) + Math.abs(d.amount);
+    if (d.amount > 0) byCatGain[cat] = (byCatGain[cat] || 0) + d.amount;
   });
-  const cats = Object.keys(byCat).sort((a,b) => byCat[b]-byCat[a]);
+  const catsDep  = Object.keys(byCatDep).sort((a,b)  => byCatDep[b]  - byCatDep[a]);
+  const catsGain = Object.keys(byCatGain).sort((a,b) => byCatGain[b] - byCatGain[a]);
 
   // Short label for X axis: "14 jan", "2 fév" etc.
   const shortDateLabel = iso => {
@@ -2167,9 +2170,15 @@ function renderFinCharts(comptes, depenses) {
         </div>
         <div class="fin-wrap" style="height:220px"><canvas id="finChartArea"></canvas></div>
       </div>
-      <div class="fin-box">
-        <div class="fin-box-hdr"><span class="fin-box-ttl">RÉPARTITION PAR CATÉGORIE</span></div>
-        <div class="fin-wrap"><canvas id="finChartPie"></canvas></div>
+      <div style="display:flex;flex-direction:column;gap:0.85rem">
+        <div class="fin-box" style="flex:1">
+          <div class="fin-box-hdr"><span class="fin-box-ttl" style="color:var(--danger)">▼ DÉPENSES PAR CATÉGORIE</span></div>
+          <div class="fin-wrap" style="height:155px"><canvas id="finChartDep"></canvas></div>
+        </div>
+        <div class="fin-box" style="flex:1">
+          <div class="fin-box-hdr"><span class="fin-box-ttl" style="color:var(--green)">▲ GAINS PAR CATÉGORIE</span></div>
+          <div class="fin-wrap" style="height:155px"><canvas id="finChartGain"></canvas></div>
+        </div>
       </div>
     </div>`;
 
@@ -2201,13 +2210,13 @@ function renderFinCharts(comptes, depenses) {
       const initial = getInitial(compte);
       let running = initial;
 
-      // First point = initial value; then subtract each day's expenses
+      // First point = initial value; then apply signed amounts (+ gain, − dépense)
       const data = [parseFloat(initial.toFixed(2))];
       allDates.forEach(date => {
-        const dayExp = depenses
+        const dayDelta = depenses
           .filter(d => d.date === date && d.compte === compte)
-          .reduce((s,d) => s + Math.abs(d.amount), 0);
-        running -= dayExp;
+          .reduce((s,d) => s + d.amount, 0); // signed: negative=expense, positive=gain
+        running += dayDelta;
         data.push(parseFloat(running.toFixed(2)));
       });
 
@@ -2254,28 +2263,32 @@ function renderFinCharts(comptes, depenses) {
     ctxArea.canvas.parentElement.innerHTML = '<div class="fin-empty">Aucune dépense trouvée</div>';
   }
 
-  // ── Doughnut by category ──
+  // ── Two doughnuts: dépenses (negative) and gains (positive) ──
   const CAT_COLORS = FIN_PALETTE.concat(['#94a3b8']);
-  const ctxPie = document.getElementById('finChartPie')?.getContext('2d');
-  if (ctxPie && cats.length) {
-    finCharts.pie = new Chart(ctxPie, {
+  const makePie = (id, cats, byMap, key) => {
+    const ctx = document.getElementById(id)?.getContext('2d');
+    if (!ctx) return;
+    if (!cats.length) { ctx.canvas.parentElement.innerHTML = `<div class="fin-empty" style="font-size:0.5rem">Aucun ${key}</div>`; return; }
+    finCharts[key] = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: cats,
-        datasets: [{ data: cats.map(c => parseFloat(byCat[c].toFixed(2))),
+        datasets: [{ data: cats.map(c => parseFloat(byMap[c].toFixed(2))),
           backgroundColor: cats.map((_,i) => CAT_COLORS[i % CAT_COLORS.length]),
           borderColor: '#09090e', borderWidth: 2,
         }]
       },
       options: {
-        responsive: true, maintainAspectRatio: false, cutout: '56%',
+        responsive: true, maintainAspectRatio: false, cutout: '55%',
         plugins: {
-          legend: { position:'bottom', labels:{ font:{family:'Space Mono',size:8}, boxWidth:8, padding:5 } },
+          legend: { position:'bottom', labels:{ font:{family:'Space Mono',size:7}, boxWidth:7, padding:4 } },
           tooltip: { callbacks: { label: i => ` ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €` } }
         }
       }
     });
-  }
+  };
+  makePie('finChartDep',  catsDep,  byCatDep,  'dep');
+  makePie('finChartGain', catsGain, byCatGain, 'gain');
 }
 
 // ════════════════════════════════════════════════════
@@ -2397,7 +2410,7 @@ function renderFinTable(depenses) {
 
   const rows = recent.map(d => {
     const catCol = getCatColor(d.cat);
-    const amtColor = d.amount >= 0 ? 'var(--danger)' : 'var(--green)'; // expenses positive = red
+    const amtColor = d.amount >= 0 ? 'var(--green)' : 'var(--danger)'; // positive=gain(green), negative=dépense(red)
     return `<tr>
       <td style="white-space:nowrap">${d.date}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.desc||'—'}</td>
