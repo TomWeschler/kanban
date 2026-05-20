@@ -291,6 +291,58 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .crp-btn:hover{color:var(--text);border-color:var(--text-mid)}
 .crp-empty{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;color:var(--text-dim);opacity:0.42;text-align:center;padding:2.5rem 0}
 .crp-hodl-note{font-family:'Space Mono',monospace;font-size:0.46rem;letter-spacing:0.07em;color:var(--text-dim);margin-top:0.4rem}
+
+/* ═══════════════════════════════
+   FINANCES PAGE
+═══════════════════════════════ */
+#pagefinances{overflow-y:auto;padding:1.25rem 1.5rem 3rem;gap:1rem;flex-direction:column}
+.fin-banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem}
+.fin-kpi{background:var(--surface);border:1px solid var(--border);padding:1rem 1.2rem}
+.fin-kpi-lbl{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.4rem}
+.fin-kpi-val{font-family:'Space Mono',monospace;font-size:1.55rem;font-weight:700;line-height:1}
+.fin-kpi-sub{font-size:0.65rem;color:var(--text-dim);margin-top:0.28rem}
+.fin-section{margin-top:0.15rem}
+.fin-section-lbl{font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.65rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border)}
+/* accounts */
+.fin-accounts{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:0.7rem}
+.fin-account{background:var(--surface);border:1px solid var(--border);padding:0.85rem 1rem;position:relative;overflow:hidden;transition:border-color 0.15s}
+.fin-account:hover{border-color:var(--border2)}
+.fin-account-name{font-family:'Space Mono',monospace;font-size:0.58rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-mid);margin-bottom:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fin-account-val{font-family:'Space Mono',monospace;font-size:1.35rem;font-weight:700;line-height:1;margin-bottom:0.3rem}
+.fin-account-delta{font-family:'Space Mono',monospace;font-size:0.63rem;font-weight:700}
+.fin-account-meta{font-size:0.57rem;color:var(--text-dim);margin-top:0.22rem}
+/* charts */
+.fin-charts{display:grid;grid-template-columns:2fr 1fr;gap:0.85rem}
+.fin-box{background:var(--surface);border:1px solid var(--border);padding:1.1rem}
+.fin-box-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem}
+.fin-box-ttl{font-family:'Space Mono',monospace;font-size:0.53rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid)}
+.fin-wrap{position:relative;height:200px}
+/* milestone / savings plan */
+.fin-milestone{background:var(--surface);border:1px solid var(--border);padding:1.25rem 1.4rem}
+.fin-ms-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.9rem;gap:1rem}
+.fin-ms-title{font-family:'Space Mono',monospace;font-size:0.53rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid)}
+.fin-ms-pct{font-family:'Space Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--accent);line-height:1}
+.fin-ms-proj{font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-dim);margin-top:0.18rem}
+.fin-ms-track{position:relative;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-bottom:1.1rem}
+.fin-ms-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent) 0%,#a78bfa 60%,#22d3ee 100%);transition:width 0.7s ease}
+.fin-milestones{display:grid;grid-template-columns:repeat(6,1fr);gap:0.4rem}
+.fin-ms-node{display:flex;flex-direction:column;align-items:center;gap:0.28rem;padding:0.4rem 0.2rem;border:1px solid var(--border);background:var(--surface2);position:relative}
+.fin-ms-node.done{border-color:rgba(124,106,255,0.3);background:rgba(124,106,255,0.05)}
+.fin-ms-node.active-next{border-color:rgba(124,106,255,0.5);animation:borderPulse 2.5s infinite}
+@keyframes borderPulse{0%,100%{border-color:rgba(124,106,255,0.3)}50%{border-color:rgba(124,106,255,0.8)}}
+.fin-ms-icon{font-size:0.85rem;line-height:1}
+.fin-ms-node-lbl{font-family:'Space Mono',monospace;font-size:0.52rem;font-weight:700;color:var(--text-mid)}
+.fin-ms-node.done .fin-ms-node-lbl{color:var(--accent)}
+.fin-ms-node-date{font-family:'Space Mono',monospace;font-size:0.42rem;color:var(--text-dim);text-align:center}
+.fin-ms-node.done .fin-ms-node-date{color:var(--green)}
+/* table */
+.fin-table{width:100%;border-collapse:collapse;font-family:'Space Mono',monospace;font-size:0.57rem}
+.fin-table th{text-align:left;color:var(--text-dim);letter-spacing:0.1em;font-weight:400;padding:0.3rem 0.6rem;border-bottom:1px solid var(--border)}
+.fin-table td{padding:0.34rem 0.6rem;border-bottom:1px solid rgba(37,37,53,0.4);color:var(--text)}
+.fin-table tr:last-child td{border-bottom:none}
+.fin-table tr:hover td{background:rgba(255,255,255,0.015)}
+.fin-cat-pill{display:inline-block;font-family:'Space Mono',monospace;font-size:0.44rem;font-weight:700;letter-spacing:0.07em;padding:2px 7px;border:1px solid;white-space:nowrap}
+.fin-empty{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;color:var(--text-dim);opacity:0.42;text-align:center;padding:2.5rem 0}
 </style>
 </head>
 <body>
@@ -316,6 +368,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
     <button class="nav-tab" data-page="dash" onclick="switchPage('dash')">DASHBOARD</button>
     <button class="nav-tab" data-page="habits" onclick="switchPage('habits')">HABITUDES</button>
     <button class="nav-tab" data-page="crypto" onclick="switchPage('crypto')">CRYPTOBOT</button>
+    <button class="nav-tab" data-page="finances" onclick="switchPage('finances')">FINANCES</button>
   </nav>
   <div class="nav-sep"></div>
   <div class="proj-shortcuts">
@@ -377,6 +430,15 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
     </div>
     <div id="crpTradeTable"></div>
   </div>
+</div>
+
+<!-- FINANCES PAGE -->
+<div class="page" id="pagefinances">
+  <div id="finBanner"></div>
+  <div id="finAccounts" class="fin-section"></div>
+  <div id="finCharts" class="fin-section"></div>
+  <div id="finMilestone" class="fin-section"></div>
+  <div id="finTable" class="fin-section"></div>
 </div>
 
 <!-- TASK MODAL -->
@@ -1234,6 +1296,7 @@ function switchPage(name){
   if(name==='dash')renderDash();
   if(name==='habits')renderHabitsPage();
   if(name==='crypto')renderCryptoBot();
+  if(name==='finances')renderFinancesPage();
 }
 
 // ════════════════════════════════════════════════════
@@ -1260,6 +1323,22 @@ const CRYPTOS = [
 ];
 
 let cryptoTrades = [], cryptoLoaded = false, cryptoCharts = {}, cryptoPrices = {};
+
+// ════════════════════════════════════════════════════
+// FINANCES — CONFIG & STATE
+// ════════════════════════════════════════════════════
+const FIN_SHEET_ID = '17G3aItGtQZUI3s5P42q57iJDDrWhwwKlxy2b-tf8Wtc';
+const FIN_GOAL = 1_000_000;
+const FIN_MILESTONES = [
+  { label:'50K€',  val:50_000,   icon:'🌱' },
+  { label:'100K€', val:100_000,  icon:'💰' },
+  { label:'250K€', val:250_000,  icon:'🚀' },
+  { label:'500K€', val:500_000,  icon:'💎' },
+  { label:'750K€', val:750_000,  icon:'🔥' },
+  { label:'1M€',   val:1_000_000,icon:'👑' },
+];
+const FIN_START_DATE = new Date('2026-01-01');
+let finComptes = [], finDepenses = [], finLoaded = false, finCharts = {};
 
 // ════════════════════════════════════════════════════
 // CRYPTOBOT — DATA LOADING
@@ -1803,6 +1882,428 @@ function renderCryptoTable() {
     <thead><tr><th>DATE</th><th>CRYPTO</th><th>ACTION</th><th>INVESTI</th><th>NET P&L</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>${sorted.length > 100 ? `<div class="crp-hodl-note" style="text-align:right;margin-top:0.5rem">Affichage des 100 trades les plus récents sur ${sorted.length}</div>` : ''}`;
+}
+
+// ════════════════════════════════════════════════════
+// FINANCES — DATA LOADING
+// ════════════════════════════════════════════════════
+async function loadFinancesData() {
+  if (!accessToken) return;
+  try {
+    const [r1, r2] = await Promise.all([
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/Comptes!A:Z`, { headers:{ Authorization:`Bearer ${accessToken}` } }),
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/Finance!A:Z`, { headers:{ Authorization:`Bearer ${accessToken}` } }),
+    ]);
+    if (r1.ok) { const d = await r1.json(); finComptes = d.values || []; }
+    if (r2.ok) { const d = await r2.json(); finDepenses = d.values || []; }
+    finLoaded = true;
+  } catch(e) {
+    console.error('Finances load error', e);
+    toast('Erreur chargement données Finances', 'err');
+    finLoaded = true;
+  }
+}
+
+async function reloadFinancesData() {
+  finLoaded = false; finComptes = []; finDepenses = [];
+  Object.values(finCharts).forEach(c => { try { c.destroy(); } catch(e){} });
+  finCharts = {};
+  await renderFinancesPage();
+}
+
+// ════════════════════════════════════════════════════
+// FINANCES — PARSING
+// ════════════════════════════════════════════════════
+function finParseNum(raw) {
+  return parseFloat(String(raw||'').replace(/\s/g,'').replace(',','.').replace(/[^0-9.\-]/g,'')) || 0;
+}
+
+function finParseDate(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  // Excel serial
+  if (/^\d{5}$/.test(s)) { const d=new Date((parseInt(s)-25569)*86400000); return d.toISOString().split('T')[0]; }
+  const d = new Date(s);
+  return isNaN(d) ? '' : d.toISOString().split('T')[0];
+}
+
+function parseComptes() {
+  if (finComptes.length < 2) return [];
+  const hdr = finComptes[0].map(h => String(h).toLowerCase().trim());
+  const find = (...terms) => { for (const t of terms) { const i = hdr.findIndex(h => h.includes(t)); if (i>=0) return i; } return -1; };
+  const iName    = find('nom','compte','name','libellé','label','account');
+  const iInitial = find('initial','début','depart','janv','jan 2026','2026','start','base');
+  const iCurrent = find('actuel','current','solde','maintenant','valeur actuelle','now');
+  const iType    = find('type','catégor','categor');
+
+  return finComptes.slice(1)
+    .filter(r => r.some(c => c !== ''))
+    .map(r => ({
+      name:    (iName    >= 0 ? r[iName]    : r[0]) || '',
+      initial: iInitial  >= 0 ? finParseNum(r[iInitial]) : 0,
+      current: iCurrent  >= 0 ? finParseNum(r[iCurrent]) : 0,
+      type:    (iType    >= 0 ? r[iType]    : '') || '',
+    }))
+    .filter(c => c.name && (c.current > 0 || c.initial > 0));
+}
+
+function parseDepenses() {
+  if (finDepenses.length < 2) return [];
+  const hdr = finDepenses[0].map(h => String(h).toLowerCase().trim());
+  const find = (...terms) => { for (const t of terms) { const i = hdr.findIndex(h => h.includes(t)); if (i>=0) return i; } return -1; };
+  const iDate   = find('date');
+  const iCat    = find('catégor','categor','cat','type','rubrique');
+  const iDesc   = find('descr','libellé','label','desc','détail','detail','intitulé');
+  const iAmount = find('montant','amount','€','eur','dépense','depense','coût','cout','débit','debit','somme');
+
+  return finDepenses.slice(1)
+    .filter(r => r.some(c => c !== ''))
+    .map(r => ({
+      date:   iDate   >= 0 ? finParseDate(r[iDate])   : '',
+      cat:    (iCat   >= 0 ? r[iCat]   : '') || 'Autre',
+      desc:   (iDesc  >= 0 ? r[iDesc]  : '') || '',
+      amount: iAmount >= 0 ? finParseNum(r[iAmount]) : 0,
+    }))
+    .filter(d => d.date);
+}
+
+// ════════════════════════════════════════════════════
+// FINANCES — RENDER ORCHESTRATOR
+// ════════════════════════════════════════════════════
+async function renderFinancesPage() {
+  if (!finLoaded) {
+    showLoad(true);
+    await loadFinancesData();
+    showLoad(false);
+  }
+  const comptes  = parseComptes();
+  const depenses = parseDepenses();
+  renderFinBanner(comptes, depenses);
+  renderFinAccounts(comptes);
+  renderFinCharts(depenses);
+  renderFinMilestone(comptes, depenses);
+  renderFinTable(depenses);
+}
+
+// ════════════════════════════════════════════════════
+// FINANCES — BANNER KPIs
+// ════════════════════════════════════════════════════
+function renderFinBanner(comptes, depenses) {
+  const totalCurrent = comptes.reduce((s, c) => s + c.current, 0);
+  const totalInitial = comptes.reduce((s, c) => s + c.initial, 0);
+  const deltaEur = totalCurrent - totalInitial;
+  const deltaPct = totalInitial > 0 ? deltaEur / totalInitial * 100 : 0;
+
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthDeps  = depenses.filter(d => d.date.startsWith(thisMonth) && Math.abs(d.amount) > 0);
+  const totalMonthDep = monthDeps.reduce((s, d) => s + Math.abs(d.amount), 0);
+
+  const monthsElapsed = Math.max(1, (now - FIN_START_DATE) / (1000*60*60*24*30.44));
+  const mthSavings = deltaEur / monthsElapsed;
+
+  const fmtEur = (v, sign=true) => {
+    const s = sign && v >= 0 ? '+' : '';
+    return `${s}${v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})} €`;
+  };
+  const pct1M  = Math.min(100, totalCurrent / FIN_GOAL * 100);
+  const remain = FIN_GOAL - totalCurrent;
+
+  document.getElementById('finBanner').innerHTML = `
+    <div class="fin-banner">
+      <div class="fin-kpi">
+        <div class="fin-kpi-lbl">Patrimoine Total</div>
+        <div class="fin-kpi-val" style="color:var(--accent)">${fmtEur(totalCurrent,false)}</div>
+        <div class="fin-kpi-sub">Ref. janv. 2026 : ${fmtEur(totalInitial,false)}</div>
+      </div>
+      <div class="fin-kpi">
+        <div class="fin-kpi-lbl">Plus-value depuis janv. 2026</div>
+        <div class="fin-kpi-val" style="color:${deltaEur>=0?'var(--green)':'var(--danger)'}">${fmtEur(deltaEur)}</div>
+        <div class="fin-kpi-sub">${deltaEur>=0?'+':''}${deltaPct.toFixed(1)}% · moy. ${fmtEur(mthSavings)}/mois</div>
+      </div>
+      <div class="fin-kpi">
+        <div class="fin-kpi-lbl">Dépenses · ${new Date().toLocaleString('fr-FR',{month:'long',year:'numeric'})}</div>
+        <div class="fin-kpi-val" style="color:var(--warn)">${fmtEur(totalMonthDep,false)}</div>
+        <div class="fin-kpi-sub">${monthDeps.length} opération${monthDeps.length>1?'s':''}</div>
+      </div>
+      <div class="fin-kpi">
+        <div class="fin-kpi-lbl">Objectif 1 000 000 €</div>
+        <div class="fin-kpi-val" style="color:var(--accent)">${pct1M.toFixed(2)}%</div>
+        <div class="fin-kpi-sub">${fmtEur(remain,false)} restants${mthSavings>0?' · ~'+Math.round(remain/mthSavings)+' mois':''}</div>
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// FINANCES — ACCOUNTS
+// ════════════════════════════════════════════════════
+function renderFinAccounts(comptes) {
+  const PALETTE = ['#7c6aff','#4ade80','#fbbf24','#22d3ee','#a855f7','#f87171','#38bdf8','#fb923c','#e879f9','#a3e635'];
+  if (!comptes.length) {
+    document.getElementById('finAccounts').innerHTML = `<div class="fin-section-lbl">COMPTES</div><div class="fin-empty">Aucun compte détecté dans l'onglet "Comptes"</div>`;
+    return;
+  }
+  const fmtEur = v => v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+' €';
+  const cards = comptes.map((c,i) => {
+    const col   = PALETTE[i % PALETTE.length];
+    const delta = c.current - c.initial;
+    const dCol  = delta >= 0 ? 'var(--green)' : 'var(--danger)';
+    const sign  = delta >= 0 ? '+' : '';
+    const pct   = c.initial > 0 ? (delta/c.initial*100).toFixed(1) : null;
+    return `
+      <div class="fin-account">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${col}"></div>
+        <div class="fin-account-name">${c.name}</div>
+        <div class="fin-account-val" style="color:${col}">${fmtEur(c.current)}</div>
+        <div class="fin-account-delta" style="color:${dCol}">${sign}${fmtEur(delta)}${pct!=null?' ('+sign+pct+'%)':''}</div>
+        ${c.initial ? `<div class="fin-account-meta">Réf. : ${fmtEur(c.initial)}</div>` : ''}
+        ${c.type    ? `<div class="fin-account-meta" style="margin-top:0.15rem">${c.type}</div>` : ''}
+      </div>`;
+  }).join('');
+  document.getElementById('finAccounts').innerHTML = `
+    <div class="fin-section-lbl">COMPTES & ÉPARGNE</div>
+    <div class="fin-accounts">${cards}</div>`;
+}
+
+// ════════════════════════════════════════════════════
+// FINANCES — CHARTS
+// ════════════════════════════════════════════════════
+function renderFinCharts(depenses) {
+  Object.values(finCharts).forEach(c => { try { c.destroy(); } catch(e){} });
+  finCharts = {};
+
+  const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const CAT_COLORS = ['#7c6aff','#4ade80','#fbbf24','#22d3ee','#a855f7','#f87171','#38bdf8','#fb923c','#e879f9','#a3e635','#94a3b8'];
+
+  const byMonth = {}, byCat = {};
+  depenses.forEach(d => {
+    if (!d.date) return;
+    const m = d.date.slice(0,7);
+    const amt = Math.abs(d.amount);
+    byMonth[m] = (byMonth[m]||0) + amt;
+    const cat = (d.cat||'Autre').trim();
+    byCat[cat] = (byCat[cat]||0) + amt;
+  });
+  const months = Object.keys(byMonth).sort();
+  const cats   = Object.keys(byCat).sort((a,b) => byCat[b]-byCat[a]);
+
+  document.getElementById('finCharts').innerHTML = `
+    <div class="fin-section-lbl">ANALYSE DES DÉPENSES</div>
+    <div class="fin-charts">
+      <div class="fin-box">
+        <div class="fin-box-hdr">
+          <span class="fin-box-ttl">DÉPENSES PAR MOIS</span>
+          <button class="crp-btn" onclick="reloadFinancesData()">↻ RAFRAÎCHIR</button>
+        </div>
+        <div class="fin-wrap"><canvas id="finChartBar"></canvas></div>
+      </div>
+      <div class="fin-box">
+        <div class="fin-box-hdr"><span class="fin-box-ttl">RÉPARTITION PAR CATÉGORIE</span></div>
+        <div class="fin-wrap"><canvas id="finChartPie"></canvas></div>
+      </div>
+    </div>`;
+
+  Chart.defaults.color = '#60607a';
+
+  const ctxBar = document.getElementById('finChartBar')?.getContext('2d');
+  if (ctxBar && months.length) {
+    finCharts.bar = new Chart(ctxBar, {
+      type: 'bar',
+      data: {
+        labels: months.map(m => { const [,mo] = m.split('-'); return MONTHS_FR[parseInt(mo)-1]; }),
+        datasets: [{
+          label: 'Dépenses (€)',
+          data: months.map(m => parseFloat(byMonth[m].toFixed(2))),
+          backgroundColor: months.map((m,i) => {
+            const now = new Date();
+            const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            return m === cur ? 'rgba(124,106,255,0.7)' : 'rgba(124,106,255,0.25)';
+          }),
+          borderColor: 'rgba(124,106,255,0.8)',
+          borderWidth: 1, borderRadius: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: i => ` ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €` } }
+        },
+        scales: {
+          x: { ticks:{ font:{family:'Space Mono',size:9} }, grid:{ color:'rgba(37,37,53,0.5)' } },
+          y: { ticks:{ font:{family:'Space Mono',size:9}, callback: v=>`${v}€` }, grid:{ color:'rgba(37,37,53,0.5)' } }
+        }
+      }
+    });
+  } else if (ctxBar) {
+    const ctx = ctxBar.canvas; ctx.parentElement.innerHTML = '<div class="fin-empty">Aucune donnée de dépenses</div>';
+  }
+
+  const ctxPie = document.getElementById('finChartPie')?.getContext('2d');
+  if (ctxPie && cats.length) {
+    finCharts.pie = new Chart(ctxPie, {
+      type: 'doughnut',
+      data: {
+        labels: cats,
+        datasets: [{ data: cats.map(c => parseFloat(byCat[c].toFixed(2))),
+          backgroundColor: cats.map((_,i) => CAT_COLORS[i % CAT_COLORS.length]),
+          borderColor: '#09090e', borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '56%',
+        plugins: {
+          legend: { position:'bottom', labels:{ font:{family:'Space Mono',size:8}, boxWidth:8, padding:5 } },
+          tooltip: { callbacks: { label: i => ` ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €` } }
+        }
+      }
+    });
+  }
+}
+
+// ════════════════════════════════════════════════════
+// FINANCES — SAVINGS MILESTONE TRACKER
+// ════════════════════════════════════════════════════
+function renderFinMilestone(comptes, depenses) {
+  const totalCurrent = comptes.reduce((s,c) => s + c.current, 0);
+  const totalInitial = comptes.reduce((s,c) => s + c.initial, 0);
+  const deltaEur     = totalCurrent - totalInitial;
+  const now          = new Date();
+  const monthsElapsed = Math.max(1, (now - FIN_START_DATE) / (1000*60*60*24*30.44));
+  const mthSavings   = deltaEur / monthsElapsed;  // avg monthly savings since Jan 2026
+
+  const pct1M = Math.min(100, totalCurrent / FIN_GOAL * 100);
+
+  const fmtDate = d => {
+    const mo = d.getMonth()+1;
+    const MONTHS_SHORT = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+    return `${MONTHS_SHORT[mo-1]} ${d.getFullYear()}`;
+  };
+
+  const nodes = FIN_MILESTONES.map((ms, i) => {
+    const done   = totalCurrent >= ms.val;
+    const isNext = !done && FIN_MILESTONES.findIndex(m => totalCurrent < m.val) === i;
+    let dateStr  = '';
+    if (done) {
+      dateStr = '✓ ATTEINT';
+    } else if (mthSavings > 0) {
+      const months = Math.ceil((ms.val - totalCurrent) / mthSavings);
+      const proj   = new Date(now);
+      proj.setMonth(proj.getMonth() + months);
+      dateStr = `~${fmtDate(proj)}`;
+    }
+    return `
+      <div class="fin-ms-node ${done?'done':''} ${isNext?'active-next':''}">
+        <div class="fin-ms-icon">${ms.icon}</div>
+        <div class="fin-ms-node-lbl">${ms.label}</div>
+        <div class="fin-ms-node-date">${dateStr}</div>
+      </div>`;
+  }).join('');
+
+  // Monthly savings needed from now to hit 1M in N years (aspirational targets)
+  const targets = [
+    {years:5,  rate: Math.ceil((FIN_GOAL - totalCurrent)/(5*12))},
+    {years:10, rate: Math.ceil((FIN_GOAL - totalCurrent)/(10*12))},
+    {years:15, rate: Math.ceil((FIN_GOAL - totalCurrent)/(15*12))},
+  ];
+  const targetHtml = targets.map(t =>
+    `<span style="margin-right:1.2rem"><b style="color:var(--text)">${t.years} ans</b> → ${t.rate.toLocaleString('fr-FR')} €/mois</span>`
+  ).join('');
+
+  const fmtEur = v => v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+' €';
+
+  document.getElementById('finMilestone').innerHTML = `
+    <div class="fin-section-lbl">PLAN D'ÉPARGNE · OBJECTIF 1 MILLION €</div>
+    <div class="fin-milestone">
+      <div class="fin-ms-top">
+        <div>
+          <div class="fin-ms-title">PROGRESSION VERS 1 000 000 €</div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-dim);margin-top:0.35rem;line-height:1.7">
+            Patrimoine : <b style="color:var(--text)">${fmtEur(totalCurrent)}</b>
+            &nbsp;·&nbsp; Épargne moy. : <b style="color:var(--green)">${mthSavings>=0?'+':''}${fmtEur(mthSavings)}/mois</b>
+            ${mthSavings>0 ? `&nbsp;·&nbsp; Projection : <b style="color:var(--accent)">~${Math.round((FIN_GOAL-totalCurrent)/mthSavings)} mois</b>` : ''}
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.48rem;color:var(--text-dim);margin-top:0.5rem">
+            Pour atteindre 1M€ en : ${targetHtml}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="fin-ms-pct">${pct1M.toFixed(2)}%</div>
+          <div class="fin-ms-proj">${fmtEur(FIN_GOAL - totalCurrent)} restants</div>
+        </div>
+      </div>
+      <div class="fin-ms-track">
+        <div class="fin-ms-bar" style="width:${pct1M}%"></div>
+      </div>
+      <div class="fin-milestones">${nodes}</div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// FINANCES — TRANSACTIONS TABLE
+// ════════════════════════════════════════════════════
+function renderFinTable(depenses) {
+  const CAT_PALETTE = [
+    ['logement','loyer','#38bdf8'],['transport','carburant','#fbbf24'],
+    ['alimentation','courses','nourriture','#4ade80'],['restaurant','café','#a3e635'],
+    ['santé','médecin','pharmacie','#22d3ee'],['loisirs','sport','jeux','#a855f7'],
+    ['épargne','livret','#7c6aff'],['investissement','bourse','crypto','#eab308'],
+    ['abonnement','streamin','#fb923c'],['voyage','vacances','#e879f9'],
+  ];
+  const catColor = cat => {
+    const c = cat.toLowerCase();
+    for (const [,,col,...rest] of CAT_PALETTE) {
+      const terms = CAT_PALETTE.find(p => p.slice(0,-1).some(t => c.includes(t)));
+      if (terms && terms.slice(0,-1).some(t => c.includes(t))) return terms[terms.length-1];
+    }
+    return '#94a3b8';
+  };
+  // Simpler cat color approach
+  const getCatColor = cat => {
+    const c = (cat||'').toLowerCase();
+    if (c.includes('logement')||c.includes('loyer')) return '#38bdf8';
+    if (c.includes('transport')||c.includes('carburant')) return '#fbbf24';
+    if (c.includes('aliment')||c.includes('course')||c.includes('nourrit')) return '#4ade80';
+    if (c.includes('restaurant')||c.includes('café')||c.includes('cafe')) return '#a3e635';
+    if (c.includes('santé')||c.includes('sante')||c.includes('médecin')||c.includes('pharma')) return '#22d3ee';
+    if (c.includes('loisir')||c.includes('sport')||c.includes('jeux')||c.includes('jeu')) return '#a855f7';
+    if (c.includes('épargne')||c.includes('epargne')||c.includes('livret')) return '#7c6aff';
+    if (c.includes('invest')||c.includes('bourse')||c.includes('crypto')) return '#eab308';
+    if (c.includes('abonn')||c.includes('stream')) return '#fb923c';
+    if (c.includes('voyage')||c.includes('vacance')) return '#e879f9';
+    return '#94a3b8';
+  };
+
+  const sorted  = [...depenses].sort((a,b) => b.date.localeCompare(a.date));
+  const recent  = sorted.slice(0, 50);
+  const fmtAmt  = v => v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+
+  const rows = recent.map(d => {
+    const col   = getCatColor(d.cat);
+    const isNeg = d.amount < 0;
+    const amtColor = isNeg ? 'var(--danger)' : 'var(--text)';
+    return `<tr>
+      <td style="white-space:nowrap">${d.date}</td>
+      <td><span class="fin-cat-pill" style="color:${col};border-color:${col}44;background:${col}11">${d.cat||'—'}</span></td>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-mid)">${d.desc||'—'}</td>
+      <td style="text-align:right;font-weight:700;color:${amtColor}">${fmtAmt(d.amount)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('finTable').innerHTML = `
+    <div class="fin-section-lbl">TRANSACTIONS RÉCENTES</div>
+    <div class="fin-box">
+      ${recent.length
+        ? `<table class="fin-table">
+            <thead><tr><th>DATE</th><th>CATÉGORIE</th><th>DESCRIPTION</th><th style="text-align:right">MONTANT</th></tr></thead>
+            <tbody>${rows}</tbody>
+           </table>
+           ${sorted.length > 50 ? `<div style="font-family:'Space Mono',monospace;font-size:0.46rem;color:var(--text-dim);text-align:right;margin-top:0.5rem">Affichage des 50 transactions les plus récentes sur ${sorted.length}</div>` : ''}`
+        : '<div class="fin-empty">Aucune transaction dans l\'onglet "Finance"</div>'}
+    </div>`;
 }
 
 // ════════════════════════════════════════════════════
