@@ -1932,12 +1932,9 @@ function finParseDate(raw) {
 
 function parseComptes() {
   if (!finComptes.length) return [];
-  // Auto-detect header: if col B of first row parses as a number it's data, otherwise it's a header
-  const firstB = finParseNum(finComptes[0][1]);
-  const firstC = finParseNum(finComptes[0][2]);
-  const dataRows = (firstB === 0 && firstC === 0) ? finComptes.slice(1) : finComptes;
-  // User confirmed: col A (0) = nom du compte, col B (1) = ref début 2026, col C (2) = valeur actuelle
-  return dataRows
+  // Always skip row 0 (confirmed header: "Compte / Valeur init. / Valeur 2026")
+  // col A (0)=nom, col B (1)=valeur initiale début 2026, col C (2)=valeur actuelle
+  return finComptes.slice(1)
     .filter(r => r.some(c => c !== ''))
     .map(r => ({
       name:    String(r[0] || '').trim(),
@@ -1950,26 +1947,19 @@ function parseComptes() {
 
 function parseDepenses() {
   if (!finDepenses.length) return [];
-  const hdr  = finDepenses[0].map(h => String(h).toLowerCase().trim());
-  const find = (...terms) => { for (const t of terms) { const i = hdr.findIndex(h => h.includes(t)); if (i>=0) return i; } return -1; };
-
-  // Detection with guaranteed fallbacks so nothing is ever -1
-  const iDate   = (() => { const i = find('date'); return i >= 0 ? i : 0; })();
-  const iCat    = (() => { const i = find('catégor','categor','cat','rubrique','type'); return i >= 0 ? i : 1; })();
-  const iDesc   = (() => { const i = find('descr','libellé','label','desc','détail','detail','intitulé'); return i >= 0 ? i : 2; })();
-  const iAmount = (() => { const i = find('montant','amount','€','eur','dépense','depense','débit','debit','somme','prix'); return i >= 0 ? i : 3; })();
-
-  // Skip first row only if it looks like a header (date col doesn't parse as a real date)
-  const firstDate = finParseDate(finDepenses[0][iDate]);
-  const dataRows  = firstDate ? finDepenses : finDepenses.slice(1);
-
-  return dataRows
+  // Confirmed column layout (user):
+  //   A (0) = Date | B (1) = Description | C (2) = Montant (€)
+  //   D (3) = Type/Catégorie | E (4) = Compte | F (5) = Mois
+  // Always skip row 0 (header row)
+  return finDepenses.slice(1)
     .filter(r => r.some(c => c !== ''))
     .map(r => ({
-      date:   finParseDate(r[iDate]) || '',
-      cat:    String(r[iCat]  || '').trim() || 'Autre',
-      desc:   String(r[iDesc] || '').trim(),
-      amount: finParseNum(r[iAmount]),
+      date:   finParseDate(r[0]) || '',
+      desc:   String(r[1] || '').trim(),
+      amount: finParseNum(r[2]),
+      cat:    String(r[3] || '').trim() || 'Autre',
+      compte: String(r[4] || '').trim(),
+      mois:   String(r[5] || '').trim(),
     }))
     .filter(d => d.date);
 }
@@ -1987,7 +1977,7 @@ async function renderFinancesPage() {
   const depenses = parseDepenses();
   renderFinBanner(comptes, depenses);
   renderFinAccounts(comptes);
-  renderFinCharts(depenses);
+  renderFinCharts(comptes, depenses);
   renderFinMilestone(comptes, depenses);
   renderFinTable(depenses);
 }
@@ -2053,8 +2043,10 @@ function renderFinBanner(comptes, depenses) {
 // ════════════════════════════════════════════════════
 // FINANCES — ACCOUNTS
 // ════════════════════════════════════════════════════
+const FIN_PALETTE = ['#7c6aff','#4ade80','#fbbf24','#22d3ee','#a855f7','#f87171','#38bdf8','#fb923c','#e879f9','#a3e635'];
+
 function renderFinAccounts(comptes) {
-  const PALETTE = ['#7c6aff','#4ade80','#fbbf24','#22d3ee','#a855f7','#f87171','#38bdf8','#fb923c','#e879f9','#a3e635'];
+  const PALETTE = FIN_PALETTE;
   if (!comptes.length) {
     document.getElementById('finAccounts').innerHTML = `<div class="fin-section-lbl">COMPTES</div><div class="fin-empty">Aucun compte détecté dans l'onglet "Comptes"</div>`;
     return;
@@ -2084,34 +2076,50 @@ function renderFinAccounts(comptes) {
 // ════════════════════════════════════════════════════
 // FINANCES — CHARTS
 // ════════════════════════════════════════════════════
-function renderFinCharts(depenses) {
+function renderFinCharts(comptes, depenses) {
   Object.values(finCharts).forEach(c => { try { c.destroy(); } catch(e){} });
   finCharts = {};
 
   const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-  const CAT_COLORS = ['#7c6aff','#4ade80','#fbbf24','#22d3ee','#a855f7','#f87171','#38bdf8','#fb923c','#e879f9','#a3e635','#94a3b8'];
 
-  const byMonth = {}, byCat = {};
+  // Map each compte name → palette color (same as account cards)
+  const compteColorMap = {};
+  comptes.forEach((c, i) => { compteColorMap[c.name] = FIN_PALETTE[i % FIN_PALETTE.length]; });
+  // Fuzzy match: find color for a compte string from depenses
+  const compteColor = name => {
+    if (compteColorMap[name]) return compteColorMap[name];
+    const found = Object.keys(compteColorMap).find(k =>
+      k.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(k.toLowerCase())
+    );
+    return found ? compteColorMap[found] : '#94a3b8';
+  };
+
+  // All months sorted ascending (X axis)
+  const allMonths = [...new Set(depenses.map(d => d.date.slice(0,7)).filter(Boolean))].sort();
+  // All unique comptes (each = one stacked area)
+  const allComptes = [...new Set(depenses.map(d => d.compte).filter(Boolean))];
+  // Category totals for doughnut
+  const byCat = {};
   depenses.forEach(d => {
-    if (!d.date) return;
-    const m = d.date.slice(0,7);
-    const amt = Math.abs(d.amount);
-    byMonth[m] = (byMonth[m]||0) + amt;
-    const cat = (d.cat||'Autre').trim();
-    byCat[cat] = (byCat[cat]||0) + amt;
+    const cat = d.cat || 'Autre';
+    byCat[cat] = (byCat[cat]||0) + Math.abs(d.amount);
   });
-  const months = Object.keys(byMonth).sort();
-  const cats   = Object.keys(byCat).sort((a,b) => byCat[b]-byCat[a]);
+  const cats = Object.keys(byCat).sort((a,b) => byCat[b]-byCat[a]);
+
+  const monthLabel = m => {
+    const [,mo] = m.split('-');
+    return `${MONTHS_FR[parseInt(mo)-1]} ${m.slice(0,4)}`;
+  };
 
   document.getElementById('finCharts').innerHTML = `
     <div class="fin-section-lbl">ANALYSE DES DÉPENSES</div>
     <div class="fin-charts">
       <div class="fin-box">
         <div class="fin-box-hdr">
-          <span class="fin-box-ttl">DÉPENSES PAR MOIS</span>
+          <span class="fin-box-ttl">DÉPENSES PAR MOIS · PAR COMPTE</span>
           <button class="crp-btn" onclick="reloadFinancesData()">↻ RAFRAÎCHIR</button>
         </div>
-        <div class="fin-wrap"><canvas id="finChartBar"></canvas></div>
+        <div class="fin-wrap" style="height:220px"><canvas id="finChartArea"></canvas></div>
       </div>
       <div class="fin-box">
         <div class="fin-box-hdr"><span class="fin-box-ttl">RÉPARTITION PAR CATÉGORIE</span></div>
@@ -2121,40 +2129,60 @@ function renderFinCharts(depenses) {
 
   Chart.defaults.color = '#60607a';
 
-  const ctxBar = document.getElementById('finChartBar')?.getContext('2d');
-  if (ctxBar && months.length) {
-    finCharts.bar = new Chart(ctxBar, {
-      type: 'bar',
-      data: {
-        labels: months.map(m => { const [,mo] = m.split('-'); return MONTHS_FR[parseInt(mo)-1]; }),
-        datasets: [{
-          label: 'Dépenses (€)',
-          data: months.map(m => parseFloat(byMonth[m].toFixed(2))),
-          backgroundColor: months.map((m,i) => {
-            const now = new Date();
-            const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            return m === cur ? 'rgba(124,106,255,0.7)' : 'rgba(124,106,255,0.25)';
-          }),
-          borderColor: 'rgba(124,106,255,0.8)',
-          borderWidth: 1, borderRadius: 2,
-        }]
-      },
+  // ── Stacked area chart ──
+  const ctxArea = document.getElementById('finChartArea')?.getContext('2d');
+  if (ctxArea && allMonths.length) {
+    const datasets = allComptes.map(compte => {
+      const hex = compteColor(compte);
+      const rgb = hex.replace('#','').match(/.{2}/g).map(x=>parseInt(x,16)).join(',');
+      return {
+        label: compte,
+        data: allMonths.map(m =>
+          parseFloat(depenses
+            .filter(d => d.date.startsWith(m) && d.compte === compte)
+            .reduce((s,d) => s + Math.abs(d.amount), 0)
+            .toFixed(2))
+        ),
+        borderColor: hex,
+        backgroundColor: `rgba(${rgb},0.25)`,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        borderWidth: 2,
+      };
+    });
+
+    finCharts.area = new Chart(ctxArea, {
+      type: 'line',
+      data: { labels: allMonths.map(monthLabel), datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: i => ` ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €` } }
+          legend: { position:'bottom', labels:{ font:{family:'Space Mono',size:8}, boxWidth:8, padding:5 } },
+          tooltip: {
+            mode: 'index',
+            callbacks: {
+              label: i => ` ${i.dataset.label}: ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €`,
+              footer: items => {
+                const total = items.reduce((s,i) => s+i.raw, 0);
+                return `Total : ${total.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €`;
+              }
+            }
+          }
         },
         scales: {
-          x: { ticks:{ font:{family:'Space Mono',size:9} }, grid:{ color:'rgba(37,37,53,0.5)' } },
-          y: { ticks:{ font:{family:'Space Mono',size:9}, callback: v=>`${v}€` }, grid:{ color:'rgba(37,37,53,0.5)' } }
+          x: { ticks:{ font:{family:'Space Mono',size:8}, maxRotation:35 }, grid:{ color:'rgba(37,37,53,0.5)' } },
+          y: { stacked: true, ticks:{ font:{family:'Space Mono',size:9}, callback: v=>`${v}€` }, grid:{ color:'rgba(37,37,53,0.5)' } }
         }
       }
     });
-  } else if (ctxBar) {
-    const ctx = ctxBar.canvas; ctx.parentElement.innerHTML = '<div class="fin-empty">Aucune donnée de dépenses</div>';
+  } else if (ctxArea) {
+    ctxArea.canvas.parentElement.innerHTML = '<div class="fin-empty">Aucune donnée de dépenses</div>';
   }
 
+  // ── Doughnut by category ──
+  const CAT_COLORS = FIN_PALETTE.concat(['#94a3b8']);
   const ctxPie = document.getElementById('finChartPie')?.getContext('2d');
   if (ctxPie && cats.length) {
     finCharts.pie = new Chart(ctxPie, {
@@ -2295,13 +2323,13 @@ function renderFinTable(depenses) {
   const fmtAmt  = v => v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 
   const rows = recent.map(d => {
-    const col   = getCatColor(d.cat);
-    const isNeg = d.amount < 0;
-    const amtColor = isNeg ? 'var(--danger)' : 'var(--text)';
+    const catCol = getCatColor(d.cat);
+    const amtColor = d.amount >= 0 ? 'var(--danger)' : 'var(--green)'; // expenses positive = red
     return `<tr>
       <td style="white-space:nowrap">${d.date}</td>
-      <td><span class="fin-cat-pill" style="color:${col};border-color:${col}44;background:${col}11">${d.cat||'—'}</span></td>
-      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-mid)">${d.desc||'—'}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.desc||'—'}</td>
+      <td><span class="fin-cat-pill" style="color:${catCol};border-color:${catCol}44;background:${catCol}11">${d.cat||'—'}</span></td>
+      <td style="color:var(--text-dim);white-space:nowrap">${d.compte||'—'}</td>
       <td style="text-align:right;font-weight:700;color:${amtColor}">${fmtAmt(d.amount)}</td>
     </tr>`;
   }).join('');
@@ -2311,7 +2339,7 @@ function renderFinTable(depenses) {
     <div class="fin-box">
       ${recent.length
         ? `<table class="fin-table">
-            <thead><tr><th>DATE</th><th>CATÉGORIE</th><th>DESCRIPTION</th><th style="text-align:right">MONTANT</th></tr></thead>
+            <thead><tr><th>DATE</th><th>DESCRIPTION</th><th>CATÉGORIE</th><th>COMPTE</th><th style="text-align:right">MONTANT</th></tr></thead>
             <tbody>${rows}</tbody>
            </table>
            ${sorted.length > 50 ? `<div style="font-family:'Space Mono',monospace;font-size:0.46rem;color:var(--text-dim);text-align:right;margin-top:0.5rem">Affichage des 50 transactions les plus récentes sur ${sorted.length}</div>` : ''}`
