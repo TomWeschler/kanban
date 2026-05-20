@@ -1887,17 +1887,56 @@ function renderCryptoTable() {
 // ════════════════════════════════════════════════════
 // FINANCES — DATA LOADING
 // ════════════════════════════════════════════════════
+let finDebugInfo = { sheetTitles: [], comptesSheet: null, financeSheet: null, error: null };
+
 async function loadFinancesData() {
   if (!accessToken) return;
   try {
-    const [r1, r2] = await Promise.all([
-      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/Comptes!A:Z`, { headers:{ Authorization:`Bearer ${accessToken}` } }),
-      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/Finance!A:Z`, { headers:{ Authorization:`Bearer ${accessToken}` } }),
-    ]);
-    if (r1.ok) { const d = await r1.json(); finComptes = d.values || []; }
-    if (r2.ok) { const d = await r2.json(); finDepenses = d.values || []; }
+    // Step 1: fetch spreadsheet metadata to get real sheet names
+    const metaR = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}?fields=sheets.properties.title`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    if (!metaR.ok) {
+      finDebugInfo.error = `Spreadsheet inaccessible (HTTP ${metaR.status}) — vérifie l'ID et les permissions`;
+      finLoaded = true; return;
+    }
+    const meta = await metaR.json();
+    const titles = (meta.sheets || []).map(s => s.properties.title);
+    finDebugInfo.sheetTitles = titles;
+
+    // Step 2: fuzzy-match sheet names
+    const findSheet = (...names) =>
+      titles.find(t => names.some(n => t.toLowerCase().trim() === n.toLowerCase().trim())) ||
+      titles.find(t => names.some(n => t.toLowerCase().includes(n.toLowerCase()))) ||
+      null;
+    const comptesSheet  = findSheet('Comptes','Compte','Accounts','comptes');
+    const financeSheet  = findSheet('Finance','Finances','Dépenses','Depenses','depenses','Expenses','Budget');
+    finDebugInfo.comptesSheet = comptesSheet;
+    finDebugInfo.financeSheet = financeSheet;
+
+    if (!comptesSheet && !financeSheet) {
+      finDebugInfo.error = `Aucun onglet "Comptes" ou "Finance" trouvé`;
+      finLoaded = true; return;
+    }
+
+    // Step 3: fetch data from matched sheets
+    const fetches = [];
+    if (comptesSheet) fetches.push(
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/${encodeURIComponent(comptesSheet)}!A:Z`,
+        { headers: { Authorization: `Bearer ${accessToken}` } })
+    );
+    if (financeSheet) fetches.push(
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/${encodeURIComponent(financeSheet)}!A:Z`,
+        { headers: { Authorization: `Bearer ${accessToken}` } })
+    );
+    const results = await Promise.all(fetches);
+    let ri = 0;
+    if (comptesSheet) { const r = results[ri++]; if (r.ok) { const d = await r.json(); finComptes  = d.values || []; } }
+    if (financeSheet) { const r = results[ri++]; if (r.ok) { const d = await r.json(); finDepenses = d.values || []; } }
     finLoaded = true;
   } catch(e) {
+    finDebugInfo.error = String(e);
     console.error('Finances load error', e);
     toast('Erreur chargement données Finances', 'err');
     finLoaded = true;
@@ -2350,12 +2389,17 @@ function renderFinTable(depenses) {
            </table>
            ${sorted.length > 50 ? `<div style="font-family:'Space Mono',monospace;font-size:0.46rem;color:var(--text-dim);text-align:right;margin-top:0.5rem">Affichage des 50 transactions les plus récentes sur ${sorted.length}</div>` : ''}`
         : `<div class="fin-empty">0 transaction parsée depuis l'onglet "Finance"</div>
-           <div style="font-family:'Space Mono',monospace;font-size:0.48rem;color:var(--text-dim);margin-top:0.75rem;padding:0.75rem;background:var(--surface2);border:1px solid var(--border2)">
-             <div style="color:var(--warn);margin-bottom:0.5rem">⚠ DIAGNOSTIC — ${finDepenses.length} ligne(s) brute(s) reçue(s) du sheet</div>
-             ${finDepenses.slice(0,5).map((r,i)=>`<div style="margin-bottom:0.25rem;opacity:${i===0?'0.55':'0.85'}">
-               [${i===0?'HEADER':'ligne '+i}] ${r.slice(0,6).map(c=>`<span style="border:1px solid var(--border);padding:0 4px;margin-right:3px">${c||'∅'}</span>`).join('')}
-             </div>`).join('')}
-             <div style="margin-top:0.5rem;opacity:0.55">Attendu : col A=date · B=description · C=montant · D=catégorie · E=compte</div>
+           <div style="font-family:'Space Mono',monospace;font-size:0.48rem;color:var(--text-dim);margin-top:0.75rem;padding:0.75rem;background:var(--surface2);border:1px solid var(--border2);line-height:1.9">
+             <div style="color:var(--warn);font-weight:700;margin-bottom:0.4rem">⚠ DIAGNOSTIC</div>
+             ${finDebugInfo.error ? `<div style="color:var(--danger)">Erreur : ${finDebugInfo.error}</div>` : ''}
+             <div>Onglets trouvés dans le spreadsheet : <b style="color:var(--text)">${finDebugInfo.sheetTitles.join(' · ') || '—'}</b></div>
+             <div>Onglet "Comptes" détecté : <b style="color:${finDebugInfo.comptesSheet?'var(--green)':'var(--danger)'}">${finDebugInfo.comptesSheet||'NON TROUVÉ'}</b></div>
+             <div>Onglet "Finance" détecté : <b style="color:${finDebugInfo.financeSheet?'var(--green)':'var(--danger)'}">${finDebugInfo.financeSheet||'NON TROUVÉ'}</b></div>
+             <div>Lignes brutes reçues (Finance) : <b style="color:var(--text)">${finDepenses.length}</b></div>
+             ${finDepenses.length ? finDepenses.slice(0,4).map((r,i)=>`<div style="margin-top:0.2rem;opacity:${i===0?'0.5':'1'}">
+               [${i===0?'header':'L'+i}] ${r.slice(0,6).map(c=>`<span style="border:1px solid var(--border);padding:0 4px;margin-right:2px">${String(c||'∅')}</span>`).join('')}
+             </div>`).join('') : ''}
+             <div style="margin-top:0.4rem;opacity:0.5">Attendu : col A=date · B=description · C=montant · D=catégorie · E=compte</div>
            </div>`}
     </div>`;
 }
