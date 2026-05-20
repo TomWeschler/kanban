@@ -1921,11 +1921,17 @@ function finParseNum(raw) {
 function finParseDate(raw) {
   if (!raw) return '';
   const s = String(raw).trim();
-  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY (common in French sheets)
+  const m1 = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+  if (m1) return `${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+  // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-  // Excel serial
-  if (/^\d{5}$/.test(s)) { const d=new Date((parseInt(s)-25569)*86400000); return d.toISOString().split('T')[0]; }
+  // Excel/Sheets serial number with optional decimal time part (e.g. "45993" or "45993.5")
+  if (/^\d{4,6}(\.\d+)?$/.test(s)) {
+    const d = new Date((parseFloat(s) - 25569) * 86400000);
+    if (!isNaN(d)) return d.toISOString().split('T')[0];
+  }
+  // Generic fallback
   const d = new Date(s);
   return isNaN(d) ? '' : d.toISOString().split('T')[0];
 }
@@ -2343,7 +2349,14 @@ function renderFinTable(depenses) {
             <tbody>${rows}</tbody>
            </table>
            ${sorted.length > 50 ? `<div style="font-family:'Space Mono',monospace;font-size:0.46rem;color:var(--text-dim);text-align:right;margin-top:0.5rem">Affichage des 50 transactions les plus récentes sur ${sorted.length}</div>` : ''}`
-        : '<div class="fin-empty">Aucune transaction dans l\'onglet "Finance"</div>'}
+        : `<div class="fin-empty">0 transaction parsée depuis l'onglet "Finance"</div>
+           <div style="font-family:'Space Mono',monospace;font-size:0.48rem;color:var(--text-dim);margin-top:0.75rem;padding:0.75rem;background:var(--surface2);border:1px solid var(--border2)">
+             <div style="color:var(--warn);margin-bottom:0.5rem">⚠ DIAGNOSTIC — ${finDepenses.length} ligne(s) brute(s) reçue(s) du sheet</div>
+             ${finDepenses.slice(0,5).map((r,i)=>`<div style="margin-bottom:0.25rem;opacity:${i===0?'0.55':'0.85'}">
+               [${i===0?'HEADER':'ligne '+i}] ${r.slice(0,6).map(c=>`<span style="border:1px solid var(--border);padding:0 4px;margin-right:3px">${c||'∅'}</span>`).join('')}
+             </div>`).join('')}
+             <div style="margin-top:0.5rem;opacity:0.55">Attendu : col A=date · B=description · C=montant · D=catégorie · E=compte</div>
+           </div>`}
     </div>`;
 }
 
