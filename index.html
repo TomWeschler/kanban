@@ -1400,7 +1400,15 @@ async function loadCryptoData() {
 
     const parseNum = raw => parseFloat(String(raw||'').replace(',','.').replace(/[^0-9.\-]/g,'')) || 0;
 
-    cryptoTrades = rows.slice(1).filter(r => r.some(c => c !== '')).map((r, i) => {
+    // Detect SellingDate & SellingPrice columns to filter out placeholder "X" rows
+    const iSellingDate  = colIdx('sellingdate','selling date','closedate','close date','date de vente','date vente','date_close','date_vente');
+    const iSellingPrice = colIdx('sellingprice','selling price','closeprice','close price','prix de vente','prix vente','prix_vente','close price');
+    const cellIsX = (r, col) => col >= 0 && String(r[col] || '').trim().toUpperCase() === 'X';
+
+    cryptoTrades = rows.slice(1)
+      .filter(r => r.some(c => c !== ''))
+      .filter(r => !cellIsX(r, iSellingDate) && !cellIsX(r, iSellingPrice))
+      .map((r, i) => {
       // Symbol: clean up pair notation (ADA/USDT → ADA)
       const rawSym = (colMap.symbol >= 0 ? r[colMap.symbol] || '' : '').toUpperCase().replace(/[\/-]?USDT?$|[\/-]?BUSD$|[\/-]?USD$/,'').trim();
       const sym = CRYPTOS.find(c => rawSym.includes(c.sym))?.sym || (rawSym || 'ADA');
