@@ -343,6 +343,74 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .fin-table tr:hover td{background:rgba(255,255,255,0.015)}
 .fin-cat-pill{display:inline-block;font-family:'Space Mono',monospace;font-size:0.44rem;font-weight:700;letter-spacing:0.07em;padding:2px 7px;border:1px solid;white-space:nowrap}
 .fin-empty{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;color:var(--text-dim);opacity:0.42;text-align:center;padding:2.5rem 0}
+
+/* ═══════════════════════════════
+   SPORT / FITNESS PAGE
+═══════════════════════════════ */
+#pagesport{overflow-y:auto;padding:1.25rem 1.5rem 3rem;gap:1rem;flex-direction:column}
+.fit-section{margin-top:0}
+.fit-alert{background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.4);color:#f97316;font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.07em;padding:0.65rem 1rem;margin-bottom:0}
+.fit-banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem}
+.fit-kpi{background:var(--surface);border:1px solid var(--border);padding:1rem 1.2rem}
+.fit-kpi-lbl{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.4rem}
+.fit-kpi-val{font-family:'Space Mono',monospace;font-size:1.55rem;font-weight:700;line-height:1}
+.fit-kpi-sub{font-size:0.65rem;color:var(--text-dim);margin-top:0.28rem}
+.fit-section-lbl{font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.65rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border)}
+.fit-box{background:var(--surface);border:1px solid var(--border);padding:1.1rem}
+.fit-box-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem}
+.fit-box-ttl{font-family:'Space Mono',monospace;font-size:0.53rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid)}
+.fit-empty{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;color:var(--text-dim);opacity:0.42;text-align:center;padding:2rem 0}
+/* Week strip */
+.fit-week{display:grid;grid-template-columns:repeat(7,1fr);gap:0.5rem}
+.fit-day{background:var(--surface);border:1px solid var(--border);padding:0.65rem 0.4rem;display:flex;flex-direction:column;align-items:center;gap:0.28rem;transition:border-color 0.15s}
+.fit-day-today{border-color:var(--accent);background:var(--accent-dim)}
+.fit-day-done{border-color:rgba(74,222,128,0.25);background:rgba(74,222,128,0.04)}
+.fit-day-missed{opacity:0.5}
+.fit-day-label{font-family:'Space Mono',monospace;font-size:0.46rem;letter-spacing:0.15em;color:var(--text-dim)}
+.fit-day-date{font-family:'Space Mono',monospace;font-size:1.05rem;font-weight:700;line-height:1}
+.fit-day-today .fit-day-date{color:var(--accent)}
+.fit-day-tier{font-family:'Space Mono',monospace;font-size:0.48rem;font-weight:700;letter-spacing:0.08em;padding:2px 6px;border:1px solid transparent}
+.fit-day-check{font-family:'Space Mono',monospace;font-size:0.58rem;font-weight:700;height:0.85rem;line-height:1}
+.fit-day-sess{font-family:'Space Mono',monospace;font-size:0.37rem;letter-spacing:0.04em;color:var(--text-dim);text-transform:uppercase;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:95%;opacity:0.7}
+/* Today card */
+.fit-today-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;gap:1rem}
+.fit-tier-badge{font-family:'Space Mono',monospace;font-size:0.58rem;font-weight:700;letter-spacing:0.15em;padding:3px 10px;border:1px solid;display:inline-block;margin-bottom:0.5rem}
+.fit-today-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:0.25rem}
+.fit-today-mod{font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--warn);margin-top:0.2rem}
+.fit-today-notes{font-size:0.6rem;color:var(--text-dim);margin-top:0.22rem;font-style:italic}
+.fit-walk-box{padding:1.2rem;text-align:center}
+/* Exercise list */
+.fit-ex-list{display:flex;flex-direction:column;gap:0.6rem}
+.fit-ex-row{display:flex;align-items:flex-start;gap:0.75rem;padding:0.7rem;background:var(--surface2);border:1px solid var(--border)}
+.fit-ex-num{font-family:'Space Mono',monospace;font-size:0.6rem;color:var(--text-dim);min-width:1.1rem;padding-top:0.12rem}
+.fit-ex-info{flex:1;min-width:0}
+.fit-ex-name{font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:700;margin-bottom:0.22rem}
+.fit-ex-meta{display:flex;gap:0.55rem;flex-wrap:wrap}
+.fit-ex-meta span{font-family:'Space Mono',monospace;font-size:0.46rem;color:var(--text-dim);background:var(--surface3);padding:2px 5px}
+.fit-ex-cues{font-size:0.57rem;color:var(--text-dim);font-style:italic;margin-top:0.28rem;line-height:1.4}
+.fit-ex-sets{font-family:'Space Mono',monospace;font-size:0.46rem;flex-shrink:0;padding-top:0.12rem}
+.fit-ex-sets-done{color:var(--green)}
+/* Logger */
+.fit-log-table{display:flex;flex-direction:column;gap:0.65rem}
+.fit-log-row{padding:0.7rem;background:var(--surface2);border:1px solid var(--border)}
+.fit-log-exname{font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;margin-bottom:0.45rem}
+.fit-log-sets{display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.45rem;min-height:1.1rem}
+.fit-log-set-done{font-family:'Space Mono',monospace;font-size:0.43rem;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);color:var(--green);padding:2px 6px;cursor:default}
+.fit-log-inputs{display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap}
+.fit-input{background:var(--surface3);border:1px solid var(--border2);color:var(--text);font-family:'Space Mono',monospace;font-size:0.6rem;padding:0.28rem 0.5rem;outline:none;transition:border-color 0.13s}
+.fit-input:focus{border-color:var(--accent)}
+.fit-form-lbl{font-family:'Space Mono',monospace;font-size:0.45rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.28rem}
+.fit-btn{font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.08em;text-transform:uppercase;padding:0.28rem 0.7rem;border:1px solid var(--border2);background:transparent;color:var(--text-dim);cursor:pointer;transition:all 0.12s;white-space:nowrap}
+.fit-btn:hover{color:var(--text);border-color:var(--text-mid)}
+.fit-btn-w{color:#22c55e;border-color:rgba(34,197,94,0.35)}
+.fit-btn-w:hover{background:rgba(34,197,94,0.08)}
+.fit-btn-m{color:#f97316;border-color:rgba(249,115,22,0.35)}
+.fit-btn-m:hover{background:rgba(249,115,22,0.08)}
+/* Stats */
+.fit-stats-table{width:100%;border-collapse:collapse;font-family:'Space Mono',monospace;font-size:0.57rem}
+.fit-stats-table th{text-align:left;color:var(--text-dim);letter-spacing:0.1em;font-weight:400;padding:0.28rem 0.6rem;border-bottom:1px solid var(--border)}
+.fit-stats-table td{padding:0.32rem 0.6rem;border-bottom:1px solid rgba(37,37,53,0.4);color:var(--text)}
+.fit-stats-table tr:last-child td{border-bottom:none}
 </style>
 </head>
 <body>
@@ -369,6 +437,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
     <button class="nav-tab" data-page="habits" onclick="switchPage('habits')">HABITUDES</button>
     <button class="nav-tab" data-page="crypto" onclick="switchPage('crypto')">CRYPTOBOT</button>
     <button class="nav-tab" data-page="finances" onclick="switchPage('finances')">FINANCES</button>
+    <button class="nav-tab" data-page="sport" onclick="switchPage('sport')">SPORT</button>
   </nav>
   <div class="nav-sep"></div>
   <div class="proj-shortcuts">
@@ -439,6 +508,15 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
   <div id="finCharts" class="fin-section"></div>
   <div id="finMilestone" class="fin-section"></div>
   <div id="finTable" class="fin-section"></div>
+</div>
+
+<!-- SPORT PAGE -->
+<div class="page" id="pagesport">
+  <div id="fitBanner"></div>
+  <div id="fitWeekStrip" class="fit-section"></div>
+  <div id="fitToday" class="fit-section"></div>
+  <div id="fitLogger" class="fit-section"></div>
+  <div id="fitStats" class="fit-section"></div>
 </div>
 
 <!-- TASK MODAL -->
@@ -1297,6 +1375,7 @@ function switchPage(name){
   if(name==='habits')renderHabitsPage();
   if(name==='crypto')renderCryptoBot();
   if(name==='finances')renderFinancesPage();
+  if(name==='sport')renderFitPage();
 }
 
 // ════════════════════════════════════════════════════
@@ -2546,6 +2625,459 @@ function renderFinTable(depenses) {
              <div style="margin-top:0.4rem;opacity:0.5">Attendu : col A=date · B=description · C=montant · D=catégorie · E=compte</div>
            </div>`}
     </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// FITNESS / SPORT PAGE
+// ════════════════════════════════════════════════════
+let fitProgram=[], fitExercises=[], fitSessions=[], fitWeeklyPlan=[], fitSessionLog=[], fitBodyStats=[];
+let fitLoaded=false;
+const FIT_TIER_COLOR={S:'#a855f7',H:'#3b82f6',M:'#f97316',W:'#22c55e'};
+const FIT_TIER_BG={S:'rgba(168,85,247,0.12)',H:'rgba(59,130,246,0.12)',M:'rgba(249,115,22,0.12)',W:'rgba(34,197,94,0.12)'};
+
+async function loadFitData(){
+  const token=gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
+  const sid=cfg.spreadsheetId;
+  const sheets=['fit_program','fit_exercises','fit_sessions','fit_weekly_plan','fit_session_log','fit_body_stats'];
+  const results=await Promise.all(sheets.map(s=>
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(s)}`,{headers:{Authorization:`Bearer ${token}`}})
+      .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}))
+  ));
+  [fitProgram,fitExercises,fitSessions,fitWeeklyPlan,fitSessionLog,fitBodyStats]=results.map(r=>r.values||[]);
+  fitLoaded=true;
+}
+
+function fitIdx(hdr,key){
+  const k=key.toLowerCase().replace(/[\s_]/g,'');
+  const i=hdr.findIndex(h=>h.toLowerCase().replace(/[\s_]/g,'')===k);
+  return i>=0?i:-1;
+}
+
+function parseFitExercises(){
+  if(!fitExercises.length)return{};
+  const [hdr,...rows]=fitExercises;
+  const g=k=>fitIdx(hdr,k);
+  const iId=g('exercise_id'),iName=g('name')||g('exercise_name')||1,iEq=g('equipment'),
+        iRMin=g('reps_min'),iRMax=g('reps_max'),iRPE=g('target_rpe'),
+        iRest=g('rest_s'),iCues=g('form_cues')>=0?g('form_cues'):g('notes');
+  const ex={};
+  rows.filter(r=>r.some(c=>c)).forEach(r=>{
+    const id=String(r[iId>=0?iId:0]||'').trim();
+    if(!id)return;
+    ex[id]={
+      id,
+      name:   iName>=0?String(r[iName]||id).trim():id,
+      eq:     iEq>=0?String(r[iEq]||'').trim():'',
+      repsMin:iRMin>=0?(parseInt(r[iRMin])||5):5,
+      repsMax:iRMax>=0?(parseInt(r[iRMax])||10):10,
+      tgtRpe: iRPE>=0?(parseFloat(String(r[iRPE]||'8').replace(',','.'))||8):8,
+      restS:  iRest>=0?(parseInt(r[iRest])||90):90,
+      cues:   iCues>=0?String(r[iCues]||'').trim():'',
+    };
+  });
+  return ex;
+}
+
+function parseFitSessions(){
+  if(!fitSessions.length)return{};
+  const [hdr,...rows]=fitSessions;
+  const g=k=>fitIdx(hdr,k);
+  const iSid=g('session_id'),iExId=g('exercise_id'),iOrder=g('order')>=0?g('order'):g('exercise_order'),
+        iTier=g('tier'),iName=g('name')>=0?g('name'):g('session_name');
+  const sess={};
+  rows.filter(r=>r.some(c=>c)).forEach(r=>{
+    const sid=String(r[iSid>=0?iSid:0]||'').trim();
+    if(!sid)return;
+    if(!sess[sid])sess[sid]={id:sid,tier:String(r[iTier>=0?iTier:1]||'').trim(),name:String(r[iName>=0?iName:2]||sid).trim(),exercises:[]};
+    const exId=String(r[iExId>=0?iExId:3]||'').trim();
+    if(exId)sess[sid].exercises.push({exId,order:iOrder>=0?(parseInt(r[iOrder])||sess[sid].exercises.length+1):sess[sid].exercises.length+1});
+  });
+  Object.values(sess).forEach(s=>s.exercises.sort((a,b)=>a.order-b.order));
+  return sess;
+}
+
+function parseFitWeeklyPlan(){
+  if(!fitWeeklyPlan.length)return[];
+  const [hdr,...rows]=fitWeeklyPlan;
+  const g=k=>fitIdx(hdr,k);
+  const iDate=g('date'),iDay=g('day'),iTier=g('planned_tier'),iSessId=g('planned_session_id'),
+        iInt=g('intensity_modifier'),iNotes=g('notes'),iWeek=g('week_starting');
+  return rows.filter(r=>r.some(c=>c)).map(r=>({
+    weekStarting:String(r[iWeek>=0?iWeek:0]||'').trim(),
+    date:   String(r[iDate>=0?iDate:1]||'').trim(),
+    day:    String(r[iDay>=0?iDay:2]||'').trim(),
+    tier:   String(r[iTier>=0?iTier:3]||'').trim(),
+    sessId: String(r[iSessId>=0?iSessId:4]||'').trim(),
+    intMod: String(r[iInt>=0?iInt:5]||'').trim(),
+    notes:  String(r[iNotes>=0?iNotes:7]||'').trim(),
+  })).filter(r=>r.date);
+}
+
+function parseFitSessionLog(){
+  if(!fitSessionLog.length)return[];
+  const [hdr,...rows]=fitSessionLog;
+  if(!hdr||!hdr.length)return[];
+  const g=k=>fitIdx(hdr,k);
+  const iLogId=g('log_id'),iDate=g('date'),iSessId=g('session_id'),iStatus=g('status'),
+        iSkip=g('skip_reason'),iDur=g('duration_min'),iExId=g('exercise_id'),
+        iSet=g('set_number'),iReps=g('reps'),iKg=g('weight_kg'),iRPE=g('rpe'),
+        iEnergy=g('session_energy_1to10'),iSleep=g('sleep_h_previous'),iNotes=g('session_notes');
+  return rows.filter(r=>r.some(c=>c)).map(r=>({
+    logId:  String(r[iLogId>=0?iLogId:0]||'').trim(),
+    date:   String(r[iDate>=0?iDate:1]||'').trim(),
+    sessId: String(r[iSessId>=0?iSessId:2]||'').trim(),
+    status: String(r[iStatus>=0?iStatus:3]||'').trim(),
+    skip:   String(r[iSkip>=0?iSkip:4]||'').trim(),
+    dur:    parseInt(r[iDur>=0?iDur:5])||0,
+    exId:   String(r[iExId>=0?iExId:6]||'').trim(),
+    setNum: parseInt(r[iSet>=0?iSet:7])||0,
+    reps:   parseInt(r[iReps>=0?iReps:8])||0,
+    kg:     parseFloat(String(r[iKg>=0?iKg:9]||'0').replace(',','.'))||0,
+    rpe:    parseFloat(String(r[iRPE>=0?iRPE:10]||'0').replace(',','.'))||0,
+    energy: String(r[iEnergy>=0?iEnergy:12]||'').trim(),
+    sleep:  String(r[iSleep>=0?iSleep:13]||'').trim(),
+    notes:  String(r[iNotes>=0?iNotes:14]||'').trim(),
+  })).filter(r=>r.date);
+}
+
+function parseFitBodyStats(){
+  if(!fitBodyStats.length)return[];
+  const [hdr,...rows]=fitBodyStats;
+  if(!hdr||!hdr.length)return[];
+  const g=k=>fitIdx(hdr,k);
+  const iDate=g('date'),iWt=g('weight_kg'),iBf=g('bf_estimate_pct'),iWaist=g('waist_navel_cm'),iNotes=g('notes');
+  return rows.filter(r=>r.some(c=>c)).map(r=>({
+    date:  String(r[iDate>=0?iDate:0]||'').trim(),
+    wt:    parseFloat(String(r[iWt>=0?iWt:1]||'0').replace(',','.'))||0,
+    bf:    parseFloat(String(r[iBf>=0?iBf:2]||'0').replace(',','.'))||0,
+    waist: parseFloat(String(r[iWaist>=0?iWaist:3]||'0').replace(',','.'))||0,
+    notes: String(r[iNotes>=0?iNotes:12]||'').trim(),
+  })).filter(r=>r.date);
+}
+
+async function fitAppendRow(sheetName,values){
+  const token=gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
+  const sid=cfg.spreadsheetId;
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheetName)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+  const resp=await fetch(url,{
+    method:'POST',
+    headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+    body:JSON.stringify({values:[values]})
+  });
+  return resp.ok;
+}
+
+async function renderFitPage(){
+  if(!fitLoaded){showLoad(true);await loadFitData();showLoad(false);}
+  const exercises=parseFitExercises();
+  const sessions=parseFitSessions();
+  const plan=parseFitWeeklyPlan();
+  const log=parseFitSessionLog();
+  const stats=parseFitBodyStats();
+  const today=td();
+  const todayPlan=plan.find(p=>p.date===today);
+  const loggedToday=log.filter(l=>l.date===today);
+  renderFitBanner(plan,log,stats,today);
+  renderFitWeekStrip(plan,log,today);
+  renderFitToday(todayPlan,sessions,exercises,loggedToday,today);
+  renderFitLogger(todayPlan,sessions,exercises,log,today);
+  renderFitStats(stats);
+}
+
+async function reloadFitData(){
+  fitLoaded=false;fitProgram=[];fitExercises=[];fitSessions=[];fitWeeklyPlan=[];fitSessionLog=[];fitBodyStats=[];
+  await renderFitPage();
+}
+
+function renderFitBanner(plan,log,stats,today){
+  const now=new Date();
+  const hour=now.getHours();
+  const dow=(now.getDay()+6)%7;
+  const weekStart=new Date(now);weekStart.setDate(now.getDate()-dow);
+  const weekDates=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);return d.toISOString().split('T')[0];});
+  const doneDays=new Set(log.filter(l=>weekDates.includes(l.date)&&l.status==='completed').map(l=>l.date)).size;
+  // streak
+  let streak=0;const chk=new Date(today);
+  while(streak<365){
+    const ds=chk.toISOString().split('T')[0];
+    if(log.some(l=>l.date===ds&&l.status==='completed')){streak++;chk.setDate(chk.getDate()-1);}
+    else{if(ds===today){chk.setDate(chk.getDate()-1);}else break;}
+  }
+  const lastStat=stats.length?[...stats].sort((a,b)=>a.date.localeCompare(b.date)).pop():null;
+  const loggedTodayAny=log.some(l=>l.date===today&&l.status==='completed');
+  const showAntiZero=!loggedTodayAny&&hour>=18;
+  const totalSessDone=new Set(log.filter(l=>l.status==='completed').map(l=>l.date+'_'+l.sessId)).size;
+  document.getElementById('fitBanner').innerHTML=`
+    ${showAntiZero?`<div class="fit-alert">⚡ ANTI-ZÉRO — ${hour}h et aucune séance complétée. Lance le mode Minimal (10 min) ou log ton Walk (8 000 pas) !</div>`:''}
+    <div class="fit-banner" style="margin-top:${showAntiZero?'0.75rem':'0'}">
+      <div class="fit-kpi">
+        <div class="fit-kpi-lbl">SÉANCES SEMAINE</div>
+        <div class="fit-kpi-val">${doneDays}<span style="font-size:0.7rem;opacity:0.4">/7</span></div>
+        <div class="fit-kpi-sub">${weekDates.filter(d=>d<=today).length} jours écoulés</div>
+      </div>
+      <div class="fit-kpi">
+        <div class="fit-kpi-lbl">STREAK</div>
+        <div class="fit-kpi-val">${streak}<span style="font-size:0.7rem;opacity:0.4"> j</span></div>
+        <div class="fit-kpi-sub">Jours consécutifs</div>
+      </div>
+      <div class="fit-kpi">
+        <div class="fit-kpi-lbl">POIDS</div>
+        <div class="fit-kpi-val">${lastStat&&lastStat.wt?lastStat.wt+'<span style="font-size:0.7rem;opacity:0.4"> kg</span>':'<span style="font-size:0.9rem;opacity:0.5">—</span>'}</div>
+        <div class="fit-kpi-sub">${lastStat?lastStat.date:'Aucune mesure'}</div>
+      </div>
+      <div class="fit-kpi">
+        <div class="fit-kpi-lbl">TOTAL SÉANCES</div>
+        <div class="fit-kpi-val">${totalSessDone}</div>
+        <div class="fit-kpi-sub">Depuis le début</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
+      <button class="fit-btn" onclick="reloadFitData()" style="font-size:0.46rem">↺ RAFRAÎCHIR</button>
+    </div>`;
+}
+
+function renderFitWeekStrip(plan,log,today){
+  const now=new Date(today+'T12:00:00');
+  const dow=(now.getDay()+6)%7;
+  const weekStart=new Date(now);weekStart.setDate(now.getDate()-dow);
+  const DAYS=['LUN','MAR','MER','JEU','VEN','SAM','DIM'];
+  const days=Array.from({length:7},(_,i)=>{
+    const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);
+    const dStr=d.toISOString().split('T')[0];
+    const dayPlan=plan.find(p=>p.date===dStr);
+    const hasLog=log.some(l=>l.date===dStr&&l.status==='completed');
+    const isToday=dStr===today;
+    const isPast=dStr<today;
+    const tier=dayPlan?.tier||'';
+    const tc=FIT_TIER_COLOR[tier]||'var(--text-dim)';
+    const tb=FIT_TIER_BG[tier]||'transparent';
+    let cls='fit-day';
+    if(isToday)cls+=' fit-day-today';
+    else if(hasLog)cls+=' fit-day-done';
+    else if(isPast&&tier)cls+=' fit-day-missed';
+    return `<div class="${cls}">
+      <div class="fit-day-label">${DAYS[i]}</div>
+      <div class="fit-day-date">${d.getDate()}</div>
+      ${tier?`<div class="fit-day-tier" style="color:${tc};background:${tb};border-color:${tc}44">${tier}</div>`:`<div class="fit-day-tier" style="opacity:0.18">—</div>`}
+      <div class="fit-day-check">${hasLog?'<span style="color:var(--green)">✓</span>':(isPast&&tier?'<span style="color:var(--danger)">✗</span>':'')}</div>
+      ${dayPlan?.sessId?`<div class="fit-day-sess">${dayPlan.sessId.replace(/_/g,' ')}</div>`:''}
+    </div>`;
+  });
+  document.getElementById('fitWeekStrip').innerHTML=`
+    <div class="fit-section-lbl">SEMAINE EN COURS</div>
+    <div class="fit-week">${days.join('')}</div>`;
+}
+
+function renderFitToday(todayPlan,sessions,exercises,loggedToday,today){
+  const el=document.getElementById('fitToday');
+  if(!todayPlan){
+    el.innerHTML=`
+      <div class="fit-section-lbl">AUJOURD'HUI — ${today}</div>
+      <div class="fit-box">
+        <div class="fit-empty">Aucune séance planifiée pour aujourd'hui</div>
+        <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:1rem">
+          <button class="fit-btn fit-btn-m" onclick="fitQuickLog('M','minimal_10min','${today}')">⚡ LOG ANTI-ZÉRO (10 MIN)</button>
+          <button class="fit-btn fit-btn-w" onclick="fitQuickLog('W','walk_daily','${today}')">🚶 LOG WALK (8 000 PAS)</button>
+        </div>
+      </div>`;
+    return;
+  }
+  const tier=todayPlan.tier;
+  const sessId=todayPlan.sessId;
+  const sess=sessions[sessId];
+  const tc=FIT_TIER_COLOR[tier]||'var(--accent)';
+  const tb=FIT_TIER_BG[tier]||'var(--surface2)';
+  const isLogged=loggedToday.some(l=>l.status==='completed'||l.status==='partial');
+  let bodyHtml='';
+  if(tier==='W'){
+    bodyHtml=`<div class="fit-walk-box">
+      <div style="font-size:2rem;margin-bottom:0.6rem">🚶</div>
+      <div style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--text-dim);margin-bottom:1rem">OBJECTIF : 8 000 PAS</div>
+      ${!isLogged?`<button class="fit-btn fit-btn-w" onclick="fitQuickLog('W','walk_daily','${today}')">✓ WALK COMPLÉTÉ</button>`:''}
+    </div>`;
+  } else if(tier==='M'){
+    bodyHtml=`<div class="fit-walk-box">
+      <div style="font-size:2rem;margin-bottom:0.6rem">⚡</div>
+      <div style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--text-dim);margin-bottom:1rem">ANTI-ZÉRO — 10 MINUTES D'EFFORT</div>
+      ${!isLogged?`<button class="fit-btn fit-btn-m" onclick="fitQuickLog('M','minimal_10min','${today}')">✓ MINIMAL COMPLÉTÉ</button>`:''}
+    </div>`;
+  } else if(sess&&sess.exercises.length){
+    bodyHtml='<div class="fit-ex-list">';
+    sess.exercises.forEach(({exId},idx)=>{
+      const ex=exercises[exId];
+      if(!ex)return;
+      const sets=loggedToday.filter(l=>l.exId===exId&&l.setNum>0);
+      bodyHtml+=`<div class="fit-ex-row">
+        <div class="fit-ex-num">${idx+1}</div>
+        <div class="fit-ex-info">
+          <div class="fit-ex-name">${ex.name}</div>
+          <div class="fit-ex-meta">
+            <span>${ex.repsMin}–${ex.repsMax} reps</span>
+            <span>RPE cible ${ex.tgtRpe}</span>
+            <span>Repos ${ex.restS}s</span>
+            ${ex.eq?`<span>${ex.eq}</span>`:''}
+          </div>
+          ${ex.cues?`<div class="fit-ex-cues">${ex.cues}</div>`:''}
+        </div>
+        ${sets.length?`<div class="fit-ex-sets"><span class="fit-ex-sets-done">${sets.length} série${sets.length>1?'s':''} ✓</span></div>`:''}
+      </div>`;
+    });
+    bodyHtml+='</div>';
+  } else {
+    bodyHtml=`<div class="fit-empty">Séance "${sessId}" non trouvée dans fit_sessions</div>`;
+  }
+  el.innerHTML=`
+    <div class="fit-section-lbl">AUJOURD'HUI — ${today}</div>
+    <div class="fit-box">
+      <div class="fit-today-hdr">
+        <div>
+          <div class="fit-tier-badge" style="color:${tc};background:${tb};border-color:${tc}55">TIER ${tier}</div>
+          <div class="fit-today-title">${sess?sess.name:(sessId?sessId.replace(/_/g,' '):'Session')}</div>
+          ${todayPlan.intMod?`<div class="fit-today-mod">⚙ ${todayPlan.intMod}</div>`:''}
+          ${todayPlan.notes?`<div class="fit-today-notes">${todayPlan.notes}</div>`:''}
+        </div>
+        ${isLogged?`<div style="color:var(--green);font-family:'Space Mono',monospace;font-size:0.75rem;font-weight:700;flex-shrink:0">✓ COMPLÉTÉE</div>`:''}
+      </div>
+      ${bodyHtml}
+    </div>`;
+}
+
+function renderFitLogger(todayPlan,sessions,exercises,log,today){
+  const el=document.getElementById('fitLogger');
+  if(!todayPlan||todayPlan.tier==='W'||todayPlan.tier==='M'){el.innerHTML='';return;}
+  const sess=sessions[todayPlan.sessId];
+  if(!sess||!sess.exercises.length){el.innerHTML='';return;}
+  const tc=FIT_TIER_COLOR[todayPlan.tier]||'var(--accent)';
+  let rows='';
+  sess.exercises.forEach(({exId})=>{
+    const ex=exercises[exId];
+    if(!ex)return;
+    const exLog=log.filter(l=>l.date===today&&l.exId===exId&&l.setNum>0);
+    const lastKg=exLog.length?exLog[exLog.length-1].kg:'';
+    const lastReps=exLog.length?exLog[exLog.length-1].reps:ex.repsMin;
+    rows+=`<div class="fit-log-row">
+      <div class="fit-log-exname">${ex.name}</div>
+      <div class="fit-log-sets">${exLog.map(s=>`<span class="fit-log-set-done" title="S${s.setNum}: ${s.reps} reps @ ${s.kg}kg RPE${s.rpe}">S${s.setNum} ✓</span>`).join('')}</div>
+      <div class="fit-log-inputs">
+        <input type="number" id="fitkg_${exId}" placeholder="kg" value="${lastKg}" step="0.5" min="0" class="fit-input" style="width:65px">
+        <input type="number" id="fitreps_${exId}" placeholder="reps" value="${lastReps}" min="1" max="50" class="fit-input" style="width:60px">
+        <input type="number" id="fitrpe_${exId}" placeholder="RPE" min="5" max="10" step="0.5" class="fit-input" style="width:55px">
+        <button class="fit-btn" style="font-size:0.48rem" onclick="fitLogSet('${exId}','${todayPlan.sessId}','${today}',${exLog.length+1})">+ SÉRIE</button>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=`
+    <div class="fit-section-lbl">LOGGER LA SÉANCE</div>
+    <div class="fit-box">
+      <div class="fit-log-table">${rows}</div>
+      <div style="margin-top:1.2rem;border-top:1px solid var(--border);padding-top:1rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;gap:0.4rem;align-items:center">
+          <label class="fit-form-lbl" style="margin:0">ÉNERGIE</label>
+          <input type="number" id="fitEnergy" min="1" max="10" placeholder="7" class="fit-input" style="width:50px">
+        </div>
+        <div style="display:flex;gap:0.4rem;align-items:center">
+          <label class="fit-form-lbl" style="margin:0">SOMMEIL (h)</label>
+          <input type="number" id="fitSleep" min="3" max="12" step="0.5" placeholder="7.5" class="fit-input" style="width:60px">
+        </div>
+        <div style="display:flex;gap:0.4rem;align-items:center">
+          <label class="fit-form-lbl" style="margin:0">DURÉE (min)</label>
+          <input type="number" id="fitDur" min="1" max="120" placeholder="55" class="fit-input" style="width:60px">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <input type="text" id="fitNotes" placeholder="Notes séance..." class="fit-input" style="width:100%">
+        </div>
+        <button class="fit-btn" style="color:${tc};border-color:${tc}44" onclick="fitCompleteSession('${todayPlan.sessId}','${today}')">✓ TERMINER LA SÉANCE</button>
+      </div>
+    </div>`;
+}
+
+async function fitLogSet(exId,sessId,date,setNum){
+  const kg=parseFloat(document.getElementById('fitkg_'+exId)?.value)||0;
+  const reps=parseInt(document.getElementById('fitreps_'+exId)?.value)||0;
+  const rpe=parseFloat(document.getElementById('fitrpe_'+exId)?.value)||0;
+  if(!reps){alert('Renseigne le nombre de répétitions.');return;}
+  const logId=`${date}_${sessId}_${exId}_s${setNum}_${Date.now()}`;
+  showLoad(true);
+  const ok=await fitAppendRow('fit_session_log',[logId,date,sessId,'in_progress','','',exId,setNum,reps,kg||'',rpe||'','','','','']);
+  showLoad(false);
+  if(ok){
+    fitLoaded=false;await loadFitData();
+    const plan=parseFitWeeklyPlan();const sessions=parseFitSessions();
+    const exercises=parseFitExercises();const log=parseFitSessionLog();
+    const today=td();const todayPlan=plan.find(p=>p.date===today);
+    renderFitToday(todayPlan,sessions,exercises,log.filter(l=>l.date===today),today);
+    renderFitLogger(todayPlan,sessions,exercises,log,today);
+  } else {alert('Erreur lors de l\'enregistrement de la série.');}
+}
+
+async function fitCompleteSession(sessId,date){
+  const energy=document.getElementById('fitEnergy')?.value||'';
+  const sleep=document.getElementById('fitSleep')?.value||'';
+  const dur=document.getElementById('fitDur')?.value||'';
+  const notes=document.getElementById('fitNotes')?.value||'';
+  const logId=`${date}_${sessId}_done_${Date.now()}`;
+  showLoad(true);
+  const ok=await fitAppendRow('fit_session_log',[logId,date,sessId,'completed','',dur,'','','','','','',energy,sleep,notes]);
+  showLoad(false);
+  if(ok){fitLoaded=false;await renderFitPage();}else{alert('Erreur lors de la finalisation.');}
+}
+
+async function fitQuickLog(tier,sessId,date){
+  const dur=tier==='W'?'30':tier==='M'?'10':'';
+  const logId=`${date}_${sessId}_${Date.now()}`;
+  showLoad(true);
+  const ok=await fitAppendRow('fit_session_log',[logId,date,sessId,'completed','',dur,'','','','','','','','',`Quick log ${tier}`]);
+  showLoad(false);
+  if(ok){fitLoaded=false;await renderFitPage();}else{alert('Erreur lors de l\'enregistrement.');}
+}
+
+function renderFitStats(stats){
+  const el=document.getElementById('fitStats');
+  const sorted=[...stats].sort((a,b)=>a.date.localeCompare(b.date));
+  const last5=sorted.slice(-5).reverse();
+  el.innerHTML=`
+    <div class="fit-section-lbl">STATS CORPORELLES</div>
+    <div class="fit-box">
+      <div class="fit-box-hdr">
+        <span class="fit-box-ttl">MESURES RÉCENTES</span>
+        <button class="fit-btn" style="font-size:0.46rem" onclick="document.getElementById('fitStatsForm').style.display='block'">+ NOUVELLE MESURE</button>
+      </div>
+      ${last5.length?`<table class="fit-stats-table">
+        <thead><tr><th>DATE</th><th>POIDS</th><th>%MG</th><th>TAILLE (cm)</th><th>NOTES</th></tr></thead>
+        <tbody>${last5.map(s=>`<tr>
+          <td>${s.date}</td>
+          <td>${s.wt?s.wt+' kg':'—'}</td>
+          <td>${s.bf?s.bf+'%':'—'}</td>
+          <td>${s.waist?s.waist:'—'}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim)">${s.notes||'—'}</td>
+        </tr>`).join('')}</tbody>
+      </table>`:`<div class="fit-empty">Aucune mesure enregistrée</div>`}
+      <div id="fitStatsForm" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:0.6rem;margin-bottom:0.8rem">
+          <div><label class="fit-form-lbl">DATE</label><input type="date" id="fstatDate" value="${td()}" class="fit-input" style="width:100%"></div>
+          <div><label class="fit-form-lbl">POIDS (kg)</label><input type="number" id="fstatWt" step="0.1" placeholder="75.5" class="fit-input" style="width:100%"></div>
+          <div><label class="fit-form-lbl">%MG (est.)</label><input type="number" id="fstatBf" step="0.5" placeholder="18" class="fit-input" style="width:100%"></div>
+          <div><label class="fit-form-lbl">TAILLE (cm)</label><input type="number" id="fstatWaist" step="0.5" placeholder="85" class="fit-input" style="width:100%"></div>
+        </div>
+        <div style="margin-bottom:0.8rem"><label class="fit-form-lbl">NOTES</label><input type="text" id="fstatNotes" placeholder="Notes, photos..." class="fit-input" style="width:100%"></div>
+        <div style="display:flex;gap:0.5rem">
+          <button class="fit-btn" style="color:var(--accent);border-color:rgba(124,106,255,0.4)" onclick="saveFitBodyStat()">ENREGISTRER</button>
+          <button class="fit-btn" onclick="document.getElementById('fitStatsForm').style.display='none'">ANNULER</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function saveFitBodyStat(){
+  const date=document.getElementById('fstatDate')?.value||td();
+  const wt=document.getElementById('fstatWt')?.value||'';
+  const bf=document.getElementById('fstatBf')?.value||'';
+  const waist=document.getElementById('fstatWaist')?.value||'';
+  const notes=document.getElementById('fstatNotes')?.value||'';
+  showLoad(true);
+  const ok=await fitAppendRow('fit_body_stats',[date,wt,bf,waist,'','','','','','','','',notes]);
+  showLoad(false);
+  if(ok){fitLoaded=false;await renderFitPage();}else{alert('Erreur lors de l\'enregistrement.');}
 }
 
 // ════════════════════════════════════════════════════
