@@ -2636,11 +2636,11 @@ const FIT_TIER_COLOR={S:'#a855f7',H:'#3b82f6',M:'#f97316',W:'#22c55e'};
 const FIT_TIER_BG={S:'rgba(168,85,247,0.12)',H:'rgba(59,130,246,0.12)',M:'rgba(249,115,22,0.12)',W:'rgba(34,197,94,0.12)'};
 
 async function loadFitData(){
-  const token=gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
+  if(!accessToken){console.warn('No accessToken — fitness load aborted');return;}
   const sid=cfg.spreadsheetId;
   const sheets=['fit_program','fit_exercises','fit_sessions','fit_weekly_plan','fit_session_log','fit_body_stats'];
   const results=await Promise.all(sheets.map(s=>
-    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(s)}`,{headers:{Authorization:`Bearer ${token}`}})
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(s)}`,{headers:{Authorization:`Bearer ${accessToken}`}})
       .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}))
   ));
   [fitProgram,fitExercises,fitSessions,fitWeeklyPlan,fitSessionLog,fitBodyStats]=results.map(r=>r.values||[]);
@@ -2756,12 +2756,12 @@ function parseFitBodyStats(){
 }
 
 async function fitAppendRow(sheetName,values){
-  const token=gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
+  if(!accessToken)return false;
   const sid=cfg.spreadsheetId;
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheetName)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
   const resp=await fetch(url,{
     method:'POST',
-    headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+    headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
     body:JSON.stringify({values:[values]})
   });
   return resp.ok;
