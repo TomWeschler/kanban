@@ -2196,15 +2196,18 @@ function renderFinCharts(comptes, depenses) {
     return `${parseInt(day)} ${MONTHS_FR[parseInt(mo)-1]}`;
   };
 
-  // Build account breakdown HTML (horizontal stacked bar)
-  const totalCurrent = comptes.reduce((s,c) => s + (c.current||0), 0);
-  const breakdownBar = comptes.filter(c => c.current > 0).map((c, i) => {
+  // Build account breakdown HTML — sorted descending by current value
+  const totalCurrent  = comptes.reduce((s,c) => s + (c.current||0), 0);
+  const sortedComptes = [...comptes].filter(c => c.current > 0)
+                          .sort((a,b) => b.current - a.current);
+  // Assign stable colors based on sorted order
+  const breakdownBar = sortedComptes.map((c, i) => {
     const pct = totalCurrent > 0 ? c.current / totalCurrent * 100 : 0;
     const col  = FIN_PALETTE[i % FIN_PALETTE.length];
     return `<div title="${c.name}: ${c.current.toLocaleString('fr-FR',{maximumFractionDigits:0})} € (${pct.toFixed(1)}%)"
                  style="width:${pct}%;background:${col};transition:width 0.4s"></div>`;
   }).join('');
-  const breakdownLegend = comptes.filter(c => c.current > 0).map((c, i) => {
+  const breakdownLegend = sortedComptes.map((c, i) => {
     const pct = totalCurrent > 0 ? c.current / totalCurrent * 100 : 0;
     const col  = FIN_PALETTE[i % FIN_PALETTE.length];
     return `<div style="display:flex;align-items:center;gap:0.35rem;min-width:0">
@@ -2257,21 +2260,26 @@ function renderFinCharts(comptes, depenses) {
       return fuzzy ? fuzzy.initial : 0;
     };
 
-    // Running total per compte, starting at initial
+    // Starting point = ALL comptes from the Comptes sheet (not just those in Finance col E).
+    // Accounts that have no transactions are still part of the patrimoine.
     const runningMap = {};
-    allComptes.forEach(c => { runningMap[c] = getInitial(c); });
+    comptes.forEach(c => { runningMap[c.name] = c.initial || 0; });
+    // Also seed any compte present in Finance but not in Comptes sheet (initial = 0)
+    allComptes.forEach(c => { if (!(c in runningMap)) runningMap[c] = 0; });
     const totalInitialAll = Object.values(runningMap).reduce((s,v) => s+v, 0);
 
     const chartLabels = ['Début', ...allDates.map(shortDateLabel)];
     const totalData   = [parseFloat(totalInitialAll.toFixed(2))];
 
     allDates.forEach(date => {
+      // Apply transactions for every compte that appears in Finance
       allComptes.forEach(compte => {
         const dayDelta = depenses
           .filter(d => d.date === date && d.compte === compte)
           .reduce((s,d) => s + d.amount, 0);
         runningMap[compte] = (runningMap[compte] || 0) + dayDelta;
       });
+      // Total = sum of all comptes (including those with no transactions)
       const total = Object.values(runningMap).reduce((s,v) => s+v, 0);
       totalData.push(parseFloat(total.toFixed(2)));
     });
