@@ -312,7 +312,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .fin-account-delta{font-family:'Space Mono',monospace;font-size:0.63rem;font-weight:700}
 .fin-account-meta{font-size:0.57rem;color:var(--text-dim);margin-top:0.22rem}
 /* charts */
-.fin-charts{display:grid;grid-template-columns:2fr 1fr;gap:0.85rem}
+.fin-charts{display:grid;grid-template-columns:1.3fr 0.65fr 1fr;gap:0.85rem}
 .fin-box{background:var(--surface);border:1px solid var(--border);padding:1.1rem}
 .fin-box-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem}
 .fin-box-ttl{font-family:'Space Mono',monospace;font-size:0.53rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid)}
@@ -2196,15 +2196,39 @@ function renderFinCharts(comptes, depenses) {
     return `${parseInt(day)} ${MONTHS_FR[parseInt(mo)-1]}`;
   };
 
+  // Build account breakdown HTML (horizontal stacked bar)
+  const totalCurrent = comptes.reduce((s,c) => s + (c.current||0), 0);
+  const breakdownBar = comptes.filter(c => c.current > 0).map((c, i) => {
+    const pct = totalCurrent > 0 ? c.current / totalCurrent * 100 : 0;
+    const col  = FIN_PALETTE[i % FIN_PALETTE.length];
+    return `<div title="${c.name}: ${c.current.toLocaleString('fr-FR',{maximumFractionDigits:0})} € (${pct.toFixed(1)}%)"
+                 style="width:${pct}%;background:${col};transition:width 0.4s"></div>`;
+  }).join('');
+  const breakdownLegend = comptes.filter(c => c.current > 0).map((c, i) => {
+    const pct = totalCurrent > 0 ? c.current / totalCurrent * 100 : 0;
+    const col  = FIN_PALETTE[i % FIN_PALETTE.length];
+    return `<div style="display:flex;align-items:center;gap:0.35rem;min-width:0">
+      <div style="width:8px;height:8px;flex-shrink:0;background:${col};border-radius:2px"></div>
+      <span style="font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+            title="${c.name}">${c.name}</span>
+      <span style="font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text);margin-left:auto;flex-shrink:0">${pct.toFixed(1)}%</span>
+    </div>`;
+  }).join('');
+
   document.getElementById('finCharts').innerHTML = `
     <div class="fin-section-lbl">ANALYSE DES DÉPENSES</div>
     <div class="fin-charts">
       <div class="fin-box" style="display:flex;flex-direction:column">
         <div class="fin-box-hdr">
-          <span class="fin-box-ttl">ÉVOLUTION DU PATRIMOINE PAR COMPTE</span>
+          <span class="fin-box-ttl">ÉVOLUTION DU PATRIMOINE</span>
           <button class="crp-btn" onclick="reloadFinancesData()">↻ RAFRAÎCHIR</button>
         </div>
         <div class="fin-wrap" style="flex:1;min-height:0"><canvas id="finChartArea"></canvas></div>
+      </div>
+      <div class="fin-box" style="display:flex;flex-direction:column">
+        <div class="fin-box-hdr"><span class="fin-box-ttl">RÉPARTITION DES COMPTES</span></div>
+        <div style="height:14px;border-radius:4px;overflow:hidden;display:flex;margin-bottom:1rem">${breakdownBar}</div>
+        <div style="display:flex;flex-direction:column;gap:0.55rem;flex:1">${breakdownLegend}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:0.85rem">
         <div class="fin-box" style="flex:1">
@@ -2220,13 +2244,9 @@ function renderFinCharts(comptes, depenses) {
 
   Chart.defaults.color = '#60607a';
 
-  // ── Stacked area chart — cumulative patrimoine evolution ──
-  // Each compte starts at its initial value (col B of Comptes sheet).
-  // Each expense on that compte subtracts from the running total.
-  // A virtual "Début" point is prepended so the chart starts at the reference values.
+  // ── Single-line patrimoine evolution (total across all comptes) ──
   const ctxArea = document.getElementById('finChartArea')?.getContext('2d');
   if (ctxArea && allDates.length) {
-    // Build fuzzy initial-value map: compte name from Finance → initial € from Comptes
     const getInitial = compteName => {
       const exact = comptes.find(c => c.name === compteName);
       if (exact) return exact.initial;
@@ -2237,68 +2257,66 @@ function renderFinCharts(comptes, depenses) {
       return fuzzy ? fuzzy.initial : 0;
     };
 
-    // Labels: "Début" + all individual dates
+    // Running total per compte, starting at initial
+    const runningMap = {};
+    allComptes.forEach(c => { runningMap[c] = getInitial(c); });
+    const totalInitialAll = Object.values(runningMap).reduce((s,v) => s+v, 0);
+
     const chartLabels = ['Début', ...allDates.map(shortDateLabel)];
+    const totalData   = [parseFloat(totalInitialAll.toFixed(2))];
 
-    const datasets = allComptes.map(compte => {
-      const hex = compteColor(compte);
-      const rgb = hex.replace('#','').match(/.{2}/g).map(x=>parseInt(x,16)).join(',');
-      const initial = getInitial(compte);
-      let running = initial;
-
-      // First point = initial value; then apply signed amounts (+ gain, − dépense)
-      const data = [parseFloat(initial.toFixed(2))];
-      allDates.forEach(date => {
+    allDates.forEach(date => {
+      allComptes.forEach(compte => {
         const dayDelta = depenses
           .filter(d => d.date === date && d.compte === compte)
-          .reduce((s,d) => s + d.amount, 0); // signed: negative=expense, positive=gain
-        running += dayDelta;
-        data.push(parseFloat(running.toFixed(2)));
+          .reduce((s,d) => s + d.amount, 0);
+        runningMap[compte] = (runningMap[compte] || 0) + dayDelta;
       });
-
-      return {
-        label: compte,
-        data,
-        borderColor: hex,
-        backgroundColor: `rgba(${rgb},0.22)`,
-        fill: true,
-        tension: 0.3,
-        pointRadius: (ctx) => ctx.dataIndex === 0 ? 0 : 3,
-        pointHoverRadius: 5,
-        borderWidth: 2,
-      };
+      const total = Object.values(runningMap).reduce((s,v) => s+v, 0);
+      totalData.push(parseFloat(total.toFixed(2)));
     });
 
     finCharts.area = new Chart(ctxArea, {
       type: 'line',
-      data: { labels: chartLabels, datasets },
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          label: 'Patrimoine total',
+          data: totalData,
+          borderColor: '#7c6aff',
+          backgroundColor: 'rgba(124,106,255,0.12)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: ctx => ctx.dataIndex === 0 ? 0 : 3,
+          pointHoverRadius: 5,
+          borderWidth: 2,
+        }]
+      },
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { position:'bottom', labels:{ font:{family:'Space Mono',size:8}, boxWidth:8, padding:5 } },
+          legend: { display: false },
           tooltip: {
             callbacks: {
-              // Suppress per-dataset lines — show transaction list instead
-              label: () => null,
+              label: i => ` Total : ${i.raw.toLocaleString('fr-FR',{maximumFractionDigits:0})} €`,
               afterBody: items => {
                 const di = items[0]?.dataIndex;
                 if (!di) return [' Point de départ (valeurs initiales)'];
                 const date = allDates[di - 1];
                 if (!date) return [];
                 const txns = depenses.filter(d => d.date === date);
-                if (!txns.length) return [' Aucune transaction'];
+                if (!txns.length) return [];
                 return txns.map(d => {
                   const sign = d.amount >= 0 ? '+' : '';
-                  const amt  = d.amount.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
-                  return ` ${d.desc || d.compte || '—'} : ${sign}${amt} €`;
+                  return ` ${d.desc || d.compte || '—'} : ${sign}${d.amount.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €`;
                 });
               },
               footer: items => {
                 const di = items[0]?.dataIndex;
                 if (!di) return '';
                 const date = allDates[di - 1];
-                const net = depenses.filter(d => d.date === date).reduce((s,d) => s+d.amount, 0);
+                const net  = depenses.filter(d => d.date === date).reduce((s,d) => s+d.amount, 0);
                 const sign = net >= 0 ? '+' : '';
                 return ` Net du jour : ${sign}${net.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €`;
               }
@@ -2307,9 +2325,7 @@ function renderFinCharts(comptes, depenses) {
         },
         scales: {
           x: { ticks:{ font:{family:'Space Mono',size:8}, maxRotation:40, maxTicksLimit:20 }, grid:{ color:'rgba(37,37,53,0.5)' } },
-          y: { stacked: true,
-               ticks:{ font:{family:'Space Mono',size:9}, callback: v => v.toLocaleString('fr-FR',{maximumFractionDigits:0})+'€' },
-               grid:{ color:'rgba(37,37,53,0.5)' } }
+          y: { ticks:{ font:{family:'Space Mono',size:9}, callback: v => v.toLocaleString('fr-FR',{maximumFractionDigits:0})+'€' }, grid:{ color:'rgba(37,37,53,0.5)' } }
         }
       }
     });
