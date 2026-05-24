@@ -1339,6 +1339,7 @@ const FIN_MILESTONES = [
 ];
 const FIN_START_DATE = new Date('2026-01-01');
 let finComptes = [], finDepenses = [], finLoaded = false, finCharts = {};
+let usdToEur = 0.92; // fallback rate, updated at load time
 
 // ════════════════════════════════════════════════════
 // CRYPTOBOT — DATA LOADING
@@ -1960,6 +1961,7 @@ async function loadFinancesData() {
 
 async function reloadFinancesData() {
   finLoaded = false; finComptes = []; finDepenses = [];
+  cryptoLoaded = false; cryptoTrades = []; // also reload crypto for fresh portfolio value
   Object.values(finCharts).forEach(c => { try { c.destroy(); } catch(e){} });
   finCharts = {};
   await renderFinancesPage();
@@ -2030,11 +2032,30 @@ function parseDepenses() {
 async function renderFinancesPage() {
   if (!finLoaded) {
     showLoad(true);
-    await loadFinancesData();
+    // Load Finances sheet + crypto data (needed for portfolio value) in parallel
+    await Promise.all([
+      loadFinancesData(),
+      cryptoLoaded ? Promise.resolve() : loadCryptoData(),
+      // Fetch live USD→EUR rate
+      fetch('https://open.er-api.com/v6/latest/USD')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.rates?.EUR) usdToEur = d.rates.EUR; })
+        .catch(() => {}), // keep fallback 0.92 on error
+    ]);
     showLoad(false);
   }
   const comptes  = parseComptes();
   const depenses = parseDepenses();
+
+  // Override the crypto account's current value with CryptoBot portfolio (USD → EUR)
+  const cryptoPortfolioEur = calcPortfolioValue() * usdToEur;
+  if (cryptoPortfolioEur > 0) {
+    const cryptoCompte = comptes.find(c =>
+      /crypto/i.test(c.name) || /bot/i.test(c.name)
+    );
+    if (cryptoCompte) cryptoCompte.current = parseFloat(cryptoPortfolioEur.toFixed(2));
+  }
+
   renderFinBanner(comptes, depenses);
   renderFinAccounts(comptes);
   renderFinCharts(comptes, depenses);
