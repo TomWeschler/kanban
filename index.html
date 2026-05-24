@@ -1681,7 +1681,14 @@ function computeTradePnLs() {
   }
   const prevPF = {};
   return withPF.map(t => {
-    const prev = prevPF[t.symbol] ?? 0;
+    let prev;
+    if (prevPF[t.symbol] === undefined) {
+      // First trade of this crypto: use initial investment (B × D) as reference
+      // so the delta reflects the real gain/loss vs the purchase price, not vs 0
+      prev = (t.price || 0) * (t.colD || 0);
+    } else {
+      prev = prevPF[t.symbol];
+    }
     const pnlDelta = t.posFinale - prev;
     prevPF[t.symbol] = t.posFinale;
     return { ...t, pnlDelta };
