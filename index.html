@@ -387,7 +387,14 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .fit-ex-name{font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:700;margin-bottom:0.22rem}
 .fit-ex-meta{display:flex;gap:0.55rem;flex-wrap:wrap}
 .fit-ex-meta span{font-family:'Space Mono',monospace;font-size:0.46rem;color:var(--text-dim);background:var(--surface3);padding:2px 5px}
+.fit-ex-prescription{font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--text-mid);margin-top:0.3rem}
+.fit-ex-prescription b{color:var(--text);font-weight:700}
+.fit-ex-progress{font-family:'Space Mono',monospace;font-size:0.54rem;color:var(--accent);margin-top:0.32rem;padding:0.32rem 0.5rem;background:var(--accent-dim);border-left:2px solid var(--accent)}
+.fit-ex-progress b{color:#fff}
+.fit-ex-last{font-family:'Space Mono',monospace;font-size:0.52rem;color:var(--text-dim);margin-top:0.3rem}
 .fit-ex-cues{font-size:0.57rem;color:var(--text-dim);font-style:italic;margin-top:0.28rem;line-height:1.4}
+.fit-sess-meta{display:flex;gap:0.85rem;font-family:'Space Mono',monospace;font-size:0.52rem;color:var(--text-dim);margin-bottom:0.9rem;padding-bottom:0.7rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.fit-sess-meta span{letter-spacing:0.05em}
 .fit-ex-sets{font-family:'Space Mono',monospace;font-size:0.46rem;flex-shrink:0;padding-top:0.12rem}
 .fit-ex-sets-done{color:var(--green)}
 /* Logger */
@@ -2657,25 +2664,59 @@ function parseFitExercises(){
   if(!fitExercises.length)return{};
   const [hdr,...rows]=fitExercises;
   const g=k=>fitIdx(hdr,k);
-  const iId=g('exercise_id'),iName=g('name')||g('exercise_name')||1,iEq=g('equipment'),
+  const iId=g('exercise_id'),iName=g('name')>=0?g('name'):g('exercise_name'),iCat=g('category'),
+        iMuscles=g('primary_muscles')>=0?g('primary_muscles'):g('muscles'),
+        iEq=g('equipment'),
+        iSets=g('target_sets')>=0?g('target_sets'):g('sets'),
         iRMin=g('reps_min'),iRMax=g('reps_max'),iRPE=g('target_rpe'),
-        iRest=g('rest_s'),iCues=g('form_cues')>=0?g('form_cues'):g('notes');
+        iRest=g('rest_s'),iTempo=g('tempo'),
+        iProg=g('progression_kg'),
+        iCues=g('form_cues'),iNotes=g('notes');
   const ex={};
   rows.filter(r=>r.some(c=>c)).forEach(r=>{
     const id=String(r[iId>=0?iId:0]||'').trim();
     if(!id)return;
     ex[id]={
       id,
-      name:   iName>=0?String(r[iName]||id).trim():id,
-      eq:     iEq>=0?String(r[iEq]||'').trim():'',
-      repsMin:iRMin>=0?(parseInt(r[iRMin])||5):5,
-      repsMax:iRMax>=0?(parseInt(r[iRMax])||10):10,
-      tgtRpe: iRPE>=0?(parseFloat(String(r[iRPE]||'8').replace(',','.'))||8):8,
-      restS:  iRest>=0?(parseInt(r[iRest])||90):90,
-      cues:   iCues>=0?String(r[iCues]||'').trim():'',
+      name:    iName>=0?String(r[iName]||id).trim():id,
+      cat:     iCat>=0?String(r[iCat]||'').trim():'',
+      muscles: iMuscles>=0?String(r[iMuscles]||'').trim():'',
+      eq:      iEq>=0?String(r[iEq]||'').trim():'',
+      sets:    iSets>=0?(parseInt(r[iSets])||3):3,
+      repsMin: iRMin>=0?(parseInt(r[iRMin])||5):5,
+      repsMax: iRMax>=0?(parseInt(r[iRMax])||10):10,
+      tgtRpe:  iRPE>=0?(parseFloat(String(r[iRPE]||'8').replace(',','.'))||8):8,
+      restS:   iRest>=0?(parseInt(r[iRest])||90):90,
+      tempo:   iTempo>=0?String(r[iTempo]||'').trim():'',
+      progKg:  iProg>=0?(parseFloat(String(r[iProg]||'0').replace(',','.'))||0):0,
+      cues:    iCues>=0?String(r[iCues]||'').trim():'',
+      notes:   iNotes>=0?String(r[iNotes]||'').trim():'',
     };
   });
   return ex;
+}
+
+// Get last logged performance for an exercise (excluding today)
+function fitLastPerf(log,exId,excludeDate){
+  const past=log.filter(l=>l.exId===exId&&l.setNum>0&&l.date!==excludeDate);
+  if(!past.length)return null;
+  // Group by date, pick most recent date
+  const byDate={};
+  past.forEach(l=>{(byDate[l.date]=byDate[l.date]||[]).push(l);});
+  const lastDate=Object.keys(byDate).sort().pop();
+  const sets=byDate[lastDate].sort((a,b)=>a.setNum-b.setNum);
+  const topKg=Math.max(...sets.map(s=>s.kg));
+  const topReps=Math.max(...sets.filter(s=>s.kg===topKg).map(s=>s.reps));
+  return {date:lastDate, sets:sets.length, topKg, topReps,
+          summary:sets.map(s=>`${s.reps}×${s.kg}kg`).join(' · ')};
+}
+
+// Double progression suggestion
+function fitProgressionHint(ex,last){
+  if(!last)return `Première séance : commence léger, vise ${ex.repsMin}–${ex.repsMax} reps @ RPE ${ex.tgtRpe}`;
+  if(last.topReps>=ex.repsMax) return `🎯 Cible atteinte (${last.topReps} reps) → augmente à <b>${(last.topKg+ex.progKg).toFixed(1)} kg</b>`;
+  if(last.topReps>=ex.repsMin) return `↗ Pousse vers ${ex.repsMax} reps à ${last.topKg} kg (dernière : ${last.topReps} reps)`;
+  return `⚠ Sous la cible (${last.topReps}/${ex.repsMin}) — reste à ${last.topKg} kg, vise ${ex.repsMin} reps`;
 }
 
 function parseFitSessions(){
@@ -2902,24 +2943,39 @@ function renderFitToday(todayPlan,sessions,exercises,loggedToday,today){
       ${!isLogged?`<button class="fit-btn fit-btn-m" onclick="fitQuickLog('M','minimal_10min','${today}')">✓ MINIMAL COMPLÉTÉ</button>`:''}
     </div>`;
   } else if(sess&&sess.exercises.length){
-    bodyHtml='<div class="fit-ex-list">';
+    // need full log history for last-performance lookup
+    const fullLog=parseFitSessionLog();
+    const totalSets=sess.exercises.reduce((s,{exId})=>s+(exercises[exId]?.sets||0),0);
+    const doneSets=loggedToday.filter(l=>l.setNum>0).length;
+    bodyHtml=`<div class="fit-sess-meta">
+      <span>${sess.exercises.length} exercices</span>
+      <span>${totalSets} séries cibles</span>
+      <span style="color:var(--green)">${doneSets} séries complétées</span>
+      ${tier==='S'?'<span>≈ 50–60 min</span>':tier==='H'?'<span>≈ 25–30 min</span>':''}
+    </div>`;
+    bodyHtml+='<div class="fit-ex-list">';
     sess.exercises.forEach(({exId},idx)=>{
       const ex=exercises[exId];
-      if(!ex)return;
+      if(!ex){bodyHtml+=`<div class="fit-ex-row"><div class="fit-ex-num">${idx+1}</div><div class="fit-ex-info" style="color:var(--danger)">Exercice "${exId}" introuvable dans fit_exercises</div></div>`;return;}
       const sets=loggedToday.filter(l=>l.exId===exId&&l.setNum>0);
+      const last=fitLastPerf(fullLog,exId,today);
+      const hint=fitProgressionHint(ex,last);
+      const restMin=Math.floor(ex.restS/60),restSec=ex.restS%60;
+      const restTxt=restMin>0?`${restMin}min${restSec>0?' '+restSec+'s':''}`:`${ex.restS}s`;
       bodyHtml+=`<div class="fit-ex-row">
         <div class="fit-ex-num">${idx+1}</div>
         <div class="fit-ex-info">
-          <div class="fit-ex-name">${ex.name}</div>
-          <div class="fit-ex-meta">
-            <span>${ex.repsMin}–${ex.repsMax} reps</span>
-            <span>RPE cible ${ex.tgtRpe}</span>
-            <span>Repos ${ex.restS}s</span>
-            ${ex.eq?`<span>${ex.eq}</span>`:''}
-          </div>
-          ${ex.cues?`<div class="fit-ex-cues">${ex.cues}</div>`:''}
+          <div class="fit-ex-name">${ex.name}${ex.muscles?`<span style="font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-dim);font-weight:400;margin-left:0.5rem">${ex.muscles}</span>`:''}</div>
+          <div class="fit-ex-prescription"><b>${ex.sets} × ${ex.repsMin}–${ex.repsMax}</b> reps · RPE ${ex.tgtRpe} · Repos ${restTxt}${ex.tempo?` · Tempo ${ex.tempo}`:''}${ex.eq?` · ${ex.eq}`:''}</div>
+          <div class="fit-ex-progress">${hint}</div>
+          ${last?`<div class="fit-ex-last">📊 Dernière (${last.date}) : ${last.summary}</div>`:''}
+          ${ex.cues?`<div class="fit-ex-cues">💡 ${ex.cues}</div>`:''}
+          ${ex.notes?`<div class="fit-ex-cues" style="opacity:0.7">${ex.notes}</div>`:''}
         </div>
-        ${sets.length?`<div class="fit-ex-sets"><span class="fit-ex-sets-done">${sets.length} série${sets.length>1?'s':''} ✓</span></div>`:''}
+        <div class="fit-ex-sets">
+          ${sets.length?`<div class="fit-ex-sets-done">${sets.length}/${ex.sets} ✓</div>`:`<div style="color:var(--text-dim)">0/${ex.sets}</div>`}
+          ${sets.length?`<div style="font-size:0.42rem;color:var(--text-dim);margin-top:0.25rem;text-align:right">${sets.map(s=>`${s.reps}×${s.kg||'?'}`).join('<br>')}</div>`:''}
+        </div>
       </div>`;
     });
     bodyHtml+='</div>';
