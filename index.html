@@ -418,6 +418,23 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .fit-stats-table th{text-align:left;color:var(--text-dim);letter-spacing:0.1em;font-weight:400;padding:0.28rem 0.6rem;border-bottom:1px solid var(--border)}
 .fit-stats-table td{padding:0.32rem 0.6rem;border-bottom:1px solid rgba(37,37,53,0.4);color:var(--text)}
 .fit-stats-table tr:last-child td{border-bottom:none}
+/* Programs section */
+.fit-prog-tier{padding:0.85rem 1rem;margin-bottom:0.85rem;background:var(--surface2)}
+.fit-prog-tier:last-child{margin-bottom:0}
+.fit-prog-tier-hdr{font-family:'Space Mono',monospace;font-size:0.58rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.75rem}
+.fit-prog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:0.7rem}
+.fit-prog-card{background:var(--surface);border:1px solid var(--border);padding:0.75rem 0.9rem}
+.fit-prog-card-hdr{font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;margin-bottom:0.18rem}
+.fit-prog-card-id{font-family:'Space Mono',monospace;font-size:0.45rem;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:0.7rem;opacity:0.7}
+.fit-prog-ex-list{display:flex;flex-direction:column;gap:0.45rem}
+.fit-prog-ex{display:flex;gap:0.6rem;align-items:flex-start;padding:0.4rem 0;border-top:1px solid var(--border)}
+.fit-prog-ex:first-child{border-top:none;padding-top:0}
+.fit-prog-num{font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--text-dim);min-width:1rem;padding-top:0.1rem}
+.fit-prog-exname{font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;line-height:1.25}
+.fit-prog-muscles{font-family:'Space Mono',monospace;font-size:0.42rem;font-weight:400;color:var(--text-dim);margin-left:0.4rem;letter-spacing:0.05em}
+.fit-prog-pres{font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-mid);margin-top:0.18rem}
+.fit-prog-pres b{color:var(--text);font-weight:700}
+.fit-prog-cues{font-size:0.52rem;color:var(--text-dim);font-style:italic;margin-top:0.2rem;line-height:1.35}
 </style>
 </head>
 <body>
@@ -524,6 +541,7 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
   <div id="fitToday" class="fit-section"></div>
   <div id="fitLogger" class="fit-section"></div>
   <div id="fitStats" class="fit-section"></div>
+  <div id="fitPrograms" class="fit-section"></div>
 </div>
 
 <!-- TASK MODAL -->
@@ -2823,6 +2841,7 @@ async function renderFitPage(){
   renderFitToday(todayPlan,sessions,exercises,loggedToday,today);
   renderFitLogger(todayPlan,sessions,exercises,log,today);
   renderFitStats(stats);
+  renderFitPrograms(sessions,exercises);
 }
 
 async function reloadFitData(){
@@ -2936,12 +2955,6 @@ function renderFitToday(todayPlan,sessions,exercises,loggedToday,today){
       <div style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--text-dim);margin-bottom:1rem">OBJECTIF : 8 000 PAS</div>
       ${!isLogged?`<button class="fit-btn fit-btn-w" onclick="fitQuickLog('W','walk_daily','${today}')">✓ WALK COMPLÉTÉ</button>`:''}
     </div>`;
-  } else if(tier==='M'){
-    bodyHtml=`<div class="fit-walk-box">
-      <div style="font-size:2rem;margin-bottom:0.6rem">⚡</div>
-      <div style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--text-dim);margin-bottom:1rem">ANTI-ZÉRO — 10 MINUTES D'EFFORT</div>
-      ${!isLogged?`<button class="fit-btn fit-btn-m" onclick="fitQuickLog('M','minimal_10min','${today}')">✓ MINIMAL COMPLÉTÉ</button>`:''}
-    </div>`;
   } else if(sess&&sess.exercises.length){
     // need full log history for last-performance lookup
     const fullLog=parseFitSessionLog();
@@ -3000,7 +3013,7 @@ function renderFitToday(todayPlan,sessions,exercises,loggedToday,today){
 
 function renderFitLogger(todayPlan,sessions,exercises,log,today){
   const el=document.getElementById('fitLogger');
-  if(!todayPlan||todayPlan.tier==='W'||todayPlan.tier==='M'){el.innerHTML='';return;}
+  if(!todayPlan||todayPlan.tier==='W'){el.innerHTML='';return;}
   const sess=sessions[todayPlan.sessId];
   if(!sess||!sess.exercises.length){el.innerHTML='';return;}
   const tc=FIT_TIER_COLOR[todayPlan.tier]||'var(--accent)';
@@ -3121,6 +3134,52 @@ function renderFitStats(stats){
           <button class="fit-btn" onclick="document.getElementById('fitStatsForm').style.display='none'">ANNULER</button>
         </div>
       </div>
+    </div>`;
+}
+
+function renderFitPrograms(sessions,exercises){
+  const el=document.getElementById('fitPrograms');
+  // Group sessions by tier
+  const byTier={S:[],H:[],M:[]};
+  Object.values(sessions).forEach(s=>{
+    const t=(s.tier||'').toUpperCase();
+    if(byTier[t])byTier[t].push(s);
+  });
+  const TIER_TITLES={S:'TIER S — SALLE (50–60 min)',H:'TIER H — HOME KB (25–30 min)',M:'TIER M — MINIMAL (10 min, anti-zéro)'};
+  const renderSess=s=>{
+    const exHtml=s.exercises.map(({exId},i)=>{
+      const ex=exercises[exId];
+      if(!ex)return `<div class="fit-prog-ex"><span class="fit-prog-num">${i+1}</span><span style="color:var(--danger)">${exId} (introuvable)</span></div>`;
+      const restMin=Math.floor(ex.restS/60),restSec=ex.restS%60;
+      const restTxt=restMin>0?`${restMin}min${restSec>0?' '+restSec+'s':''}`:`${ex.restS}s`;
+      return `<div class="fit-prog-ex">
+        <span class="fit-prog-num">${i+1}</span>
+        <div style="flex:1;min-width:0">
+          <div class="fit-prog-exname">${ex.name}${ex.muscles?`<span class="fit-prog-muscles">${ex.muscles}</span>`:''}</div>
+          <div class="fit-prog-pres"><b>${ex.sets}×${ex.repsMin}–${ex.repsMax}</b> · RPE ${ex.tgtRpe} · ${restTxt}${ex.tempo?` · tempo ${ex.tempo}`:''}${ex.eq?` · ${ex.eq}`:''}</div>
+          ${ex.cues?`<div class="fit-prog-cues">💡 ${ex.cues}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="fit-prog-card">
+      <div class="fit-prog-card-hdr">${s.name||s.id}</div>
+      <div class="fit-prog-card-id">${s.id}</div>
+      ${s.exercises.length?`<div class="fit-prog-ex-list">${exHtml}</div>`:`<div class="fit-empty" style="padding:1rem 0">Aucun exercice défini</div>`}
+    </div>`;
+  };
+  const tierBlocks=['S','H','M'].map(t=>{
+    const tc=FIT_TIER_COLOR[t];
+    const list=byTier[t];
+    if(!list.length)return '';
+    return `<div class="fit-prog-tier" style="border-left:3px solid ${tc}">
+      <div class="fit-prog-tier-hdr" style="color:${tc}">${TIER_TITLES[t]}</div>
+      <div class="fit-prog-grid">${list.map(renderSess).join('')}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`
+    <div class="fit-section-lbl">PROGRAMMES — DÉTAIL DES SÉANCES</div>
+    <div class="fit-box" style="padding:0.85rem 1.1rem">
+      ${tierBlocks||'<div class="fit-empty">Aucun programme S/H/M trouvé</div>'}
     </div>`;
 }
 
