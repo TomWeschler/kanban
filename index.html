@@ -24,7 +24,7 @@ body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;displa
 body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
 
 /* HEADER */
-header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.25rem;gap:0.75rem;z-index:200;position:relative}
+header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.25rem;gap:0.75rem;z-index:200;position:relative}
 .logo{font-family:'Space Mono',monospace;font-size:0.68rem;font-weight:700;letter-spacing:0.3em;color:var(--accent);white-space:nowrap;flex-shrink:0}
 .nav-sep{width:1px;height:22px;background:var(--border);flex-shrink:0}
 .nav-tabs{display:flex;gap:0.1rem;flex-shrink:0}
@@ -435,6 +435,118 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
 .fit-prog-pres{font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-mid);margin-top:0.18rem}
 .fit-prog-pres b{color:var(--text);font-weight:700}
 .fit-prog-cues{font-size:0.52rem;color:var(--text-dim);font-style:italic;margin-top:0.2rem;line-height:1.35}
+
+/* ═══════════════════════════════
+   TYPOGRAPHY BOOST (lisibilité globale)
+═══════════════════════════════ */
+.fin-kpi-lbl,.crp-kpi-lbl,.fit-kpi-lbl{font-size:0.62rem !important;letter-spacing:0.12em !important;color:var(--text-mid) !important}
+.fin-kpi-val,.crp-kpi-val,.fit-kpi-val{font-size:1.85rem !important}
+.fin-kpi-sub,.crp-kpi-sub,.fit-kpi-sub{font-size:0.74rem !important;color:var(--text-mid) !important}
+.fin-section-lbl,.fit-section-lbl{font-size:0.66rem !important;letter-spacing:0.16em !important;color:var(--text-mid) !important}
+.col-title{font-size:0.66rem !important;color:var(--text-mid) !important}
+.card-title{font-size:0.84rem !important}
+.fin-table th,.crp-table th,.fit-stats-table th{font-size:0.62rem !important;color:var(--text-mid) !important}
+.fin-table td,.crp-table td,.fit-stats-table td{font-size:0.66rem !important}
+.fin-account-name{font-size:0.54rem !important;color:var(--text-mid) !important}
+.fin-account-val{font-size:1.05rem !important}
+.fin-account-delta{font-size:0.6rem !important}
+.fin-account-meta{font-size:0.55rem !important}
+.fin-box-ttl,.fit-box-ttl{font-size:0.6rem !important;color:var(--text-mid) !important}
+
+/* ═══════════════════════════════
+   THEME PICKER (header dropdown)
+═══════════════════════════════ */
+.theme-picker-wrap{position:relative;flex-shrink:0}
+.btn-theme{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;font-weight:700;padding:0.32rem 0.7rem;cursor:pointer;transition:all 0.13s;text-transform:uppercase;display:flex;align-items:center;gap:0.35rem}
+.btn-theme:hover{color:var(--text);border-color:var(--text-mid)}
+.theme-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border2);min-width:200px;z-index:300;display:none;box-shadow:0 8px 30px rgba(0,0,0,0.55);padding:0.4rem}
+.theme-menu.open{display:block}
+.theme-opt{display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0.7rem;cursor:pointer;font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:0.06em;color:var(--text-dim);transition:background 0.1s,color 0.1s;border:none;background:transparent;width:100%;text-align:left;text-transform:uppercase}
+.theme-opt:hover{background:var(--surface2);color:var(--text)}
+.theme-opt.active{color:var(--accent);background:var(--accent-dim)}
+.theme-swatch{display:flex;width:34px;height:18px;border:1px solid var(--border2);flex-shrink:0}
+.theme-swatch span{flex:1;height:100%}
+.theme-opt-name{flex:1;font-weight:700}
+.theme-opt-mark{font-size:0.7rem;color:var(--accent);width:0.8rem;text-align:center}
+
+/* ═══════════════════════════════
+   THEME — ① BRUTALIST
+═══════════════════════════════ */
+html[data-theme="brutalist"]{
+  --bg:#000;--surface:#0a0a0a;--surface2:#141414;--surface3:#1f1f1f;
+  --border:#2e2e2e;--border2:#4a4a4a;
+  --accent:#ffffff;--accent-dim:rgba(255,255,255,0.08);
+  --text:#ffffff;--text-dim:#888888;--text-mid:#bbbbbb;
+  --green:#3eff85;--warn:#ffd23d;--danger:#ff4d6d;
+}
+html[data-theme="brutalist"] body{background:var(--bg)}
+html[data-theme="brutalist"] .card{border-radius:0}
+html[data-theme="brutalist"] header{background:#000}
+html[data-theme="brutalist"] .nav-tab.active{color:#fff;border-bottom-color:#fff}
+
+/* ═══════════════════════════════
+   THEME — ② TOKYO NIGHT
+═══════════════════════════════ */
+html[data-theme="tokyo"]{
+  --bg:#1a1b26;--surface:#24283b;--surface2:#2a2e42;--surface3:#32364a;
+  --border:#414868;--border2:#565f89;
+  --accent:#7aa2f7;--accent-dim:rgba(122,162,247,0.14);
+  --text:#c0caf5;--text-dim:#7882a9;--text-mid:#a9b1d6;
+  --green:#9ece6a;--warn:#e0af68;--danger:#f7768e;
+}
+html[data-theme="tokyo"] body{background:var(--bg)}
+
+/* ═══════════════════════════════
+   THEME — ③ CARBON (IBM)
+═══════════════════════════════ */
+html[data-theme="carbon"]{
+  --bg:#161616;--surface:#262626;--surface2:#2d2d2d;--surface3:#393939;
+  --border:#393939;--border2:#525252;
+  --accent:#4589ff;--accent-dim:rgba(69,137,255,0.12);
+  --text:#f4f4f4;--text-dim:#a8a8a8;--text-mid:#c6c6c6;
+  --green:#42be65;--warn:#f1c21b;--danger:#fa4d56;
+}
+html[data-theme="carbon"] body{background:var(--bg)}
+html[data-theme="carbon"] .fin-kpi,html[data-theme="carbon"] .crp-kpi,html[data-theme="carbon"] .fit-kpi{border-left:3px solid var(--accent)}
+
+/* ═══════════════════════════════
+   THEME — ④ CYBER NEON (boosted current)
+═══════════════════════════════ */
+html[data-theme="neon"]{
+  --bg:#06070d;--surface:#11111c;--surface2:#1a1a2a;--surface3:#222238;
+  --border:#2d2d44;--border2:#4a4a6a;
+  --accent:#a78bfa;--accent-dim:rgba(167,139,250,0.16);
+  --text:#f0f0ff;--text-dim:#8888ad;--text-mid:#b4b4d8;
+  --green:#4ade80;--warn:#fbbf24;--danger:#f87171;
+}
+html[data-theme="neon"] body{background:var(--bg)}
+html[data-theme="neon"] .fin-kpi-val,html[data-theme="neon"] .crp-kpi-val,html[data-theme="neon"] .fit-kpi-val{text-shadow:0 0 14px rgba(167,139,250,0.35)}
+html[data-theme="neon"] .nav-tab.active{text-shadow:0 0 10px rgba(167,139,250,0.5)}
+
+/* ═══════════════════════════════
+   THEME — ⑤ SOLARIZED NIGHT
+═══════════════════════════════ */
+html[data-theme="solarized"]{
+  --bg:#1c1817;--surface:#26211e;--surface2:#2d2723;--surface3:#3a342f;
+  --border:#3a342f;--border2:#574f47;
+  --accent:#d6824d;--accent-dim:rgba(214,130,77,0.14);
+  --text:#ebe0d0;--text-dim:#9c8c78;--text-mid:#b3a48a;
+  --green:#8fbc4f;--warn:#d6c44d;--danger:#e35d50;
+}
+html[data-theme="solarized"] body{background:var(--bg)}
+
+/* ═══════════════════════════════
+   THEME — ⑥ NORD FROST
+═══════════════════════════════ */
+html[data-theme="nord"]{
+  --bg:#2e3440;--surface:#3b4252;--surface2:#434c5e;--surface3:#4c566a;
+  --border:#434c5e;--border2:#4c566a;
+  --accent:#88c0d0;--accent-dim:rgba(136,192,208,0.16);
+  --text:#eceff4;--text-dim:#a5acba;--text-mid:#d8dee9;
+  --green:#a3be8c;--warn:#ebcb8b;--danger:#bf616a;
+}
+html[data-theme="nord"] body{background:var(--bg)}
+
 </style>
 </head>
 <body>
@@ -477,6 +589,39 @@ header{flex-shrink:0;height:56px;background:rgba(9,9,14,0.96);backdrop-filter:bl
     <div class="hstat" style="color:var(--danger)">URGENTES <b id="hUrgent">0</b></div>
     <div class="sync-status"><div class="sync-dot ok" id="syncDot"></div><span id="syncLabel">PRÊT</span></div>
     <button class="btn-nav" onclick="openModal()">+ TÂCHE</button>
+    <div class="theme-picker-wrap">
+      <button class="btn-theme" onclick="toggleThemePicker(event)" title="Changer le thème">◐ THÈME</button>
+      <div class="theme-menu" id="themeMenu">
+        <button class="theme-opt" data-theme-id="default" onclick="setTheme('default')">
+          <span class="theme-swatch"><span style="background:#09090e"></span><span style="background:#7c6aff"></span><span style="background:#4ade80"></span></span>
+          <span class="theme-opt-name">Cyber Default</span><span class="theme-opt-mark"></span>
+        </button>
+        <button class="theme-opt" data-theme-id="brutalist" onclick="setTheme('brutalist')">
+          <span class="theme-swatch"><span style="background:#000"></span><span style="background:#fff"></span><span style="background:#3eff85"></span></span>
+          <span class="theme-opt-name">① Brutalist</span><span class="theme-opt-mark"></span>
+        </button>
+        <button class="theme-opt" data-theme-id="tokyo" onclick="setTheme('tokyo')">
+          <span class="theme-swatch"><span style="background:#1a1b26"></span><span style="background:#7aa2f7"></span><span style="background:#bb9af7"></span></span>
+          <span class="theme-opt-name">② Tokyo Night</span><span class="theme-opt-mark"></span>
+        </button>
+        <button class="theme-opt" data-theme-id="carbon" onclick="setTheme('carbon')">
+          <span class="theme-swatch"><span style="background:#161616"></span><span style="background:#4589ff"></span><span style="background:#42be65"></span></span>
+          <span class="theme-opt-name">③ Carbon IBM</span><span class="theme-opt-mark"></span>
+        </button>
+        <button class="theme-opt" data-theme-id="neon" onclick="setTheme('neon')">
+          <span class="theme-swatch"><span style="background:#06070d"></span><span style="background:#a78bfa"></span><span style="background:#22d3ee"></span></span>
+          <span class="theme-opt-name">④ Cyber Neon</span><span class="theme-opt-mark"></span>
+        </button>
+        <button class="theme-opt" data-theme-id="solarized" onclick="setTheme('solarized')">
+          <span class="theme-swatch"><span style="background:#1c1817"></span><span style="background:#d6824d"></span><span style="background:#8fbc4f"></span></span>
+          <span class="theme-opt-name">⑤ Solarized Night</span><span class="theme-opt-mark"></span>
+        </button>
+        <button class="theme-opt" data-theme-id="nord" onclick="setTheme('nord')">
+          <span class="theme-swatch"><span style="background:#2e3440"></span><span style="background:#88c0d0"></span><span style="background:#a3be8c"></span></span>
+          <span class="theme-opt-name">⑥ Nord Frost</span><span class="theme-opt-mark"></span>
+        </button>
+      </div>
+    </div>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -659,6 +804,7 @@ let boardFilter = 'all';
 // INIT
 // ════════════════════════════════════════════════════
 function init() {
+  applySavedTheme();
   try {
     const cached = JSON.parse(localStorage.getItem(LS_CACHE) || '[]');
     allTasks = cached; tasks = allTasks.filter(t => !t.completed_at);
@@ -668,6 +814,39 @@ function init() {
   document.getElementById('authScreen').style.display = 'none';
   preloadGIS();
 }
+
+// ════════════════════════════════════════════════════
+// THEME PICKER
+// ════════════════════════════════════════════════════
+const LS_THEME = 'kanban_theme';
+function applySavedTheme() {
+  const saved = localStorage.getItem(LS_THEME) || 'default';
+  setTheme(saved, true);
+}
+function setTheme(name, silent) {
+  const root = document.documentElement;
+  if (name === 'default') root.removeAttribute('data-theme');
+  else root.setAttribute('data-theme', name);
+  localStorage.setItem(LS_THEME, name);
+  // Update active marker
+  document.querySelectorAll('.theme-opt').forEach(b => {
+    const isActive = b.dataset.themeId === name;
+    b.classList.toggle('active', isActive);
+    const mark = b.querySelector('.theme-opt-mark');
+    if (mark) mark.textContent = isActive ? '●' : '';
+  });
+  if (!silent) document.getElementById('themeMenu')?.classList.remove('open');
+}
+function toggleThemePicker(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('themeMenu')?.classList.toggle('open');
+}
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  const menu = document.getElementById('themeMenu');
+  if (!menu) return;
+  if (!menu.contains(e.target) && !e.target.closest('.btn-theme')) menu.classList.remove('open');
+});
 
 function buildHabitModalSelects() {
   // Frequency select
