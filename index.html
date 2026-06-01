@@ -562,6 +562,63 @@ html[data-theme="nord"]{
 html[data-theme="nord"] body{background:var(--bg)}
 
 /* ═══════════════════════════════
+   THEME — ⑦ FOREST (vert sombre · sage · nature)
+═══════════════════════════════ */
+html[data-theme="forest"]{
+  --bg:#0d1813;--surface:#142318;--surface2:#1a2d20;--surface3:#22392a;
+  --border:#22392a;--border2:#345240;
+  --accent:#7ab880;--accent-dim:rgba(122,184,128,0.14);
+  --text:#dfece1;--text-dim:#8aa893;--text-mid:#b4c8b8;
+  --green:#9bc97f;--warn:#d4b86a;--danger:#d9776b;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+html[data-theme="forest"] body{background:var(--bg)}
+
+/* ═══════════════════════════════
+   THEME — ⑧ MATRIX (noir profond · vert néon terminal)
+═══════════════════════════════ */
+html[data-theme="matrix"]{
+  --bg:#000;--surface:#040806;--surface2:#0a1410;--surface3:#0f1f17;
+  --border:#1a3326;--border2:#2a5240;
+  --accent:#00ff88;--accent-dim:rgba(0,255,136,0.1);
+  --text:#c8ffd9;--text-dim:#4a7d5e;--text-mid:#7dc99a;
+  --green:#00ff88;--warn:#d4ff4a;--danger:#ff5566;
+  --font-body:'Space Mono',monospace;
+  --font-mono:'Space Mono',monospace;
+}
+html[data-theme="matrix"] body{background:var(--bg)}
+html[data-theme="matrix"] .fin-kpi-val,
+html[data-theme="matrix"] .crp-kpi-val,
+html[data-theme="matrix"] .fit-kpi-val{text-shadow:0 0 12px rgba(0,255,136,0.5)}
+html[data-theme="matrix"] .nav-tab.active{text-shadow:0 0 10px rgba(0,255,136,0.6)}
+html[data-theme="matrix"] .card{box-shadow:inset 0 0 0 1px rgba(0,255,136,0.05)}
+
+/* ═══════════════════════════════
+   ZEN WIDGET — gif apaisant flottant
+═══════════════════════════════ */
+.zen-widget{position:fixed;bottom:24px;right:24px;width:280px;background:var(--surface);border:1px solid var(--border2);box-shadow:0 14px 50px rgba(0,0,0,0.6);z-index:250;display:none;overflow:hidden;transition:transform 0.18s,opacity 0.18s}
+.zen-widget.open{display:block;animation:zenIn 0.32s ease-out}
+@keyframes zenIn{from{transform:translateY(14px) scale(0.94);opacity:0}to{transform:none;opacity:1}}
+.zen-widget.collapsed .zen-body{display:none}
+.zen-widget.collapsed{width:auto}
+.zen-hdr{display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.7rem;background:rgba(0,0,0,0.3);border-bottom:1px solid var(--border);cursor:grab;user-select:none}
+.zen-hdr:active{cursor:grabbing}
+.zen-title{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.2em;font-weight:700;color:var(--accent);text-transform:uppercase}
+.zen-controls{display:flex;gap:0.2rem;align-items:center}
+.zen-btn{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-mono);font-size:0.6rem;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:all 0.13s}
+.zen-btn:hover{color:var(--accent);border-color:var(--accent)}
+.zen-body{position:relative;background:#000;aspect-ratio:1/1;overflow:hidden}
+.zen-body img{width:100%;height:100%;object-fit:cover;display:block}
+.zen-indicator{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
+.zen-indicator span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.35);transition:background 0.15s}
+.zen-indicator span.on{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.zen-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.15em}
+.btn-zen{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.12em;font-weight:700;padding:0.32rem 0.65rem;cursor:pointer;transition:all 0.13s;text-transform:uppercase;display:flex;align-items:center;gap:0.35rem;flex-shrink:0}
+.btn-zen:hover{color:var(--accent);border-color:var(--accent)}
+.btn-zen.on{color:var(--accent);border-color:var(--accent);background:var(--accent-dim)}
+
+/* ═══════════════════════════════
    FONT SWAP — applique --font-body/--font-mono partout
    (selectors larges + !important pour battre les déclarations spécifiques)
 ═══════════════════════════════ */
@@ -605,6 +662,24 @@ body,body *{font-family:var(--font-body)}
 
 <!-- LOADING -->
 <div id="loadOverlay"><div class="spinner"></div><div class="load-text">CHARGEMENT...</div></div>
+
+<!-- ZEN WIDGET -->
+<div class="zen-widget" id="zenWidget">
+  <div class="zen-hdr" id="zenHdr">
+    <div class="zen-title">🌿 BREATHE</div>
+    <div class="zen-controls">
+      <button class="zen-btn" onclick="zenPrev()" title="Précédent">‹</button>
+      <button class="zen-btn" onclick="zenNext()" title="Suivant">›</button>
+      <button class="zen-btn" onclick="zenCollapse()" title="Réduire" id="zenCollapseBtn">−</button>
+      <button class="zen-btn" onclick="toggleZen()" title="Fermer">×</button>
+    </div>
+  </div>
+  <div class="zen-body">
+    <div class="zen-loading">CHARGEMENT...</div>
+    <img id="zenImg" src="" alt="" onload="this.previousElementSibling.style.display='none'">
+    <div class="zen-indicator" id="zenInd"></div>
+  </div>
+</div>
 
 <!-- HEADER -->
 <header>
@@ -663,8 +738,17 @@ body,body *{font-family:var(--font-body)}
           <span class="theme-swatch"><span style="background:#2e3440"></span><span style="background:#88c0d0"></span><span style="background:#a3be8c"></span></span>
           <span class="theme-opt-name">⑥ Nord Frost</span><span class="theme-opt-mark"></span>
         </button>
+        <button class="theme-opt" data-theme-id="forest" onclick="setTheme('forest')">
+          <span class="theme-swatch"><span style="background:#0d1813"></span><span style="background:#7ab880"></span><span style="background:#9bc97f"></span></span>
+          <span class="theme-opt-name">⑦ Forest</span><span class="theme-opt-mark"></span>
+        </button>
+        <button class="theme-opt" data-theme-id="matrix" onclick="setTheme('matrix')">
+          <span class="theme-swatch"><span style="background:#000"></span><span style="background:#00ff88"></span><span style="background:#7dc99a"></span></span>
+          <span class="theme-opt-name">⑧ Matrix</span><span class="theme-opt-mark"></span>
+        </button>
       </div>
     </div>
+    <button class="btn-zen" id="btnZen" onclick="toggleZen()" title="Mode Zen — gif apaisant">🌿 ZEN</button>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -848,6 +932,7 @@ let boardFilter = 'all';
 // ════════════════════════════════════════════════════
 function init() {
   applySavedTheme();
+  initZen();
   try {
     const cached = JSON.parse(localStorage.getItem(LS_CACHE) || '[]');
     allTasks = cached; tasks = allTasks.filter(t => !t.completed_at);
@@ -890,6 +975,89 @@ document.addEventListener('click', e => {
   if (!menu) return;
   if (!menu.contains(e.target) && !e.target.closest('.btn-theme')) menu.classList.remove('open');
 });
+
+// ════════════════════════════════════════════════════
+// ZEN WIDGET — gifs apaisants
+// ════════════════════════════════════════════════════
+const ZEN_GIFS = [
+  'https://i.pinimg.com/originals/86/d7/5a/86d75a902dda5a4c6ac4b95d8a5afba4.gif',
+  'https://i.pinimg.com/originals/1f/dd/1d/1fdd1dd87c03ceb8d4af123882e9be4a.gif',
+  'https://i.pinimg.com/originals/b2/36/e8/b236e80c866b149e67159c425eac5aea.gif',
+];
+const LS_ZEN_IDX = 'kanban_zen_idx';
+const LS_ZEN_OPEN = 'kanban_zen_open';
+const LS_ZEN_POS = 'kanban_zen_pos';
+let zenIdx = parseInt(localStorage.getItem(LS_ZEN_IDX)||'0')||0;
+
+function zenRender(){
+  const img = document.getElementById('zenImg');
+  const ind = document.getElementById('zenInd');
+  if(!img||!ind) return;
+  const loader = img.previousElementSibling;
+  if(loader) loader.style.display='flex';
+  img.src = ZEN_GIFS[zenIdx];
+  ind.innerHTML = ZEN_GIFS.map((_,i)=>`<span class="${i===zenIdx?'on':''}" onclick="zenJump(${i})" style="cursor:pointer"></span>`).join('');
+}
+function zenJump(i){ zenIdx = i; localStorage.setItem(LS_ZEN_IDX, zenIdx); zenRender(); }
+function zenNext(){ zenIdx = (zenIdx+1) % ZEN_GIFS.length; localStorage.setItem(LS_ZEN_IDX, zenIdx); zenRender(); }
+function zenPrev(){ zenIdx = (zenIdx-1+ZEN_GIFS.length) % ZEN_GIFS.length; localStorage.setItem(LS_ZEN_IDX, zenIdx); zenRender(); }
+function zenCollapse(){
+  const w = document.getElementById('zenWidget');
+  w.classList.toggle('collapsed');
+  document.getElementById('zenCollapseBtn').textContent = w.classList.contains('collapsed') ? '+' : '−';
+}
+function toggleZen(){
+  const w = document.getElementById('zenWidget');
+  const btn = document.getElementById('btnZen');
+  const isOpen = w.classList.toggle('open');
+  btn.classList.toggle('on', isOpen);
+  localStorage.setItem(LS_ZEN_OPEN, isOpen ? '1' : '0');
+  if(isOpen) zenRender();
+}
+function initZen(){
+  // Restore position
+  try{
+    const pos = JSON.parse(localStorage.getItem(LS_ZEN_POS)||'null');
+    if(pos){
+      const w = document.getElementById('zenWidget');
+      w.style.left = pos.left + 'px';
+      w.style.top = pos.top + 'px';
+      w.style.right = 'auto';
+      w.style.bottom = 'auto';
+    }
+  }catch(e){}
+  // Restore open state
+  if(localStorage.getItem(LS_ZEN_OPEN)==='1'){
+    document.getElementById('zenWidget').classList.add('open');
+    document.getElementById('btnZen').classList.add('on');
+    zenRender();
+  }
+  // Drag handle
+  const hdr = document.getElementById('zenHdr');
+  let drag = null;
+  hdr.addEventListener('mousedown', e => {
+    if(e.target.classList.contains('zen-btn')) return;
+    const w = document.getElementById('zenWidget');
+    const r = w.getBoundingClientRect();
+    drag = {dx: e.clientX - r.left, dy: e.clientY - r.top};
+    w.style.left = r.left + 'px'; w.style.top = r.top + 'px';
+    w.style.right = 'auto'; w.style.bottom = 'auto';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if(!drag) return;
+    const w = document.getElementById('zenWidget');
+    const nx = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - drag.dx));
+    const ny = Math.max(0, Math.min(window.innerHeight - 30, e.clientY - drag.dy));
+    w.style.left = nx + 'px'; w.style.top = ny + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if(!drag) return;
+    const w = document.getElementById('zenWidget');
+    localStorage.setItem(LS_ZEN_POS, JSON.stringify({left: parseFloat(w.style.left), top: parseFloat(w.style.top)}));
+    drag = null;
+  });
+}
 
 function buildHabitModalSelects() {
   // Frequency select
