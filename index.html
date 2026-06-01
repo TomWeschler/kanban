@@ -234,8 +234,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 
 /* LOADING */
 #loadOverlay{position:fixed;inset:0;z-index:350;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;overflow:hidden}
-#loadOverlay::before{content:'';position:absolute;inset:0;background-image:url('gifs/zen2.gif');background-size:cover;background-position:center;opacity:0.22;filter:saturate(1.1);z-index:0}
-#loadOverlay::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0.3) 0%,var(--bg) 90%);z-index:1}
+#loadOverlay::before{content:'';position:absolute;inset:0;background-image:url('gifs/zen2.gif');background-size:cover;background-position:center;opacity:0.55;filter:saturate(1.15);z-index:0}
+#loadOverlay::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.55) 100%);z-index:1}
 #loadOverlay>*{position:relative;z-index:2}
 .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -317,7 +317,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 /* accounts */
 .fin-accounts-wrap{display:flex;gap:0.7rem;align-items:stretch}
 .fin-accounts{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:0.45rem;flex:1;min-width:0}
-.fin-accounts-gif{flex-shrink:0;width:170px;border-radius:6px;overflow:hidden;border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.35);align-self:stretch;display:flex}
+.fin-accounts-gif{flex-shrink:0;width:260px;border-radius:6px;overflow:hidden;border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.35);align-self:stretch;display:flex}
 .fin-accounts-gif img{width:100%;height:100%;object-fit:cover;display:block;opacity:0.92;transition:opacity 0.2s}
 .fin-accounts-gif:hover img{opacity:1}
 @media (max-width:1100px){.fin-accounts-gif{display:none}}
@@ -2542,7 +2542,7 @@ function renderFinAccounts(comptes) {
     <div class="fin-section-lbl">COMPTES & ÉPARGNE</div>
     <div class="fin-accounts-wrap">
       <div class="fin-accounts">${cards}</div>
-      <div class="fin-accounts-gif"><img src="gifs/zen1.gif" alt="" loading="lazy"></div>
+      <div class="fin-accounts-gif"><img src="gifs/zen3.gif" alt="" loading="lazy"></div>
     </div>`;
 }
 
