@@ -665,11 +665,11 @@ body,body *{font-family:var(--font-body)}
   <div class="nav-sep"></div>
   <nav class="nav-tabs">
     <button class="nav-tab active" data-page="board" onclick="switchPage('board')">BOARD</button>
-    <button class="nav-tab" data-page="dash" onclick="switchPage('dash')">DASHBOARD</button>
-    <button class="nav-tab" data-page="habits" onclick="switchPage('habits')">HABITUDES</button>
     <button class="nav-tab" data-page="crypto" onclick="switchPage('crypto')">CRYPTOBOT</button>
-    <button class="nav-tab" data-page="finances" onclick="switchPage('finances')">FINANCES</button>
+    <button class="nav-tab" data-page="habits" onclick="switchPage('habits')">HABITUDES</button>
     <button class="nav-tab" data-page="sport" onclick="switchPage('sport')">SPORT</button>
+    <button class="nav-tab" data-page="finances" onclick="switchPage('finances')">FINANCES</button>
+    <button class="nav-tab" data-page="dash" onclick="switchPage('dash')">DASHBOARD</button>
   </nav>
   <div class="nav-sep"></div>
   <div class="proj-shortcuts">
@@ -749,11 +749,11 @@ body,body *{font-family:var(--font-body)}
   <div class="dash-grid" id="dashKpis"></div>
   <div class="proj-row" id="projRow"></div>
   <div class="charts-row" id="chartsRow"></div>
-  <div class="heatmaps-grid" id="dashHeatmaps"></div>
 </div>
 
 <!-- HABITUDES PAGE -->
 <div class="page" id="pagehabits">
+  <div class="heatmaps-grid" id="dashHeatmaps" style="padding:1rem 1.25rem 0"></div>
   <div class="hab-portfolio" id="habPortfolio"></div>
   <div class="hab-toolbar" id="habToolbar"></div>
   <div class="hab-body" id="habBody"></div>
@@ -1216,6 +1216,7 @@ function freqLabel(freq) {
 // HABITS PAGE RENDER
 // ════════════════════════════════════════════════════
 function renderHabitsPage() {
+  renderHeatmaps();
   renderHabPortfolio();
   renderHabToolbar();
   renderHabBody();
@@ -1561,7 +1562,7 @@ async function persist(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>save
 // ════════════════════════════════════════════════════
 // DASHBOARD
 // ════════════════════════════════════════════════════
-function renderDash(){ renderKpis(); renderProj(); renderCharts(); renderHeatmaps(); }
+function renderDash(){ renderKpis(); renderProj(); renderCharts(); }
 
 function renderHeatmaps() {
   const el = document.getElementById('dashHeatmaps');
