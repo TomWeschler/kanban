@@ -315,7 +315,12 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .fin-section{margin-top:0.15rem}
 .fin-section-lbl{font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.65rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border)}
 /* accounts */
-.fin-accounts{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:0.45rem}
+.fin-accounts-wrap{display:flex;gap:0.7rem;align-items:stretch}
+.fin-accounts{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:0.45rem;flex:1;min-width:0}
+.fin-accounts-gif{flex-shrink:0;width:170px;border-radius:6px;overflow:hidden;border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.35);align-self:stretch;display:flex}
+.fin-accounts-gif img{width:100%;height:100%;object-fit:cover;display:block;opacity:0.92;transition:opacity 0.2s}
+.fin-accounts-gif:hover img{opacity:1}
+@media (max-width:1100px){.fin-accounts-gif{display:none}}
 .fin-account{background:var(--surface);border:1px solid var(--border);padding:0.55rem 0.65rem;position:relative;overflow:hidden;transition:border-color 0.15s}
 .fin-account:hover{border-color:var(--border2)}
 .fin-account-name{font-family:'Space Mono',monospace;font-size:0.48rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-mid);margin-bottom:0.32rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -913,7 +918,7 @@ function init() {
 // ════════════════════════════════════════════════════
 const LS_THEME = 'kanban_theme';
 function applySavedTheme() {
-  const saved = localStorage.getItem(LS_THEME) || 'default';
+  const saved = localStorage.getItem(LS_THEME) || 'tokyo';
   setTheme(saved, true);
 }
 function setTheme(name, silent) {
@@ -2535,7 +2540,10 @@ function renderFinAccounts(comptes) {
   }).join('');
   document.getElementById('finAccounts').innerHTML = `
     <div class="fin-section-lbl">COMPTES & ÉPARGNE</div>
-    <div class="fin-accounts">${cards}</div>`;
+    <div class="fin-accounts-wrap">
+      <div class="fin-accounts">${cards}</div>
+      <div class="fin-accounts-gif"><img src="gifs/zen1.gif" alt="" loading="lazy"></div>
+    </div>`;
 }
 
 // ════════════════════════════════════════════════════
