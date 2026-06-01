@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KANBAN OPS</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2309090e'/%3E%3Cpolygon points='16,4 28,16 16,28 4,16' fill='%237c6aff' opacity='0.15'/%3E%3Cpolygon points='16,4 28,16 16,28 4,16' fill='none' stroke='%237c6aff' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%237c6aff'/%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
@@ -17,6 +17,8 @@
   --dcb:#38bdf8;--gld:#fcd34d;--air:#6ee7b7;--perso:#c084fc;
   --imp1:#4ade80;--imp2:#a3e635;--imp3:#fbbf24;--imp4:#fb923c;--imp5:#f87171;
   --cat-finance:#fcd34d;--cat-esprit:#a78bfa;--cat-sante:#4ade80;--cat-prod:#38bdf8;--cat-autre:#94a3b8;
+  --font-body:'Syne',sans-serif;
+  --font-mono:'Space Mono',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -478,6 +480,8 @@ html[data-theme="brutalist"]{
   --accent:#ffffff;--accent-dim:rgba(255,255,255,0.08);
   --text:#ffffff;--text-dim:#888888;--text-mid:#bbbbbb;
   --green:#3eff85;--warn:#ffd23d;--danger:#ff4d6d;
+  --font-body:'Space Mono',monospace;
+  --font-mono:'Space Mono',monospace;
 }
 html[data-theme="brutalist"] body{background:var(--bg)}
 html[data-theme="brutalist"] .card{border-radius:0}
@@ -493,6 +497,8 @@ html[data-theme="tokyo"]{
   --accent:#7aa2f7;--accent-dim:rgba(122,162,247,0.14);
   --text:#c0caf5;--text-dim:#7882a9;--text-mid:#a9b1d6;
   --green:#9ece6a;--warn:#e0af68;--danger:#f7768e;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
 }
 html[data-theme="tokyo"] body{background:var(--bg)}
 
@@ -505,6 +511,8 @@ html[data-theme="carbon"]{
   --accent:#4589ff;--accent-dim:rgba(69,137,255,0.12);
   --text:#f4f4f4;--text-dim:#a8a8a8;--text-mid:#c6c6c6;
   --green:#42be65;--warn:#f1c21b;--danger:#fa4d56;
+  --font-body:'IBM Plex Sans',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
 }
 html[data-theme="carbon"] body{background:var(--bg)}
 html[data-theme="carbon"] .fin-kpi,html[data-theme="carbon"] .crp-kpi,html[data-theme="carbon"] .fit-kpi{border-left:3px solid var(--accent)}
@@ -518,6 +526,8 @@ html[data-theme="neon"]{
   --accent:#a78bfa;--accent-dim:rgba(167,139,250,0.16);
   --text:#f0f0ff;--text-dim:#8888ad;--text-mid:#b4b4d8;
   --green:#4ade80;--warn:#fbbf24;--danger:#f87171;
+  --font-body:'Syne',sans-serif;
+  --font-mono:'Space Mono',monospace;
 }
 html[data-theme="neon"] body{background:var(--bg)}
 html[data-theme="neon"] .fin-kpi-val,html[data-theme="neon"] .crp-kpi-val,html[data-theme="neon"] .fit-kpi-val{text-shadow:0 0 14px rgba(167,139,250,0.35)}
@@ -532,6 +542,8 @@ html[data-theme="solarized"]{
   --accent:#d6824d;--accent-dim:rgba(214,130,77,0.14);
   --text:#ebe0d0;--text-dim:#9c8c78;--text-mid:#b3a48a;
   --green:#8fbc4f;--warn:#d6c44d;--danger:#e35d50;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
 }
 html[data-theme="solarized"] body{background:var(--bg)}
 
@@ -544,8 +556,39 @@ html[data-theme="nord"]{
   --accent:#88c0d0;--accent-dim:rgba(136,192,208,0.16);
   --text:#eceff4;--text-dim:#a5acba;--text-mid:#d8dee9;
   --green:#a3be8c;--warn:#ebcb8b;--danger:#bf616a;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
 }
 html[data-theme="nord"] body{background:var(--bg)}
+
+/* ═══════════════════════════════
+   FONT SWAP — applique --font-body/--font-mono partout
+   (selectors larges + !important pour battre les déclarations spécifiques)
+═══════════════════════════════ */
+body,body *{font-family:var(--font-body)}
+/* Eléments monospace : tout ce qui ressemble à un label/KPI/badge/tableau */
+.logo,.nav-tab,.col-title,.col-count,.proj-btn,.sync-status,.hstat,
+.due-badge,.btn-done,.btn-edit,.card-notes,.board-filter,
+.fin-kpi-lbl,.fin-kpi-val,.fin-kpi-sub,.fin-section-lbl,
+.fin-account-name,.fin-account-val,.fin-account-delta,.fin-account-meta,
+.fin-box-ttl,.fin-table,.fin-table th,.fin-table td,.fin-cat-pill,
+.fin-ms-title,.fin-ms-pct,.fin-ms-proj,.fin-ms-node-lbl,.fin-ms-node-date,
+.crp-kpi-lbl,.crp-kpi-val,.crp-kpi-sub,.crp-section-lbl,
+.crp-box-ttl,.crp-table,.crp-table th,.crp-table td,.crp-btn,.crp-hodl-note,
+.crp-symbol-pill,.crp-empty,
+.fit-kpi-lbl,.fit-kpi-val,.fit-kpi-sub,.fit-section-lbl,
+.fit-box-ttl,.fit-stats-table,.fit-stats-table th,.fit-stats-table td,
+.fit-day-label,.fit-day-date,.fit-day-tier,.fit-day-check,.fit-day-sess,
+.fit-tier-badge,.fit-today-mod,.fit-ex-meta span,.fit-ex-prescription,
+.fit-ex-progress,.fit-ex-last,.fit-ex-sets,.fit-sess-meta,
+.fit-log-set-done,.fit-input,.fit-btn,.fit-form-lbl,
+.fit-prog-tier-hdr,.fit-prog-card-id,.fit-prog-num,.fit-prog-pres,
+.theme-opt,.btn-theme,
+.fin-alert,.fit-alert{font-family:var(--font-mono) !important}
+/* Titres "humain" en font-body */
+.card-title,.fin-today-title,.fit-today-title,.fit-ex-name,.fit-log-exname,
+.fit-prog-card-hdr,.fit-prog-exname,.modal-hdr,.auth-logo,.auth-desc,
+.btn-nav{font-family:var(--font-body) !important}
 
 </style>
 </head>
