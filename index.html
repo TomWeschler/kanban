@@ -1815,8 +1815,8 @@ async function loadCryptoData() {
         dateClose: parseTradeDate(r[4] || ''),   // col E — close datetime
         symbol:    sym,
         action:    colMap.action >= 0 ? r[colMap.action] || '' : '',
-        price:     parseNum(r[1]),               // col B — buy price
-        colD:      parseNum(r[3]),               // col D — initial quantity (B×D = initial investment)
+        price:     parseNum(r[1]),               // col B — NbAction (quantity bought)
+        colD:      parseNum(r[3]),               // col D — Buying Price (price per coin) — B×D = initial investment
         colF:      parseNum(r[5]),               // col F — current qty/amount
         net:       parseNum(r[6]),               // col G — net P&L after tax
         pct:       parseNum(r[7]),               // col H — % gain/loss
@@ -1905,12 +1905,12 @@ function getCryptoStats(sym) {
   // P&L via Position Finale
   const totalNet = calcNetPnL(sym || null);
 
-  // P&L % from first to last price in col B (price evolution tracked internally)
+  // P&L % from first to last Buying Price (col D) of recorded trades
   let pricePct = null;
-  const withPrice = list.filter(t => t.price > 0 && t.date);
+  const withPrice = list.filter(t => t.colD > 0);
   if (withPrice.length >= 2) {
-    const sortedP = [...withPrice].sort((a,b) => a.date < b.date ? -1 : 1);
-    const p0 = sortedP[0].price, pn = sortedP[sortedP.length - 1].price;
+    const sortedP = [...withPrice].sort((a,b) => a.idx - b.idx);
+    const p0 = sortedP[0].colD, pn = sortedP[sortedP.length - 1].colD;
     if (p0 > 0) pricePct = (pn - p0) / p0 * 100;
   }
 
@@ -2021,14 +2021,15 @@ function renderCryptoBanner() {
     </div>`;
 }
 
-// First actual purchase price (col B of the first chronological trade for this crypto)
+// First actual purchase price (col D = Buying Price of the first chronological trade)
+// Note: in the source sheet, col B = NbAction (quantity), col D = Buying Price.
 // Sorted by row index in the sheet (user enters trades chronologically) — robust
 // vs broken date parsing on some rows.
 function firstBuyPrice(sym) {
-  const buys = cryptoTrades.filter(t => t.symbol === sym && t.price > 0 && t.colD > 0);
+  const buys = cryptoTrades.filter(t => t.symbol === sym && t.colD > 0 && t.price > 0);
   if (!buys.length) return null;
   buys.sort((a, b) => a.idx - b.idx);
-  return buys[0].price;
+  return buys[0].colD;
 }
 
 function renderCryptoCards() {
