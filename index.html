@@ -2021,11 +2021,14 @@ function renderCryptoBanner() {
     </div>`;
 }
 
-// First actual purchase price for a crypto (col B of first chronological trade)
+// First actual purchase price (col B of the first chronological trade for this crypto)
+// Sorted by row index in the sheet (user enters trades chronologically) — robust
+// vs broken date parsing on some rows.
 function firstBuyPrice(sym) {
-  const trades = cryptoTrades.filter(t => t.symbol === sym && t.price > 0 && t.date)
-                              .sort((a, b) => a.date.localeCompare(b.date));
-  return trades.length ? trades[0].price : null;
+  const buys = cryptoTrades.filter(t => t.symbol === sym && t.price > 0 && t.colD > 0);
+  if (!buys.length) return null;
+  buys.sort((a, b) => a.idx - b.idx);
+  return buys[0].price;
 }
 
 function renderCryptoCards() {
@@ -2036,11 +2039,14 @@ function renderCryptoCards() {
 
     // HOLD % = (current price − first purchase price) / first purchase price * 100
     let holdRow = '';
-    if (price && hasData) {
+    if (price && typeof price.price === 'number' && hasData) {
       const fbp = firstBuyPrice(c.sym);
-      if (fbp != null) {
+      if (fbp != null && fbp > 0) {
         const holdPct = (price.price - fbp) / fbp * 100;
-        holdRow = `<div class="crp-stat"><span class="crp-stat-l">HOLD vs 1ER ACHAT</span>
+        const fbpFmt = fbp < 1 ? fbp.toFixed(4) : fbp.toLocaleString('en-US',{maximumFractionDigits:2});
+        const curFmt = price.price < 1 ? price.price.toFixed(4) : price.price.toLocaleString('en-US',{maximumFractionDigits:2});
+        holdRow = `<div class="crp-stat" title="1er achat : $${fbpFmt} → Actuel : $${curFmt}">
+          <span class="crp-stat-l">HOLD vs 1ER ACHAT</span>
           <span class="crp-stat-v" style="color:${holdPct>=0?'var(--green)':'var(--danger)'}">${crpSign(holdPct)}${holdPct.toFixed(2)}%</span></div>`;
       }
     }
