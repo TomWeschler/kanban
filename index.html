@@ -288,7 +288,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .crp-badge.wait{color:var(--text-dim);border-color:var(--border)}
 .crp-badge.active{color:var(--green);border-color:rgba(74,222,128,0.3);background:rgba(74,222,128,0.05)}
 .crp-charts-a{display:grid;grid-template-columns:1fr;gap:0.85rem}
-.crp-charts-b{display:grid;grid-template-columns:1fr;gap:0.85rem}
+.crp-charts-b{display:grid;grid-template-columns:1fr 1fr;gap:0.85rem}
+@media (max-width:1000px){.crp-charts-b{grid-template-columns:1fr}}
 .crp-evol-row{display:grid;grid-template-columns:1fr 280px;gap:0.85rem}
 .crp-evol-gif{border-radius:6px;overflow:hidden;border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.35);display:flex}
 .crp-evol-gif img{width:100%;height:100%;object-fit:cover;display:block;opacity:0.92;transition:opacity 0.2s}
@@ -2100,8 +2101,8 @@ function calcBotRoiPct(sym) {
 }
 
 function renderCryptoChartsA() {
-  // Chart A1: Cumulative P&L line  |  Chart A2: P&L total par crypto bar
-  ['cCrpCumul','cCrpComp'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
+  // Chart A: Cumulative P&L line (+ gif on the right)
+  ['cCrpCumul'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
 
   document.getElementById('crpChartsA').innerHTML = `
     <div class="crp-evol-row">
@@ -2110,10 +2111,6 @@ function renderCryptoChartsA() {
         <div class="crp-wrap tall"><canvas id="cCrpCumul"></canvas></div>
       </div>
       <div class="crp-evol-gif"><img src="gifs/zen1.gif" alt="" loading="lazy"></div>
-    </div>
-    <div class="crp-box">
-      <div class="crp-box-hdr"><span class="crp-box-ttl">P&L TOTAL PAR CRYPTO</span></div>
-      <div class="crp-wrap tall"><canvas id="cCrpComp"></canvas></div>
     </div>`;
 
   // A1 — Cumulative: walk through pnlDelta in chronological order
@@ -2156,7 +2153,27 @@ function renderCryptoChartsA() {
     });
   }
 
-  // A2 — P&L par crypto (calcNetPnL via Position Finale)
+}
+
+function renderCryptoChartsB() {
+  // Chart B1: P&L total par crypto  |  Chart B2: Bot ROI% vs HODL%
+  ['cCrpComp','cCrpHodl'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
+
+  const hodlAvail = CRYPTOS.some(c => cryptoPrices[c.sym]?.hodlPct != null);
+  const hodlNote = hodlAvail ? 'depuis le premier trade détecté' : 'chargement données marché...';
+
+  document.getElementById('crpChartsB').innerHTML = `
+    <div class="crp-box">
+      <div class="crp-box-hdr"><span class="crp-box-ttl">P&L TOTAL PAR CRYPTO</span></div>
+      <div class="crp-wrap tall"><canvas id="cCrpComp"></canvas></div>
+    </div>
+    <div class="crp-box">
+      <div class="crp-box-hdr"><span class="crp-box-ttl">BOT ROI% vs HODL%</span></div>
+      <div class="crp-wrap tall"><canvas id="cCrpHodl"></canvas></div>
+      <div class="crp-hodl-note">HODL : ${hodlNote}</div>
+    </div>`;
+
+  // B1 — P&L par crypto (calcNetPnL via Position Finale)
   const compVals = CRYPTOS.map(c => parseFloat(calcNetPnL(c.sym).toFixed(2)));
   cryptoCharts.cCrpComp = new Chart(document.getElementById('cCrpComp'), {
     type: 'bar',
@@ -2175,21 +2192,6 @@ function renderCryptoChartsA() {
       }
     }
   });
-}
-
-function renderCryptoChartsB() {
-  // Chart B: Bot ROI% vs HODL%
-  ['cCrpHodl'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
-
-  const hodlAvail = CRYPTOS.some(c => cryptoPrices[c.sym]?.hodlPct != null);
-  const hodlNote = hodlAvail ? 'depuis le premier trade détecté' : 'chargement données marché...';
-
-  document.getElementById('crpChartsB').innerHTML = `
-    <div class="crp-box">
-      <div class="crp-box-hdr"><span class="crp-box-ttl">BOT ROI% vs HODL%</span></div>
-      <div class="crp-wrap"><canvas id="cCrpHodl"></canvas></div>
-      <div class="crp-hodl-note">HODL : ${hodlNote}</div>
-    </div>`;
 
   // Bot ROI% (calcNetPnL / first posFinale) vs HODL% (CoinGecko)
   const activeCryptos = CRYPTOS.filter(c => getCryptoStats(c.sym).count > 0);
