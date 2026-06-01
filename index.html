@@ -278,11 +278,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .crp-card.eth::before{background:#818cf8}.crp-card.xrp::before{background:#22d3ee}
 .crp-card.bnb::before{background:#eab308}
 .crp-card.nodata{opacity:0.48}
-.crp-sym{font-family:'Space Mono',monospace;font-size:0.82rem;font-weight:700;letter-spacing:0.22em;margin-bottom:0.12rem}
-.crp-name{font-size:0.62rem;color:var(--text-dim);margin-bottom:0.85rem}
-.crp-stat{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.28rem}
-.crp-stat-l{font-family:'Space Mono',monospace;font-size:0.47rem;letter-spacing:0.1em;color:var(--text-dim)}
-.crp-stat-v{font-family:'Space Mono',monospace;font-size:0.67rem;font-weight:700}
+.crp-sym{font-family:'Space Mono',monospace;font-size:0.95rem;font-weight:700;letter-spacing:0.22em;margin-bottom:0.85rem}
+.crp-stat{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.36rem;gap:0.5rem}
+.crp-stat-l{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--text-mid)}
+.crp-stat-v{font-family:'Space Mono',monospace;font-size:0.78rem;font-weight:700;text-align:right;white-space:nowrap}
 .crp-sep{height:1px;background:var(--border);margin:0.55rem 0}
 .crp-badge{display:inline-block;font-family:'Space Mono',monospace;font-size:0.45rem;letter-spacing:0.08em;padding:2px 6px;border:1px solid;margin-top:0.6rem}
 .crp-badge.wait{color:var(--text-dim);border-color:var(--border)}
@@ -2021,39 +2020,56 @@ function renderCryptoBanner() {
     </div>`;
 }
 
+// First actual purchase price for a crypto (col B of first chronological trade)
+function firstBuyPrice(sym) {
+  const trades = cryptoTrades.filter(t => t.symbol === sym && t.price > 0 && t.date)
+                              .sort((a, b) => a.date.localeCompare(b.date));
+  return trades.length ? trades[0].price : null;
+}
+
 function renderCryptoCards() {
   document.getElementById('crpCards').innerHTML = CRYPTOS.map(c => {
     const g = getCryptoStats(c.sym);
     const hasData = g.count > 0;
     const price = cryptoPrices[c.sym];
 
+    // HOLD % = (current price − first purchase price) / first purchase price * 100
+    let holdRow = '';
+    if (price && hasData) {
+      const fbp = firstBuyPrice(c.sym);
+      if (fbp != null) {
+        const holdPct = (price.price - fbp) / fbp * 100;
+        holdRow = `<div class="crp-stat"><span class="crp-stat-l">HOLD vs 1ER ACHAT</span>
+          <span class="crp-stat-v" style="color:${holdPct>=0?'var(--green)':'var(--danger)'}">${crpSign(holdPct)}${holdPct.toFixed(2)}%</span></div>`;
+      }
+    }
+
     const priceBlock = price ? `
       <div class="crp-sep"></div>
       <div class="crp-stat"><span class="crp-stat-l">PRIX USD</span>
-        <span class="crp-stat-v" style="font-size:0.6rem">$${price.price < 1 ? price.price.toFixed(4) : price.price.toLocaleString('en-US',{maximumFractionDigits:2})}</span></div>
+        <span class="crp-stat-v">$${price.price < 1 ? price.price.toFixed(4) : price.price.toLocaleString('en-US',{maximumFractionDigits:2})}</span></div>
       <div class="crp-stat"><span class="crp-stat-l">24H</span>
-        <span class="crp-stat-v" style="color:${price.change24h>=0?'var(--green)':'var(--danger)'};font-size:0.6rem">${crpSign(price.change24h??0)}${(price.change24h??0).toFixed(2)}%</span></div>
-      ${price.hodlPct!=null ? `<div class="crp-stat"><span class="crp-stat-l">HODL (période)</span><span class="crp-stat-v" style="color:${price.hodlPct>=0?'var(--green)':'var(--danger)'};font-size:0.6rem">${crpSign(price.hodlPct)}${price.hodlPct.toFixed(2)}%</span></div>` : ''}
+        <span class="crp-stat-v" style="color:${price.change24h>=0?'var(--green)':'var(--danger)'}">${crpSign(price.change24h??0)}${(price.change24h??0).toFixed(2)}%</span></div>
+      ${holdRow}
     ` : '';
 
     const statsBlock = hasData ? `
       <div class="crp-stat"><span class="crp-stat-l">P&L NET</span>
         <span class="crp-stat-v" style="color:${crpCol(g.totalNet)}">${crpFmt(g.totalNet)}</span></div>
       <div class="crp-stat"><span class="crp-stat-l">TRADES</span>
-        <span class="crp-stat-v">${g.count} <span style="color:var(--text-dim);font-size:0.52rem">(${g.wins}W/${g.losses}L)</span></span></div>
+        <span class="crp-stat-v">${g.count} <span style="color:var(--text-dim);font-size:0.62rem">(${g.wins}W/${g.losses}L)</span></span></div>
       <div class="crp-stat"><span class="crp-stat-l">WIN RATE</span>
         <span class="crp-stat-v" style="color:${g.winRate>=50?'var(--green)':'var(--warn)'}">${g.winRate}%</span></div>
       ${g.avgGainPct!=null?`<div class="crp-stat"><span class="crp-stat-l">MOY. GAINS %</span>
-        <span class="crp-stat-v" style="color:var(--green);font-size:0.62rem">${crpSign(g.avgGainPct)}${g.avgGainPct.toFixed(2)}%</span></div>`:''}
+        <span class="crp-stat-v" style="color:var(--green)">${crpSign(g.avgGainPct)}${g.avgGainPct.toFixed(2)}%</span></div>`:''}
       ${g.avgLossPct!=null?`<div class="crp-stat"><span class="crp-stat-l">MOY. PERTES %</span>
-        <span class="crp-stat-v" style="color:var(--danger);font-size:0.62rem">${g.avgLossPct.toFixed(2)}%</span></div>`:''}
+        <span class="crp-stat-v" style="color:var(--danger)">${g.avgLossPct.toFixed(2)}%</span></div>`:''}
       ${g.pricePct!=null?`<div class="crp-stat"><span class="crp-stat-l">P&L PRIX (B)</span>
-        <span class="crp-stat-v" style="color:${crpCol(g.pricePct)};font-size:0.62rem">${crpSign(g.pricePct)}${g.pricePct.toFixed(2)}%</span></div>`:''}
-    ` : `<div class="crp-empty" style="padding:1.2rem 0;font-size:0.5rem">AUCUN TRADE</div>`;
+        <span class="crp-stat-v" style="color:${crpCol(g.pricePct)}">${crpSign(g.pricePct)}${g.pricePct.toFixed(2)}%</span></div>`:''}
+    ` : `<div class="crp-empty" style="padding:1.2rem 0;font-size:0.62rem">AUCUN TRADE</div>`;
 
     return `<div class="crp-card ${c.sym.toLowerCase()}${!hasData?' nodata':''}">
       <div class="crp-sym" style="color:${c.hex}">${c.sym}</div>
-      <div class="crp-name">${c.name}</div>
       ${statsBlock}${priceBlock}
     </div>`;
   }).join('');
