@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Thèmes Dark — Comparatif</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0e;color:#fff;font-family:'Inter',sans-serif;padding:1.5rem;min-height:100vh}
+.page-title{font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:0.4rem}
+.page-sub{color:#888;font-size:0.85rem;margin-bottom:1.5rem}
+.theme-grid{display:grid;grid-template-columns:1fr;gap:1.5rem;max-width:1400px;margin:0 auto}
+.theme-card{border-radius:8px;overflow:hidden;border:1px solid #2a2a35}
+.theme-meta{padding:0.85rem 1.2rem;background:#13131a;border-bottom:1px solid #2a2a35;display:flex;justify-content:space-between;align-items:center}
+.theme-name{font-family:'Inter',sans-serif;font-size:1rem;font-weight:700;color:#fff}
+.theme-desc{font-family:'Inter',sans-serif;font-size:0.7rem;color:#888;letter-spacing:0.03em}
+.theme-preview{padding:1.5rem}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEME 1 — BRUTALIST MONO (high-contrast terminal aesthetic)
+═══════════════════════════════════════════════════════════════════ */
+.t1{background:#000;color:#fff;font-family:'Space Mono',monospace}
+.t1 .nav{display:flex;gap:0;border:1px solid #333;margin-bottom:1.2rem}
+.t1 .tab{padding:0.6rem 1.1rem;font-size:0.72rem;letter-spacing:0.15em;font-weight:700;color:#888;border-right:1px solid #333;cursor:pointer}
+.t1 .tab.on{background:#fff;color:#000}
+.t1 .lbl{font-size:0.7rem;letter-spacing:0.18em;font-weight:700;color:#aaa;text-transform:uppercase;border-bottom:2px solid #fff;padding-bottom:0.35rem;margin-bottom:0.85rem;display:inline-block}
+.t1 .banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1.2rem}
+.t1 .kpi{border:1px solid #333;padding:1rem 1.1rem}
+.t1 .klbl{font-size:0.62rem;letter-spacing:0.18em;font-weight:700;color:#aaa;text-transform:uppercase;margin-bottom:0.65rem}
+.t1 .kval{font-size:1.9rem;font-weight:700;line-height:1;color:#fff}
+.t1 .ksub{font-size:0.72rem;color:#888;margin-top:0.4rem}
+.t1 .green{color:#3eff85}.t1 .red{color:#ff4d6d}.t1 .yel{color:#ffd23d}
+.t1 .row{display:flex;justify-content:space-between;padding:0.7rem 1rem;border-bottom:1px solid #333;font-size:0.85rem}
+.t1 .row:last-child{border-bottom:none}
+.t1 .badge{display:inline-block;padding:3px 9px;border:1px solid #fff;font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase}
+.t1 .btn{background:#fff;color:#000;border:none;padding:0.55rem 1.2rem;font-family:'Space Mono',monospace;font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;margin-right:0.5rem}
+.t1 .btn-out{background:transparent;color:#fff;border:1px solid #fff}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEME 2 — TOKYO NIGHT (warm pastels, very popular dev theme)
+═══════════════════════════════════════════════════════════════════ */
+.t2{background:#1a1b26;color:#c0caf5;font-family:'Inter',sans-serif}
+.t2 .nav{display:flex;gap:0.3rem;margin-bottom:1.2rem}
+.t2 .tab{padding:0.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.7rem;font-weight:500;letter-spacing:0.08em;color:#565f89;cursor:pointer;border-radius:5px}
+.t2 .tab.on{background:#7aa2f7;color:#1a1b26;font-weight:700}
+.t2 .lbl{font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.12em;color:#7aa2f7;font-weight:700;text-transform:uppercase;margin-bottom:0.85rem}
+.t2 .banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem;margin-bottom:1.2rem}
+.t2 .kpi{background:#24283b;border:1px solid #414868;padding:1.05rem 1.15rem;border-radius:7px}
+.t2 .klbl{font-family:'JetBrains Mono',monospace;font-size:0.66rem;letter-spacing:0.1em;color:#7aa2f7;text-transform:uppercase;margin-bottom:0.55rem;font-weight:500}
+.t2 .kval{font-family:'JetBrains Mono',monospace;font-size:1.85rem;font-weight:700;line-height:1;color:#c0caf5}
+.t2 .ksub{font-size:0.78rem;color:#a9b1d6;margin-top:0.4rem}
+.t2 .green{color:#9ece6a}.t2 .red{color:#f7768e}.t2 .yel{color:#e0af68}.t2 .pink{color:#bb9af7}
+.t2 .row{display:flex;justify-content:space-between;padding:0.7rem 1rem;border-bottom:1px solid #414868;font-size:0.9rem}
+.t2 .row:last-child{border-bottom:none}
+.t2 .badge{display:inline-block;padding:3px 10px;background:#bb9af7;color:#1a1b26;font-size:0.65rem;font-weight:700;border-radius:4px;letter-spacing:0.06em;text-transform:uppercase}
+.t2 .btn{background:#7aa2f7;color:#1a1b26;border:none;padding:0.55rem 1.2rem;font-size:0.85rem;font-weight:700;border-radius:5px;cursor:pointer;margin-right:0.5rem}
+.t2 .btn-out{background:transparent;color:#c0caf5;border:1px solid #414868}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEME 3 — CARBON (IBM-inspired, ultra clean, perfect legibility)
+═══════════════════════════════════════════════════════════════════ */
+.t3{background:#161616;color:#f4f4f4;font-family:'IBM Plex Sans',sans-serif}
+.t3 .nav{display:flex;gap:0;background:#262626;margin-bottom:1.2rem}
+.t3 .tab{padding:0.85rem 1.4rem;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:500;letter-spacing:0.04em;color:#a8a8a8;cursor:pointer;border-bottom:3px solid transparent}
+.t3 .tab.on{background:#161616;color:#fff;border-bottom-color:#4589ff}
+.t3 .lbl{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;letter-spacing:0.06em;color:#a8a8a8;font-weight:500;text-transform:uppercase;margin-bottom:0.85rem}
+.t3 .banner{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.2rem}
+.t3 .kpi{background:#262626;border-left:3px solid #4589ff;padding:1.1rem 1.3rem}
+.t3 .klbl{font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:#c6c6c6;margin-bottom:0.5rem;font-weight:400;letter-spacing:0.04em}
+.t3 .kval{font-family:'IBM Plex Sans',sans-serif;font-size:2.05rem;font-weight:600;line-height:1;color:#fff;letter-spacing:-0.02em}
+.t3 .ksub{font-size:0.82rem;color:#a8a8a8;margin-top:0.45rem;font-weight:400}
+.t3 .green{color:#42be65}.t3 .red{color:#fa4d56}.t3 .yel{color:#f1c21b}.t3 .blue{color:#4589ff}
+.t3 .row{display:flex;justify-content:space-between;padding:0.85rem 1rem;border-bottom:1px solid #393939;font-size:0.92rem}
+.t3 .row:last-child{border-bottom:none}
+.t3 .badge{display:inline-block;padding:4px 11px;background:#0353e9;color:#fff;font-size:0.72rem;font-weight:500;letter-spacing:0.03em}
+.t3 .btn{background:#0f62fe;color:#fff;border:none;padding:0.65rem 1.4rem;font-family:'IBM Plex Sans',sans-serif;font-size:0.85rem;font-weight:500;cursor:pointer;margin-right:0.5rem}
+.t3 .btn-out{background:transparent;color:#fff;border:1px solid #6f6f6f}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEME 4 — CYBER NEON (vibrant, glowing accents, current vibe enhanced)
+═══════════════════════════════════════════════════════════════════ */
+.t4{background:#06070d;color:#e8e8ff;font-family:'Syne',sans-serif}
+.t4 .nav{display:flex;gap:0;margin-bottom:1.2rem;border-bottom:1px solid rgba(124,106,255,0.2)}
+.t4 .tab{padding:0.6rem 1.1rem;font-family:'Space Mono',monospace;font-size:0.72rem;letter-spacing:0.18em;font-weight:700;color:#5a5a78;cursor:pointer;border-bottom:2px solid transparent;text-transform:uppercase}
+.t4 .tab.on{color:#a78bfa;border-bottom-color:#a78bfa;text-shadow:0 0 12px rgba(167,139,250,0.6)}
+.t4 .lbl{font-family:'Space Mono',monospace;font-size:0.72rem;letter-spacing:0.2em;color:#a78bfa;font-weight:700;text-transform:uppercase;margin-bottom:0.85rem;text-shadow:0 0 8px rgba(167,139,250,0.3)}
+.t4 .banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem;margin-bottom:1.2rem}
+.t4 .kpi{background:linear-gradient(135deg,#11111c 0%,#0a0a14 100%);border:1px solid rgba(124,106,255,0.25);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
+.t4 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#a78bfa,#22d3ee)}
+.t4 .klbl{font-family:'Space Mono',monospace;font-size:0.68rem;letter-spacing:0.18em;color:#9898c8;text-transform:uppercase;margin-bottom:0.55rem;font-weight:700}
+.t4 .kval{font-family:'Space Mono',monospace;font-size:1.95rem;font-weight:700;line-height:1;color:#fff;text-shadow:0 0 14px rgba(124,106,255,0.4)}
+.t4 .ksub{font-size:0.78rem;color:#9898c8;margin-top:0.4rem}
+.t4 .green{color:#4ade80;text-shadow:0 0 10px rgba(74,222,128,0.5)}
+.t4 .red{color:#f87171;text-shadow:0 0 10px rgba(248,113,113,0.5)}
+.t4 .yel{color:#fbbf24;text-shadow:0 0 10px rgba(251,191,36,0.4)}
+.t4 .row{display:flex;justify-content:space-between;padding:0.75rem 1rem;border-bottom:1px solid rgba(124,106,255,0.12);font-size:0.9rem}
+.t4 .row:last-child{border-bottom:none}
+.t4 .badge{display:inline-block;padding:3px 11px;background:rgba(124,106,255,0.15);color:#a78bfa;font-size:0.66rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border:1px solid rgba(167,139,250,0.4)}
+.t4 .btn{background:linear-gradient(135deg,#7c6aff,#a78bfa);color:#fff;border:none;padding:0.6rem 1.3rem;font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;margin-right:0.5rem;box-shadow:0 0 18px rgba(124,106,255,0.4)}
+.t4 .btn-out{background:transparent;color:#a78bfa;border:1px solid rgba(167,139,250,0.4);box-shadow:none}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEME 5 — SOLARIZED NIGHT (warm dark, paper-like, very high readability)
+═══════════════════════════════════════════════════════════════════ */
+.t5{background:#1c1817;color:#ebe0d0;font-family:'Inter',sans-serif}
+.t5 .nav{display:flex;gap:0.4rem;margin-bottom:1.2rem;padding-bottom:0.5rem;border-bottom:1px solid #3a342f}
+.t5 .tab{padding:0.55rem 1.1rem;font-family:'JetBrains Mono',monospace;font-size:0.74rem;font-weight:500;letter-spacing:0.06em;color:#9c8c78;cursor:pointer;border-radius:4px;text-transform:uppercase}
+.t5 .tab.on{background:#d6824d;color:#1c1817;font-weight:700}
+.t5 .lbl{font-family:'JetBrains Mono',monospace;font-size:0.74rem;letter-spacing:0.1em;color:#d6824d;font-weight:700;text-transform:uppercase;margin-bottom:0.85rem}
+.t5 .banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem;margin-bottom:1.2rem}
+.t5 .kpi{background:#26211e;border:1px solid #3a342f;padding:1.1rem 1.25rem;border-radius:6px}
+.t5 .klbl{font-family:'JetBrains Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;color:#b3a48a;text-transform:uppercase;margin-bottom:0.55rem;font-weight:500}
+.t5 .kval{font-family:'JetBrains Mono',monospace;font-size:1.95rem;font-weight:700;line-height:1;color:#fff8e7}
+.t5 .ksub{font-size:0.8rem;color:#9c8c78;margin-top:0.42rem}
+.t5 .green{color:#8fbc4f}.t5 .red{color:#e35d50}.t5 .yel{color:#d6c44d}.t5 .accent{color:#d6824d}
+.t5 .row{display:flex;justify-content:space-between;padding:0.75rem 1rem;border-bottom:1px solid #3a342f;font-size:0.9rem}
+.t5 .row:last-child{border-bottom:none}
+.t5 .badge{display:inline-block;padding:3px 11px;background:rgba(214,130,77,0.16);color:#d6824d;font-size:0.68rem;font-weight:700;letter-spacing:0.04em;border-radius:4px;border:1px solid rgba(214,130,77,0.4)}
+.t5 .btn{background:#d6824d;color:#1c1817;border:none;padding:0.6rem 1.3rem;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;margin-right:0.5rem;border-radius:5px}
+.t5 .btn-out{background:transparent;color:#ebe0d0;border:1px solid #3a342f;border-radius:5px}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THEME 6 — NORD FROST (cool blue-grey palette, large clear typography)
+═══════════════════════════════════════════════════════════════════ */
+.t6{background:#2e3440;color:#eceff4;font-family:'Inter',sans-serif}
+.t6 .nav{display:flex;gap:0.35rem;margin-bottom:1.2rem}
+.t6 .tab{padding:0.6rem 1.1rem;font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;color:#81a1c1;cursor:pointer;border-radius:5px;letter-spacing:0.02em}
+.t6 .tab.on{background:#88c0d0;color:#2e3440}
+.t6 .lbl{font-family:'JetBrains Mono',monospace;font-size:0.76rem;letter-spacing:0.08em;color:#88c0d0;font-weight:600;text-transform:uppercase;margin-bottom:0.85rem}
+.t6 .banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.9rem;margin-bottom:1.2rem}
+.t6 .kpi{background:#3b4252;border:1px solid #4c566a;padding:1.15rem 1.3rem;border-radius:6px}
+.t6 .klbl{font-family:'JetBrains Mono',monospace;font-size:0.74rem;letter-spacing:0.05em;color:#d8dee9;text-transform:uppercase;margin-bottom:0.55rem;font-weight:500}
+.t6 .kval{font-family:'Inter',sans-serif;font-size:2.1rem;font-weight:700;line-height:1;color:#eceff4;letter-spacing:-0.02em}
+.t6 .ksub{font-size:0.84rem;color:#d8dee9;margin-top:0.45rem}
+.t6 .green{color:#a3be8c}.t6 .red{color:#bf616a}.t6 .yel{color:#ebcb8b}.t6 .accent{color:#88c0d0}
+.t6 .row{display:flex;justify-content:space-between;padding:0.8rem 1rem;border-bottom:1px solid #434c5e;font-size:0.93rem}
+.t6 .row:last-child{border-bottom:none}
+.t6 .badge{display:inline-block;padding:4px 12px;background:#5e81ac;color:#eceff4;font-size:0.72rem;font-weight:600;letter-spacing:0.03em;border-radius:4px}
+.t6 .btn{background:#88c0d0;color:#2e3440;border:none;padding:0.65rem 1.4rem;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;margin-right:0.5rem;border-radius:5px}
+.t6 .btn-out{background:transparent;color:#eceff4;border:1px solid #4c566a;border-radius:5px}
+
+/* responsive */
+@media (min-width:1100px){
+  .theme-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="page-title">◆ Thèmes Dark — Comparatif Lisibilité</div>
+<div class="page-sub">Mini-dashboard identique dans 6 thèmes. Compare la lisibilité des chiffres et des labels. Choisis ton préféré par son numéro.</div>
+
+<div class="theme-grid">
+
+<!-- THEME 1 -->
+<div class="theme-card">
+  <div class="theme-meta">
+    <div class="theme-name">① BRUTALIST MONO</div>
+    <div class="theme-desc">Pur N&B · Space Mono · contraste max</div>
+  </div>
+  <div class="theme-preview t1">
+    <div class="nav">
+      <div class="tab on">BOARD</div><div class="tab">DASHBOARD</div><div class="tab">FINANCES</div><div class="tab">SPORT</div>
+    </div>
+    <div class="lbl">Patrimoine Global</div>
+    <div class="banner">
+      <div class="kpi"><div class="klbl">Total</div><div class="kval">187 420 €</div><div class="ksub">Ref. 145 000 €</div></div>
+      <div class="kpi"><div class="klbl">Plus-value</div><div class="kval green">+42 420 €</div><div class="ksub green">+29.3%</div></div>
+      <div class="kpi"><div class="klbl">Dépenses Mai</div><div class="kval yel">2 845 €</div><div class="ksub">31 opérations</div></div>
+      <div class="kpi"><div class="klbl">Objectif 1M €</div><div class="kval">18.74%</div><div class="ksub">812 580 € restants</div></div>
+    </div>
+    <div class="lbl">Transactions</div>
+    <div style="border:1px solid #333">
+      <div class="row"><span>2026-05-28</span><span>Loyer</span><span class="badge">Logement</span><span class="red">-1 200 €</span></div>
+      <div class="row"><span>2026-05-27</span><span>Salaire</span><span class="badge">Revenu</span><span class="green">+3 850 €</span></div>
+      <div class="row"><span>2026-05-25</span><span>Courses Carrefour</span><span class="badge">Alim.</span><span class="red">-127 €</span></div>
+    </div>
+    <div style="margin-top:1rem">
+      <button class="btn">+ Nouvelle</button>
+      <button class="btn btn-out">Exporter</button>
+    </div>
+  </div>
+</div>
+
+<!-- THEME 2 -->
+<div class="theme-card">
+  <div class="theme-meta">
+    <div class="theme-name">② TOKYO NIGHT</div>
+    <div class="theme-desc">Bleu-violet doux · pastels chauds · ultra-popu</div>
+  </div>
+  <div class="theme-preview t2">
+    <div class="nav">
+      <div class="tab on">BOARD</div><div class="tab">DASHBOARD</div><div class="tab">FINANCES</div><div class="tab">SPORT</div>
+    </div>
+    <div class="lbl">Patrimoine Global</div>
+    <div class="banner">
+      <div class="kpi"><div class="klbl">Total</div><div class="kval">187 420 €</div><div class="ksub">Ref. 145 000 €</div></div>
+      <div class="kpi"><div class="klbl">Plus-value</div><div class="kval green">+42 420 €</div><div class="ksub green">+29.3%</div></div>
+      <div class="kpi"><div class="klbl">Dépenses Mai</div><div class="kval yel">2 845 €</div><div class="ksub">31 opérations</div></div>
+      <div class="kpi"><div class="klbl">Objectif 1M €</div><div class="kval pink">18.74%</div><div class="ksub">812 580 € restants</div></div>
+    </div>
+    <div class="lbl">Transactions</div>
+    <div style="border:1px solid #414868;border-radius:6px;overflow:hidden">
+      <div class="row"><span>2026-05-28</span><span>Loyer</span><span class="badge">Logement</span><span class="red">-1 200 €</span></div>
+      <div class="row"><span>2026-05-27</span><span>Salaire</span><span class="badge">Revenu</span><span class="green">+3 850 €</span></div>
+      <div class="row"><span>2026-05-25</span><span>Courses Carrefour</span><span class="badge">Alim.</span><span class="red">-127 €</span></div>
+    </div>
+    <div style="margin-top:1rem">
+      <button class="btn">+ Nouvelle</button>
+      <button class="btn btn-out">Exporter</button>
+    </div>
+  </div>
+</div>
+
+<!-- THEME 3 -->
+<div class="theme-card">
+  <div class="theme-meta">
+    <div class="theme-name">③ CARBON (IBM)</div>
+    <div class="theme-desc">Pro · IBM Plex · lisibilité maximale</div>
+  </div>
+  <div class="theme-preview t3">
+    <div class="nav">
+      <div class="tab on">BOARD</div><div class="tab">DASHBOARD</div><div class="tab">FINANCES</div><div class="tab">SPORT</div>
+    </div>
+    <div class="lbl">Patrimoine Global</div>
+    <div class="banner">
+      <div class="kpi"><div class="klbl">Total</div><div class="kval">187 420 €</div><div class="ksub">Ref. 145 000 €</div></div>
+      <div class="kpi" style="border-left-color:#42be65"><div class="klbl">Plus-value</div><div class="kval green">+42 420 €</div><div class="ksub green">+29.3%</div></div>
+      <div class="kpi" style="border-left-color:#f1c21b"><div class="klbl">Dépenses Mai</div><div class="kval yel">2 845 €</div><div class="ksub">31 opérations</div></div>
+      <div class="kpi"><div class="klbl">Objectif 1M €</div><div class="kval blue">18.74%</div><div class="ksub">812 580 € restants</div></div>
+    </div>
+    <div class="lbl">Transactions</div>
+    <div style="background:#262626">
+      <div class="row"><span>2026-05-28</span><span>Loyer</span><span class="badge">Logement</span><span class="red">-1 200 €</span></div>
+      <div class="row"><span>2026-05-27</span><span>Salaire</span><span class="badge">Revenu</span><span class="green">+3 850 €</span></div>
+      <div class="row"><span>2026-05-25</span><span>Courses Carrefour</span><span class="badge">Alim.</span><span class="red">-127 €</span></div>
+    </div>
+    <div style="margin-top:1rem">
+      <button class="btn">+ Nouvelle</button>
+      <button class="btn btn-out">Exporter</button>
+    </div>
+  </div>
+</div>
+
+<!-- THEME 4 -->
+<div class="theme-card">
+  <div class="theme-meta">
+    <div class="theme-name">④ CYBER NEON</div>
+    <div class="theme-desc">Ton actuel · boosté · glow violet/cyan</div>
+  </div>
+  <div class="theme-preview t4">
+    <div class="nav">
+      <div class="tab on">BOARD</div><div class="tab">DASHBOARD</div><div class="tab">FINANCES</div><div class="tab">SPORT</div>
+    </div>
+    <div class="lbl">Patrimoine Global</div>
+    <div class="banner">
+      <div class="kpi"><div class="klbl">Total</div><div class="kval">187 420 €</div><div class="ksub">Ref. 145 000 €</div></div>
+      <div class="kpi"><div class="klbl">Plus-value</div><div class="kval green">+42 420 €</div><div class="ksub green">+29.3%</div></div>
+      <div class="kpi"><div class="klbl">Dépenses Mai</div><div class="kval yel">2 845 €</div><div class="ksub">31 opérations</div></div>
+      <div class="kpi"><div class="klbl">Objectif 1M €</div><div class="kval">18.74%</div><div class="ksub">812 580 € restants</div></div>
+    </div>
+    <div class="lbl">Transactions</div>
+    <div style="border:1px solid rgba(124,106,255,0.18)">
+      <div class="row"><span>2026-05-28</span><span>Loyer</span><span class="badge">Logement</span><span class="red">-1 200 €</span></div>
+      <div class="row"><span>2026-05-27</span><span>Salaire</span><span class="badge">Revenu</span><span class="green">+3 850 €</span></div>
+      <div class="row"><span>2026-05-25</span><span>Courses Carrefour</span><span class="badge">Alim.</span><span class="red">-127 €</span></div>
+    </div>
+    <div style="margin-top:1rem">
+      <button class="btn">+ NOUVELLE</button>
+      <button class="btn btn-out">EXPORTER</button>
+    </div>
+  </div>
+</div>
+
+<!-- THEME 5 -->
+<div class="theme-card">
+  <div class="theme-meta">
+    <div class="theme-name">⑤ SOLARIZED NIGHT</div>
+    <div class="theme-desc">Chaud · crème + orange brûlé · papier-feu</div>
+  </div>
+  <div class="theme-preview t5">
+    <div class="nav">
+      <div class="tab on">BOARD</div><div class="tab">DASHBOARD</div><div class="tab">FINANCES</div><div class="tab">SPORT</div>
+    </div>
+    <div class="lbl">Patrimoine Global</div>
+    <div class="banner">
+      <div class="kpi"><div class="klbl">Total</div><div class="kval">187 420 €</div><div class="ksub">Ref. 145 000 €</div></div>
+      <div class="kpi"><div class="klbl">Plus-value</div><div class="kval green">+42 420 €</div><div class="ksub green">+29.3%</div></div>
+      <div class="kpi"><div class="klbl">Dépenses Mai</div><div class="kval yel">2 845 €</div><div class="ksub">31 opérations</div></div>
+      <div class="kpi"><div class="klbl">Objectif 1M €</div><div class="kval accent">18.74%</div><div class="ksub">812 580 € restants</div></div>
+    </div>
+    <div class="lbl">Transactions</div>
+    <div style="background:#26211e;border-radius:6px;overflow:hidden">
+      <div class="row"><span>2026-05-28</span><span>Loyer</span><span class="badge">Logement</span><span class="red">-1 200 €</span></div>
+      <div class="row"><span>2026-05-27</span><span>Salaire</span><span class="badge">Revenu</span><span class="green">+3 850 €</span></div>
+      <div class="row"><span>2026-05-25</span><span>Courses Carrefour</span><span class="badge">Alim.</span><span class="red">-127 €</span></div>
+    </div>
+    <div style="margin-top:1rem">
+      <button class="btn">+ Nouvelle</button>
+      <button class="btn btn-out">Exporter</button>
+    </div>
+  </div>
+</div>
+
+<!-- THEME 6 -->
+<div class="theme-card">
+  <div class="theme-meta">
+    <div class="theme-name">⑥ NORD FROST</div>
+    <div class="theme-desc">Bleu glacier · doux pour les yeux · sobre</div>
+  </div>
+  <div class="theme-preview t6">
+    <div class="nav">
+      <div class="tab on">BOARD</div><div class="tab">DASHBOARD</div><div class="tab">FINANCES</div><div class="tab">SPORT</div>
+    </div>
+    <div class="lbl">Patrimoine Global</div>
+    <div class="banner">
+      <div class="kpi"><div class="klbl">Total</div><div class="kval">187 420 €</div><div class="ksub">Ref. 145 000 €</div></div>
+      <div class="kpi"><div class="klbl">Plus-value</div><div class="kval green">+42 420 €</div><div class="ksub green">+29.3%</div></div>
+      <div class="kpi"><div class="klbl">Dépenses Mai</div><div class="kval yel">2 845 €</div><div class="ksub">31 opérations</div></div>
+      <div class="kpi"><div class="klbl">Objectif 1M €</div><div class="kval accent">18.74%</div><div class="ksub">812 580 € restants</div></div>
+    </div>
+    <div class="lbl">Transactions</div>
+    <div style="background:#3b4252;border-radius:6px;overflow:hidden">
+      <div class="row"><span>2026-05-28</span><span>Loyer</span><span class="badge">Logement</span><span class="red">-1 200 €</span></div>
+      <div class="row"><span>2026-05-27</span><span>Salaire</span><span class="badge">Revenu</span><span class="green">+3 850 €</span></div>
+      <div class="row"><span>2026-05-25</span><span>Courses Carrefour</span><span class="badge">Alim.</span><span class="red">-127 €</span></div>
+    </div>
+    <div style="margin-top:1rem">
+      <button class="btn">+ Nouvelle</button>
+      <button class="btn btn-out">Exporter</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div style="text-align:center;padding:2rem 0;color:#666;font-size:0.85rem">
+  Indique-moi le numéro choisi (①–⑥) et j'applique le thème complet sur l'app.<br>
+  Possible aussi de mixer (ex : "③ avec accent violet de ④").
+</div>
+
+</body>
+</html>
