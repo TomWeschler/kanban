@@ -94,7 +94,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .card-actions{display:flex;gap:0.3rem;margin-top:0.45rem;padding-left:6px}
 .btn-done{background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.22);color:var(--green);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.07em;padding:2px 7px;cursor:pointer;text-transform:uppercase;transition:background 0.11s}.btn-done:hover{background:rgba(74,222,128,0.17)}
 .btn-edit{background:rgba(255,255,255,0.02);border:1px solid var(--border);color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.07em;padding:2px 7px;cursor:pointer;text-transform:uppercase;transition:background 0.11s,color 0.11s}.btn-edit:hover{background:rgba(255,255,255,0.06);color:var(--text)}
-.col-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.12em;opacity:0.38}
+.col-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.85rem;color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.12em;padding:1rem}
+.col-empty-gif{width:130px;height:130px;border-radius:8px;object-fit:cover;opacity:0.55;filter:saturate(1.05);box-shadow:0 4px 18px rgba(0,0,0,0.4);transition:opacity 0.25s,transform 0.25s}
+.col-empty-gif:hover{opacity:0.85;transform:scale(1.04)}
+.col-empty-txt{opacity:0.55;letter-spacing:0.18em}
 
 /* BOARD FILTER BAR */
 .board-filters{flex-shrink:0;display:flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;border-bottom:1px solid var(--border);background:rgba(9,9,14,0.7)}
@@ -221,13 +224,19 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .cat-btn.sel.Autre{background:rgba(148,163,184,0.12);border-color:var(--cat-autre);color:var(--cat-autre)}
 
 /* AUTH SCREEN */
-#authScreen{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem}
-.auth-box{background:var(--surface);border:1px solid var(--border2);padding:2.25rem 2.75rem;width:440px;max-width:94vw;display:flex;flex-direction:column;align-items:center;gap:1rem;text-align:center}
+#authScreen{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;overflow:hidden}
+#authScreen::before{content:'';position:absolute;inset:0;background-image:url('gifs/zen1.gif');background-size:cover;background-position:center;opacity:0.18;filter:blur(1px) saturate(1.1);z-index:0;animation:authFade 1.4s ease-out}
+#authScreen::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 0%,var(--bg) 85%);z-index:1}
+@keyframes authFade{from{opacity:0}to{opacity:0.18}}
+.auth-box{background:var(--surface);border:1px solid var(--border2);padding:2.25rem 2.75rem;width:440px;max-width:94vw;display:flex;flex-direction:column;align-items:center;gap:1rem;text-align:center;position:relative;z-index:2;box-shadow:0 18px 60px rgba(0,0,0,0.5)}
 .auth-logo{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700;letter-spacing:0.3em;color:var(--accent);margin-bottom:0.5rem}
 .auth-desc{font-size:0.82rem;color:var(--text-mid);line-height:1.65;text-align:left}
 
 /* LOADING */
-#loadOverlay{position:fixed;inset:0;z-index:350;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem}
+#loadOverlay{position:fixed;inset:0;z-index:350;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;overflow:hidden}
+#loadOverlay::before{content:'';position:absolute;inset:0;background-image:url('gifs/zen2.gif');background-size:cover;background-position:center;opacity:0.22;filter:saturate(1.1);z-index:0}
+#loadOverlay::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0.3) 0%,var(--bg) 90%);z-index:1}
+#loadOverlay>*{position:relative;z-index:2}
 .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .load-text{font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:0.2em;color:var(--accent);animation:pulse 1s infinite}
@@ -595,30 +604,6 @@ html[data-theme="matrix"] .nav-tab.active{text-shadow:0 0 10px rgba(0,255,136,0.
 html[data-theme="matrix"] .card{box-shadow:inset 0 0 0 1px rgba(0,255,136,0.05)}
 
 /* ═══════════════════════════════
-   ZEN WIDGET — gif apaisant flottant
-═══════════════════════════════ */
-.zen-widget{position:fixed;bottom:24px;right:24px;width:280px;background:var(--surface);border:1px solid var(--border2);box-shadow:0 14px 50px rgba(0,0,0,0.6);z-index:250;display:none;overflow:hidden;transition:transform 0.18s,opacity 0.18s}
-.zen-widget.open{display:block;animation:zenIn 0.32s ease-out}
-@keyframes zenIn{from{transform:translateY(14px) scale(0.94);opacity:0}to{transform:none;opacity:1}}
-.zen-widget.collapsed .zen-body{display:none}
-.zen-widget.collapsed{width:auto}
-.zen-hdr{display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.7rem;background:rgba(0,0,0,0.3);border-bottom:1px solid var(--border);cursor:grab;user-select:none}
-.zen-hdr:active{cursor:grabbing}
-.zen-title{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.2em;font-weight:700;color:var(--accent);text-transform:uppercase}
-.zen-controls{display:flex;gap:0.2rem;align-items:center}
-.zen-btn{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-mono);font-size:0.6rem;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:all 0.13s}
-.zen-btn:hover{color:var(--accent);border-color:var(--accent)}
-.zen-body{position:relative;background:#000;aspect-ratio:1/1;overflow:hidden}
-.zen-body img{width:100%;height:100%;object-fit:cover;display:block}
-.zen-indicator{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
-.zen-indicator span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.35);transition:background 0.15s}
-.zen-indicator span.on{background:var(--accent);box-shadow:0 0 8px var(--accent)}
-.zen-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.15em}
-.btn-zen{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.12em;font-weight:700;padding:0.32rem 0.65rem;cursor:pointer;transition:all 0.13s;text-transform:uppercase;display:flex;align-items:center;gap:0.35rem;flex-shrink:0}
-.btn-zen:hover{color:var(--accent);border-color:var(--accent)}
-.btn-zen.on{color:var(--accent);border-color:var(--accent);background:var(--accent-dim)}
-
-/* ═══════════════════════════════
    FONT SWAP — applique --font-body/--font-mono partout
    (selectors larges + !important pour battre les déclarations spécifiques)
 ═══════════════════════════════ */
@@ -662,24 +647,6 @@ body,body *{font-family:var(--font-body)}
 
 <!-- LOADING -->
 <div id="loadOverlay"><div class="spinner"></div><div class="load-text">CHARGEMENT...</div></div>
-
-<!-- ZEN WIDGET -->
-<div class="zen-widget" id="zenWidget">
-  <div class="zen-hdr" id="zenHdr">
-    <div class="zen-title">🌿 BREATHE</div>
-    <div class="zen-controls">
-      <button class="zen-btn" onclick="zenPrev()" title="Précédent">‹</button>
-      <button class="zen-btn" onclick="zenNext()" title="Suivant">›</button>
-      <button class="zen-btn" onclick="zenCollapse()" title="Réduire" id="zenCollapseBtn">−</button>
-      <button class="zen-btn" onclick="toggleZen()" title="Fermer">×</button>
-    </div>
-  </div>
-  <div class="zen-body">
-    <div class="zen-loading">CHARGEMENT...</div>
-    <img id="zenImg" src="" alt="" onload="this.previousElementSibling.style.display='none'">
-    <div class="zen-indicator" id="zenInd"></div>
-  </div>
-</div>
 
 <!-- HEADER -->
 <header>
@@ -748,7 +715,6 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <button class="btn-zen" id="btnZen" onclick="toggleZen()" title="Mode Zen — gif apaisant">🌿 ZEN</button>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -932,7 +898,6 @@ let boardFilter = 'all';
 // ════════════════════════════════════════════════════
 function init() {
   applySavedTheme();
-  initZen();
   try {
     const cached = JSON.parse(localStorage.getItem(LS_CACHE) || '[]');
     allTasks = cached; tasks = allTasks.filter(t => !t.completed_at);
@@ -976,88 +941,6 @@ document.addEventListener('click', e => {
   if (!menu.contains(e.target) && !e.target.closest('.btn-theme')) menu.classList.remove('open');
 });
 
-// ════════════════════════════════════════════════════
-// ZEN WIDGET — gifs apaisants
-// ════════════════════════════════════════════════════
-const ZEN_GIFS = [
-  'https://i.pinimg.com/originals/86/d7/5a/86d75a902dda5a4c6ac4b95d8a5afba4.gif',
-  'https://i.pinimg.com/originals/1f/dd/1d/1fdd1dd87c03ceb8d4af123882e9be4a.gif',
-  'https://i.pinimg.com/originals/b2/36/e8/b236e80c866b149e67159c425eac5aea.gif',
-];
-const LS_ZEN_IDX = 'kanban_zen_idx';
-const LS_ZEN_OPEN = 'kanban_zen_open';
-const LS_ZEN_POS = 'kanban_zen_pos';
-let zenIdx = parseInt(localStorage.getItem(LS_ZEN_IDX)||'0')||0;
-
-function zenRender(){
-  const img = document.getElementById('zenImg');
-  const ind = document.getElementById('zenInd');
-  if(!img||!ind) return;
-  const loader = img.previousElementSibling;
-  if(loader) loader.style.display='flex';
-  img.src = ZEN_GIFS[zenIdx];
-  ind.innerHTML = ZEN_GIFS.map((_,i)=>`<span class="${i===zenIdx?'on':''}" onclick="zenJump(${i})" style="cursor:pointer"></span>`).join('');
-}
-function zenJump(i){ zenIdx = i; localStorage.setItem(LS_ZEN_IDX, zenIdx); zenRender(); }
-function zenNext(){ zenIdx = (zenIdx+1) % ZEN_GIFS.length; localStorage.setItem(LS_ZEN_IDX, zenIdx); zenRender(); }
-function zenPrev(){ zenIdx = (zenIdx-1+ZEN_GIFS.length) % ZEN_GIFS.length; localStorage.setItem(LS_ZEN_IDX, zenIdx); zenRender(); }
-function zenCollapse(){
-  const w = document.getElementById('zenWidget');
-  w.classList.toggle('collapsed');
-  document.getElementById('zenCollapseBtn').textContent = w.classList.contains('collapsed') ? '+' : '−';
-}
-function toggleZen(){
-  const w = document.getElementById('zenWidget');
-  const btn = document.getElementById('btnZen');
-  const isOpen = w.classList.toggle('open');
-  btn.classList.toggle('on', isOpen);
-  localStorage.setItem(LS_ZEN_OPEN, isOpen ? '1' : '0');
-  if(isOpen) zenRender();
-}
-function initZen(){
-  // Restore position
-  try{
-    const pos = JSON.parse(localStorage.getItem(LS_ZEN_POS)||'null');
-    if(pos){
-      const w = document.getElementById('zenWidget');
-      w.style.left = pos.left + 'px';
-      w.style.top = pos.top + 'px';
-      w.style.right = 'auto';
-      w.style.bottom = 'auto';
-    }
-  }catch(e){}
-  // Restore open state
-  if(localStorage.getItem(LS_ZEN_OPEN)==='1'){
-    document.getElementById('zenWidget').classList.add('open');
-    document.getElementById('btnZen').classList.add('on');
-    zenRender();
-  }
-  // Drag handle
-  const hdr = document.getElementById('zenHdr');
-  let drag = null;
-  hdr.addEventListener('mousedown', e => {
-    if(e.target.classList.contains('zen-btn')) return;
-    const w = document.getElementById('zenWidget');
-    const r = w.getBoundingClientRect();
-    drag = {dx: e.clientX - r.left, dy: e.clientY - r.top};
-    w.style.left = r.left + 'px'; w.style.top = r.top + 'px';
-    w.style.right = 'auto'; w.style.bottom = 'auto';
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove', e => {
-    if(!drag) return;
-    const w = document.getElementById('zenWidget');
-    const nx = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - drag.dx));
-    const ny = Math.max(0, Math.min(window.innerHeight - 30, e.clientY - drag.dy));
-    w.style.left = nx + 'px'; w.style.top = ny + 'px';
-  });
-  document.addEventListener('mouseup', () => {
-    if(!drag) return;
-    const w = document.getElementById('zenWidget');
-    localStorage.setItem(LS_ZEN_POS, JSON.stringify({left: parseFloat(w.style.left), top: parseFloat(w.style.top)}));
-    drag = null;
-  });
-}
 
 function buildHabitModalSelects() {
   // Frequency select
@@ -1542,7 +1425,13 @@ function render() {
     el.innerHTML=`<div class="col-header"><span class="col-title">${col}</span><span class="col-count">${ct.length}</span></div><div class="col-body" id="cb-${col.replace(/[^a-z]/gi,'X')}"></div>`;
     board.appendChild(el);
     const body=el.querySelector('.col-body');
-    if(!ct.length){body.innerHTML='<div class="col-empty">VIDE</div>'}
+    if(!ct.length){
+      const gifIdx = (Math.abs(col.charCodeAt(0)+col.charCodeAt(col.length-1)) % 3) + 1;
+      body.innerHTML = `<div class="col-empty">
+        <img class="col-empty-gif" src="gifs/zen${gifIdx}.gif" alt="" loading="lazy">
+        <div class="col-empty-txt">VIDE — RESPIRE</div>
+      </div>`;
+    }
     else ct.forEach(t=>body.appendChild(mkCard(t,now)));
   });
   updateHStats();
