@@ -287,8 +287,13 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .crp-badge{display:inline-block;font-family:'Space Mono',monospace;font-size:0.45rem;letter-spacing:0.08em;padding:2px 6px;border:1px solid;margin-top:0.6rem}
 .crp-badge.wait{color:var(--text-dim);border-color:var(--border)}
 .crp-badge.active{color:var(--green);border-color:rgba(74,222,128,0.3);background:rgba(74,222,128,0.05)}
-.crp-charts-a{display:grid;grid-template-columns:2fr 1fr;gap:0.85rem}
-.crp-charts-b{display:grid;grid-template-columns:2fr 1fr;gap:0.85rem}
+.crp-charts-a{display:grid;grid-template-columns:1fr;gap:0.85rem}
+.crp-charts-b{display:grid;grid-template-columns:1fr;gap:0.85rem}
+.crp-evol-row{display:grid;grid-template-columns:1fr 280px;gap:0.85rem}
+.crp-evol-gif{border-radius:6px;overflow:hidden;border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.35);display:flex}
+.crp-evol-gif img{width:100%;height:100%;object-fit:cover;display:block;opacity:0.92;transition:opacity 0.2s}
+.crp-evol-gif:hover img{opacity:1}
+@media (max-width:1100px){.crp-evol-row{grid-template-columns:1fr}.crp-evol-gif{display:none}}
 .crp-box{background:var(--surface);border:1px solid var(--border);padding:1.1rem}
 .crp-box-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem}
 .crp-box-ttl{font-family:'Space Mono',monospace;font-size:0.53rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid)}
@@ -2099,9 +2104,12 @@ function renderCryptoChartsA() {
   ['cCrpCumul','cCrpComp'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
 
   document.getElementById('crpChartsA').innerHTML = `
-    <div class="crp-box">
-      <div class="crp-box-hdr"><span class="crp-box-ttl">ÉVOLUTION CUMULATIVE DU P&L (POSITION FINALE)</span></div>
-      <div class="crp-wrap tall"><canvas id="cCrpCumul"></canvas></div>
+    <div class="crp-evol-row">
+      <div class="crp-box">
+        <div class="crp-box-hdr"><span class="crp-box-ttl">ÉVOLUTION CUMULATIVE DU P&L (POSITION FINALE)</span></div>
+        <div class="crp-wrap tall"><canvas id="cCrpCumul"></canvas></div>
+      </div>
+      <div class="crp-evol-gif"><img src="gifs/zen1.gif" alt="" loading="lazy"></div>
     </div>
     <div class="crp-box">
       <div class="crp-box-hdr"><span class="crp-box-ttl">P&L TOTAL PAR CRYPTO</span></div>
@@ -2170,63 +2178,20 @@ function renderCryptoChartsA() {
 }
 
 function renderCryptoChartsB() {
-  // Chart B1: P&L par trade (50 derniers)  |  Chart B2: Bot ROI% vs HODL%
-  ['cCrpTrades','cCrpHodl'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
+  // Chart B: Bot ROI% vs HODL%
+  ['cCrpHodl'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
 
   const hodlAvail = CRYPTOS.some(c => cryptoPrices[c.sym]?.hodlPct != null);
   const hodlNote = hodlAvail ? 'depuis le premier trade détecté' : 'chargement données marché...';
 
   document.getElementById('crpChartsB').innerHTML = `
     <div class="crp-box">
-      <div class="crp-box-hdr"><span class="crp-box-ttl">Δ POSITION FINALE PAR TRADE (50 DERNIERS)</span></div>
-      <div class="crp-wrap"><canvas id="cCrpTrades"></canvas></div>
-    </div>
-    <div class="crp-box">
       <div class="crp-box-hdr"><span class="crp-box-ttl">BOT ROI% vs HODL%</span></div>
       <div class="crp-wrap"><canvas id="cCrpHodl"></canvas></div>
       <div class="crp-hodl-note">HODL : ${hodlNote}</div>
     </div>`;
 
-  // B1 — delta posFinale per trade, last 50
-  const tradePnLs = computeTradePnLs();
-  const last50 = tradePnLs.slice(-50);
-
-  if (last50.length) {
-    cryptoCharts.cCrpTrades = new Chart(document.getElementById('cCrpTrades'), {
-      type: 'bar',
-      data: {
-        labels: last50.map((t,i) => dateLabel(t.date).slice(5) || `#${i+1}`),
-        datasets: [{ data: last50.map(t => parseFloat(t.pnlDelta.toFixed(2))),
-          backgroundColor: last50.map(t => {
-            const cc = CRYPTOS.find(x=>x.sym===t.symbol);
-            return t.pnlDelta >= 0 ? `rgba(${cc?.rgb||'124,106,255'},0.72)` : `rgba(${cc?.rgb||'248,113,113'},0.38)`;
-          }),
-          borderColor: last50.map(t => CRYPTOS.find(x=>x.sym===t.symbol)?.hex || '#7c6aff'),
-          borderWidth:1, borderRadius:2
-        }]
-      },
-      options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{ callbacks:{
-          label: i => {
-            const t = last50[i.dataIndex];
-            const d = i.raw >= 0 ? `+${i.raw.toFixed(2)}` : i.raw.toFixed(2);
-            return ` ${t.symbol} · Δ ${d}$`;
-          },
-          afterLabel: i => {
-            const t = last50[i.dataIndex];
-            return t.posFinale != null ? ` Pos. Finale: ${t.posFinale.toFixed(2)}$` : '';
-          },
-          title: items => last50[items[0].dataIndex]?.date || ''
-        }}},
-        scales:{
-          x:{ticks:{font:{family:'Space Mono',size:7},maxRotation:45,maxTicksLimit:15},grid:{color:'#1c1c28'}},
-          y:{ticks:{font:{family:'Space Mono',size:9},callback:v=>`${v}$`},grid:{color:'#1c1c28'}}
-        }
-      }
-    });
-  }
-
-  // B2 — Bot ROI% (calcNetPnL / first posFinale) vs HODL% (CoinGecko)
+  // Bot ROI% (calcNetPnL / first posFinale) vs HODL% (CoinGecko)
   const activeCryptos = CRYPTOS.filter(c => getCryptoStats(c.sym).count > 0);
   const botRoiVals = activeCryptos.map(c => {
     const roi = calcBotRoiPct(c.sym);
