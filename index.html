@@ -132,17 +132,112 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 /* ═══════════════════════════════
    HABITUDES PAGE
 ═══════════════════════════════ */
-#pagehabits{overflow-y:auto;flex-direction:column}
-.hab-portfolio{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);padding:0.9rem 1.5rem;display:grid;grid-template-columns:auto 1fr repeat(4,auto);align-items:center;gap:1.5rem}
-.hab-port-title{font-family:'Space Mono',monospace;font-size:0.58rem;font-weight:700;letter-spacing:0.25em;color:var(--accent)}
-.hab-port-progress{height:4px;background:var(--surface3);border-radius:2px;overflow:hidden}
-.hab-port-bar{height:100%;background:var(--accent);border-radius:2px;transition:width 0.4s}
-.hab-port-stat{display:flex;flex-direction:column;gap:0.15rem;text-align:right}
-.hab-port-stat-label{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim)}
-.hab-port-stat-val{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700}
-.hab-port-stat-val.gold{color:var(--gld)}
-.hab-port-stat-val.accent{color:var(--accent)}
-.hab-port-stat-val.green{color:var(--green)}
+#pagehabits{overflow-y:auto;flex-direction:column;background:linear-gradient(180deg,var(--bg) 0%,rgba(74,222,128,0.025) 40%,var(--bg) 100%)}
+.garden-wrap{padding:1.5rem 1.75rem 3rem;display:flex;flex-direction:column;gap:1.5rem}
+
+/* HERO — Mon jardin */
+.garden-hero{display:grid;grid-template-columns:1fr auto;gap:1.5rem;align-items:flex-end;padding:1.6rem 1.75rem;background:linear-gradient(135deg,rgba(74,222,128,0.08) 0%,rgba(122,162,247,0.04) 100%);border:1px solid var(--border);border-radius:14px;position:relative;overflow:hidden}
+.garden-hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 80%,rgba(74,222,128,0.15) 0%,transparent 45%),radial-gradient(circle at 85% 20%,rgba(167,139,250,0.12) 0%,transparent 45%);pointer-events:none}
+.garden-hero-title{font-family:var(--font-body);font-size:1.85rem;font-weight:700;letter-spacing:-0.01em;margin-bottom:0.35rem;display:flex;align-items:center;gap:0.6rem;position:relative;z-index:1}
+.garden-hero-title .leaf{font-size:1.65rem;animation:gentleSway 4.5s ease-in-out infinite}
+@keyframes gentleSway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(4deg)}}
+.garden-hero-sub{font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.04em;color:var(--text-mid);position:relative;z-index:1;line-height:1.6}
+.garden-hero-progress{margin-top:0.95rem;height:6px;background:rgba(0,0,0,0.25);border-radius:3px;overflow:hidden;position:relative;z-index:1}
+.garden-hero-bar{height:100%;background:linear-gradient(90deg,#4ade80 0%,#a3e635 100%);border-radius:3px;transition:width 0.8s ease;box-shadow:0 0 10px rgba(74,222,128,0.4)}
+.garden-hero-kpis{display:flex;gap:1.4rem;position:relative;z-index:1}
+.garden-hero-kpi{text-align:right}
+.garden-hero-kpi-lbl{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.18em;color:var(--text-mid);text-transform:uppercase;margin-bottom:0.25rem}
+.garden-hero-kpi-val{font-family:var(--font-mono);font-size:1.25rem;font-weight:700;line-height:1}
+.garden-hero-kpi-val.gold{color:#fbbf24}
+.garden-hero-kpi-val.green{color:#4ade80}
+.garden-hero-kpi-val.accent{color:var(--accent)}
+
+/* FILTER (sub-tle leaf pills) */
+.garden-filter{display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap}
+.garden-filter-lbl{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.18em;color:var(--text-mid);text-transform:uppercase;margin-right:0.4rem}
+.garden-pill{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.08em;font-weight:700;padding:0.35rem 0.85rem;border:1px solid var(--border2);background:transparent;color:var(--text-dim);cursor:pointer;transition:all 0.15s;text-transform:uppercase;border-radius:99px;display:flex;align-items:center;gap:0.32rem}
+.garden-pill:hover{color:var(--text);border-color:var(--text-mid)}
+.garden-pill.active{color:var(--bg);background:var(--accent);border-color:var(--accent)}
+.garden-pill.active.Finance{background:var(--cat-finance);color:#09090e}
+.garden-pill.active.Esprit{background:var(--cat-esprit)}
+.garden-pill.active.Santé{background:var(--cat-sante);color:#09090e}
+.garden-pill.active.Productivité{background:var(--cat-prod);color:#09090e}
+.garden-pill.active.Autre{background:var(--cat-autre);color:#09090e}
+.garden-toolbar-spacer{flex:1}
+.garden-add-btn{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.12em;font-weight:700;padding:0.4rem 0.95rem;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;transition:all 0.15s;text-transform:uppercase;border-radius:99px}
+.garden-add-btn:hover{background:var(--accent);color:var(--bg)}
+
+/* GARDEN GRID — plant cards */
+.garden-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:1.1rem}
+.garden-empty{text-align:center;padding:3rem 0;font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.12em;color:var(--text-dim);opacity:0.5}
+
+/* PLANT CARD */
+.plant{position:relative;height:285px;border-radius:14px;overflow:hidden;cursor:pointer;transition:transform 0.22s,box-shadow 0.22s;border:1px solid var(--border);background:linear-gradient(180deg,var(--surface) 0%,var(--surface2) 55%,#2a1f15 100%)}
+.plant:hover{transform:translateY(-3px);box-shadow:0 14px 35px rgba(0,0,0,0.45)}
+.plant.cat-Finance{background:linear-gradient(180deg,#1f1a1d 0%,#2a1f1c 55%,#2a1c10 100%)}
+.plant.cat-Esprit{background:linear-gradient(180deg,#1d1a26 0%,#28223a 55%,#2a1f15 100%)}
+.plant.cat-Santé{background:linear-gradient(180deg,#1a2620 0%,#1f2e26 55%,#2a1f15 100%)}
+.plant.cat-Productivité{background:linear-gradient(180deg,#1a1f26 0%,#1f2935 55%,#2a1f15 100%)}
+.plant.cat-Autre{background:linear-gradient(180deg,#1c1c24 0%,#222230 55%,#2a1f15 100%)}
+.plant.done{box-shadow:inset 0 0 0 1px rgba(74,222,128,0.35),0 0 28px rgba(74,222,128,0.12)}
+.plant.done:hover{box-shadow:inset 0 0 0 1px rgba(74,222,128,0.5),0 16px 38px rgba(0,0,0,0.5),0 0 28px rgba(74,222,128,0.18)}
+.plant.due:not(.done){box-shadow:inset 0 0 0 1px rgba(122,162,247,0.3)}
+.plant.notdue{opacity:0.72}
+.plant.paused{opacity:0.4;filter:grayscale(0.6)}
+
+.plant-edit{position:absolute;top:0.55rem;right:0.55rem;background:rgba(0,0,0,0.25);border:none;color:var(--text-dim);width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:0.65rem;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;z-index:3}
+.plant:hover .plant-edit{opacity:1}
+.plant-edit:hover{color:var(--text);background:rgba(0,0,0,0.5)}
+
+.plant-name{position:absolute;top:0.85rem;left:0.95rem;right:2.3rem;font-family:var(--font-body);font-size:0.85rem;font-weight:700;line-height:1.2;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.55);z-index:2}
+.plant-streak{position:absolute;top:2.5rem;left:0.95rem;font-family:var(--font-mono);font-size:0.6rem;color:rgba(255,210,140,0.95);font-weight:700;display:flex;align-items:center;gap:0.18rem;letter-spacing:0.04em;z-index:2}
+.plant-streak b{color:#fbbf24;font-size:0.78rem}
+
+.plant-stage-lbl{position:absolute;top:2.5rem;right:0.95rem;font-family:var(--font-mono);font-size:0.46rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid);opacity:0.7;z-index:2}
+
+/* The plant icon — centered */
+.plant-body{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0.2rem;z-index:1}
+.plant-icon{display:block;line-height:1;transition:all 0.4s ease;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5))}
+.plant-icon.stage-0{font-size:1.4rem;opacity:0.55;filter:grayscale(0.4) drop-shadow(0 2px 4px rgba(0,0,0,0.4))}
+.plant-icon.stage-1{font-size:2rem}
+.plant-icon.stage-2{font-size:2.8rem}
+.plant-icon.stage-3{font-size:3.6rem}
+.plant-icon.stage-4{font-size:4.2rem;animation:gentleSway 5.5s ease-in-out infinite}
+.plant-icon.stage-5{font-size:4.8rem;animation:gentleSway 6s ease-in-out infinite;filter:drop-shadow(0 6px 14px rgba(74,222,128,0.35))}
+.plant-icon.stage-6{font-size:5.4rem;animation:gentleSway 7s ease-in-out infinite;filter:drop-shadow(0 8px 20px rgba(167,139,250,0.45)) saturate(1.15)}
+
+/* Soil decoration */
+.plant-soil{position:absolute;bottom:0;left:0;right:0;height:68px;background:linear-gradient(180deg,transparent 0%,#3a2a1c 25%,#221208 100%);overflow:hidden;z-index:0}
+.plant-soil::before{content:'';position:absolute;top:18px;left:0;right:0;height:6px;background:radial-gradient(ellipse 8px 4px at 8% 50%,#4a3a25,transparent),radial-gradient(ellipse 6px 3px at 22% 60%,#3a2a18,transparent),radial-gradient(ellipse 10px 5px at 40% 40%,#5a4530,transparent),radial-gradient(ellipse 7px 4px at 58% 55%,#3a2a18,transparent),radial-gradient(ellipse 9px 4px at 75% 45%,#4a3a25,transparent),radial-gradient(ellipse 6px 3px at 92% 60%,#3a2a18,transparent)}
+.plant-grass{position:absolute;bottom:55px;left:0;right:0;height:18px;background-image:radial-gradient(ellipse 6px 12px at 6% 100%,#3a8a4a 50%,transparent 60%),radial-gradient(ellipse 5px 10px at 14% 100%,#2d6e3a 50%,transparent 60%),radial-gradient(ellipse 7px 13px at 24% 100%,#3a8a4a 50%,transparent 60%),radial-gradient(ellipse 5px 9px at 32% 100%,#286535 50%,transparent 60%),radial-gradient(ellipse 6px 11px at 42% 100%,#3a8a4a 50%,transparent 60%),radial-gradient(ellipse 5px 12px at 50% 100%,#2d6e3a 50%,transparent 60%),radial-gradient(ellipse 7px 13px at 60% 100%,#3a8a4a 50%,transparent 60%),radial-gradient(ellipse 5px 10px at 70% 100%,#286535 50%,transparent 60%),radial-gradient(ellipse 6px 11px at 78% 100%,#3a8a4a 50%,transparent 60%),radial-gradient(ellipse 5px 12px at 88% 100%,#2d6e3a 50%,transparent 60%),radial-gradient(ellipse 6px 11px at 96% 100%,#3a8a4a 50%,transparent 60%);z-index:0}
+.plant.paused .plant-grass{filter:saturate(0.15) brightness(0.6)}
+
+/* Bottom controls */
+.plant-action{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:3}
+.plant-water{background:linear-gradient(135deg,#38bdf8 0%,#0ea5e9 100%);border:none;color:#fff;padding:0.5rem 1rem;border-radius:99px;font-family:var(--font-mono);font-size:0.62rem;font-weight:700;letter-spacing:0.1em;cursor:pointer;display:flex;align-items:center;gap:0.4rem;box-shadow:0 4px 14px rgba(56,189,248,0.4);transition:all 0.18s;animation:waterPulse 2.4s ease-in-out infinite}
+.plant-water:hover{transform:scale(1.06);box-shadow:0 6px 20px rgba(56,189,248,0.55)}
+@keyframes waterPulse{0%,100%{box-shadow:0 4px 14px rgba(56,189,248,0.4)}50%{box-shadow:0 4px 22px rgba(56,189,248,0.7)}}
+.plant-done-badge{background:linear-gradient(135deg,rgba(74,222,128,0.25) 0%,rgba(74,222,128,0.12) 100%);border:1px solid rgba(74,222,128,0.5);color:#4ade80;padding:0.42rem 0.85rem;border-radius:99px;font-family:var(--font-mono);font-size:0.6rem;font-weight:700;letter-spacing:0.1em;display:flex;align-items:center;gap:0.32rem;cursor:pointer}
+.plant-done-badge:hover{background:rgba(74,222,128,0.18)}
+.plant-rest-badge{background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-dim);padding:0.4rem 0.85rem;border-radius:99px;font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.12em;text-transform:uppercase}
+
+/* Card footer meta */
+.plant-meta{position:absolute;bottom:53px;left:0;right:0;display:flex;justify-content:space-between;padding:0 0.95rem;z-index:2;font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.08em}
+.plant-reward{color:rgba(74,222,128,0.85);font-weight:700}
+.plant-cat{color:var(--text-mid);text-transform:uppercase;letter-spacing:0.12em}
+.plant-cat.Finance{color:var(--cat-finance)}
+.plant-cat.Esprit{color:var(--cat-esprit)}
+.plant-cat.Santé{color:var(--cat-sante)}
+.plant-cat.Productivité{color:var(--cat-prod)}
+.plant-cat.Autre{color:var(--cat-autre)}
+
+/* Floating reward animation on tick */
+@keyframes rewardPop{0%{opacity:0;transform:translate(-50%,0) scale(0.6)}25%{opacity:1;transform:translate(-50%,-15px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-60px) scale(1)}}
+.plant-reward-pop{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font-mono);font-size:1rem;font-weight:700;color:#4ade80;pointer-events:none;z-index:5;animation:rewardPop 1.2s ease-out forwards;text-shadow:0 0 12px rgba(74,222,128,0.7)}
+
+/* Heatmap section title */
+.garden-hm-section{margin-top:1.5rem}
+.garden-hm-title{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.2em;color:var(--text-mid);margin-bottom:0.7rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
 
 .hab-toolbar{flex-shrink:0;display:flex;align-items:center;gap:0.5rem;padding:0.7rem 1.5rem;border-bottom:1px solid var(--border);background:rgba(9,9,14,0.6)}
 .hab-filter{font-family:'Space Mono',monospace;font-size:0.56rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.28rem 0.65rem;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all 0.13s}
@@ -757,12 +852,17 @@ body,body *{font-family:var(--font-body)}
   <div class="charts-row" id="chartsRow"></div>
 </div>
 
-<!-- HABITUDES PAGE -->
+<!-- HABITUDES PAGE — "MON JARDIN" -->
 <div class="page" id="pagehabits">
-  <div class="heatmaps-grid" id="dashHeatmaps" style="padding:1rem 1.25rem 0"></div>
-  <div class="hab-portfolio" id="habPortfolio"></div>
-  <div class="hab-toolbar" id="habToolbar"></div>
-  <div class="hab-body" id="habBody"></div>
+  <div class="garden-wrap">
+    <div id="habPortfolio"></div>
+    <div id="habToolbar"></div>
+    <div id="habBody"></div>
+    <div class="garden-hm-section">
+      <div class="garden-hm-title">◆ TRACES DE CROISSANCE — 12 MOIS</div>
+      <div class="heatmaps-grid" id="dashHeatmaps"></div>
+    </div>
+  </div>
 </div>
 
 <!-- CRYPTOBOT PAGE -->
@@ -1229,6 +1329,19 @@ function renderHabitsPage() {
   renderHabBody();
 }
 
+// Plant growth stage by streak — 0=seed, 6=ancient tree
+function plantStage(streak) {
+  if (streak <= 0) return 0;
+  if (streak < 3)  return 1;
+  if (streak < 7)  return 2;
+  if (streak < 14) return 3;
+  if (streak < 30) return 4;
+  if (streak < 90) return 5;
+  return 6;
+}
+const PLANT_ICONS = ['🪨','🌱','🌿','🪴','🌳','🌳','🌲'];
+const STAGE_LABELS = ['graine','pousse','plant','plante','arbre','grand arbre','ancestral'];
+
 function renderHabPortfolio() {
   const todayStr = td();
   const thisMonth = todayStr.slice(0,7);
@@ -1239,12 +1352,37 @@ function renderHabPortfolio() {
   const doneToday = dueToday.filter(h => habitsLog.some(l => String(l.habit_id)===String(h.id) && l.date===todayStr));
   const pct = dueToday.length ? Math.round(doneToday.length/dueToday.length*100) : 0;
 
+  // Plant census
+  const active = habits.filter(h => h.active);
+  const trees = active.filter(h => plantStage(getStreak(h.id, h.frequency)) >= 4).length;
+  const growing = active.filter(h => {
+    const s = plantStage(getStreak(h.id, h.frequency));
+    return s >= 1 && s < 4;
+  }).length;
+  const seeds = active.filter(h => plantStage(getStreak(h.id, h.frequency)) === 0).length;
+
+  // Tagline based on progress
+  let tagline;
+  if (!dueToday.length) tagline = "Aucune plante à arroser aujourd'hui — repose-toi 🌙";
+  else if (doneToday.length === dueToday.length) tagline = "🌟 Toutes tes plantes sont arrosées. Bravo.";
+  else if (doneToday.length === 0) tagline = "Ton jardin attend tes soins de la journée 💧";
+  else tagline = `${dueToday.length - doneToday.length} plante${dueToday.length-doneToday.length>1?'s':''} encore en attente d'eau`;
+
   document.getElementById('habPortfolio').innerHTML = `
-    <div class="hab-port-title">◆ PORTEFEUILLE</div>
-    <div class="hab-port-progress"><div class="hab-port-bar" style="width:${pct}%"></div></div>
-    <div class="hab-port-stat"><div class="hab-port-stat-label">Aujourd'hui</div><div class="hab-port-stat-val accent">${doneToday.length}/${dueToday.length}</div></div>
-    <div class="hab-port-stat"><div class="hab-port-stat-label">Ce mois</div><div class="hab-port-stat-val green">+${monthEarned.toFixed(2)}€</div></div>
-    <div class="hab-port-stat"><div class="hab-port-stat-label">Total</div><div class="hab-port-stat-val gold">${totalEarned.toFixed(2)}€</div></div>
+    <div class="garden-hero">
+      <div>
+        <div class="garden-hero-title"><span class="leaf">🌿</span> Mon jardin</div>
+        <div class="garden-hero-sub">${tagline}<br>
+          <span style="opacity:0.65">${seeds} graine${seeds>1?'s':''} · ${growing} en croissance · ${trees} arbre${trees>1?'s':''} établi${trees>1?'s':''}</span>
+        </div>
+        <div class="garden-hero-progress"><div class="garden-hero-bar" style="width:${pct}%"></div></div>
+      </div>
+      <div class="garden-hero-kpis">
+        <div class="garden-hero-kpi"><div class="garden-hero-kpi-lbl">Aujourd'hui</div><div class="garden-hero-kpi-val accent">${doneToday.length}/${dueToday.length}</div></div>
+        <div class="garden-hero-kpi"><div class="garden-hero-kpi-lbl">Ce mois</div><div class="garden-hero-kpi-val green">+${monthEarned.toFixed(2)}€</div></div>
+        <div class="garden-hero-kpi"><div class="garden-hero-kpi-lbl">Total récolté</div><div class="garden-hero-kpi-val gold">${totalEarned.toFixed(2)}€</div></div>
+      </div>
+    </div>
   `;
 }
 
@@ -1252,60 +1390,106 @@ function renderHabToolbar() {
   const filters = [['all','Toutes'], ...CATEGORIES.map(c=>[c,c])];
   const btns = filters.map(([v,l]) => {
     const active = habCatFilter === v ? ` active ${v}` : '';
-    return `<button class="hab-filter${active}" onclick="setHabFilter('${v}')">${l}</button>`;
+    return `<button class="garden-pill${active}" onclick="setHabFilter('${v}')">${l}</button>`;
   }).join('');
   document.getElementById('habToolbar').innerHTML = `
-    ${btns}
-    <div class="hab-toolbar-sep"></div>
-    <button class="btn-nav" onclick="openHabitModal()">+ HABITUDE</button>
+    <div class="garden-filter">
+      <span class="garden-filter-lbl">PARCELLE</span>
+      ${btns}
+      <div class="garden-toolbar-spacer"></div>
+      <button class="garden-add-btn" onclick="openHabitModal()">+ NOUVELLE PLANTE</button>
+    </div>
   `;
 }
 
 function renderHabBody() {
   const todayStr = td();
-  const dayNames = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-  const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  const now = new Date();
-  const dateLabel = `${dayNames[now.getDay()]} ${now.getDate()} ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
 
+  // Show ALL active habits (the whole garden) — paused = withered, not-due-today = resting
   const filtered = habits.filter(h => {
-    if (!h.active) return false;
-    if (!isHabitDueToday(h.frequency)) return false;
     if (habCatFilter !== 'all' && h.category !== habCatFilter) return false;
     return true;
   });
 
-  // Sort: undone first, then done
+  // Sort: due+not-done first (action items), then due+done, then not-due, then paused last
   filtered.sort((a,b) => {
+    const aDue = a.active && isHabitDueToday(a.frequency);
+    const bDue = b.active && isHabitDueToday(b.frequency);
     const aDone = habitsLog.some(l => String(l.habit_id)===String(a.id) && l.date===todayStr);
     const bDone = habitsLog.some(l => String(l.habit_id)===String(b.id) && l.date===todayStr);
-    if (aDone !== bDone) return aDone ? 1 : -1;
-    return a.category.localeCompare(b.category);
+    const rank = h => !h.active ? 4 : (aDue && !aDone ? 1 : (aDue && aDone ? 2 : 3));
+    const rankFor = (h, due, done) => !h.active ? 4 : (due && !done ? 1 : (due && done ? 2 : 3));
+    const ra = rankFor(a, aDue, aDone), rb = rankFor(b, bDue, bDone);
+    if (ra !== rb) return ra - rb;
+    // Within same rank: bigger streak first
+    return getStreak(b.id, b.frequency) - getStreak(a.id, a.frequency);
   });
 
   const body = document.getElementById('habBody');
   if (!filtered.length) {
-    body.innerHTML = `<div class="hab-date-label">AUJOURD'HUI — ${dateLabel.toUpperCase()}</div><div class="hab-empty">AUCUNE HABITUDE PRÉVUE AUJOURD'HUI</div>`;
+    body.innerHTML = `<div class="garden-empty">🌱 Aucune plante dans cette parcelle. Plante une nouvelle graine pour démarrer.</div>`;
     return;
   }
 
-  body.innerHTML = `<div class="hab-date-label">AUJOURD'HUI — ${dateLabel.toUpperCase()}</div>`;
-  filtered.forEach(h => {
+  body.className = 'garden-grid';
+  body.innerHTML = filtered.map(h => {
+    const isActive = h.active;
+    const isDue = isActive && isHabitDueToday(h.frequency);
     const isDone = habitsLog.some(l => String(l.habit_id)===String(h.id) && l.date===todayStr);
     const streak = getStreak(h.id, h.frequency);
-    const item = document.createElement('div');
-    item.className = `hab-item ${h.category}${isDone?' done':''}`;
-    item.innerHTML = `
-      <div class="hab-check${isDone?' checked':''}" onclick="toggleHabit(${h.id})"></div>
-      <div class="hab-title"><span style="margin-right:0.4rem;font-size:0.95rem">${habitIcon(h.title)}</span>${h.title}</div>
-      <div class="hab-streak">${streak > 0 ? `🔥 <b>${streak}</b>` : '—'}</div>
-      <div class="hab-freq">${freqLabel(h.frequency)}</div>
-      <div class="hab-cat-badge ${h.category}">${h.category}</div>
-      <div class="hab-reward">+${h.reward_eur.toFixed(2)}€</div>
-      <button class="hab-edit-btn" onclick="openHabitModal(${h.id})">✎</button>
-    `;
-    body.appendChild(item);
-  });
+    const stage = plantStage(streak);
+    const icon = PLANT_ICONS[stage];
+
+    let stateClass = '';
+    if (!isActive) stateClass = 'paused';
+    else if (isDone) stateClass = 'done';
+    else if (isDue) stateClass = 'due';
+    else stateClass = 'notdue';
+
+    // Action area
+    let action;
+    if (!isActive) {
+      action = `<div class="plant-rest-badge">EN PAUSE</div>`;
+    } else if (isDone) {
+      action = `<div class="plant-done-badge" onclick="event.stopPropagation();toggleHabit(${h.id})" title="Cliquer pour annuler">💧 ARROSÉE · +${h.reward_eur.toFixed(2)}€</div>`;
+    } else if (isDue) {
+      action = `<button class="plant-water" onclick="event.stopPropagation();handlePlantWater(${h.id}, this)">💧 ARROSER</button>`;
+    } else {
+      action = `<div class="plant-rest-badge">${freqLabel(h.frequency).toUpperCase()}</div>`;
+    }
+
+    return `<div class="plant cat-${h.category} ${stateClass}" onclick="openHabitModal(${h.id})" data-habit-id="${h.id}">
+      <button class="plant-edit" onclick="event.stopPropagation();openHabitModal(${h.id})" title="Éditer">✎</button>
+      <div class="plant-name">${h.title}</div>
+      ${streak > 0 ? `<div class="plant-streak">🔥 <b>${streak}</b></div>` : ''}
+      <div class="plant-stage-lbl">${STAGE_LABELS[stage]}</div>
+      <div class="plant-body">
+        <span class="plant-icon stage-${stage}">${icon}</span>
+      </div>
+      <div class="plant-grass"></div>
+      <div class="plant-soil"></div>
+      <div class="plant-meta">
+        <span class="plant-reward">+${h.reward_eur.toFixed(2)}€</span>
+        <span class="plant-cat ${h.category}">${h.category}</span>
+      </div>
+      <div class="plant-action">${action}</div>
+    </div>`;
+  }).join('');
+}
+
+// Wrapper around toggleHabit that adds a tiny "+X€" floating animation
+async function handlePlantWater(habitId, btn) {
+  const h = habits.find(x => x.id === habitId);
+  if (!h) return;
+  const card = btn.closest('.plant');
+  if (card) {
+    const pop = document.createElement('div');
+    pop.className = 'plant-reward-pop';
+    pop.textContent = `+${h.reward_eur.toFixed(2)}€`;
+    card.appendChild(pop);
+    setTimeout(() => pop.remove(), 1300);
+  }
+  await toggleHabit(habitId);
 }
 
 // ════════════════════════════════════════════════════
