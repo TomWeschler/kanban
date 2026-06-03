@@ -266,6 +266,12 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
    CRYPTOBOT PAGE
 ═══════════════════════════════ */
 #pagecrypto{overflow-y:auto;padding:1.25rem 1.5rem 3rem;gap:1rem;flex-direction:column}
+.crp-filters{display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;padding:0.65rem 0.85rem;background:var(--surface);border:1px solid var(--border);margin-bottom:-0.2rem}
+.crp-filter-lbl{font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.18em;color:var(--text-dim);text-transform:uppercase;margin-right:0.45rem}
+.crp-filter{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;font-weight:700;padding:0.32rem 0.85rem;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all 0.12s;text-transform:uppercase}
+.crp-filter:hover{color:var(--text);border-color:var(--text-mid)}
+.crp-filter.active{color:var(--bg);background:var(--accent);border-color:var(--accent)}
+.crp-filter-count{font-size:0.5rem;opacity:0.7;margin-left:0.35rem;letter-spacing:0.08em}
 .crp-banner{display:grid;grid-template-columns:repeat(5,1fr);gap:0.85rem;background:linear-gradient(135deg,var(--accent-dim) 0%,rgba(124,106,255,0.03) 100%);border:1px solid var(--border2);padding:0.85rem;border-left:3px solid var(--accent);position:relative;box-shadow:0 4px 24px rgba(0,0,0,0.25)}
 .crp-banner::before{content:'GLOBAL';position:absolute;top:8px;right:14px;font-family:'Space Mono',monospace;font-size:0.46rem;letter-spacing:0.25em;color:var(--accent);font-weight:700;opacity:0.7}
 .crp-kpi{background:rgba(0,0,0,0.18);border:1px solid var(--border);padding:1rem 1.2rem;backdrop-filter:blur(6px)}
@@ -761,6 +767,7 @@ body,body *{font-family:var(--font-body)}
 
 <!-- CRYPTOBOT PAGE -->
 <div class="page" id="pagecrypto">
+  <div class="crp-filters" id="crpFilters"></div>
   <div class="crp-banner" id="crpBanner"></div>
   <div class="crp-cards" id="crpCards"></div>
   <div class="crp-charts-a" id="crpChartsA"></div>
@@ -1959,15 +1966,87 @@ const crpCol = v => v >= 0 ? 'var(--green)' : 'var(--danger)';
 // ════════════════════════════════════════════════════
 // CRYPTOBOT — RENDER
 // ════════════════════════════════════════════════════
+// CRYPTOBOT — TIME FILTERS
+// ════════════════════════════════════════════════════
+let cryptoTradesAll = []; // master copy (untouched)
+const LS_CRP_FILTER = 'kanban_crp_filter';
+const CRP_FILTERS = [
+  { id:'intro',  label:'INTRO',  from:'',                      to:'2026-05-23 00:00:00' },
+  { id:'2026',   label:'2026',   from:'2026-05-23 00:00:00',   to:'2026-12-31 23:59:59' },
+  { id:'2027',   label:'2027',   from:'2027-01-01 00:00:00',   to:'2027-12-31 23:59:59' },
+  { id:'2028',   label:'2028',   from:'2028-01-01 00:00:00',   to:'2028-12-31 23:59:59' },
+  { id:'2029',   label:'2029',   from:'2029-01-01 00:00:00',   to:'2029-12-31 23:59:59' },
+  { id:'all',    label:'TOUT',   from:'',                      to:'' },
+];
+let cryptoFilter = null;
+
+function detectDefaultCryptoFilter() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const nowStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  for (const f of CRP_FILTERS) {
+    if (f.id === 'all') continue;
+    const okFrom = !f.from || nowStr >= f.from;
+    const okTo   = !f.to   || nowStr <= f.to;
+    if (okFrom && okTo) return f.id;
+  }
+  return 'all';
+}
+
+function tradeInFilter(t, f) {
+  if (f.id === 'all') return true;
+  const d = t.date || '';
+  if (!d) return false;
+  if (f.from && d < f.from) return false;
+  if (f.to   && d > f.to)   return false;
+  return true;
+}
+
+function applyCryptoFilter() {
+  const f = CRP_FILTERS.find(x => x.id === cryptoFilter) || CRP_FILTERS[CRP_FILTERS.length-1];
+  cryptoTrades = cryptoTradesAll.filter(t => tradeInFilter(t, f));
+}
+
+function setCryptoFilter(id) {
+  cryptoFilter = id;
+  localStorage.setItem(LS_CRP_FILTER, id);
+  applyCryptoFilter();
+  // Destroy charts to force rebuild on new dataset
+  Object.values(cryptoCharts).forEach(c => { try { c.destroy(); } catch(e){} });
+  cryptoCharts = {};
+  renderCryptoBanner();
+  renderCryptoCards();
+  renderCryptoChartsA();
+  renderCryptoChartsB();
+  renderCryptoTable();
+  renderCryptoFilters();
+}
+
+function renderCryptoFilters() {
+  const el = document.getElementById('crpFilters');
+  if (!el) return;
+  const buttons = CRP_FILTERS.map(f => {
+    const count = cryptoTradesAll.filter(t => tradeInFilter(t, f)).length;
+    const cls = cryptoFilter === f.id ? 'crp-filter active' : 'crp-filter';
+    return `<button class="${cls}" onclick="setCryptoFilter('${f.id}')">${f.label}<span class="crp-filter-count">(${count})</span></button>`;
+  }).join('');
+  el.innerHTML = `<span class="crp-filter-lbl">PÉRIODE</span>${buttons}`;
+}
+
 async function renderCryptoBot() {
   if (!cryptoLoaded) {
     showLoad(true);
     await loadCryptoData();
+    // Capture master copy + init filter
+    cryptoTradesAll = cryptoTrades.slice();
+    cryptoFilter = localStorage.getItem(LS_CRP_FILTER) || detectDefaultCryptoFilter();
+    applyCryptoFilter();
     await fetchCryptoPrices();
     showLoad(false);
     // HODL comparison in background (may be slow / rate-limited)
     fetchHodlComparison().then(() => { try { renderCryptoChartsB(); } catch(e){} });
   }
+  renderCryptoFilters();
   renderCryptoBanner();
   renderCryptoCards();
   renderCryptoChartsA();
@@ -1976,7 +2055,7 @@ async function renderCryptoBot() {
 }
 
 async function reloadCryptoData() {
-  cryptoLoaded = false; cryptoPrices = {}; cryptoTrades = [];
+  cryptoLoaded = false; cryptoPrices = {}; cryptoTrades = []; cryptoTradesAll = [];
   Object.values(cryptoCharts).forEach(c => { try { c.destroy(); } catch(e){} });
   cryptoCharts = {};
   renderCryptoBot();
