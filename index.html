@@ -402,92 +402,72 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 ═══════════════════════════════ */
 #pagesport{overflow-y:auto;padding:1.25rem 1.5rem 3rem;gap:1rem;flex-direction:column}
 .fit-section{margin-top:0}
-.fit-alert{background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.4);color:#f97316;font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.07em;padding:0.65rem 1rem;margin-bottom:0}
 .fit-banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem}
 .fit-kpi{background:var(--surface);border:1px solid var(--border);padding:1rem 1.2rem}
-.fit-kpi-lbl{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.4rem}
-.fit-kpi-val{font-family:'Space Mono',monospace;font-size:1.55rem;font-weight:700;line-height:1}
+.fit-kpi-lbl{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.4rem}
+.fit-kpi-val{font-family:var(--font-mono);font-size:1.55rem;font-weight:700;line-height:1}
+.fit-kpi-val.green{color:var(--green)}
 .fit-kpi-sub{font-size:0.65rem;color:var(--text-dim);margin-top:0.28rem}
-.fit-section-lbl{font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.65rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border)}
+.fit-section-lbl{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.65rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border)}
 .fit-box{background:var(--surface);border:1px solid var(--border);padding:1.1rem}
-.fit-box-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem}
-.fit-box-ttl{font-family:'Space Mono',monospace;font-size:0.53rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid)}
-.fit-empty{font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;color:var(--text-dim);opacity:0.42;text-align:center;padding:2rem 0}
-/* Week strip */
-.fit-week{display:grid;grid-template-columns:repeat(7,1fr);gap:0.5rem}
-.fit-day{background:var(--surface);border:1px solid var(--border);padding:0.65rem 0.4rem;display:flex;flex-direction:column;align-items:center;gap:0.28rem;transition:border-color 0.15s}
-.fit-day-today{border-color:var(--accent);background:var(--accent-dim)}
-.fit-day-done{border-color:rgba(74,222,128,0.25);background:rgba(74,222,128,0.04)}
-.fit-day-missed{opacity:0.5}
-.fit-day-label{font-family:'Space Mono',monospace;font-size:0.46rem;letter-spacing:0.15em;color:var(--text-dim)}
-.fit-day-date{font-family:'Space Mono',monospace;font-size:1.05rem;font-weight:700;line-height:1}
-.fit-day-today .fit-day-date{color:var(--accent)}
-.fit-day-tier{font-family:'Space Mono',monospace;font-size:0.48rem;font-weight:700;letter-spacing:0.08em;padding:2px 6px;border:1px solid transparent}
-.fit-day-check{font-family:'Space Mono',monospace;font-size:0.58rem;font-weight:700;height:0.85rem;line-height:1}
-.fit-day-sess{font-family:'Space Mono',monospace;font-size:0.37rem;letter-spacing:0.04em;color:var(--text-dim);text-transform:uppercase;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:95%;opacity:0.7}
-/* Today card */
-.fit-today-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;gap:1rem}
-.fit-tier-badge{font-family:'Space Mono',monospace;font-size:0.58rem;font-weight:700;letter-spacing:0.15em;padding:3px 10px;border:1px solid;display:inline-block;margin-bottom:0.5rem}
-.fit-today-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:0.25rem}
-.fit-today-mod{font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--warn);margin-top:0.2rem}
-.fit-today-notes{font-size:0.6rem;color:var(--text-dim);margin-top:0.22rem;font-style:italic}
-.fit-walk-box{padding:1.2rem;text-align:center}
-/* Exercise list */
-.fit-ex-list{display:flex;flex-direction:column;gap:0.6rem}
-.fit-ex-row{display:flex;align-items:flex-start;gap:0.75rem;padding:0.7rem;background:var(--surface2);border:1px solid var(--border)}
-.fit-ex-num{font-family:'Space Mono',monospace;font-size:0.6rem;color:var(--text-dim);min-width:1.1rem;padding-top:0.12rem}
-.fit-ex-info{flex:1;min-width:0}
-.fit-ex-name{font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:700;margin-bottom:0.22rem}
-.fit-ex-meta{display:flex;gap:0.55rem;flex-wrap:wrap}
-.fit-ex-meta span{font-family:'Space Mono',monospace;font-size:0.46rem;color:var(--text-dim);background:var(--surface3);padding:2px 5px}
-.fit-ex-prescription{font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--text-mid);margin-top:0.3rem}
-.fit-ex-prescription b{color:var(--text);font-weight:700}
-.fit-ex-progress{font-family:'Space Mono',monospace;font-size:0.54rem;color:var(--accent);margin-top:0.32rem;padding:0.32rem 0.5rem;background:var(--accent-dim);border-left:2px solid var(--accent)}
-.fit-ex-progress b{color:#fff}
-.fit-ex-last{font-family:'Space Mono',monospace;font-size:0.52rem;color:var(--text-dim);margin-top:0.3rem}
-.fit-ex-cues{font-size:0.57rem;color:var(--text-dim);font-style:italic;margin-top:0.28rem;line-height:1.4}
-.fit-sess-meta{display:flex;gap:0.85rem;font-family:'Space Mono',monospace;font-size:0.52rem;color:var(--text-dim);margin-bottom:0.9rem;padding-bottom:0.7rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.fit-sess-meta span{letter-spacing:0.05em}
-.fit-ex-sets{font-family:'Space Mono',monospace;font-size:0.46rem;flex-shrink:0;padding-top:0.12rem}
-.fit-ex-sets-done{color:var(--green)}
-/* Logger */
-.fit-log-table{display:flex;flex-direction:column;gap:0.65rem}
-.fit-log-row{padding:0.7rem;background:var(--surface2);border:1px solid var(--border)}
-.fit-log-exname{font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;margin-bottom:0.45rem}
-.fit-log-sets{display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.45rem;min-height:1.1rem}
-.fit-log-set-done{font-family:'Space Mono',monospace;font-size:0.43rem;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);color:var(--green);padding:2px 6px;cursor:default}
-.fit-log-inputs{display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap}
-.fit-input{background:var(--surface3);border:1px solid var(--border2);color:var(--text);font-family:'Space Mono',monospace;font-size:0.6rem;padding:0.28rem 0.5rem;outline:none;transition:border-color 0.13s}
+.fit-box-ttl{font-family:var(--font-mono);font-size:0.53rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid)}
+.fit-empty{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.06em;color:var(--text-dim);opacity:0.6;text-align:center;padding:1.5rem 0;line-height:1.8}
+.fit-input{background:var(--surface3);border:1px solid var(--border2);color:var(--text);font-family:var(--font-mono);font-size:0.66rem;padding:0.42rem 0.55rem;outline:none;transition:border-color 0.13s;border-radius:6px}
 .fit-input:focus{border-color:var(--accent)}
-.fit-form-lbl{font-family:'Space Mono',monospace;font-size:0.45rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.28rem}
-.fit-btn{font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.08em;text-transform:uppercase;padding:0.28rem 0.7rem;border:1px solid var(--border2);background:transparent;color:var(--text-dim);cursor:pointer;transition:all 0.12s;white-space:nowrap}
+.fit-form-lbl{font-family:var(--font-mono);font-size:0.46rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.3rem}
+.fit-btn{font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 0.8rem;border:1px solid var(--border2);background:transparent;color:var(--text-dim);cursor:pointer;transition:all 0.12s;white-space:nowrap;border-radius:6px}
 .fit-btn:hover{color:var(--text);border-color:var(--text-mid)}
-.fit-btn-w{color:#22c55e;border-color:rgba(34,197,94,0.35)}
-.fit-btn-w:hover{background:rgba(34,197,94,0.08)}
-.fit-btn-m{color:#f97316;border-color:rgba(249,115,22,0.35)}
-.fit-btn-m:hover{background:rgba(249,115,22,0.08)}
-/* Stats */
-.fit-stats-table{width:100%;border-collapse:collapse;font-family:'Space Mono',monospace;font-size:0.57rem}
-.fit-stats-table th{text-align:left;color:var(--text-dim);letter-spacing:0.1em;font-weight:400;padding:0.28rem 0.6rem;border-bottom:1px solid var(--border)}
-.fit-stats-table td{padding:0.32rem 0.6rem;border-bottom:1px solid rgba(37,37,53,0.4);color:var(--text)}
+.fit-stats-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:0.57rem}
+.fit-stats-table th{text-align:left;color:var(--text-dim);letter-spacing:0.1em;font-weight:400;padding:0.42rem 0.6rem;border-bottom:1px solid var(--border)}
+.fit-stats-table td{padding:0.48rem 0.6rem;border-bottom:1px solid rgba(37,37,53,0.4);color:var(--text)}
 .fit-stats-table tr:last-child td{border-bottom:none}
-/* Programs section */
-.fit-prog-tier{padding:0.85rem 1rem;margin-bottom:0.85rem;background:var(--surface2)}
-.fit-prog-tier:last-child{margin-bottom:0}
-.fit-prog-tier-hdr{font-family:'Space Mono',monospace;font-size:0.58rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.75rem}
-.fit-prog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:0.7rem}
-.fit-prog-card{background:var(--surface);border:1px solid var(--border);padding:0.75rem 0.9rem}
-.fit-prog-card-hdr{font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;margin-bottom:0.18rem}
-.fit-prog-card-id{font-family:'Space Mono',monospace;font-size:0.45rem;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:0.7rem;opacity:0.7}
-.fit-prog-ex-list{display:flex;flex-direction:column;gap:0.45rem}
-.fit-prog-ex{display:flex;gap:0.6rem;align-items:flex-start;padding:0.4rem 0;border-top:1px solid var(--border)}
-.fit-prog-ex:first-child{border-top:none;padding-top:0}
-.fit-prog-num{font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--text-dim);min-width:1rem;padding-top:0.1rem}
-.fit-prog-exname{font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;line-height:1.25}
-.fit-prog-muscles{font-family:'Space Mono',monospace;font-size:0.42rem;font-weight:400;color:var(--text-dim);margin-left:0.4rem;letter-spacing:0.05em}
-.fit-prog-pres{font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-mid);margin-top:0.18rem}
-.fit-prog-pres b{color:var(--text);font-weight:700}
-.fit-prog-cues{font-size:0.52rem;color:var(--text-dim);font-style:italic;margin-top:0.2rem;line-height:1.35}
+
+/* Programme du jour + retour côte à côte */
+.sp-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:1rem;align-items:start}
+@media(max-width:900px){.sp-grid{grid-template-columns:1fr}}
+.sp-today{background:linear-gradient(135deg,var(--accent-dim) 0%,transparent 72%);border:1px solid var(--border2);border-left:3px solid var(--accent);padding:1.3rem 1.5rem;border-radius:10px;position:relative;min-height:210px}
+.sp-today-hdr{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap}
+.sp-type-badge{font-family:var(--font-mono);font-size:0.56rem;font-weight:700;letter-spacing:0.12em;padding:0.28rem 0.75rem;border-radius:99px;text-transform:uppercase}
+.sp-dur{font-family:var(--font-mono);font-size:0.6rem;color:var(--text-mid)}
+.sp-today-title{font-family:var(--font-body);font-size:1.45rem;font-weight:700;margin:0.55rem 0 0.95rem;line-height:1.15}
+.sp-content{font-size:0.86rem;line-height:1.6;color:var(--text)}
+.sp-content h4{font-family:var(--font-mono);font-size:0.64rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin:0.95rem 0 0.45rem}
+.sp-content ul{margin:0.3rem 0 0.65rem;padding:0;list-style:none}
+.sp-content li{padding:0.2rem 0 0.2rem 1.35rem;position:relative;color:var(--text-mid)}
+.sp-content li::before{content:'▸';position:absolute;left:0.25rem;color:var(--accent)}
+.sp-content p{margin:0.45rem 0;color:var(--text-mid)}
+.sp-content b{color:var(--text);font-weight:700}
+
+/* Retour / logger */
+.sp-log{background:var(--surface);border:1px solid var(--border);padding:1.2rem 1.3rem;border-radius:10px}
+.sp-log-done{margin-bottom:0.9rem;padding:0.55rem 0.75rem;border-radius:8px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25);font-family:var(--font-mono);font-size:0.58rem;color:var(--green);line-height:1.5}
+.sp-status-btns{display:flex;gap:0.5rem;margin-bottom:1rem}
+.sp-status-btn{flex:1;padding:0.6rem 0.3rem;border:1px solid var(--border2);background:var(--surface2);color:var(--text-mid);cursor:pointer;border-radius:8px;font-family:var(--font-mono);font-size:0.6rem;font-weight:700;letter-spacing:0.04em;transition:all 0.14s;text-align:center}
+.sp-status-btn:hover{border-color:var(--text-mid)}
+.sp-status-btn.sel-done{background:rgba(74,222,128,0.16);border-color:var(--green);color:var(--green)}
+.sp-status-btn.sel-partial{background:rgba(251,191,36,0.16);border-color:var(--warn);color:var(--warn)}
+.sp-status-btn.sel-skipped{background:rgba(248,113,113,0.16);border-color:var(--danger);color:var(--danger)}
+.sp-field{margin-bottom:0.85rem}
+.sp-feeling{display:flex;gap:0.4rem}
+.sp-feel-btn{flex:1;padding:0.45rem 0;border:1px solid var(--border2);background:var(--surface2);cursor:pointer;border-radius:6px;font-size:1rem;transition:all 0.13s;filter:grayscale(0.7);opacity:0.55}
+.sp-feel-btn:hover{filter:none;opacity:1}
+.sp-feel-btn.sel{filter:none;opacity:1;border-color:var(--accent);background:var(--accent-dim)}
+.sp-row2{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem}
+
+/* Demain */
+.sp-tom{background:var(--surface);border:1px dashed var(--border2);padding:1rem 1.2rem;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.sp-tom-info{min-width:0}
+.sp-tom-title{font-family:var(--font-body);font-size:0.92rem;font-weight:700;display:flex;align-items:center;flex-wrap:wrap}
+.sp-tom-meta{font-family:var(--font-mono);font-size:0.56rem;color:var(--text-mid);margin-top:0.25rem}
+
+/* Historique */
+.sp-hist-status{font-family:var(--font-mono);font-size:0.5rem;font-weight:700;letter-spacing:0.05em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.sp-hist-status.done{background:rgba(74,222,128,0.14);color:var(--green)}
+.sp-hist-status.partial{background:rgba(251,191,36,0.14);color:var(--warn)}
+.sp-hist-status.skipped{background:rgba(248,113,113,0.14);color:var(--danger)}
+.sp-hist-status.none{background:rgba(148,163,184,0.1);color:var(--text-dim)}
+.sp-wrap{position:relative;height:160px}
+.modal textarea.fit-input{width:100%;resize:vertical;line-height:1.5}
 
 /* ═══════════════════════════════
    TYPOGRAPHY BOOST (lisibilité globale)
@@ -822,12 +802,45 @@ body,body *{font-family:var(--font-body)}
 
 <!-- SPORT PAGE -->
 <div class="page" id="pagesport">
-  <div id="fitBanner"></div>
-  <div id="fitWeekStrip" class="fit-section"></div>
-  <div id="fitToday" class="fit-section"></div>
-  <div id="fitLogger" class="fit-section"></div>
-  <div id="fitStats" class="fit-section"></div>
-  <div id="fitPrograms" class="fit-section"></div>
+  <div id="sportBanner"></div>
+  <div class="sp-grid">
+    <div id="sportToday"></div>
+    <div id="sportLogger"></div>
+  </div>
+  <div id="sportTomorrow" class="fit-section"></div>
+  <div id="sportHistory" class="fit-section"></div>
+  <div id="sportWeight" class="fit-section"></div>
+</div>
+
+<!-- SPORT PLAN MODAL -->
+<div class="modal-bg" id="sportPlanModal">
+  <div class="modal" style="width:540px">
+    <div class="modal-hdr" id="sportPlanModalTitle">PROGRAMME</div>
+    <button class="modal-close" onclick="closeSportPlanModal()">✕</button>
+    <div class="field"><label>Date</label><input type="date" id="spfDateInput"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
+      <div class="field"><label>Type</label>
+        <select id="spfType">
+          <option value="Muscu">Muscu</option>
+          <option value="Cardio">Cardio</option>
+          <option value="Marche">Marche</option>
+          <option value="Mobilité">Mobilité</option>
+          <option value="Mixte">Mixte</option>
+          <option value="Repos">Repos</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
+      <div class="field"><label>Durée (min)</label><input type="number" id="spfDuration" placeholder="45"></div>
+    </div>
+    <div class="field"><label>Titre</label><input type="text" id="spfTitle" placeholder="ex : Push + Squat" autocomplete="off"></div>
+    <div class="field"><label>Programme détaillé (Markdown supporté)</label>
+      <textarea id="spfContent" class="fit-input" rows="10" placeholder="# Échauffement&#10;- 5 min vélo&#10;&#10;# Bloc principal&#10;- Développé couché **4×8**&#10;- Squat **4×6**&#10;..."></textarea>
+    </div>
+    <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem">
+      <button class="btn-nav out" onclick="closeSportPlanModal()">Annuler</button>
+      <button class="btn-nav" onclick="saveSportPlan()">Enregistrer</button>
+    </div>
+  </div>
 </div>
 
 <!-- TASK MODAL -->
@@ -1793,7 +1806,7 @@ function switchPage(name){
   if(name==='habits')renderHabitsPage();
   if(name==='crypto')renderCryptoBot();
   if(name==='finances')renderFinancesPage();
-  if(name==='sport')renderFitPage();
+  if(name==='sport')renderSportPage();
 }
 
 // ════════════════════════════════════════════════════
@@ -3106,560 +3119,315 @@ function renderFinTable(depenses) {
 }
 
 // ════════════════════════════════════════════════════
-// FITNESS / SPORT PAGE
+// SPORT — programme piloté par Claude + retour quotidien
 // ════════════════════════════════════════════════════
-let fitProgram=[], fitExercises=[], fitSessions=[], fitWeeklyPlan=[], fitSessionLog=[], fitBodyStats=[];
-let fitLoaded=false;
-const FIT_TIER_COLOR={S:'#a855f7',H:'#3b82f6',M:'#f97316',W:'#22c55e'};
-const FIT_TIER_BG={S:'rgba(168,85,247,0.12)',H:'rgba(59,130,246,0.12)',M:'rgba(249,115,22,0.12)',W:'rgba(34,197,94,0.12)'};
+let sportPlans=[], sportLogs=[], sportLoaded=false, sportCharts={};
+let sportDraft={status:null,feeling:null,amount:null,note:null,weight:null};
+const SPORT_PLAN_HEADER=['date','type','duration_min','title','content'];
+const SPORT_LOG_HEADER =['date','status','amount','feeling','weight_kg','note'];
+const SPORT_GOAL_KEY='kanban_sport_goal';
+let sportWeekGoal=parseInt(localStorage.getItem(SPORT_GOAL_KEY)||'4')||4;
+const SPORT_TYPE_COLOR={Muscu:'#a855f7',Cardio:'#f87171',Marche:'#22c55e','Mobilité':'#38bdf8',Mixte:'#fbbf24',Repos:'#60607a',Autre:'#9898b8'};
+function sportTypeColor(t){const k=Object.keys(SPORT_TYPE_COLOR).find(x=>x.toLowerCase()===String(t||'').toLowerCase());return SPORT_TYPE_COLOR[k]||'var(--accent)';}
+function sportYmd(dt){return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;}
+function sportEsc(s){return String(s||'').replace(/"/g,'&quot;');}
+function sportStatusLabel(s){return s==='done'?'Fait':s==='partial'?'Partiel':s==='skipped'?'Pas fait':s;}
 
-async function loadFitData(){
-  if(!accessToken){console.warn('No accessToken — fitness load aborted');return;}
+// ── Sheets I/O ──────────────────────────────────────
+async function sportPutValues(range,values){
   const sid=cfg.spreadsheetId;
-  const sheets=['fit_program','fit_exercises','fit_sessions','fit_weekly_plan','fit_session_log','fit_body_stats'];
-  const results=await Promise.all(sheets.map(s=>
-    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(s)}`,{headers:{Authorization:`Bearer ${accessToken}`}})
-      .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}))
-  ));
-  [fitProgram,fitExercises,fitSessions,fitWeeklyPlan,fitSessionLog,fitBodyStats]=results.map(r=>r.values||[]);
-  fitLoaded=true;
-}
-
-function fitIdx(hdr,key){
-  const k=key.toLowerCase().replace(/[\s_]/g,'');
-  const i=hdr.findIndex(h=>h.toLowerCase().replace(/[\s_]/g,'')===k);
-  return i>=0?i:-1;
-}
-
-function parseFitExercises(){
-  if(!fitExercises.length)return{};
-  const [hdr,...rows]=fitExercises;
-  const g=k=>fitIdx(hdr,k);
-  const iId=g('exercise_id'),iName=g('name')>=0?g('name'):g('exercise_name'),iCat=g('category'),
-        iMuscles=g('primary_muscles')>=0?g('primary_muscles'):g('muscles'),
-        iEq=g('equipment'),
-        iSets=g('target_sets')>=0?g('target_sets'):g('sets'),
-        iRMin=g('reps_min'),iRMax=g('reps_max'),iRPE=g('target_rpe'),
-        iRest=g('rest_s'),iTempo=g('tempo'),
-        iProg=g('progression_kg'),
-        iCues=g('form_cues'),iNotes=g('notes');
-  const ex={};
-  rows.filter(r=>r.some(c=>c)).forEach(r=>{
-    const id=String(r[iId>=0?iId:0]||'').trim();
-    if(!id)return;
-    ex[id]={
-      id,
-      name:    iName>=0?String(r[iName]||id).trim():id,
-      cat:     iCat>=0?String(r[iCat]||'').trim():'',
-      muscles: iMuscles>=0?String(r[iMuscles]||'').trim():'',
-      eq:      iEq>=0?String(r[iEq]||'').trim():'',
-      sets:    iSets>=0?(parseInt(r[iSets])||3):3,
-      repsMin: iRMin>=0?(parseInt(r[iRMin])||5):5,
-      repsMax: iRMax>=0?(parseInt(r[iRMax])||10):10,
-      tgtRpe:  iRPE>=0?(parseFloat(String(r[iRPE]||'8').replace(',','.'))||8):8,
-      restS:   iRest>=0?(parseInt(r[iRest])||90):90,
-      tempo:   iTempo>=0?String(r[iTempo]||'').trim():'',
-      progKg:  iProg>=0?(parseFloat(String(r[iProg]||'0').replace(',','.'))||0):0,
-      cues:    iCues>=0?String(r[iCues]||'').trim():'',
-      notes:   iNotes>=0?String(r[iNotes]||'').trim():'',
-    };
+  return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,{
+    method:'PUT',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values})
   });
-  return ex;
 }
-
-// Get last logged performance for an exercise (excluding today)
-function fitLastPerf(log,exId,excludeDate){
-  const past=log.filter(l=>l.exId===exId&&l.setNum>0&&l.date!==excludeDate);
-  if(!past.length)return null;
-  // Group by date, pick most recent date
-  const byDate={};
-  past.forEach(l=>{(byDate[l.date]=byDate[l.date]||[]).push(l);});
-  const lastDate=Object.keys(byDate).sort().pop();
-  const sets=byDate[lastDate].sort((a,b)=>a.setNum-b.setNum);
-  const topKg=Math.max(...sets.map(s=>s.kg));
-  const topReps=Math.max(...sets.filter(s=>s.kg===topKg).map(s=>s.reps));
-  return {date:lastDate, sets:sets.length, topKg, topReps,
-          summary:sets.map(s=>`${s.reps}×${s.kg}kg`).join(' · ')};
-}
-
-// Double progression suggestion
-function fitProgressionHint(ex,last){
-  if(!last)return `Première séance : commence léger, vise ${ex.repsMin}–${ex.repsMax} reps @ RPE ${ex.tgtRpe}`;
-  if(last.topReps>=ex.repsMax) return `🎯 Cible atteinte (${last.topReps} reps) → augmente à <b>${(last.topKg+ex.progKg).toFixed(1)} kg</b>`;
-  if(last.topReps>=ex.repsMin) return `↗ Pousse vers ${ex.repsMax} reps à ${last.topKg} kg (dernière : ${last.topReps} reps)`;
-  return `⚠ Sous la cible (${last.topReps}/${ex.repsMin}) — reste à ${last.topKg} kg, vise ${ex.repsMin} reps`;
-}
-
-function parseFitSessions(){
-  if(!fitSessions.length)return{};
-  const [hdr,...rows]=fitSessions;
-  const g=k=>fitIdx(hdr,k);
-  const iSid=g('session_id'),iExId=g('exercise_id'),iOrder=g('order')>=0?g('order'):g('exercise_order'),
-        iTier=g('tier'),iName=g('name')>=0?g('name'):g('session_name');
-  const sess={};
-  rows.filter(r=>r.some(c=>c)).forEach(r=>{
-    const sid=String(r[iSid>=0?iSid:0]||'').trim();
-    if(!sid)return;
-    if(!sess[sid])sess[sid]={id:sid,tier:String(r[iTier>=0?iTier:1]||'').trim(),name:String(r[iName>=0?iName:2]||sid).trim(),exercises:[]};
-    const exId=String(r[iExId>=0?iExId:3]||'').trim();
-    if(exId)sess[sid].exercises.push({exId,order:iOrder>=0?(parseInt(r[iOrder])||sess[sid].exercises.length+1):sess[sid].exercises.length+1});
-  });
-  Object.values(sess).forEach(s=>s.exercises.sort((a,b)=>a.order-b.order));
-  return sess;
-}
-
-function parseFitWeeklyPlan(){
-  if(!fitWeeklyPlan.length)return[];
-  const [hdr,...rows]=fitWeeklyPlan;
-  const g=k=>fitIdx(hdr,k);
-  const iDate=g('date'),iDay=g('day'),iTier=g('planned_tier'),iSessId=g('planned_session_id'),
-        iInt=g('intensity_modifier'),iNotes=g('notes'),iWeek=g('week_starting');
-  return rows.filter(r=>r.some(c=>c)).map(r=>({
-    weekStarting:String(r[iWeek>=0?iWeek:0]||'').trim(),
-    date:   String(r[iDate>=0?iDate:1]||'').trim(),
-    day:    String(r[iDay>=0?iDay:2]||'').trim(),
-    tier:   String(r[iTier>=0?iTier:3]||'').trim(),
-    sessId: String(r[iSessId>=0?iSessId:4]||'').trim(),
-    intMod: String(r[iInt>=0?iInt:5]||'').trim(),
-    notes:  String(r[iNotes>=0?iNotes:7]||'').trim(),
-  })).filter(r=>r.date);
-}
-
-function parseFitSessionLog(){
-  if(!fitSessionLog.length)return[];
-  const [hdr,...rows]=fitSessionLog;
-  if(!hdr||!hdr.length)return[];
-  const g=k=>fitIdx(hdr,k);
-  const iLogId=g('log_id'),iDate=g('date'),iSessId=g('session_id'),iStatus=g('status'),
-        iSkip=g('skip_reason'),iDur=g('duration_min'),iExId=g('exercise_id'),
-        iSet=g('set_number'),iReps=g('reps'),iKg=g('weight_kg'),iRPE=g('rpe'),
-        iEnergy=g('session_energy_1to10'),iSleep=g('sleep_h_previous'),iNotes=g('session_notes');
-  return rows.filter(r=>r.some(c=>c)).map(r=>({
-    logId:  String(r[iLogId>=0?iLogId:0]||'').trim(),
-    date:   String(r[iDate>=0?iDate:1]||'').trim(),
-    sessId: String(r[iSessId>=0?iSessId:2]||'').trim(),
-    status: String(r[iStatus>=0?iStatus:3]||'').trim(),
-    skip:   String(r[iSkip>=0?iSkip:4]||'').trim(),
-    dur:    parseInt(r[iDur>=0?iDur:5])||0,
-    exId:   String(r[iExId>=0?iExId:6]||'').trim(),
-    setNum: parseInt(r[iSet>=0?iSet:7])||0,
-    reps:   parseInt(r[iReps>=0?iReps:8])||0,
-    kg:     parseFloat(String(r[iKg>=0?iKg:9]||'0').replace(',','.'))||0,
-    rpe:    parseFloat(String(r[iRPE>=0?iRPE:10]||'0').replace(',','.'))||0,
-    energy: String(r[iEnergy>=0?iEnergy:12]||'').trim(),
-    sleep:  String(r[iSleep>=0?iSleep:13]||'').trim(),
-    notes:  String(r[iNotes>=0?iNotes:14]||'').trim(),
-  })).filter(r=>r.date);
-}
-
-function parseFitBodyStats(){
-  if(!fitBodyStats.length)return[];
-  const [hdr,...rows]=fitBodyStats;
-  if(!hdr||!hdr.length)return[];
-  const g=k=>fitIdx(hdr,k);
-  const iDate=g('date'),iWt=g('weight_kg'),iBf=g('bf_estimate_pct'),iWaist=g('waist_navel_cm'),iNotes=g('notes');
-  return rows.filter(r=>r.some(c=>c)).map(r=>({
-    date:  String(r[iDate>=0?iDate:0]||'').trim(),
-    wt:    parseFloat(String(r[iWt>=0?iWt:1]||'0').replace(',','.'))||0,
-    bf:    parseFloat(String(r[iBf>=0?iBf:2]||'0').replace(',','.'))||0,
-    waist: parseFloat(String(r[iWaist>=0?iWaist:3]||'0').replace(',','.'))||0,
-    notes: String(r[iNotes>=0?iNotes:12]||'').trim(),
-  })).filter(r=>r.date);
-}
-
-async function fitAppendRow(sheetName,values){
-  if(!accessToken)return false;
+async function ensureSportSheets(){
   const sid=cfg.spreadsheetId;
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheetName)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
-  const resp=await fetch(url,{
-    method:'POST',
-    headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
-    body:JSON.stringify({values:[values]})
+  const meta=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const titles=(meta.sheets||[]).map(s=>s.properties.title);
+  const toCreate=[];
+  if(!titles.includes('sport_plan')) toCreate.push({sheet:'sport_plan',header:SPORT_PLAN_HEADER});
+  if(!titles.includes('sport_log'))  toCreate.push({sheet:'sport_log', header:SPORT_LOG_HEADER});
+  if(!toCreate.length) return;
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{
+    method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+    body:JSON.stringify({requests:toCreate.map(t=>({addSheet:{properties:{title:t.sheet}}}))})
   });
-  return resp.ok;
+  for(const t of toCreate) await sportPutValues(`${t.sheet}!A1`,[t.header]);
+}
+async function loadSportData(){
+  if(!accessToken)return;
+  await ensureSportSheets();
+  const sid=cfg.spreadsheetId;
+  const [planR,logR]=await Promise.all([
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_plan!A:E`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_log!A:F`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
+  ]);
+  const pr=planR.values||[], lr=logR.values||[];
+  sportPlans=(pr.length<=1?[]:pr.slice(1)).filter(r=>r[0]).map(r=>({
+    date:String(r[0]||'').trim(),type:String(r[1]||'').trim()||'Autre',
+    duration:parseInt(r[2])||0,title:String(r[3]||'').trim(),content:String(r[4]||'')
+  }));
+  sportLogs=(lr.length<=1?[]:lr.slice(1)).filter(r=>r[0]).map(r=>({
+    date:String(r[0]||'').trim(),status:String(r[1]||'').trim(),amount:String(r[2]||'').trim(),
+    feeling:parseInt(r[3])||0,weight:parseFloat(String(r[4]||'').replace(',','.'))||0,note:String(r[5]||'').trim()
+  }));
+  sportLoaded=true;
+}
+async function sportRewrite(sheet,header,rows){
+  const sid=cfg.spreadsheetId;
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheet+'!A:Z')}:clear`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`}});
+  await sportPutValues(`${sheet}!A1`,[header,...rows]);
+}
+async function sportUpsertPlan(p){
+  const i=sportPlans.findIndex(x=>x.date===p.date);
+  if(i>=0) sportPlans[i]=p; else sportPlans.push(p);
+  sportPlans.sort((a,b)=>a.date.localeCompare(b.date));
+  await sportRewrite('sport_plan',SPORT_PLAN_HEADER,sportPlans.map(x=>[x.date,x.type,String(x.duration||''),x.title,x.content]));
+}
+async function sportUpsertLog(l){
+  const i=sportLogs.findIndex(x=>x.date===l.date);
+  if(i>=0) sportLogs[i]=l; else sportLogs.push(l);
+  sportLogs.sort((a,b)=>a.date.localeCompare(b.date));
+  await sportRewrite('sport_log',SPORT_LOG_HEADER,sportLogs.map(x=>[x.date,x.status,x.amount,String(x.feeling||''),String(x.weight||''),x.note]));
 }
 
-async function renderFitPage(){
-  if(!fitLoaded){showLoad(true);await loadFitData();showLoad(false);}
-  const exercises=parseFitExercises();
-  const sessions=parseFitSessions();
-  const plan=parseFitWeeklyPlan();
-  const log=parseFitSessionLog();
-  const stats=parseFitBodyStats();
-  const today=td();
-  const todayPlan=plan.find(p=>p.date===today);
-  const loggedToday=log.filter(l=>l.date===today);
-  renderFitBanner(plan,log,stats,today);
-  renderFitWeekStrip(plan,log,today);
-  renderFitToday(todayPlan,sessions,exercises,loggedToday,today);
-  renderFitLogger(todayPlan,sessions,exercises,log,today);
-  renderFitStats(stats);
-  renderFitPrograms(sessions,exercises);
-}
-
-async function reloadFitData(){
-  fitLoaded=false;fitProgram=[];fitExercises=[];fitSessions=[];fitWeeklyPlan=[];fitSessionLog=[];fitBodyStats=[];
-  await renderFitPage();
-}
-
-function renderFitBanner(plan,log,stats,today){
-  const now=new Date();
-  const hour=now.getHours();
-  const dow=(now.getDay()+6)%7;
-  const weekStart=new Date(now);weekStart.setDate(now.getDate()-dow);
-  const weekDates=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);return d.toISOString().split('T')[0];});
-  const doneDays=new Set(log.filter(l=>weekDates.includes(l.date)&&l.status==='completed').map(l=>l.date)).size;
-  // streak
-  let streak=0;const chk=new Date(today);
-  while(streak<365){
-    const ds=chk.toISOString().split('T')[0];
-    if(log.some(l=>l.date===ds&&l.status==='completed')){streak++;chk.setDate(chk.getDate()-1);}
-    else{if(ds===today){chk.setDate(chk.getDate()-1);}else break;}
+// ── helpers ─────────────────────────────────────────
+function sportPlanFor(date){return sportPlans.find(p=>p.date===date)||null;}
+function sportLogFor(date){return sportLogs.find(l=>l.date===date)||null;}
+function sportRenderContent(text){
+  if(!text)return '';
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const bold=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  const lines=String(text).split(/\r?\n/);
+  let html='',inUl=false;
+  for(const raw of lines){
+    const line=raw.trim();
+    if(!line){if(inUl){html+='</ul>';inUl=false;}continue;}
+    if(/^#{1,3}\s/.test(line)){if(inUl){html+='</ul>';inUl=false;}html+=`<h4>${bold(line.replace(/^#{1,3}\s/,''))}</h4>`;continue;}
+    if(/^[-•*]\s/.test(line)){if(!inUl){html+='<ul>';inUl=true;}html+=`<li>${bold(line.replace(/^[-•*]\s/,''))}</li>`;continue;}
+    if(inUl){html+='</ul>';inUl=false;}
+    html+=`<p>${bold(line)}</p>`;
   }
-  const lastStat=stats.length?[...stats].sort((a,b)=>a.date.localeCompare(b.date)).pop():null;
-  const loggedTodayAny=log.some(l=>l.date===today&&l.status==='completed');
-  const showAntiZero=!loggedTodayAny&&hour>=18;
-  const totalSessDone=new Set(log.filter(l=>l.status==='completed').map(l=>l.date+'_'+l.sessId)).size;
-  document.getElementById('fitBanner').innerHTML=`
-    ${showAntiZero?`<div class="fit-alert">⚡ ANTI-ZÉRO — ${hour}h et aucune séance complétée. Lance le mode Minimal (10 min) ou log ton Walk (8 000 pas) !</div>`:''}
-    <div class="fit-banner" style="margin-top:${showAntiZero?'0.75rem':'0'}">
-      <div class="fit-kpi">
-        <div class="fit-kpi-lbl">SÉANCES SEMAINE</div>
-        <div class="fit-kpi-val">${doneDays}<span style="font-size:0.7rem;opacity:0.4">/7</span></div>
-        <div class="fit-kpi-sub">${weekDates.filter(d=>d<=today).length} jours écoulés</div>
-      </div>
-      <div class="fit-kpi">
-        <div class="fit-kpi-lbl">STREAK</div>
-        <div class="fit-kpi-val">${streak}<span style="font-size:0.7rem;opacity:0.4"> j</span></div>
-        <div class="fit-kpi-sub">Jours consécutifs</div>
-      </div>
-      <div class="fit-kpi">
-        <div class="fit-kpi-lbl">POIDS</div>
-        <div class="fit-kpi-val">${lastStat&&lastStat.wt?lastStat.wt+'<span style="font-size:0.7rem;opacity:0.4"> kg</span>':'<span style="font-size:0.9rem;opacity:0.5">—</span>'}</div>
-        <div class="fit-kpi-sub">${lastStat?lastStat.date:'Aucune mesure'}</div>
-      </div>
-      <div class="fit-kpi">
-        <div class="fit-kpi-lbl">TOTAL SÉANCES</div>
-        <div class="fit-kpi-val">${totalSessDone}</div>
-        <div class="fit-kpi-sub">Depuis le début</div>
-      </div>
+  if(inUl)html+='</ul>';
+  return html;
+}
+
+// ── render ──────────────────────────────────────────
+async function renderSportPage(){
+  if(!sportLoaded){showLoad(true);await loadSportData();showLoad(false);}
+  renderSportBanner();
+  renderSportToday();
+  renderSportLogger();
+  renderSportTomorrow();
+  renderSportHistory();
+  renderSportWeight();
+}
+async function reloadSportData(){
+  sportLoaded=false;sportPlans=[];sportLogs=[];
+  Object.values(sportCharts).forEach(c=>{try{c.destroy();}catch(e){}});
+  sportCharts={};
+  await renderSportPage();
+}
+
+function renderSportBanner(){
+  const today=sportYmd(new Date());
+  const d=new Date();d.setHours(0,0,0,0);const dow=(d.getDay()+6)%7;
+  const weekStart=new Date(d);weekStart.setDate(d.getDate()-dow);
+  const weekDates=Array.from({length:7},(_,i)=>{const x=new Date(weekStart);x.setDate(weekStart.getDate()+i);return sportYmd(x);});
+  const weekDone=sportLogs.filter(l=>weekDates.includes(l.date)&&(l.status==='done'||l.status==='partial')).length;
+  const month=today.slice(0,7);
+  const monthDone=sportLogs.filter(l=>l.date.startsWith(month)&&(l.status==='done'||l.status==='partial')).length;
+  const weights=sportLogs.filter(l=>l.weight>0).sort((a,b)=>a.date.localeCompare(b.date));
+  const lastW=weights.length?weights[weights.length-1].weight:null;
+  let planned=0,honored=0;
+  for(let i=0;i<14;i++){const x=new Date();x.setDate(x.getDate()-i);const ds=sportYmd(x);const p=sportPlanFor(ds);if(p&&!/repos/i.test(p.type)){planned++;const l=sportLogFor(ds);if(l&&(l.status==='done'||l.status==='partial'))honored++;}}
+  const adh=planned?Math.round(honored/planned*100):0;
+  document.getElementById('sportBanner').innerHTML=`
+    <div class="fit-banner">
+      <div class="fit-kpi"><div class="fit-kpi-lbl">Cette semaine</div><div class="fit-kpi-val" style="color:var(--accent)">${weekDone}<span style="font-size:0.7rem;opacity:0.4">/${sportWeekGoal}</span></div><div class="fit-kpi-sub">séances · <span onclick="sportSetGoal()" style="cursor:pointer;text-decoration:underline dotted">objectif</span></div></div>
+      <div class="fit-kpi"><div class="fit-kpi-lbl">Ce mois</div><div class="fit-kpi-val green">${monthDone}</div><div class="fit-kpi-sub">séances réalisées</div></div>
+      <div class="fit-kpi"><div class="fit-kpi-lbl">Adhérence 14j</div><div class="fit-kpi-val" style="color:${adh>=70?'var(--green)':adh>=40?'var(--warn)':'var(--danger)'}">${planned?adh+'%':'—'}</div><div class="fit-kpi-sub">${honored}/${planned} prévus honorés</div></div>
+      <div class="fit-kpi"><div class="fit-kpi-lbl">Poids</div><div class="fit-kpi-val">${lastW?lastW+'<span style="font-size:0.7rem;opacity:0.4"> kg</span>':'—'}</div><div class="fit-kpi-sub">${lastW?'dernière pesée':'aucune pesée'}</div></div>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
-      <button class="fit-btn" onclick="reloadFitData()" style="font-size:0.46rem">↺ RAFRAÎCHIR</button>
-    </div>`;
+    <div style="display:flex;justify-content:flex-end;margin-top:0.5rem"><button class="fit-btn" style="font-size:0.5rem" onclick="reloadSportData()">↺ Rafraîchir</button></div>`;
+}
+function sportSetGoal(){
+  const v=prompt('Objectif de séances par semaine :',sportWeekGoal);
+  if(v){const n=parseInt(v);if(n>0){sportWeekGoal=n;localStorage.setItem(SPORT_GOAL_KEY,n);renderSportBanner();}}
 }
 
-function renderFitWeekStrip(plan,log,today){
-  const now=new Date(today+'T12:00:00');
-  const dow=(now.getDay()+6)%7;
-  const weekStart=new Date(now);weekStart.setDate(now.getDate()-dow);
-  const DAYS=['LUN','MAR','MER','JEU','VEN','SAM','DIM'];
-  const days=Array.from({length:7},(_,i)=>{
-    const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);
-    const dStr=d.toISOString().split('T')[0];
-    const dayPlan=plan.find(p=>p.date===dStr);
-    const hasLog=log.some(l=>l.date===dStr&&l.status==='completed');
-    const isToday=dStr===today;
-    const isPast=dStr<today;
-    const tier=dayPlan?.tier||'';
-    const tc=FIT_TIER_COLOR[tier]||'var(--text-dim)';
-    const tb=FIT_TIER_BG[tier]||'transparent';
-    let cls='fit-day';
-    if(isToday)cls+=' fit-day-today';
-    else if(hasLog)cls+=' fit-day-done';
-    else if(isPast&&tier)cls+=' fit-day-missed';
-    return `<div class="${cls}">
-      <div class="fit-day-label">${DAYS[i]}</div>
-      <div class="fit-day-date">${d.getDate()}</div>
-      ${tier?`<div class="fit-day-tier" style="color:${tc};background:${tb};border-color:${tc}44">${tier}</div>`:`<div class="fit-day-tier" style="opacity:0.18">—</div>`}
-      <div class="fit-day-check">${hasLog?'<span style="color:var(--green)">✓</span>':(isPast&&tier?'<span style="color:var(--danger)">✗</span>':'')}</div>
-      ${dayPlan?.sessId?`<div class="fit-day-sess">${dayPlan.sessId.replace(/_/g,' ')}</div>`:''}
-    </div>`;
-  });
-  document.getElementById('fitWeekStrip').innerHTML=`
-    <div class="fit-section-lbl">SEMAINE EN COURS</div>
-    <div class="fit-week">${days.join('')}</div>`;
-}
-
-function renderFitToday(todayPlan,sessions,exercises,loggedToday,today){
-  const el=document.getElementById('fitToday');
-  if(!todayPlan){
-    el.innerHTML=`
-      <div class="fit-section-lbl">AUJOURD'HUI — ${today}</div>
-      <div class="fit-box">
-        <div class="fit-empty">Aucune séance planifiée pour aujourd'hui</div>
-        <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:1rem">
-          <button class="fit-btn fit-btn-m" onclick="fitQuickLog('M','minimal_10min','${today}')">⚡ LOG ANTI-ZÉRO (10 MIN)</button>
-          <button class="fit-btn fit-btn-w" onclick="fitQuickLog('W','walk_daily','${today}')">🚶 LOG WALK (8 000 PAS)</button>
-        </div>
-      </div>`;
+function renderSportToday(){
+  const today=sportYmd(new Date());
+  const p=sportPlanFor(today);
+  const el=document.getElementById('sportToday');
+  if(!p){
+    el.innerHTML=`<div class="sp-today"><div class="fit-empty">Pas encore de programme pour aujourd'hui.<br><br>Demande à Claude ce soir :<br><b style="color:var(--text-mid)">« fais-moi mon programme de demain »</b><br><br><button class="fit-btn" onclick="openSportPlanModal('${today}')">Définir manuellement</button></div></div>`;
     return;
   }
-  const tier=todayPlan.tier;
-  const sessId=todayPlan.sessId;
-  const sess=sessions[sessId];
-  const tc=FIT_TIER_COLOR[tier]||'var(--accent)';
-  const tb=FIT_TIER_BG[tier]||'var(--surface2)';
-  const isLogged=loggedToday.some(l=>l.status==='completed'||l.status==='partial');
-  let bodyHtml='';
-  if(tier==='W'){
-    bodyHtml=`<div class="fit-walk-box">
-      <div style="font-size:2rem;margin-bottom:0.6rem">🚶</div>
-      <div style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--text-dim);margin-bottom:1rem">OBJECTIF : 8 000 PAS</div>
-      ${!isLogged?`<button class="fit-btn fit-btn-w" onclick="fitQuickLog('W','walk_daily','${today}')">✓ WALK COMPLÉTÉ</button>`:''}
-    </div>`;
-  } else if(sess&&sess.exercises.length){
-    // need full log history for last-performance lookup
-    const fullLog=parseFitSessionLog();
-    const totalSets=sess.exercises.reduce((s,{exId})=>s+(exercises[exId]?.sets||0),0);
-    const doneSets=loggedToday.filter(l=>l.setNum>0).length;
-    bodyHtml=`<div class="fit-sess-meta">
-      <span>${sess.exercises.length} exercices</span>
-      <span>${totalSets} séries cibles</span>
-      <span style="color:var(--green)">${doneSets} séries complétées</span>
-      ${tier==='S'?'<span>≈ 50–60 min</span>':tier==='H'?'<span>≈ 25–30 min</span>':''}
-    </div>`;
-    bodyHtml+='<div class="fit-ex-list">';
-    sess.exercises.forEach(({exId},idx)=>{
-      const ex=exercises[exId];
-      if(!ex){bodyHtml+=`<div class="fit-ex-row"><div class="fit-ex-num">${idx+1}</div><div class="fit-ex-info" style="color:var(--danger)">Exercice "${exId}" introuvable dans fit_exercises</div></div>`;return;}
-      const sets=loggedToday.filter(l=>l.exId===exId&&l.setNum>0);
-      const last=fitLastPerf(fullLog,exId,today);
-      const hint=fitProgressionHint(ex,last);
-      const restMin=Math.floor(ex.restS/60),restSec=ex.restS%60;
-      const restTxt=restMin>0?`${restMin}min${restSec>0?' '+restSec+'s':''}`:`${ex.restS}s`;
-      bodyHtml+=`<div class="fit-ex-row">
-        <div class="fit-ex-num">${idx+1}</div>
-        <div class="fit-ex-info">
-          <div class="fit-ex-name">${ex.name}${ex.muscles?`<span style="font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-dim);font-weight:400;margin-left:0.5rem">${ex.muscles}</span>`:''}</div>
-          <div class="fit-ex-prescription"><b>${ex.sets} × ${ex.repsMin}–${ex.repsMax}</b> reps · RPE ${ex.tgtRpe} · Repos ${restTxt}${ex.tempo?` · Tempo ${ex.tempo}`:''}${ex.eq?` · ${ex.eq}`:''}</div>
-          <div class="fit-ex-progress">${hint}</div>
-          ${last?`<div class="fit-ex-last">📊 Dernière (${last.date}) : ${last.summary}</div>`:''}
-          ${ex.cues?`<div class="fit-ex-cues">💡 ${ex.cues}</div>`:''}
-          ${ex.notes?`<div class="fit-ex-cues" style="opacity:0.7">${ex.notes}</div>`:''}
-        </div>
-        <div class="fit-ex-sets">
-          ${sets.length?`<div class="fit-ex-sets-done">${sets.length}/${ex.sets} ✓</div>`:`<div style="color:var(--text-dim)">0/${ex.sets}</div>`}
-          ${sets.length?`<div style="font-size:0.42rem;color:var(--text-dim);margin-top:0.25rem;text-align:right">${sets.map(s=>`${s.reps}×${s.kg||'?'}`).join('<br>')}</div>`:''}
-        </div>
-      </div>`;
-    });
-    bodyHtml+='</div>';
-  } else {
-    bodyHtml=`<div class="fit-empty">Séance "${sessId}" non trouvée dans fit_sessions</div>`;
+  const col=sportTypeColor(p.type);
+  el.innerHTML=`<div class="sp-today">
+    <button class="fit-btn" style="position:absolute;top:1rem;right:1rem;font-size:0.46rem;padding:0.25rem 0.5rem" onclick="openSportPlanModal('${today}')">✎ éditer</button>
+    <div class="sp-today-hdr">
+      <span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55">${p.type}</span>
+      ${p.duration?`<span class="sp-dur">⏱ ${p.duration} min</span>`:''}
+    </div>
+    <div class="sp-today-title">${p.title||'Séance du jour'}</div>
+    <div class="sp-content">${sportRenderContent(p.content)||'<p style="opacity:0.5">Aucun détail fourni.</p>'}</div>
+  </div>`;
+}
+
+function sportCaptureInputs(){
+  const a=document.getElementById('spAmount'); if(a)sportDraft.amount=a.value;
+  const n=document.getElementById('spNote');   if(n)sportDraft.note=n.value;
+  const w=document.getElementById('spWeight'); if(w)sportDraft.weight=w.value;
+}
+function sportPickStatus(s){sportCaptureInputs();sportDraft.status=s;renderSportLogger();}
+function sportPickFeeling(f){sportCaptureInputs();sportDraft.feeling=f;renderSportLogger();}
+
+function renderSportLogger(){
+  const today=sportYmd(new Date());
+  const ex=sportLogFor(today);
+  const st=sportDraft.status??ex?.status??'';
+  const feel=sportDraft.feeling??ex?.feeling??0;
+  const amount=(sportDraft.amount??ex?.amount)||'';
+  const note=(sportDraft.note??ex?.note)||'';
+  const weight=(sportDraft.weight??(ex&&ex.weight?ex.weight:''))||'';
+  const FEELINGS=['😵','😕','😐','🙂','💪'];
+  document.getElementById('sportLogger').innerHTML=`<div class="sp-log">
+    <div class="fit-box-ttl" style="margin-bottom:0.9rem">Ton retour — aujourd'hui</div>
+    ${ex?`<div class="sp-log-done">✓ Enregistré : <b>${sportStatusLabel(ex.status)}</b>${ex.amount?` · ${ex.amount}`:''}. Tu peux corriger ci-dessous.</div>`:''}
+    <div class="sp-status-btns">
+      <button class="sp-status-btn${st==='done'?' sel-done':''}" onclick="sportPickStatus('done')">✅ Fait</button>
+      <button class="sp-status-btn${st==='partial'?' sel-partial':''}" onclick="sportPickStatus('partial')">🟡 Partiel</button>
+      <button class="sp-status-btn${st==='skipped'?' sel-skipped':''}" onclick="sportPickStatus('skipped')">❌ Pas fait</button>
+    </div>
+    <div class="sp-field"><label class="fit-form-lbl">Combien ? (durée, distance, ressenti libre)</label>
+      <input class="fit-input" id="spAmount" style="width:100%" placeholder="ex : 45 min · 5 km · 3 séries" value="${sportEsc(amount)}"></div>
+    <div class="sp-field"><label class="fit-form-lbl">Ressenti</label>
+      <div class="sp-feeling">${FEELINGS.map((e,i)=>`<button class="sp-feel-btn${feel===i+1?' sel':''}" onclick="sportPickFeeling(${i+1})">${e}</button>`).join('')}</div></div>
+    <div class="sp-row2">
+      <div><label class="fit-form-lbl">Poids (kg)</label><input class="fit-input" id="spWeight" type="number" step="0.1" style="width:100%" placeholder="opt." value="${sportEsc(weight)}"></div>
+      <div><label class="fit-form-lbl">Note</label><input class="fit-input" id="spNote" style="width:100%" placeholder="opt." value="${sportEsc(note)}"></div>
+    </div>
+    <button class="fit-btn" style="margin-top:1rem;width:100%;color:var(--accent);border-color:var(--accent);padding:0.55rem" onclick="saveSportLog()">${ex?'Mettre à jour':'Enregistrer mon retour'}</button>
+  </div>`;
+}
+async function saveSportLog(){
+  sportCaptureInputs();
+  const today=sportYmd(new Date());
+  const ex=sportLogFor(today);
+  const status=sportDraft.status||ex?.status;
+  if(!status){alert("Choisis d'abord : Fait / Partiel / Pas fait.");return;}
+  const log={date:today,status,
+    amount:(sportDraft.amount??ex?.amount)||'',
+    feeling:(sportDraft.feeling??ex?.feeling)||0,
+    weight:parseFloat(sportDraft.weight??(ex?ex.weight:''))||0,
+    note:(sportDraft.note??ex?.note)||''};
+  showLoad(true);await sportUpsertLog(log);showLoad(false);
+  sportDraft={status:null,feeling:null,amount:null,note:null,weight:null};
+  toast('Retour enregistré ✓','ok');
+  renderSportPage();
+}
+
+function renderSportTomorrow(){
+  const t=new Date();t.setDate(t.getDate()+1);const tom=sportYmd(t);
+  const p=sportPlanFor(tom);
+  const el=document.getElementById('sportTomorrow');
+  if(p){
+    const col=sportTypeColor(p.type);
+    el.innerHTML=`<div class="fit-section-lbl">Demain</div>
+      <div class="sp-tom"><div class="sp-tom-info">
+        <div class="sp-tom-title"><span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55;margin-right:0.5rem">${p.type}</span>${p.title||''}</div>
+        <div class="sp-tom-meta">${p.duration?`⏱ ${p.duration} min · `:''}programme prêt ✓</div>
+      </div><button class="fit-btn" onclick="openSportPlanModal('${tom}')">✎ éditer</button></div>`;
+  }else{
+    el.innerHTML=`<div class="fit-section-lbl">Demain</div>
+      <div class="sp-tom"><div class="sp-tom-info"><div class="sp-tom-title" style="color:var(--text-mid)">Pas encore de programme</div><div class="sp-tom-meta">Demande à Claude « fais-moi mon programme de demain » — ou définis-le toi-même</div></div>
+      <button class="fit-btn" onclick="openSportPlanModal('${tom}')">+ Définir</button></div>`;
   }
-  el.innerHTML=`
-    <div class="fit-section-lbl">AUJOURD'HUI — ${today}</div>
-    <div class="fit-box">
-      <div class="fit-today-hdr">
-        <div>
-          <div class="fit-tier-badge" style="color:${tc};background:${tb};border-color:${tc}55">TIER ${tier}</div>
-          <div class="fit-today-title">${sess?sess.name:(sessId?sessId.replace(/_/g,' '):'Session')}</div>
-          ${todayPlan.intMod?`<div class="fit-today-mod">⚙ ${todayPlan.intMod}</div>`:''}
-          ${todayPlan.notes?`<div class="fit-today-notes">${todayPlan.notes}</div>`:''}
-        </div>
-        ${isLogged?`<div style="color:var(--green);font-family:'Space Mono',monospace;font-size:0.75rem;font-weight:700;flex-shrink:0">✓ COMPLÉTÉE</div>`:''}
-      </div>
-      ${bodyHtml}
-    </div>`;
 }
 
-function renderFitLogger(todayPlan,sessions,exercises,log,today){
-  const el=document.getElementById('fitLogger');
-  if(!todayPlan||todayPlan.tier==='W'){el.innerHTML='';return;}
-  const sess=sessions[todayPlan.sessId];
-  if(!sess||!sess.exercises.length){el.innerHTML='';return;}
-  const tc=FIT_TIER_COLOR[todayPlan.tier]||'var(--accent)';
-  let rows='';
-  sess.exercises.forEach(({exId})=>{
-    const ex=exercises[exId];
-    if(!ex)return;
-    const exLog=log.filter(l=>l.date===today&&l.exId===exId&&l.setNum>0);
-    const lastKg=exLog.length?exLog[exLog.length-1].kg:'';
-    const lastReps=exLog.length?exLog[exLog.length-1].reps:ex.repsMin;
-    rows+=`<div class="fit-log-row">
-      <div class="fit-log-exname">${ex.name}</div>
-      <div class="fit-log-sets">${exLog.map(s=>`<span class="fit-log-set-done" title="S${s.setNum}: ${s.reps} reps @ ${s.kg}kg RPE${s.rpe}">S${s.setNum} ✓</span>`).join('')}</div>
-      <div class="fit-log-inputs">
-        <input type="number" id="fitkg_${exId}" placeholder="kg" value="${lastKg}" step="0.5" min="0" class="fit-input" style="width:65px">
-        <input type="number" id="fitreps_${exId}" placeholder="reps" value="${lastReps}" min="1" max="50" class="fit-input" style="width:60px">
-        <input type="number" id="fitrpe_${exId}" placeholder="RPE" min="5" max="10" step="0.5" class="fit-input" style="width:55px">
-        <button class="fit-btn" style="font-size:0.48rem" onclick="fitLogSet('${exId}','${todayPlan.sessId}','${today}',${exLog.length+1})">+ SÉRIE</button>
-      </div>
-    </div>`;
-  });
-  el.innerHTML=`
-    <div class="fit-section-lbl">LOGGER LA SÉANCE</div>
-    <div class="fit-box">
-      <div class="fit-log-table">${rows}</div>
-      <div style="margin-top:1.2rem;border-top:1px solid var(--border);padding-top:1rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
-        <div style="display:flex;gap:0.4rem;align-items:center">
-          <label class="fit-form-lbl" style="margin:0">ÉNERGIE</label>
-          <input type="number" id="fitEnergy" min="1" max="10" placeholder="7" class="fit-input" style="width:50px">
-        </div>
-        <div style="display:flex;gap:0.4rem;align-items:center">
-          <label class="fit-form-lbl" style="margin:0">SOMMEIL (h)</label>
-          <input type="number" id="fitSleep" min="3" max="12" step="0.5" placeholder="7.5" class="fit-input" style="width:60px">
-        </div>
-        <div style="display:flex;gap:0.4rem;align-items:center">
-          <label class="fit-form-lbl" style="margin:0">DURÉE (min)</label>
-          <input type="number" id="fitDur" min="1" max="120" placeholder="55" class="fit-input" style="width:60px">
-        </div>
-        <div style="flex:1;min-width:120px">
-          <input type="text" id="fitNotes" placeholder="Notes séance..." class="fit-input" style="width:100%">
-        </div>
-        <button class="fit-btn" style="color:${tc};border-color:${tc}44" onclick="fitCompleteSession('${todayPlan.sessId}','${today}')">✓ TERMINER LA SÉANCE</button>
-      </div>
-    </div>`;
-}
-
-async function fitLogSet(exId,sessId,date,setNum){
-  const kg=parseFloat(document.getElementById('fitkg_'+exId)?.value)||0;
-  const reps=parseInt(document.getElementById('fitreps_'+exId)?.value)||0;
-  const rpe=parseFloat(document.getElementById('fitrpe_'+exId)?.value)||0;
-  if(!reps){alert('Renseigne le nombre de répétitions.');return;}
-  const logId=`${date}_${sessId}_${exId}_s${setNum}_${Date.now()}`;
-  showLoad(true);
-  const ok=await fitAppendRow('fit_session_log',[logId,date,sessId,'in_progress','','',exId,setNum,reps,kg||'',rpe||'','','','','']);
-  showLoad(false);
-  if(ok){
-    fitLoaded=false;await loadFitData();
-    const plan=parseFitWeeklyPlan();const sessions=parseFitSessions();
-    const exercises=parseFitExercises();const log=parseFitSessionLog();
-    const today=td();const todayPlan=plan.find(p=>p.date===today);
-    renderFitToday(todayPlan,sessions,exercises,log.filter(l=>l.date===today),today);
-    renderFitLogger(todayPlan,sessions,exercises,log,today);
-  } else {alert('Erreur lors de l\'enregistrement de la série.');}
-}
-
-async function fitCompleteSession(sessId,date){
-  const energy=document.getElementById('fitEnergy')?.value||'';
-  const sleep=document.getElementById('fitSleep')?.value||'';
-  const dur=document.getElementById('fitDur')?.value||'';
-  const notes=document.getElementById('fitNotes')?.value||'';
-  const logId=`${date}_${sessId}_done_${Date.now()}`;
-  showLoad(true);
-  const ok=await fitAppendRow('fit_session_log',[logId,date,sessId,'completed','',dur,'','','','','','',energy,sleep,notes]);
-  showLoad(false);
-  if(ok){fitLoaded=false;await renderFitPage();}else{alert('Erreur lors de la finalisation.');}
-}
-
-async function fitQuickLog(tier,sessId,date){
-  const dur=tier==='W'?'30':tier==='M'?'10':'';
-  const logId=`${date}_${sessId}_${Date.now()}`;
-  showLoad(true);
-  const ok=await fitAppendRow('fit_session_log',[logId,date,sessId,'completed','',dur,'','','','','','','','',`Quick log ${tier}`]);
-  showLoad(false);
-  if(ok){fitLoaded=false;await renderFitPage();}else{alert('Erreur lors de l\'enregistrement.');}
-}
-
-function renderFitStats(stats){
-  const el=document.getElementById('fitStats');
-  const sorted=[...stats].sort((a,b)=>a.date.localeCompare(b.date));
-  const last5=sorted.slice(-5).reverse();
-  el.innerHTML=`
-    <div class="fit-section-lbl">STATS CORPORELLES</div>
-    <div class="fit-box">
-      <div class="fit-box-hdr">
-        <span class="fit-box-ttl">MESURES RÉCENTES</span>
-        <button class="fit-btn" style="font-size:0.46rem" onclick="document.getElementById('fitStatsForm').style.display='block'">+ NOUVELLE MESURE</button>
-      </div>
-      ${last5.length?`<table class="fit-stats-table">
-        <thead><tr><th>DATE</th><th>POIDS</th><th>%MG</th><th>TAILLE (cm)</th><th>NOTES</th></tr></thead>
-        <tbody>${last5.map(s=>`<tr>
-          <td>${s.date}</td>
-          <td>${s.wt?s.wt+' kg':'—'}</td>
-          <td>${s.bf?s.bf+'%':'—'}</td>
-          <td>${s.waist?s.waist:'—'}</td>
-          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim)">${s.notes||'—'}</td>
-        </tr>`).join('')}</tbody>
-      </table>`:`<div class="fit-empty">Aucune mesure enregistrée</div>`}
-      <div id="fitStatsForm" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:0.6rem;margin-bottom:0.8rem">
-          <div><label class="fit-form-lbl">DATE</label><input type="date" id="fstatDate" value="${td()}" class="fit-input" style="width:100%"></div>
-          <div><label class="fit-form-lbl">POIDS (kg)</label><input type="number" id="fstatWt" step="0.1" placeholder="75.5" class="fit-input" style="width:100%"></div>
-          <div><label class="fit-form-lbl">%MG (est.)</label><input type="number" id="fstatBf" step="0.5" placeholder="18" class="fit-input" style="width:100%"></div>
-          <div><label class="fit-form-lbl">TAILLE (cm)</label><input type="number" id="fstatWaist" step="0.5" placeholder="85" class="fit-input" style="width:100%"></div>
-        </div>
-        <div style="margin-bottom:0.8rem"><label class="fit-form-lbl">NOTES</label><input type="text" id="fstatNotes" placeholder="Notes, photos..." class="fit-input" style="width:100%"></div>
-        <div style="display:flex;gap:0.5rem">
-          <button class="fit-btn" style="color:var(--accent);border-color:rgba(124,106,255,0.4)" onclick="saveFitBodyStat()">ENREGISTRER</button>
-          <button class="fit-btn" onclick="document.getElementById('fitStatsForm').style.display='none'">ANNULER</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function renderFitPrograms(sessions,exercises){
-  const el=document.getElementById('fitPrograms');
-  // Group sessions by tier
-  const byTier={S:[],H:[],M:[]};
-  Object.values(sessions).forEach(s=>{
-    const t=(s.tier||'').toUpperCase();
-    if(byTier[t])byTier[t].push(s);
-  });
-  const TIER_TITLES={S:'TIER S — SALLE (50–60 min)',H:'TIER H — HOME KB (25–30 min)',M:'TIER M — MINIMAL (10 min, anti-zéro)'};
-  const renderSess=s=>{
-    const exHtml=s.exercises.map(({exId},i)=>{
-      const ex=exercises[exId];
-      if(!ex)return `<div class="fit-prog-ex"><span class="fit-prog-num">${i+1}</span><span style="color:var(--danger)">${exId} (introuvable)</span></div>`;
-      const restMin=Math.floor(ex.restS/60),restSec=ex.restS%60;
-      const restTxt=restMin>0?`${restMin}min${restSec>0?' '+restSec+'s':''}`:`${ex.restS}s`;
-      return `<div class="fit-prog-ex">
-        <span class="fit-prog-num">${i+1}</span>
-        <div style="flex:1;min-width:0">
-          <div class="fit-prog-exname">${ex.name}${ex.muscles?`<span class="fit-prog-muscles">${ex.muscles}</span>`:''}</div>
-          <div class="fit-prog-pres"><b>${ex.sets}×${ex.repsMin}–${ex.repsMax}</b> · RPE ${ex.tgtRpe} · ${restTxt}${ex.tempo?` · tempo ${ex.tempo}`:''}${ex.eq?` · ${ex.eq}`:''}</div>
-          ${ex.cues?`<div class="fit-prog-cues">💡 ${ex.cues}</div>`:''}
-        </div>
-      </div>`;
-    }).join('');
-    return `<div class="fit-prog-card">
-      <div class="fit-prog-card-hdr">${s.name||s.id}</div>
-      <div class="fit-prog-card-id">${s.id}</div>
-      ${s.exercises.length?`<div class="fit-prog-ex-list">${exHtml}</div>`:`<div class="fit-empty" style="padding:1rem 0">Aucun exercice défini</div>`}
-    </div>`;
-  };
-  const tierBlocks=['S','H','M'].map(t=>{
-    const tc=FIT_TIER_COLOR[t];
-    const list=byTier[t];
-    if(!list.length)return '';
-    return `<div class="fit-prog-tier" style="border-left:3px solid ${tc}">
-      <div class="fit-prog-tier-hdr" style="color:${tc}">${TIER_TITLES[t]}</div>
-      <div class="fit-prog-grid">${list.map(renderSess).join('')}</div>
-    </div>`;
+function renderSportHistory(){
+  const el=document.getElementById('sportHistory');
+  const rows=[];
+  for(let i=0;i<14;i++){const x=new Date();x.setDate(x.getDate()-i);const ds=sportYmd(x);const p=sportPlanFor(ds);const l=sportLogFor(ds);if(!p&&!l)continue;rows.push({ds,p,l});}
+  if(!rows.length){el.innerHTML=`<div class="fit-section-lbl">Historique</div><div class="fit-box"><div class="fit-empty">Aucun historique pour l'instant.</div></div>`;return;}
+  const FR=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  const body=rows.map(({ds,p,l})=>{
+    const dt=new Date(ds+'T12:00:00');const dlabel=`${FR[dt.getDay()]} ${dt.getDate()}/${dt.getMonth()+1}`;
+    const status=l?l.status:'none';
+    const feel=l&&l.feeling?['','😵','😕','😐','🙂','💪'][l.feeling]:'';
+    return `<tr>
+      <td style="white-space:nowrap;color:var(--text-mid)">${dlabel}</td>
+      <td>${p?(p.title||p.type):'<span style="opacity:0.4">—</span>'}</td>
+      <td><span class="sp-hist-status ${status}">${l?sportStatusLabel(status):'non loggé'}</span></td>
+      <td style="color:var(--text-mid)">${l?l.amount||'':''}</td>
+      <td>${feel}</td>
+    </tr>`;
   }).join('');
-  el.innerHTML=`
-    <div class="fit-section-lbl">PROGRAMMES — DÉTAIL DES SÉANCES</div>
-    <div class="fit-box" style="padding:0.85rem 1.1rem">
-      ${tierBlocks||'<div class="fit-empty">Aucun programme S/H/M trouvé</div>'}
-    </div>`;
+  el.innerHTML=`<div class="fit-section-lbl">Historique — 14 derniers jours</div>
+    <div class="fit-box"><table class="fit-stats-table">
+      <thead><tr><th>Jour</th><th>Programme</th><th>Statut</th><th>Réalisé</th><th>Ressenti</th></tr></thead>
+      <tbody>${body}</tbody></table></div>`;
 }
 
-async function saveFitBodyStat(){
-  const date=document.getElementById('fstatDate')?.value||td();
-  const wt=document.getElementById('fstatWt')?.value||'';
-  const bf=document.getElementById('fstatBf')?.value||'';
-  const waist=document.getElementById('fstatWaist')?.value||'';
-  const notes=document.getElementById('fstatNotes')?.value||'';
-  showLoad(true);
-  const ok=await fitAppendRow('fit_body_stats',[date,wt,bf,waist,'','','','','','','','',notes]);
-  showLoad(false);
-  if(ok){fitLoaded=false;await renderFitPage();}else{alert('Erreur lors de l\'enregistrement.');}
+function renderSportWeight(){
+  const el=document.getElementById('sportWeight');
+  const w=sportLogs.filter(l=>l.weight>0).sort((a,b)=>a.date.localeCompare(b.date));
+  if(w.length<2){el.innerHTML='';if(sportCharts.w){try{sportCharts.w.destroy();}catch(e){}sportCharts.w=null;}return;}
+  el.innerHTML=`<div class="fit-section-lbl">Évolution du poids</div><div class="fit-box"><div class="sp-wrap"><canvas id="spWeightChart"></canvas></div></div>`;
+  if(sportCharts.w){try{sportCharts.w.destroy();}catch(e){}}
+  const acc=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#7c6aff';
+  sportCharts.w=new Chart(document.getElementById('spWeightChart'),{
+    type:'line',
+    data:{labels:w.map(x=>x.date.slice(5)),datasets:[{data:w.map(x=>x.weight),borderColor:acc,backgroundColor:acc+'22',borderWidth:2,fill:true,tension:0.3,pointRadius:3,pointHoverRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>` ${i.raw} kg`}}},
+      scales:{x:{ticks:{font:{family:'monospace',size:8},maxTicksLimit:10},grid:{color:'rgba(255,255,255,0.05)'}},y:{ticks:{font:{family:'monospace',size:9},callback:v=>v+' kg'},grid:{color:'rgba(255,255,255,0.05)'}}}}
+  });
 }
+
+// ── Plan modal ──────────────────────────────────────
+function openSportPlanModal(date){
+  const p=sportPlanFor(date);
+  document.getElementById('spfDateInput').value=date||sportYmd(new Date());
+  document.getElementById('spfType').value=p?p.type:'Muscu';
+  document.getElementById('spfDuration').value=p&&p.duration?p.duration:'';
+  document.getElementById('spfTitle').value=p?p.title:'';
+  document.getElementById('spfContent').value=p?p.content:'';
+  document.getElementById('sportPlanModalTitle').textContent=p?'ÉDITER LE PROGRAMME':'NOUVEAU PROGRAMME';
+  document.getElementById('sportPlanModal').classList.add('open');
+  setTimeout(()=>document.getElementById('spfTitle').focus(),70);
+}
+function closeSportPlanModal(){document.getElementById('sportPlanModal').classList.remove('open');}
+async function saveSportPlan(){
+  const date=document.getElementById('spfDateInput').value;
+  if(!date){alert('Choisis une date.');return;}
+  const plan={date,
+    type:document.getElementById('spfType').value,
+    duration:parseInt(document.getElementById('spfDuration').value)||0,
+    title:document.getElementById('spfTitle').value.trim(),
+    content:document.getElementById('spfContent').value};
+  showLoad(true);await sportUpsertPlan(plan);showLoad(false);
+  closeSportPlanModal();
+  toast('Programme enregistré ✓','ok');
+  renderSportPage();
+}
+
 
 // ════════════════════════════════════════════════════
 // KEYBOARD
 // ════════════════════════════════════════════════════
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closeHabitModal();}
+  if(e.key==='Escape'){closeModal();closeHabitModal();closeSportPlanModal();}
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     if(document.getElementById('taskModal').classList.contains('open'))saveTask();
     if(document.getElementById('habitModal').classList.contains('open'))saveHabit();
+    if(document.getElementById('sportPlanModal').classList.contains('open'))saveSportPlan();
   }
 });
 document.getElementById('taskModal').addEventListener('click',e=>{if(e.target===document.getElementById('taskModal'))closeModal();});
 document.getElementById('habitModal').addEventListener('click',e=>{if(e.target===document.getElementById('habitModal'))closeHabitModal();});
+document.getElementById('sportPlanModal').addEventListener('click',e=>{if(e.target===document.getElementById('sportPlanModal'))closeSportPlanModal();});
 
 init();
 </script>
