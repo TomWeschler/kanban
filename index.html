@@ -3154,6 +3154,13 @@ async function ensureSportSheets(){
   });
   for(const t of toCreate) await sportPutValues(`${t.sheet}!A1`,[t.header]);
 }
+// Dedup rows keeping the LAST occurrence per date (append-only sheets,
+// shared with the Claude strategy project which appends plan rows).
+function sportDedupLast(rows){
+  const map={};
+  rows.forEach(r=>{ if(r.date) map[r.date]=r; });
+  return Object.values(map).sort((a,b)=>a.date.localeCompare(b.date));
+}
 async function loadSportData(){
   if(!accessToken)return;
   await ensureSportSheets();
@@ -3163,32 +3170,36 @@ async function loadSportData(){
     fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_log!A:F`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
   ]);
   const pr=planR.values||[], lr=logR.values||[];
-  sportPlans=(pr.length<=1?[]:pr.slice(1)).filter(r=>r[0]).map(r=>({
+  const plans=(pr.length<=1?[]:pr.slice(1)).filter(r=>r[0]).map(r=>({
     date:String(r[0]||'').trim(),type:String(r[1]||'').trim()||'Autre',
     duration:parseInt(r[2])||0,title:String(r[3]||'').trim(),content:String(r[4]||'')
   }));
-  sportLogs=(lr.length<=1?[]:lr.slice(1)).filter(r=>r[0]).map(r=>({
+  const logs=(lr.length<=1?[]:lr.slice(1)).filter(r=>r[0]).map(r=>({
     date:String(r[0]||'').trim(),status:String(r[1]||'').trim(),amount:String(r[2]||'').trim(),
     feeling:parseInt(r[3])||0,weight:parseFloat(String(r[4]||'').replace(',','.'))||0,note:String(r[5]||'').trim()
   }));
+  sportPlans=sportDedupLast(plans);
+  sportLogs=sportDedupLast(logs);
   sportLoaded=true;
 }
-async function sportRewrite(sheet,header,rows){
+async function sportAppendRow(sheet,row){
+  if(!accessToken)return false;
   const sid=cfg.spreadsheetId;
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheet+'!A:Z')}:clear`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`}});
-  await sportPutValues(`${sheet}!A1`,[header,...rows]);
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheet)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+  const resp=await fetch(url,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
+  return resp.ok;
 }
 async function sportUpsertPlan(p){
   const i=sportPlans.findIndex(x=>x.date===p.date);
   if(i>=0) sportPlans[i]=p; else sportPlans.push(p);
   sportPlans.sort((a,b)=>a.date.localeCompare(b.date));
-  await sportRewrite('sport_plan',SPORT_PLAN_HEADER,sportPlans.map(x=>[x.date,x.type,String(x.duration||''),x.title,x.content]));
+  await sportAppendRow('sport_plan',[p.date,p.type,String(p.duration||''),p.title,p.content]);
 }
 async function sportUpsertLog(l){
   const i=sportLogs.findIndex(x=>x.date===l.date);
   if(i>=0) sportLogs[i]=l; else sportLogs.push(l);
   sportLogs.sort((a,b)=>a.date.localeCompare(b.date));
-  await sportRewrite('sport_log',SPORT_LOG_HEADER,sportLogs.map(x=>[x.date,x.status,x.amount,String(x.feeling||''),String(x.weight||''),x.note]));
+  await sportAppendRow('sport_log',[l.date,l.status,l.amount,String(l.feeling||''),String(l.weight||''),l.note]);
 }
 
 // ── helpers ─────────────────────────────────────────
