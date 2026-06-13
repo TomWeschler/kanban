@@ -3125,6 +3125,50 @@ let sportPlans=[], sportLogs=[], sportLoaded=false, sportCharts={};
 let sportDraft={status:null,feeling:null,amount:null,note:null,weight:null};
 const SPORT_PLAN_HEADER=['date','type','duration_min','title','content'];
 const SPORT_LOG_HEADER =['date','status','amount','feeling','weight_kg','note'];
+// Self-documenting spec written into the sport_format tab on first creation.
+// Give the kanban_data Sheet access to the Claude strategy project: it reads
+// this tab + sport_log, and writes sport_plan rows.
+const SPORT_FORMAT_DOC=[
+  'SPEC — BOUCLE SPORT (projet stratégie ↔ Sheet ↔ app)',
+  '',
+  'Tu (projet Claude stratégie) LIS sport_log (retours réels) et ÉCRIS des lignes dans sport_plan (programme).',
+  "L'app affiche sport_plan et écrit sport_log quand l'utilisateur coche. Ne JAMAIS écrire/effacer sport_log.",
+  'Ajoute toujours EN DESSOUS (append). Ligne 1 = en-tête. La DERNIÈRE ligne pour une date donnée fait foi (doublons tolérés).',
+  '',
+  '── ONGLET sport_plan (tu écris) ──',
+  'A date         : YYYY-MM-DD (jour de la séance)',
+  'B type         : Muscu | Cardio | Marche | Mobilité | Mixte | Repos',
+  'C duration_min : entier minutes (vide si Repos)',
+  'D title        : titre court (ex: Push + Squat)',
+  'E content      : détail en Markdown — titres #, listes -, gras **texte**, lignes vides',
+  '',
+  'Exemple de content :',
+  '# Échauffement',
+  '- 5 min vélo + mobilité épaules',
+  '# Bloc principal',
+  '- Développé couché **4×8** @ RPE 8',
+  '- Squat **4×6** @ RPE 8',
+  '# Retour au calme',
+  '- Étirements 5 min',
+  '',
+  '── ONGLET sport_log (tu lis seulement) ──',
+  'A date       : YYYY-MM-DD',
+  'B status     : done | partial | skipped',
+  'C amount     : texte libre (ex: 45 min, 5 km)',
+  'D feeling    : 1–5 (1 = vidé, 5 = en forme)',
+  'E weight_kg  : nombre ou vide',
+  'F note       : texte libre',
+  '',
+  '── PROTOCOLE (chaque soir) ──',
+  '1. Lis les ~14 derniers jours de sport_log.',
+  '2. Croise avec la stratégie (ton .md de connaissance) : progression, volume, récup, contraintes.',
+  '3. Signaux : skipped répétés → format plus court ; feeling 1-2 ou séances dures d affilée → récup/Repos ;',
+  '   tendance weight_kg → ajuste selon objectif (sèche/prise/maintien).',
+  '4. Écris UNE ligne dans sport_plan pour la prochaine date d entraînement.',
+  '',
+  'Dates au format ISO YYYY-MM-DD impératif. Si ton connecteur Sheets est en lecture seule : sors le bloc',
+  '(date,type,duration_min,title,content) en texte, l utilisateur le colle dans l app (Définir le programme).',
+];
 const SPORT_GOAL_KEY='kanban_sport_goal';
 let sportWeekGoal=parseInt(localStorage.getItem(SPORT_GOAL_KEY)||'4')||4;
 const SPORT_TYPE_COLOR={Muscu:'#a855f7',Cardio:'#f87171',Marche:'#22c55e','Mobilité':'#38bdf8',Mixte:'#fbbf24',Repos:'#60607a',Autre:'#9898b8'};
@@ -3145,14 +3189,15 @@ async function ensureSportSheets(){
   const meta=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
   const titles=(meta.sheets||[]).map(s=>s.properties.title);
   const toCreate=[];
-  if(!titles.includes('sport_plan')) toCreate.push({sheet:'sport_plan',header:SPORT_PLAN_HEADER});
-  if(!titles.includes('sport_log'))  toCreate.push({sheet:'sport_log', header:SPORT_LOG_HEADER});
+  if(!titles.includes('sport_plan'))   toCreate.push({sheet:'sport_plan',rows:[SPORT_PLAN_HEADER]});
+  if(!titles.includes('sport_log'))    toCreate.push({sheet:'sport_log', rows:[SPORT_LOG_HEADER]});
+  if(!titles.includes('sport_format')) toCreate.push({sheet:'sport_format',rows:SPORT_FORMAT_DOC.map(l=>[l])});
   if(!toCreate.length) return;
   await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{
     method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
     body:JSON.stringify({requests:toCreate.map(t=>({addSheet:{properties:{title:t.sheet}}}))})
   });
-  for(const t of toCreate) await sportPutValues(`${t.sheet}!A1`,[t.header]);
+  for(const t of toCreate) await sportPutValues(`${t.sheet}!A1`,t.rows);
 }
 // Dedup rows keeping the LAST occurrence per date (append-only sheets,
 // shared with the Claude strategy project which appends plan rows).
