@@ -466,6 +466,20 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sp-feel-btn.sel{filter:none;opacity:1;border-color:var(--accent);background:var(--accent-dim)}
 .sp-row2{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem}
 
+/* Activité bonus du jour */
+.sp-bonus{display:flex;align-items:center;gap:0.9rem;background:linear-gradient(135deg,rgba(252,211,77,0.1) 0%,transparent 75%);border:1px solid rgba(252,211,77,0.3);border-left:3px solid var(--gld);padding:0.7rem 1rem;border-radius:10px}
+.sp-bonus.done{filter:none;border-color:rgba(74,222,128,0.35);border-left-color:var(--green);background:linear-gradient(135deg,rgba(74,222,128,0.1) 0%,transparent 75%)}
+.sp-bonus.empty{border-style:dashed;border-color:var(--border2);border-left-color:var(--border2);background:none}
+.sp-bonus-ico{font-size:1.3rem;line-height:1;flex-shrink:0}
+.sp-bonus-body{flex:1;min-width:0}
+.sp-bonus-lbl{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gld);margin-bottom:0.15rem}
+.sp-bonus.done .sp-bonus-lbl{color:var(--green)}
+.sp-bonus-txt{font-family:var(--font-body);font-size:0.92rem;font-weight:600;color:var(--text)}
+.sp-bonus.empty .sp-bonus-txt{font-weight:400;font-size:0.72rem;color:var(--text-dim)}
+.sp-bonus-btn{flex-shrink:0;font-family:var(--font-mono);font-size:0.56rem;font-weight:700;letter-spacing:0.06em;padding:0.42rem 0.9rem;border-radius:8px;border:1px solid var(--gld);background:transparent;color:var(--gld);cursor:pointer;transition:all 0.13s}
+.sp-bonus-btn:hover{background:rgba(252,211,77,0.14)}
+.sp-bonus-btn.done{border-color:var(--green);color:var(--green);background:rgba(74,222,128,0.14)}
+
 /* Demain */
 .sp-tom{background:var(--surface);border:1px dashed var(--border2);padding:1rem 1.2rem;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:1rem}
 .sp-tom-info{min-width:0}
@@ -1031,6 +1045,7 @@ body,body *{font-family:var(--font-body)}
 <!-- SPORT PAGE -->
 <div class="page" id="pagesport">
   <div id="sportBanner"></div>
+  <div id="sportBonus"></div>
   <div class="sp-grid">
     <div id="sportToday"></div>
     <div id="sportLogger"></div>
@@ -1062,8 +1077,9 @@ body,body *{font-family:var(--font-body)}
     </div>
     <div class="field"><label>Titre</label><input type="text" id="spfTitle" placeholder="ex : Push + Squat" autocomplete="off"></div>
     <div class="field"><label>Programme détaillé (Markdown supporté)</label>
-      <textarea id="spfContent" class="fit-input" rows="10" placeholder="# Échauffement&#10;- 5 min vélo&#10;&#10;# Bloc principal&#10;- Développé couché **4×8**&#10;- Squat **4×6**&#10;..."></textarea>
+      <textarea id="spfContent" class="fit-input" rows="9" placeholder="# Échauffement&#10;- 5 min vélo&#10;&#10;# Bloc principal&#10;- Développé couché **4×8**&#10;- Squat **4×6**&#10;..."></textarea>
     </div>
+    <div class="field"><label>Activité bonus du jour</label><input type="text" id="spfBonus" class="fit-input" style="width:100%" placeholder="ex : Marche 8000 pas · Rameur 15 min · Étirements 10 min" autocomplete="off"></div>
     <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem">
       <button class="btn-nav out" onclick="closeSportPlanModal()">Annuler</button>
       <button class="btn-nav" onclick="saveSportPlan()">Enregistrer</button>
@@ -3654,13 +3670,13 @@ function renderFinTable(depenses) {
 let sportPlans=[], sportLogs=[], sportLoaded=false, sportCharts={};
 let sportDraft={status:null,feeling:null,weight:null,comment:null};
 let sportExDraft={}; // per-exercise draft, keyed by exercise index → {status, weight}
-const SPORT_PLAN_HEADER=['date','type','duration_min','title','content'];
-const SPORT_LOG_HEADER =['date','status','exercises','feeling','weight_kg','comment'];
+const SPORT_PLAN_HEADER=['date','type','duration_min','title','content','bonus'];
+const SPORT_LOG_HEADER =['date','status','exercises','feeling','weight_kg','comment','bonus_done'];
 // Self-documenting spec written into the sport_format tab on first creation.
 // Give the kanban_data Sheet access to the Claude strategy project: it reads
 // this tab + sport_log, and writes sport_plan rows.
 const SPORT_FORMAT_DOC=[
-  'SPEC — BOUCLE SPORT (projet stratégie ↔ Sheet ↔ app)',
+  'SPEC v2 — BOUCLE SPORT (projet stratégie ↔ Sheet ↔ app)',
   '',
   'Tu (projet Claude stratégie) LIS sport_log (retours réels) et ÉCRIS des lignes dans sport_plan (programme).',
   "L'app affiche sport_plan et écrit sport_log quand l'utilisateur coche. Ne JAMAIS écrire/effacer sport_log.",
@@ -3672,6 +3688,8 @@ const SPORT_FORMAT_DOC=[
   'C duration_min : entier minutes (vide si Repos)',
   'D title        : titre court (ex: Push + Squat)',
   'E content      : détail en Markdown — titres #, listes -, gras **texte**, lignes vides',
+  'F bonus        : activité bonus QUOTIDIENNE, courte (ex: "Marche 8000 pas", "Rameur 15 min",',
+  '                 "Étirements 10 min"). À remplir CHAQUE JOUR, même les jours de Repos.',
   '',
   'Exemple de content :',
   '# Échauffement',
@@ -3690,6 +3708,7 @@ const SPORT_FORMAT_DOC=[
   'D feeling    : 1–5 (1 = vidé, 5 = en forme)',
   'E weight_kg  : poids CORPOREL du jour (pesée), nombre ou vide',
   'F comment    : commentaire global libre de la séance',
+  'G bonus_done : TRUE/FALSE — si l\'activité bonus du jour a été faite',
   '',
   'Le champ exercises te donne, pour chaque ligne de TON programme de ce jour, ce que',
   "l'utilisateur a réellement fait (status) et soulevé (weight). Utilise-le pour la double",
@@ -3699,11 +3718,11 @@ const SPORT_FORMAT_DOC=[
   '1. Lis les ~14 derniers jours de sport_log.',
   '2. Croise avec la stratégie (ton .md de connaissance) : progression, volume, récup, contraintes.',
   '3. Signaux : skipped répétés → format plus court ; feeling 1-2 ou séances dures d affilée → récup/Repos ;',
-  '   tendance weight_kg → ajuste selon objectif (sèche/prise/maintien).',
-  '4. Écris UNE ligne dans sport_plan pour la prochaine date d entraînement.',
+  '   tendance weight_kg → ajuste selon objectif (sèche/prise/maintien). bonus_done souvent FALSE → bonus plus simple.',
+  '4. Écris UNE ligne dans sport_plan pour la prochaine date : séance (B-E) + TOUJOURS une activité bonus (F).',
   '',
   'Dates au format ISO YYYY-MM-DD impératif. Si ton connecteur Sheets est en lecture seule : sors le bloc',
-  '(date,type,duration_min,title,content) en texte, l utilisateur le colle dans l app (Définir le programme).',
+  '(date,type,duration_min,title,content,bonus) en texte, l utilisateur le colle dans l app (Définir le programme).',
 ];
 const SPORT_GOAL_KEY='kanban_sport_goal';
 const SPORT_DELETED='__deleted__'; // tombstone marker in sport_plan.type (append-only delete)
@@ -3728,13 +3747,20 @@ async function ensureSportSheets(){
   const toCreate=[];
   if(!titles.includes('sport_plan'))   toCreate.push({sheet:'sport_plan',rows:[SPORT_PLAN_HEADER]});
   if(!titles.includes('sport_log'))    toCreate.push({sheet:'sport_log', rows:[SPORT_LOG_HEADER]});
-  if(!titles.includes('sport_format')) toCreate.push({sheet:'sport_format',rows:SPORT_FORMAT_DOC.map(l=>[l])});
-  if(!toCreate.length) return;
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{
-    method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
-    body:JSON.stringify({requests:toCreate.map(t=>({addSheet:{properties:{title:t.sheet}}}))})
-  });
-  for(const t of toCreate) await sportPutValues(`${t.sheet}!A1`,t.rows);
+  const formatExists=titles.includes('sport_format');
+  if(!formatExists) toCreate.push({sheet:'sport_format',rows:SPORT_FORMAT_DOC.map(l=>[l])});
+  if(toCreate.length){
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{
+      method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+      body:JSON.stringify({requests:toCreate.map(t=>({addSheet:{properties:{title:t.sheet}}}))})
+    });
+    for(const t of toCreate) await sportPutValues(`${t.sheet}!A1`,t.rows);
+  }
+  // Resync the spec tab if it pre-existed (propagate the current SPEC version)
+  if(formatExists){
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent('sport_format!A:Z')}:clear`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`}});
+    await sportPutValues('sport_format!A1',SPORT_FORMAT_DOC.map(l=>[l]));
+  }
 }
 // Dedup rows keeping the LAST occurrence per date (append-only sheets,
 // shared with the Claude strategy project which appends plan rows).
@@ -3748,8 +3774,8 @@ async function loadSportData(){
   await ensureSportSheets();
   const sid=cfg.spreadsheetId;
   const [planR,logR]=await Promise.all([
-    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_plan!A:E`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
-    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_log!A:F`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_plan!A:F`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_log!A:G`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
   ]);
   const pr=planR.values||[], lr=logR.values||[];
   // Reconcile header labels if a tab pre-existed with an older schema (positions unchanged → safe)
@@ -3758,11 +3784,12 @@ async function loadSportData(){
   if(lr.length && !hdrMatches(lr[0],SPORT_LOG_HEADER))  await sportPutValues('sport_log!A1',[SPORT_LOG_HEADER]);
   const plans=(pr.length<=1?[]:pr.slice(1)).filter(r=>r[0]).map(r=>({
     date:String(r[0]||'').trim(),type:String(r[1]||'').trim()||'Autre',
-    duration:parseInt(r[2])||0,title:String(r[3]||'').trim(),content:String(r[4]||'')
+    duration:parseInt(r[2])||0,title:String(r[3]||'').trim(),content:String(r[4]||''),bonus:String(r[5]||'').trim()
   }));
   const logs=(lr.length<=1?[]:lr.slice(1)).filter(r=>r[0]).map(r=>({
     date:String(r[0]||'').trim(),status:String(r[1]||'').trim(),exercises:String(r[2]||''),
-    feeling:parseInt(r[3])||0,weight:parseFloat(String(r[4]||'').replace(',','.'))||0,comment:String(r[5]||'').trim()
+    feeling:parseInt(r[3])||0,weight:parseFloat(String(r[4]||'').replace(',','.'))||0,comment:String(r[5]||'').trim(),
+    bonusDone:String(r[6]||'').trim().toUpperCase()==='TRUE'
   }));
   sportPlans=sportDedupLast(plans).filter(p=>p.type!==SPORT_DELETED);
   sportLogs=sportDedupLast(logs);
@@ -3779,7 +3806,7 @@ async function sportUpsertPlan(p){
   const i=sportPlans.findIndex(x=>x.date===p.date);
   if(i>=0) sportPlans[i]=p; else sportPlans.push(p);
   sportPlans.sort((a,b)=>a.date.localeCompare(b.date));
-  await sportAppendRow('sport_plan',[p.date,p.type,String(p.duration||''),p.title,p.content]);
+  await sportAppendRow('sport_plan',[p.date,p.type,String(p.duration||''),p.title,p.content,p.bonus||'']);
 }
 async function sportDeletePlan(date){
   if(!sportPlanFor(date)) return;
@@ -3807,7 +3834,7 @@ async function sportUpsertLog(l){
   const i=sportLogs.findIndex(x=>x.date===l.date);
   if(i>=0) sportLogs[i]=l; else sportLogs.push(l);
   sportLogs.sort((a,b)=>a.date.localeCompare(b.date));
-  await sportAppendRow('sport_log',[l.date,l.status,l.exercises||'',String(l.feeling||''),String(l.weight||''),l.comment||'']);
+  await sportAppendRow('sport_log',[l.date,l.status,l.exercises||'',String(l.feeling||''),String(l.weight||''),l.comment||'',l.bonusDone?'TRUE':'FALSE']);
 }
 
 // ── helpers ─────────────────────────────────────────
@@ -3818,11 +3845,46 @@ function sportLogFor(date){return sportLogs.find(l=>l.date===date)||null;}
 async function renderSportPage(){
   if(!sportLoaded){showLoad(true);await loadSportData();showLoad(false);}
   renderSportBanner();
+  renderSportBonus();
   renderSportToday();
   renderSportLogger();
   renderSportTomorrow();
   renderSportHistory();
   renderSportWeight();
+}
+function renderSportBonus(){
+  const el=document.getElementById('sportBonus');
+  if(!el)return;
+  const today=sportYmd(new Date());
+  const p=sportPlanFor(today);
+  const log=sportLogFor(today);
+  const bonus=p&&p.bonus?p.bonus:'';
+  const done=!!(log&&log.bonusDone);
+  if(!bonus){
+    el.innerHTML=`<div class="sp-bonus empty"><span class="sp-bonus-ico">✨</span><span class="sp-bonus-txt">Pas d'activité bonus aujourd'hui — demande-la à Claude, ou ajoute-la via « Définir le programme ».</span></div>`;
+    return;
+  }
+  el.innerHTML=`<div class="sp-bonus${done?' done':''}">
+    <span class="sp-bonus-ico">✨</span>
+    <div class="sp-bonus-body">
+      <div class="sp-bonus-lbl">Activité bonus du jour</div>
+      <div class="sp-bonus-txt">${sportEsc(bonus)}</div>
+    </div>
+    <button class="sp-bonus-btn${done?' done':''}" onclick="sportToggleBonus()">${done?'✓ Fait':'Marquer fait'}</button>
+  </div>`;
+}
+async function sportToggleBonus(){
+  const today=sportYmd(new Date());
+  const ex=sportLogFor(today);
+  const log={date:today,
+    status:ex?ex.status:'',
+    exercises:ex?ex.exercises:'',
+    feeling:ex?ex.feeling:0,
+    weight:ex?ex.weight:0,
+    comment:ex?ex.comment:'',
+    bonusDone:!(ex&&ex.bonusDone)};
+  showLoad(true);await sportUpsertLog(log);showLoad(false);
+  renderSportBonus();renderSportBanner();
 }
 async function reloadSportData(){
   sportLoaded=false;sportPlans=[];sportLogs=[];
@@ -3995,7 +4057,8 @@ async function saveSportLog(){
     exercises:exercises.length?JSON.stringify(exercises):'',
     feeling:(sportDraft.feeling??ex?.feeling)||0,
     weight:parseFloat(sportDraft.weight??(ex?ex.weight:''))||0,
-    comment:(sportDraft.comment??ex?.comment)||''};
+    comment:(sportDraft.comment??ex?.comment)||'',
+    bonusDone:!!(ex&&ex.bonusDone)};
   showLoad(true);await sportUpsertLog(log);showLoad(false);
   sportDraft={status:null,feeling:null,weight:null,comment:null};
   sportExDraft={};
@@ -4016,7 +4079,7 @@ function renderSportTomorrow(){
     el.innerHTML=`${hdr}
       <div class="sp-tom"><div class="sp-tom-info">
         <div class="sp-tom-title"><span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55;margin-right:0.5rem">${p.type}</span>${p.title||''}</div>
-        <div class="sp-tom-meta">${p.duration?`⏱ ${p.duration} min · `:''}programme prêt ✓</div>
+        <div class="sp-tom-meta">${p.duration?`⏱ ${p.duration} min · `:''}programme prêt ✓${p.bonus?` · ✨ ${sportEsc(p.bonus)}`:''}</div>
       </div><div style="display:flex;gap:0.4rem">
         <button class="fit-btn" onclick="openSportPlanModal('${tom}')">✎ éditer</button>
         <button class="fit-btn" onclick="sportDeletePlan('${tom}')" title="Supprimer">🗑</button>
@@ -4088,6 +4151,7 @@ function openSportPlanModal(date){
   document.getElementById('spfDuration').value=p&&p.duration?p.duration:'';
   document.getElementById('spfTitle').value=p?p.title:'';
   document.getElementById('spfContent').value=p?p.content:'';
+  document.getElementById('spfBonus').value=p&&p.bonus?p.bonus:'';
   document.getElementById('sportPlanModalTitle').textContent=p?'ÉDITER LE PROGRAMME':'NOUVEAU PROGRAMME';
   document.getElementById('sportPlanModal').classList.add('open');
   setTimeout(()=>document.getElementById('spfTitle').focus(),70);
@@ -4100,7 +4164,8 @@ async function saveSportPlan(){
     type:document.getElementById('spfType').value,
     duration:parseInt(document.getElementById('spfDuration').value)||0,
     title:document.getElementById('spfTitle').value.trim(),
-    content:document.getElementById('spfContent').value};
+    content:document.getElementById('spfContent').value,
+    bonus:document.getElementById('spfBonus').value.trim()};
   showLoad(true);await sportUpsertPlan(plan);showLoad(false);
   closeSportPlanModal();
   toast('Programme enregistré ✓','ok');
