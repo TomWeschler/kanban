@@ -726,6 +726,21 @@ body,body *{font-family:var(--font-body)}
 .gl-emoji.sel{border-color:var(--accent);background:var(--accent-dim)}
 
 /* ═══════════════════════════════
+   FONDS D'ÉCRAN (galerie) — couche transparente sous le contenu
+═══════════════════════════════ */
+.pg-bg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:0.16;pointer-events:none;transition:opacity 0.4s}
+.gl-wrap,.hg-wrap{position:relative;z-index:1}
+#pageboard>.board-filters,#pageboard>.board-scroll{position:relative;z-index:1}
+.gl-wall-wrap{position:relative}
+.gl-wall-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:0.5rem;display:none;grid-template-columns:repeat(2,1fr);gap:6px;width:300px;z-index:60;box-shadow:0 12px 34px rgba(0,0,0,0.55)}
+.gl-wall-menu.open{display:grid}
+.gl-wall-opt{background:none;border:1px solid transparent;border-radius:8px;padding:3px;cursor:pointer;display:flex;flex-direction:column;gap:3px;align-items:center}
+.gl-wall-opt:hover{border-color:var(--border2)}
+.gl-wall-opt.active{border-color:var(--accent)}
+.gl-wall-thumb{width:100%;height:56px;border-radius:6px;background-size:cover;background-position:center;background-color:var(--surface3);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:1rem}
+.gl-wall-opt span{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-mid)}
+
+/* ═══════════════════════════════
    MOBILE — portrait (≤ 640px, ex. Pixel 8 ≈ 412px)
    Le viewport pilote le mode : large = PC, étroit = mobile.
 ═══════════════════════════════ */
@@ -907,6 +922,7 @@ body,body *{font-family:var(--font-body)}
 
 <!-- BOARD PAGE -->
 <div class="page active" id="pageboard">
+  <div class="pg-bg" id="boardBg"></div>
   <div class="board-filters" id="boardFilters">
     <button class="board-filter f-all active" onclick="setBoardFilter('all')">TOUS</button>
     <button class="board-filter f-dcb" onclick="setBoardFilter('DCB')">DCB</button>
@@ -921,6 +937,7 @@ body,body *{font-family:var(--font-body)}
 
 <!-- OBJECTIFS PAGE — arbre de progression -->
 <div class="page" id="pagedash">
+  <div class="pg-bg" id="glBg"></div>
   <div class="gl-wrap">
     <div id="glBanner"></div>
     <div id="glToolbar"></div>
@@ -936,7 +953,15 @@ body,body *{font-family:var(--font-body)}
     <input type="hidden" id="gfId">
     <div class="field"><label>Titre</label><input type="text" id="gfTitle" placeholder="Mon objectif..." autocomplete="off"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
-      <div class="field"><label>Catégorie</label><input type="text" id="gfCategory" placeholder="ex : Finance, Santé..." autocomplete="off"></div>
+      <div class="field"><label>Catégorie</label>
+        <select id="gfCategory">
+          <option value="Finance">Finance</option>
+          <option value="Esprit">Esprit</option>
+          <option value="Santé">Santé</option>
+          <option value="Productivité">Productivité</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
       <div class="field"><label>Échéance <span style="color:var(--text-dim);font-weight:400">→ horizon auto</span></label><input type="date" id="gfTarget"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
@@ -961,6 +986,7 @@ body,body *{font-family:var(--font-body)}
 
 <!-- HABITUDES PAGE — GRILLE HEBDO -->
 <div class="page" id="pagehabits">
+  <div class="pg-bg" id="habBg"></div>
   <div class="hg-wrap">
     <div id="habHeader"></div>
     <div id="habToolbar"></div>
@@ -1163,9 +1189,15 @@ function init() {
     render();
   } catch(e){}
   buildHabitModalSelects();
+  applyPageWallpaper('boardBg',randomWallpaper());
   document.getElementById('authScreen').style.display = 'none';
   preloadGIS();
 }
+// Fermer le menu galerie au clic extérieur
+document.addEventListener('click',e=>{
+  const m=document.getElementById('glWallMenu');
+  if(m&&!m.contains(e.target)&&!e.target.closest('.gl-wall-btn'))m.classList.remove('open');
+});
 
 // ════════════════════════════════════════════════════
 // THEME PICKER
@@ -1885,7 +1917,7 @@ const GOAL_DELETED='__deleted__';
 const GOAL_HORIZONS=[['life','Vie','🌟'],['5y','5 ans','🔭'],['annual','Année','📅'],['quarter','Trimestre','🎯'],['month','Mois','📌']];
 const GOAL_PALETTE=['#7c6aff','#4ade80','#fbbf24','#22d3ee','#f87171','#a855f7','#38bdf8','#fb923c','#e879f9','#a3e635'];
 const GOAL_SEED=[
- ['gx1','','life','Perso','Vivre une vie alignée, libre et en bonne santé','Ma vision long terme','0','Sérénité & liberté totales','active','','🌟',''],
+ ['gx1','','life','Esprit','Vivre une vie alignée, libre et en bonne santé','Ma vision long terme','0','Sérénité & liberté totales','active','','🌟',''],
  ['gx2','gx1','5y','Finance','Atteindre l\'indépendance financière','Patrimoine qui couvre mes besoins','0','Quitter le salariat','active','2030-12-31','🔭','[{"t":"Portefeuille à 6 chiffres","d":false,"r":""},{"t":"Revenus passifs > dépenses","d":false,"r":""}]'],
  ['gx3','gx2','annual','Finance','Économiser 30 000 € en 2026','Effort d\'épargne de l\'année','0','Week-end à l\'étranger','active','2026-12-31','📅','[{"t":"10 000 € (T1-T2)","d":true,"r":""},{"t":"20 000 € (T3)","d":false,"r":""},{"t":"30 000 € (T4)","d":false,"r":"Resto gastro"}]'],
  ['gx4','gx3','quarter','Finance','Réduire mes dépenses de 15%','Sur ce trimestre','0','Soirée ciné','active','2026-08-31','🎯','[{"t":"Auditer les abonnements","d":true,"r":""},{"t":"Budget courses -15%","d":false,"r":""}]'],
@@ -1909,11 +1941,39 @@ function goalHorizonFromDate(d){
 }
 const GOAL_HORIZON_COLOR={month:'#fbbf24',quarter:'#22c55e',annual:'#38bdf8','5y':'#7c6aff',life:'#a855f7'};
 const GOAL_EMOJIS=['🎯','🌟','🔭','📅','📌','🏆','🥇','🚀','🔥','⭐','💎','⚡','💪','🏋️','🏃','🧘','🥗','😴','❤️','🧠','💰','📈','💼','🏠','✈️','🌍','📚','🎓','💻','🤝','🎨','🎵','🌱','🛡️','🧩','🗺️','⛰️','📷','☀️','🎸'];
-function goalCatColor(cat){
-  const cats=[...new Set(goals.map(g=>g.category).filter(Boolean))].sort();
-  const i=cats.indexOf(cat);
-  return i<0?'var(--text-mid)':GOAL_PALETTE[i%GOAL_PALETTE.length];
+// Catégories fixes alignées sur les Habitudes (mêmes couleurs)
+const GOAL_CAT_COLOR={Finance:'var(--cat-finance)',Esprit:'var(--cat-esprit)','Santé':'var(--cat-sante)','Productivité':'var(--cat-prod)','Autre':'var(--cat-autre)'};
+function goalCatColor(cat){return GOAL_CAT_COLOR[cat]||'var(--cat-autre)';}
+// Fonds d'écran (galerie) — fichiers à déposer dans wallpapers/ (wallN.jpg)
+const GOAL_WALLPAPERS=[
+  {id:'none', label:'Aucun'},
+  {id:'wall1',label:'Bureau falaise'},
+  {id:'wall2',label:'Piscine mer'},
+  {id:'wall3',label:'Mont Fuji'},
+  {id:'wall4',label:'Montagne pluie'},
+  {id:'wall5',label:'Jungle cascade'},
+  {id:'wall6',label:'Grotte cascade'},
+  {id:'wall7',label:'Lounge cascade'},
+  {id:'wall8',label:'Grotte piscine'},
+];
+const WALLPAPER_IDS=GOAL_WALLPAPERS.filter(w=>w.id!=='none').map(w=>w.id);
+function randomWallpaper(){return WALLPAPER_IDS[Math.floor(Math.random()*WALLPAPER_IDS.length)];}
+function applyPageWallpaper(bgId,wallId){
+  const bg=document.getElementById(bgId);
+  if(!bg)return;
+  bg.style.backgroundImage=(!wallId||wallId==='none')?'':`url('wallpapers/${wallId}.jpg')`;
 }
+const LS_GOAL_WALL='kanban_goals_wallpaper';
+function applyGoalWallpaper(){
+  applyPageWallpaper('glBg', localStorage.getItem(LS_GOAL_WALL)||'none');
+}
+function setGoalWallpaper(id){
+  localStorage.setItem(LS_GOAL_WALL,id);
+  applyGoalWallpaper();
+  const m=document.getElementById('glWallMenu');if(m)m.classList.remove('open');
+  renderGoalsToolbar();
+}
+function toggleGoalWallMenu(e){if(e)e.stopPropagation();const m=document.getElementById('glWallMenu');if(m)m.classList.toggle('open');}
 function escapeHtmlG(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function escapeAttrG(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
 
@@ -1981,6 +2041,7 @@ async function goalDelete(id){
 // ── render ──
 async function renderGoalsPage(){
   if(!goalsLoaded){showLoad(true);await loadGoals();showLoad(false);}
+  applyGoalWallpaper();
   renderGoalsBanner();
   renderGoalsToolbar();
   renderGoalsTree();
@@ -2001,16 +2062,24 @@ function renderGoalsBanner(){
     </div>`;
 }
 function renderGoalsToolbar(){
-  const cats=[...new Set(goals.map(g=>g.category).filter(Boolean))].sort();
-  const pills=[['all','Toutes'],...cats.map(c=>[c,c])].map(([v,l])=>{
+  const pills=[['all','Toutes'],...CATEGORIES.map(c=>[c,c])].map(([v,l])=>{
     const active=goalCatFilter===v;
     const col=v==='all'?'var(--accent)':goalCatColor(v);
     return `<button class="gl-pill${active?' active':''}" style="${active?`background:${col};border-color:${col}`:''}" onclick="setGoalFilter('${String(v).replace(/'/g,"\\'")}')">${escapeHtmlG(l)}</button>`;
+  }).join('');
+  const curWall=localStorage.getItem(LS_GOAL_WALL)||'none';
+  const wallThumbs=GOAL_WALLPAPERS.map(w=>{
+    const thumb=w.id==='none'?`<div class="gl-wall-thumb">✕</div>`:`<div class="gl-wall-thumb" style="background-image:url('wallpapers/${w.id}.jpg')"></div>`;
+    return `<button class="gl-wall-opt${curWall===w.id?' active':''}" onclick="setGoalWallpaper('${w.id}')">${thumb}<span>${w.label}</span></button>`;
   }).join('');
   document.getElementById('glToolbar').innerHTML=`
     <div class="gl-toolbar">
       <span class="gl-filter-lbl">Catégorie</span>${pills}
       <div class="gl-spacer"></div>
+      <div class="gl-wall-wrap">
+        <button class="gl-add gl-wall-btn" onclick="toggleGoalWallMenu(event)">🖼 Fond</button>
+        <div class="gl-wall-menu" id="glWallMenu">${wallThumbs}</div>
+      </div>
       <button class="gl-add" onclick="openGoalModal()">+ Objectif</button>
     </div>`;
 }
@@ -2087,7 +2156,7 @@ function openGoalModal(id){
   document.getElementById('gfEmojiGrid').innerHTML=GOAL_EMOJIS.map(e=>`<button type="button" class="gl-emoji${e===cur?' sel':''}" onclick="goalPickEmoji('${e}',this)">${e}</button>`).join('');
   document.getElementById('gfId').value=g?g.id:'';
   document.getElementById('gfTitle').value=g?g.title:'';
-  document.getElementById('gfCategory').value=g?g.category:'';
+  document.getElementById('gfCategory').value=g?g.category:'Autre';
   document.getElementById('gfParent').value=g?g.parent_id:'';
   document.getElementById('gfIcon').value=cur;
   document.getElementById('gfDesc').value=g?g.description:'';
@@ -2258,7 +2327,8 @@ function switchPage(name){
   document.getElementById('page'+name).classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.page===name));
   if(name==='dash')renderDash();
-  if(name==='habits')renderHabitsPage();
+  if(name==='habits'){applyPageWallpaper('habBg',randomWallpaper());renderHabitsPage();}
+  if(name==='board')applyPageWallpaper('boardBg',randomWallpaper());
   if(name==='crypto')renderCryptoBot();
   if(name==='finances')renderFinancesPage();
   if(name==='sport')renderSportPage();
