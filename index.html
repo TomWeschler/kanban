@@ -707,6 +707,45 @@ body,body *{font-family:var(--font-body)}
   #sportHistory .fit-box{overflow-x:auto}
   #sportHistory .fit-stats-table{min-width:440px}
   .sp-wrap{height:175px}
+  /* Padding réduit des pages scrollables */
+  #pagedash,#pagecrypto,#pagefinances{padding:0.8rem 0.7rem 4rem;gap:0.8rem}
+
+  /* DASHBOARD */
+  .dash-grid{grid-template-columns:1fr 1fr;gap:0.55rem}
+  .kpi-value{font-size:1.5rem}
+  .proj-row{grid-template-columns:1fr;gap:0.6rem}
+  .charts-row{grid-template-columns:1fr;gap:0.8rem}
+
+  /* CRYPTOBOT */
+  .crp-banner{grid-template-columns:1fr 1fr;gap:0.55rem;padding:0.7rem}
+  .crp-banner::before{display:none}
+  .crp-cards{grid-template-columns:1fr 1fr;gap:0.6rem}
+  .crp-charts-b{grid-template-columns:1fr}
+  .crp-filters{padding:0.55rem 0.6rem}
+  #crpTradeTable{overflow-x:auto}
+  .crp-table{min-width:420px}
+
+  /* FINANCES */
+  .fin-banner{grid-template-columns:1fr 1fr;gap:0.55rem}
+  .fin-charts{grid-template-columns:1fr;gap:0.8rem}
+  .fin-milestones{grid-template-columns:repeat(3,1fr)}
+  #finTable .fin-box{overflow-x:auto}
+  .fin-table{min-width:460px}
+
+  /* HABITUDES — grille hebdo : scroll horizontal + en-tête souple */
+  .hg-wrap{padding:0.8rem 0.7rem 4rem}
+  .hg-header{gap:0.8rem}
+  .hg-kpis{gap:1.1rem;flex-wrap:wrap}
+  .hg-toolbar{gap:0.4rem}
+  #habGrid{overflow-x:auto}
+  .hg-table{min-width:500px}
+  .heatmaps-grid{grid-template-columns:1fr}
+
+  /* BOARD — une colonne plein écran, swipe horizontal */
+  .board{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:82vw;min-width:0;padding:0.7rem 0.6rem 1.5rem;gap:0.6rem;scroll-snap-type:x mandatory}
+  .column{scroll-snap-align:start}
+  .board-filters{flex-wrap:wrap;padding:0.5rem 0.6rem}
+
   /* Modales lisibles */
   .modal{width:95vw !important;padding:1.1rem}
 }
