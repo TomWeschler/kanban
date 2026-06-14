@@ -728,9 +728,14 @@ body,body *{font-family:var(--font-body)}
 /* ═══════════════════════════════
    FONDS D'ÉCRAN (galerie) — couche transparente sous le contenu
 ═══════════════════════════════ */
-.pg-bg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:0.16;pointer-events:none;transition:opacity 0.4s}
+.pg-bg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:0.34;pointer-events:none;transition:opacity 0.4s}
 .gl-wrap,.hg-wrap{position:relative;z-index:1}
 #pageboard>.board-filters,#pageboard>.board-scroll{position:relative;z-index:1}
+/* Conteneurs translucides pour laisser voir le fond (Board & Habitudes) */
+#pageboard .column{background:var(--surface);background:color-mix(in srgb,var(--surface) 55%,transparent)}
+#pageboard .board-filters{background:color-mix(in srgb,var(--bg) 55%,transparent)}
+#pagehabits .hg-table{background:var(--surface);background:color-mix(in srgb,var(--surface) 68%,transparent)}
+#pagehabits .hm-box{background:var(--surface);background:color-mix(in srgb,var(--surface) 68%,transparent)}
 .gl-wall-wrap{position:relative}
 .gl-wall-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:0.5rem;display:none;grid-template-columns:repeat(2,1fr);gap:6px;width:300px;z-index:60;box-shadow:0 12px 34px rgba(0,0,0,0.55)}
 .gl-wall-menu.open{display:grid}
