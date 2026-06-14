@@ -437,6 +437,18 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sp-content li::before{content:'▸';position:absolute;left:0.25rem;color:var(--accent)}
 .sp-content p{margin:0.45rem 0;color:var(--text-mid)}
 .sp-content b{color:var(--text);font-weight:700}
+.sp-ex-hint{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.04em;color:var(--text-dim);margin-bottom:0.6rem;opacity:0.8}
+/* per-exercise loggable row */
+.sp-ex-row{display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;border-top:1px solid var(--border)}
+.sp-ex-row:first-of-type{border-top:none}
+.sp-ex-status{flex-shrink:0;width:26px;height:26px;border-radius:7px;border:1.5px solid var(--border2);background:var(--surface2);color:var(--text-dim);font-family:var(--font-mono);font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.13s;line-height:1}
+.sp-ex-status:hover{border-color:var(--text-mid)}
+.sp-ex-status.st-done{background:rgba(74,222,128,0.18);border-color:var(--green);color:var(--green)}
+.sp-ex-status.st-partial{background:rgba(251,191,36,0.18);border-color:var(--warn);color:var(--warn)}
+.sp-ex-status.st-skipped{background:rgba(248,113,113,0.18);border-color:var(--danger);color:var(--danger)}
+.sp-ex-txt{flex:1;min-width:0;font-size:0.84rem;color:var(--text-mid);line-height:1.35}
+.sp-ex-w{flex-shrink:0;width:62px;background:var(--surface3);border:1px solid var(--border2);color:var(--text);font-family:var(--font-mono);font-size:0.62rem;padding:0.32rem 0.4rem;outline:none;border-radius:6px;text-align:center}
+.sp-ex-w:focus{border-color:var(--accent)}
 
 /* Retour / logger */
 .sp-log{background:var(--surface);border:1px solid var(--border);padding:1.2rem 1.3rem;border-radius:10px}
@@ -3122,9 +3134,10 @@ function renderFinTable(depenses) {
 // SPORT — programme piloté par Claude + retour quotidien
 // ════════════════════════════════════════════════════
 let sportPlans=[], sportLogs=[], sportLoaded=false, sportCharts={};
-let sportDraft={status:null,feeling:null,amount:null,note:null,weight:null};
+let sportDraft={status:null,feeling:null,weight:null,comment:null};
+let sportExDraft={}; // per-exercise draft, keyed by exercise index → {status, weight}
 const SPORT_PLAN_HEADER=['date','type','duration_min','title','content'];
-const SPORT_LOG_HEADER =['date','status','amount','feeling','weight_kg','note'];
+const SPORT_LOG_HEADER =['date','status','exercises','feeling','weight_kg','comment'];
 // Self-documenting spec written into the sport_format tab on first creation.
 // Give the kanban_data Sheet access to the Claude strategy project: it reads
 // this tab + sport_log, and writes sport_plan rows.
@@ -3153,11 +3166,16 @@ const SPORT_FORMAT_DOC=[
   '',
   '── ONGLET sport_log (tu lis seulement) ──',
   'A date       : YYYY-MM-DD',
-  'B status     : done | partial | skipped',
-  'C amount     : texte libre (ex: 45 min, 5 km)',
+  'B status     : done | partial | skipped (statut global, sinon déduit des exercices)',
+  'C exercises  : JSON [{"ex":"Développé couché 4×8","status":"done","weight":"60"}, ...]',
+  '               → les POIDS RÉELS et le statut par exercice. SOURCE CLÉ pour la progression.',
   'D feeling    : 1–5 (1 = vidé, 5 = en forme)',
-  'E weight_kg  : nombre ou vide',
-  'F note       : texte libre',
+  'E weight_kg  : poids CORPOREL du jour (pesée), nombre ou vide',
+  'F comment    : commentaire global libre de la séance',
+  '',
+  'Le champ exercises te donne, pour chaque ligne de TON programme de ce jour, ce que',
+  "l'utilisateur a réellement fait (status) et soulevé (weight). Utilise-le pour la double",
+  'progression : si tous les exercices clés sont done aux poids prévus, augmente la charge.',
   '',
   '── PROTOCOLE (chaque soir) ──',
   '1. Lis les ~14 derniers jours de sport_log.',
@@ -3215,13 +3233,17 @@ async function loadSportData(){
     fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_log!A:F`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
   ]);
   const pr=planR.values||[], lr=logR.values||[];
+  // Reconcile header labels if a tab pre-existed with an older schema (positions unchanged → safe)
+  const hdrMatches=(row,hdr)=>hdr.every((h,i)=>String((row||[])[i]||'').trim()===h);
+  if(pr.length && !hdrMatches(pr[0],SPORT_PLAN_HEADER)) await sportPutValues('sport_plan!A1',[SPORT_PLAN_HEADER]);
+  if(lr.length && !hdrMatches(lr[0],SPORT_LOG_HEADER))  await sportPutValues('sport_log!A1',[SPORT_LOG_HEADER]);
   const plans=(pr.length<=1?[]:pr.slice(1)).filter(r=>r[0]).map(r=>({
     date:String(r[0]||'').trim(),type:String(r[1]||'').trim()||'Autre',
     duration:parseInt(r[2])||0,title:String(r[3]||'').trim(),content:String(r[4]||'')
   }));
   const logs=(lr.length<=1?[]:lr.slice(1)).filter(r=>r[0]).map(r=>({
-    date:String(r[0]||'').trim(),status:String(r[1]||'').trim(),amount:String(r[2]||'').trim(),
-    feeling:parseInt(r[3])||0,weight:parseFloat(String(r[4]||'').replace(',','.'))||0,note:String(r[5]||'').trim()
+    date:String(r[0]||'').trim(),status:String(r[1]||'').trim(),exercises:String(r[2]||''),
+    feeling:parseInt(r[3])||0,weight:parseFloat(String(r[4]||'').replace(',','.'))||0,comment:String(r[5]||'').trim()
   }));
   sportPlans=sportDedupLast(plans);
   sportLogs=sportDedupLast(logs);
@@ -3244,29 +3266,12 @@ async function sportUpsertLog(l){
   const i=sportLogs.findIndex(x=>x.date===l.date);
   if(i>=0) sportLogs[i]=l; else sportLogs.push(l);
   sportLogs.sort((a,b)=>a.date.localeCompare(b.date));
-  await sportAppendRow('sport_log',[l.date,l.status,l.amount,String(l.feeling||''),String(l.weight||''),l.note]);
+  await sportAppendRow('sport_log',[l.date,l.status,l.exercises||'',String(l.feeling||''),String(l.weight||''),l.comment||'']);
 }
 
 // ── helpers ─────────────────────────────────────────
 function sportPlanFor(date){return sportPlans.find(p=>p.date===date)||null;}
 function sportLogFor(date){return sportLogs.find(l=>l.date===date)||null;}
-function sportRenderContent(text){
-  if(!text)return '';
-  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const bold=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
-  const lines=String(text).split(/\r?\n/);
-  let html='',inUl=false;
-  for(const raw of lines){
-    const line=raw.trim();
-    if(!line){if(inUl){html+='</ul>';inUl=false;}continue;}
-    if(/^#{1,3}\s/.test(line)){if(inUl){html+='</ul>';inUl=false;}html+=`<h4>${bold(line.replace(/^#{1,3}\s/,''))}</h4>`;continue;}
-    if(/^[-•*]\s/.test(line)){if(!inUl){html+='<ul>';inUl=true;}html+=`<li>${bold(line.replace(/^[-•*]\s/,''))}</li>`;continue;}
-    if(inUl){html+='</ul>';inUl=false;}
-    html+=`<p>${bold(line)}</p>`;
-  }
-  if(inUl)html+='</ul>';
-  return html;
-}
 
 // ── render ──────────────────────────────────────────
 async function renderSportPage(){
@@ -3312,6 +3317,31 @@ function sportSetGoal(){
   if(v){const n=parseInt(v);if(n>0){sportWeekGoal=n;localStorage.setItem(SPORT_GOAL_KEY,n);renderSportBanner();}}
 }
 
+// Parse program content into items: headings, paragraphs, exercises (bullets)
+function sportParseProgram(content){
+  const items=[]; let exIdx=0;
+  String(content||'').split(/\r?\n/).forEach(raw=>{
+    const line=raw.trim();
+    if(!line) return;
+    if(/^#{1,3}\s/.test(line)) items.push({type:'head',text:line.replace(/^#{1,3}\s/,'')});
+    else if(/^[-•*]\s/.test(line)) items.push({type:'ex',idx:exIdx++,text:line.replace(/^[-•*]\s/,'')});
+    else items.push({type:'p',text:line});
+  });
+  return items;
+}
+// Today's stored per-exercise log (JSON in sport_log.exercises) → array of {ex,status,weight}
+function sportExisting(){
+  const l=sportLogFor(sportYmd(new Date()));
+  if(!l||!l.exercises) return [];
+  try{ const a=JSON.parse(l.exercises); return Array.isArray(a)?a:[]; }catch(e){ return []; }
+}
+function sportExBold(s){
+  const esc=String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+}
+const SP_EX_CYCLE=['','done','partial','skipped'];
+const SP_EX_ICON={'':'•',done:'✓',partial:'~',skipped:'✗'};
+
 function renderSportToday(){
   const today=sportYmd(new Date());
   const p=sportPlanFor(today);
@@ -3321,6 +3351,20 @@ function renderSportToday(){
     return;
   }
   const col=sportTypeColor(p.type);
+  const existing=sportExisting();
+  const items=sportParseProgram(p.content);
+  const body=items.length?items.map(it=>{
+    if(it.type==='head') return `<h4>${sportExBold(it.text)}</h4>`;
+    if(it.type==='p')    return `<p>${sportExBold(it.text)}</p>`;
+    const i=it.idx;
+    const status=sportExDraft[i]?.status ?? existing[i]?.status ?? '';
+    const weight=sportExDraft[i]?.weight ?? existing[i]?.weight ?? '';
+    return `<div class="sp-ex-row">
+      <button class="sp-ex-status st-${status||'none'}" onclick="sportCycleEx(${i})" title="Statut : fait → partiel → pas fait">${SP_EX_ICON[status]}</button>
+      <div class="sp-ex-txt">${sportExBold(it.text)}</div>
+      <input class="sp-ex-w" data-spexw="${i}" type="text" inputmode="decimal" placeholder="kg" value="${sportEsc(weight)}">
+    </div>`;
+  }).join(''):'<p style="opacity:0.5">Aucun détail fourni.</p>';
   el.innerHTML=`<div class="sp-today">
     <button class="fit-btn" style="position:absolute;top:1rem;right:1rem;font-size:0.46rem;padding:0.25rem 0.5rem" onclick="openSportPlanModal('${today}')">✎ éditer</button>
     <div class="sp-today-hdr">
@@ -3328,14 +3372,29 @@ function renderSportToday(){
       ${p.duration?`<span class="sp-dur">⏱ ${p.duration} min</span>`:''}
     </div>
     <div class="sp-today-title">${p.title||'Séance du jour'}</div>
-    <div class="sp-content">${sportRenderContent(p.content)||'<p style="opacity:0.5">Aucun détail fourni.</p>'}</div>
+    ${items.some(it=>it.type==='ex')?`<div class="sp-ex-hint">Coche le statut ✓ ~ ✗ et note le poids sur chaque ligne</div>`:''}
+    <div class="sp-content">${body}</div>
   </div>`;
 }
 
+function sportCaptureExInputs(){
+  document.querySelectorAll('[data-spexw]').forEach(inp=>{
+    const i=inp.getAttribute('data-spexw');
+    sportExDraft[i]={...(sportExDraft[i]||{}),weight:inp.value};
+  });
+}
+function sportCycleEx(i){
+  sportCaptureExInputs();
+  const existing=sportExisting();
+  const cur=sportExDraft[i]?.status ?? existing[i]?.status ?? '';
+  const next=SP_EX_CYCLE[(SP_EX_CYCLE.indexOf(cur)+1)%SP_EX_CYCLE.length];
+  sportExDraft[i]={...(sportExDraft[i]||{}),status:next};
+  renderSportToday();
+}
+
 function sportCaptureInputs(){
-  const a=document.getElementById('spAmount'); if(a)sportDraft.amount=a.value;
-  const n=document.getElementById('spNote');   if(n)sportDraft.note=n.value;
-  const w=document.getElementById('spWeight'); if(w)sportDraft.weight=w.value;
+  const c=document.getElementById('spComment'); if(c)sportDraft.comment=c.value;
+  const w=document.getElementById('spWeight');  if(w)sportDraft.weight=w.value;
 }
 function sportPickStatus(s){sportCaptureInputs();sportDraft.status=s;renderSportLogger();}
 function sportPickFeeling(f){sportCaptureInputs();sportDraft.feeling=f;renderSportLogger();}
@@ -3345,42 +3404,57 @@ function renderSportLogger(){
   const ex=sportLogFor(today);
   const st=sportDraft.status??ex?.status??'';
   const feel=sportDraft.feeling??ex?.feeling??0;
-  const amount=(sportDraft.amount??ex?.amount)||'';
-  const note=(sportDraft.note??ex?.note)||'';
+  const comment=(sportDraft.comment??ex?.comment)||'';
   const weight=(sportDraft.weight??(ex&&ex.weight?ex.weight:''))||'';
   const FEELINGS=['😵','😕','😐','🙂','💪'];
   document.getElementById('sportLogger').innerHTML=`<div class="sp-log">
     <div class="fit-box-ttl" style="margin-bottom:0.9rem">Ton retour — aujourd'hui</div>
-    ${ex?`<div class="sp-log-done">✓ Enregistré : <b>${sportStatusLabel(ex.status)}</b>${ex.amount?` · ${ex.amount}`:''}. Tu peux corriger ci-dessous.</div>`:''}
-    <div class="sp-status-btns">
-      <button class="sp-status-btn${st==='done'?' sel-done':''}" onclick="sportPickStatus('done')">✅ Fait</button>
-      <button class="sp-status-btn${st==='partial'?' sel-partial':''}" onclick="sportPickStatus('partial')">🟡 Partiel</button>
-      <button class="sp-status-btn${st==='skipped'?' sel-skipped':''}" onclick="sportPickStatus('skipped')">❌ Pas fait</button>
-    </div>
-    <div class="sp-field"><label class="fit-form-lbl">Combien ? (durée, distance, ressenti libre)</label>
-      <input class="fit-input" id="spAmount" style="width:100%" placeholder="ex : 45 min · 5 km · 3 séries" value="${sportEsc(amount)}"></div>
+    ${ex?`<div class="sp-log-done">✓ Enregistré : <b>${sportStatusLabel(ex.status)||'—'}</b>. Tu peux corriger ci-dessous.</div>`:''}
+    <div class="sp-field"><label class="fit-form-lbl">Séance globale (sinon déduit des exercices)</label>
+      <div class="sp-status-btns">
+        <button class="sp-status-btn${st==='done'?' sel-done':''}" onclick="sportPickStatus('done')">✅ Fait</button>
+        <button class="sp-status-btn${st==='partial'?' sel-partial':''}" onclick="sportPickStatus('partial')">🟡 Partiel</button>
+        <button class="sp-status-btn${st==='skipped'?' sel-skipped':''}" onclick="sportPickStatus('skipped')">❌ Pas fait</button>
+      </div></div>
     <div class="sp-field"><label class="fit-form-lbl">Ressenti</label>
       <div class="sp-feeling">${FEELINGS.map((e,i)=>`<button class="sp-feel-btn${feel===i+1?' sel':''}" onclick="sportPickFeeling(${i+1})">${e}</button>`).join('')}</div></div>
-    <div class="sp-row2">
-      <div><label class="fit-form-lbl">Poids (kg)</label><input class="fit-input" id="spWeight" type="number" step="0.1" style="width:100%" placeholder="opt." value="${sportEsc(weight)}"></div>
-      <div><label class="fit-form-lbl">Note</label><input class="fit-input" id="spNote" style="width:100%" placeholder="opt." value="${sportEsc(note)}"></div>
-    </div>
-    <button class="fit-btn" style="margin-top:1rem;width:100%;color:var(--accent);border-color:var(--accent);padding:0.55rem" onclick="saveSportLog()">${ex?'Mettre à jour':'Enregistrer mon retour'}</button>
+    <div class="sp-field"><label class="fit-form-lbl">Poids corporel (kg)</label>
+      <input class="fit-input" id="spWeight" type="number" step="0.1" style="width:100%" placeholder="opt." value="${sportEsc(weight)}"></div>
+    <div class="sp-field"><label class="fit-form-lbl">Commentaire global de la séance</label>
+      <textarea class="fit-input" id="spComment" rows="3" style="width:100%" placeholder="Comment ça s'est passé ? énergie, douleurs, contexte...">${sportEsc(comment)}</textarea></div>
+    <button class="fit-btn" style="margin-top:0.4rem;width:100%;color:var(--accent);border-color:var(--accent);padding:0.55rem" onclick="saveSportLog()">${ex?'Mettre à jour':'Enregistrer mon retour'}</button>
   </div>`;
 }
+
 async function saveSportLog(){
   sportCaptureInputs();
+  sportCaptureExInputs();
   const today=sportYmd(new Date());
   const ex=sportLogFor(today);
-  const status=sportDraft.status||ex?.status;
-  if(!status){alert("Choisis d'abord : Fait / Partiel / Pas fait.");return;}
+  const p=sportPlanFor(today);
+  const existing=sportExisting();
+  const items=p?sportParseProgram(p.content).filter(it=>it.type==='ex'):[];
+  const exercises=items.map(it=>{
+    const i=it.idx;
+    return {ex:it.text.replace(/\*\*/g,''),
+      status:(sportExDraft[i]?.status ?? existing[i]?.status ?? ''),
+      weight:(sportExDraft[i]?.weight ?? existing[i]?.weight ?? '')};
+  });
+  // Overall status: explicit session choice wins, else derive from per-exercise
+  const marked=exercises.map(e=>e.status).filter(Boolean);
+  let status=sportDraft.status??ex?.status??'';
+  if(!status && marked.length){
+    status=marked.every(s=>s==='done')?'done':marked.every(s=>s==='skipped')?'skipped':'partial';
+  }
+  if(!status){alert("Indique le statut de la séance (ou d'au moins un exercice).");return;}
   const log={date:today,status,
-    amount:(sportDraft.amount??ex?.amount)||'',
+    exercises:exercises.length?JSON.stringify(exercises):'',
     feeling:(sportDraft.feeling??ex?.feeling)||0,
     weight:parseFloat(sportDraft.weight??(ex?ex.weight:''))||0,
-    note:(sportDraft.note??ex?.note)||''};
+    comment:(sportDraft.comment??ex?.comment)||''};
   showLoad(true);await sportUpsertLog(log);showLoad(false);
-  sportDraft={status:null,feeling:null,amount:null,note:null,weight:null};
+  sportDraft={status:null,feeling:null,weight:null,comment:null};
+  sportExDraft={};
   toast('Retour enregistré ✓','ok');
   renderSportPage();
 }
@@ -3413,17 +3487,30 @@ function renderSportHistory(){
     const dt=new Date(ds+'T12:00:00');const dlabel=`${FR[dt.getDay()]} ${dt.getDate()}/${dt.getMonth()+1}`;
     const status=l?l.status:'none';
     const feel=l&&l.feeling?['','😵','😕','😐','🙂','💪'][l.feeling]:'';
+    // Per-exercise summary from the JSON
+    let detail='';
+    if(l&&l.exercises){
+      try{
+        const arr=JSON.parse(l.exercises);
+        if(Array.isArray(arr)&&arr.length){
+          const done=arr.filter(e=>e.status==='done').length;
+          const weights=arr.filter(e=>e.weight).map(e=>e.weight).join(' · ');
+          detail=`<b style="color:var(--text)">${done}/${arr.length}</b> exos${weights?` · ${weights} kg`:''}`;
+        }
+      }catch(e){}
+    }
+    if(!detail&&l&&l.comment) detail=`<span style="font-style:italic">${sportEsc(l.comment).slice(0,40)}</span>`;
     return `<tr>
       <td style="white-space:nowrap;color:var(--text-mid)">${dlabel}</td>
       <td>${p?(p.title||p.type):'<span style="opacity:0.4">—</span>'}</td>
       <td><span class="sp-hist-status ${status}">${l?sportStatusLabel(status):'non loggé'}</span></td>
-      <td style="color:var(--text-mid)">${l?l.amount||'':''}</td>
+      <td style="color:var(--text-mid);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${detail}</td>
       <td>${feel}</td>
     </tr>`;
   }).join('');
   el.innerHTML=`<div class="fit-section-lbl">Historique — 14 derniers jours</div>
     <div class="fit-box"><table class="fit-stats-table">
-      <thead><tr><th>Jour</th><th>Programme</th><th>Statut</th><th>Réalisé</th><th>Ressenti</th></tr></thead>
+      <thead><tr><th>Jour</th><th>Programme</th><th>Statut</th><th>Détail</th><th>Ressenti</th></tr></thead>
       <tbody>${body}</tbody></table></div>`;
 }
 
