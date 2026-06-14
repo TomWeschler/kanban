@@ -684,23 +684,25 @@ body,body *{font-family:var(--font-body)}
 .gl-add{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.08em;font-weight:700;padding:0.36rem 0.95rem;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;border-radius:99px;text-transform:uppercase}
 .gl-add:hover{background:var(--accent);color:var(--bg)}
 .gl-empty{text-align:center;padding:3rem 0;font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);opacity:0.55}
-/* tree — horizontal, cartes compactes, branches parallèles */
+/* tree — horizontal INVERSÉ (gros objectifs/racines à DROITE), cartes compactes */
 .gl-forest{display:flex;flex-direction:column;gap:1.4rem;overflow-x:auto;padding-bottom:0.6rem;align-items:flex-start}
-.gl-node{display:flex;align-items:center}
+.gl-node{display:flex;align-items:center;flex-direction:row-reverse}
 .gl-link{width:18px;height:2px;background:var(--border2);flex-shrink:0}
-.gl-subtree{display:flex;flex-direction:column;gap:0.7rem;position:relative;padding-left:20px}
-.gl-subtree::before{content:'';position:absolute;left:0;top:24px;bottom:24px;width:2px;background:var(--border2)}
+.gl-subtree{display:flex;flex-direction:column;gap:0.7rem;position:relative;padding-right:20px}
+.gl-subtree::before{content:'';position:absolute;right:0;top:24px;bottom:24px;width:2px;background:var(--border2)}
 .gl-subtree:has(>.gl-node:only-child)::before{display:none}
 .gl-subtree>.gl-node{position:relative}
-.gl-subtree>.gl-node::before{content:'';position:absolute;left:-20px;top:50%;transform:translateY(-50%);width:20px;height:2px;background:var(--border2)}
+.gl-subtree>.gl-node::before{content:'';position:absolute;right:-20px;top:50%;transform:translateY(-50%);width:20px;height:2px;background:var(--border2)}
 /* compact card */
 .gl-card{width:238px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gcol,var(--accent));border-radius:10px;padding:0.65rem 0.8rem;cursor:pointer;transition:box-shadow 0.15s,transform 0.15s}
 .gl-card:hover{box-shadow:0 6px 18px rgba(0,0,0,0.32);transform:translateY(-1px)}
-.gl-card.done{box-shadow:inset 0 0 0 1px rgba(74,222,128,0.3),0 0 16px rgba(74,222,128,0.1)}
+.gl-card.done{filter:grayscale(0.9);opacity:0.5}
+.gl-card.done:hover{opacity:0.78}
 .gl-c-head{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem}
 .gl-c-icon{font-size:1.05rem;line-height:1}
-.gl-c-hbadge{font-family:var(--font-mono);font-size:0.46rem;letter-spacing:0.1em;text-transform:uppercase;background:var(--surface3);color:var(--text-mid);padding:2px 7px;border-radius:99px}
-.gl-c-done{margin-left:auto;color:var(--green);font-size:0.72rem;font-weight:700}
+.gl-c-hbadge{font-family:var(--font-mono);font-size:0.58rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 9px;border-radius:99px}
+.gl-c-date{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim)}
+.gl-c-done{margin-left:auto;color:var(--green);font-size:0.8rem;font-weight:700}
 .gl-edit{margin-left:auto;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.72rem;padding:0 0.2rem;opacity:0;transition:opacity 0.15s}
 .gl-card:hover .gl-edit{opacity:1}
 .gl-edit:hover{color:var(--text)}
@@ -717,6 +719,11 @@ body,body *{font-family:var(--font-body)}
 .gl-cp-count{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);margin-left:2px}
 .gl-reward-mini{font-family:var(--font-mono);font-size:0.52rem;color:var(--gld);margin-top:0.42rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gl-reward-mini.unlocked{text-shadow:0 0 8px rgba(252,211,77,0.45)}
+/* emoji picker (modal) */
+.gl-emoji-grid{display:flex;flex-wrap:wrap;gap:5px;max-height:118px;overflow-y:auto}
+.gl-emoji{font-size:1.1rem;width:34px;height:34px;border:1px solid var(--border2);background:var(--surface2);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.12s}
+.gl-emoji:hover{border-color:var(--text-mid);transform:scale(1.08)}
+.gl-emoji.sel{border-color:var(--accent);background:var(--accent-dim)}
 
 /* ═══════════════════════════════
    MOBILE — portrait (≤ 640px, ex. Pixel 8 ≈ 412px)
@@ -929,27 +936,16 @@ body,body *{font-family:var(--font-body)}
     <input type="hidden" id="gfId">
     <div class="field"><label>Titre</label><input type="text" id="gfTitle" placeholder="Mon objectif..." autocomplete="off"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
-      <div class="field"><label>Horizon</label>
-        <select id="gfHorizon">
-          <option value="life">Vie</option>
-          <option value="5y">5 ans</option>
-          <option value="annual">Année</option>
-          <option value="quarter">Trimestre</option>
-          <option value="month">Mois</option>
-        </select>
-      </div>
       <div class="field"><label>Catégorie</label><input type="text" id="gfCategory" placeholder="ex : Finance, Santé..." autocomplete="off"></div>
+      <div class="field"><label>Échéance <span style="color:var(--text-dim);font-weight:400">→ horizon auto</span></label><input type="date" id="gfTarget"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
       <div class="field"><label>Rattaché à (parent)</label><select id="gfParent"><option value="">— Aucun (racine) —</option></select></div>
-      <div class="field"><label>Icône (emoji)</label><input type="text" id="gfIcon" placeholder="🎯" maxlength="4" autocomplete="off"></div>
+      <div class="field"><label>Statut</label><select id="gfStatus"><option value="active">En cours</option><option value="done">Atteint</option><option value="paused">En pause</option></select></div>
     </div>
     <div class="field"><label>Description</label><input type="text" id="gfDesc" placeholder="Détail / pourquoi..." autocomplete="off"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.7rem">
-      <div class="field"><label>Progression %</label><input type="number" id="gfProgress" min="0" max="100" placeholder="0"></div>
-      <div class="field"><label>Statut</label><select id="gfStatus"><option value="active">En cours</option><option value="done">Atteint</option><option value="paused">En pause</option></select></div>
-      <div class="field"><label>Échéance</label><input type="date" id="gfTarget"></div>
-    </div>
+    <div class="field"><label>Progression % <span style="color:var(--text-dim);font-weight:400">(ignoré si checkpoints)</span></label><input type="number" id="gfProgress" min="0" max="100" placeholder="0"></div>
+    <div class="field"><label>Icône</label><input type="hidden" id="gfIcon"><div class="gl-emoji-grid" id="gfEmojiGrid"></div></div>
     <div class="field"><label>Récompense 🎁</label><input type="text" id="gfReward" placeholder="Ma récompense en atteignant l'objectif..." autocomplete="off"></div>
     <div class="field"><label>Checkpoints <span style="color:var(--text-dim);font-weight:400">(un par ligne — coche en préfixant par [x])</span></label>
       <textarea id="gfCheckpoints" class="fit-input" rows="5" style="width:100%" placeholder="[x] Première étape faite&#10;[ ] Étape suivante&#10;[ ] Dernière étape | récompense étape"></textarea></div>
@@ -1892,13 +1888,27 @@ const GOAL_SEED=[
  ['gx1','','life','Perso','Vivre une vie alignée, libre et en bonne santé','Ma vision long terme','0','Sérénité & liberté totales','active','','🌟',''],
  ['gx2','gx1','5y','Finance','Atteindre l\'indépendance financière','Patrimoine qui couvre mes besoins','0','Quitter le salariat','active','2030-12-31','🔭','[{"t":"Portefeuille à 6 chiffres","d":false,"r":""},{"t":"Revenus passifs > dépenses","d":false,"r":""}]'],
  ['gx3','gx2','annual','Finance','Économiser 30 000 € en 2026','Effort d\'épargne de l\'année','0','Week-end à l\'étranger','active','2026-12-31','📅','[{"t":"10 000 € (T1-T2)","d":true,"r":""},{"t":"20 000 € (T3)","d":false,"r":""},{"t":"30 000 € (T4)","d":false,"r":"Resto gastro"}]'],
- ['gx4','gx3','quarter','Finance','Réduire mes dépenses de 15%','Sur ce trimestre','0','Soirée ciné','active','','🎯','[{"t":"Auditer les abonnements","d":true,"r":""},{"t":"Budget courses -15%","d":false,"r":""}]'],
- ['gx5','gx4','month','Finance','Tenir 100% mon budget ce mois','Suivi quotidien','60','Nouveau livre','active','','📌',''],
- ['gx6','gx1','5y','Santé','Être en grande forme physique','Corps fort et endurant','0','Photo souvenir','active','','💪','[{"t":"Routine sport stable","d":false,"r":""},{"t":"Objectif poids atteint","d":false,"r":""}]'],
- ['gx7','gx6','month','Santé','3 séances de sport / semaine','Régularité avant tout','0','Massage détente','active','','🏋️','']
+ ['gx4','gx3','quarter','Finance','Réduire mes dépenses de 15%','Sur ce trimestre','0','Soirée ciné','active','2026-08-31','🎯','[{"t":"Auditer les abonnements","d":true,"r":""},{"t":"Budget courses -15%","d":false,"r":""}]'],
+ ['gx5','gx4','month','Finance','Tenir 100% mon budget ce mois','Suivi quotidien','60','Nouveau livre','active','2026-06-30','📌',''],
+ ['gx6','gx1','5y','Santé','Être en grande forme physique','Corps fort et endurant','0','Photo souvenir','active','2030-06-30','💪','[{"t":"Routine sport stable","d":false,"r":""},{"t":"Objectif poids atteint","d":false,"r":""}]'],
+ ['gx7','gx6','month','Santé','3 séances de sport / semaine','Régularité avant tout','0','Massage détente','active','2026-06-30','🏋️','']
 ];
 function goalHorizonMeta(h){return GOAL_HORIZONS.find(x=>x[0]===h)||['','—','•'];}
 function goalHorizonRank(h){const i=GOAL_HORIZONS.findIndex(x=>x[0]===h);return i<0?99:i;}
+// Horizon DÉDUIT de la deadline (target_date) — pas de champ manuel
+function goalHorizonFromDate(d){
+  if(!d)return 'life';
+  const today=new Date();today.setHours(0,0,0,0);
+  const t=new Date(d+'T00:00:00');
+  const days=(t-today)/86400000;
+  if(days<=31)return 'month';
+  if(days<=92)return 'quarter';
+  if(days<=366)return 'annual';
+  if(days<=1827)return '5y';
+  return 'life';
+}
+const GOAL_HORIZON_COLOR={month:'#fbbf24',quarter:'#22c55e',annual:'#38bdf8','5y':'#7c6aff',life:'#a855f7'};
+const GOAL_EMOJIS=['🎯','🌟','🔭','📅','📌','🏆','🥇','🚀','🔥','⭐','💎','⚡','💪','🏋️','🏃','🧘','🥗','😴','❤️','🧠','💰','📈','💼','🏠','✈️','🌍','📚','🎓','💻','🤝','🎨','🎵','🌱','🛡️','🧩','🗺️','⛰️','📷','☀️','🎸'];
 function goalCatColor(cat){
   const cats=[...new Set(goals.map(g=>g.category).filter(Boolean))].sort();
   const i=cats.indexOf(cat);
@@ -2008,7 +2018,9 @@ function setGoalFilter(c){goalCatFilter=c;renderGoalsToolbar();renderGoalsTree()
 
 function goalCard(g){
   const col=goalCatColor(g.category);
-  const hm=goalHorizonMeta(g.horizon);
+  const hz=goalHorizonFromDate(g.target_date);
+  const hm=goalHorizonMeta(hz);
+  const hcol=GOAL_HORIZON_COLOR[hz]||'var(--text-mid)';
   const prog=goalProgress(g);
   const cps=goalCheckpoints(g);
   const isDone=g.status==='done'||prog>=100;
@@ -2016,8 +2028,9 @@ function goalCard(g){
   return `<div class="gl-card${isDone?' done':''}" style="--gcol:${col}" onclick="openGoalModal('${g.id}')">
     <div class="gl-c-head">
       <span class="gl-c-icon">${g.icon||hm[2]}</span>
-      <span class="gl-c-hbadge">${hm[1]}</span>
-      ${isDone?'<span class="gl-c-done">✓ atteint</span>':`<button class="gl-edit" onclick="event.stopPropagation();openGoalModal('${g.id}')" title="Éditer">✎</button>`}
+      <span class="gl-c-hbadge" style="color:${hcol};background:${hcol}1f;border:1px solid ${hcol}55">${hm[1]}</span>
+      ${g.target_date?`<span class="gl-c-date">${g.target_date}</span>`:''}
+      ${isDone?'<span class="gl-c-done">✓</span>':`<button class="gl-edit" onclick="event.stopPropagation();openGoalModal('${g.id}')" title="Éditer">✎</button>`}
     </div>
     <div class="gl-c-title">${escapeHtmlG(g.title)}</div>
     <div class="gl-c-cat" style="color:${col}">● ${escapeHtmlG(g.category)}</div>
@@ -2032,7 +2045,8 @@ function renderGoalsTree(){
   if(goalCatFilter!=='all')list=goals.filter(g=>g.category===goalCatFilter);
   if(!list.length){el.innerHTML=`<div class="gl-empty">Aucun objectif${goalCatFilter!=='all'?' dans cette catégorie':''}. Crée ton premier avec « + Objectif ».</div>`;return;}
   const ids=new Set(list.map(g=>g.id));
-  const sortFn=(a,b)=>goalHorizonRank(a.horizon)-goalHorizonRank(b.horizon)||a.title.localeCompare(b.title);
+  const hr=g=>goalHorizonRank(goalHorizonFromDate(g.target_date));
+  const sortFn=(a,b)=>hr(a)-hr(b)||(a.target_date||'zzz').localeCompare(b.target_date||'zzz')||a.title.localeCompare(b.title);
   const childrenOf=pid=>list.filter(g=>g.parent_id===pid).sort(sortFn);
   const roots=list.filter(g=>!g.parent_id||!ids.has(g.parent_id)).sort(sortFn);
   const renderNode=g=>{
@@ -2040,6 +2054,9 @@ function renderGoalsTree(){
     return `<div class="gl-node">${goalCard(g)}${kids.length?`<div class="gl-link"></div><div class="gl-subtree">${kids.map(renderNode).join('')}</div>`:''}</div>`;
   };
   el.innerHTML=`<div class="gl-forest">${roots.map(renderNode).join('')}</div>`;
+  // arbre inversé (racines à droite) → on positionne le scroll à droite
+  const f=el.querySelector('.gl-forest');
+  if(f)requestAnimationFrame(()=>{f.scrollLeft=f.scrollWidth;});
 }
 
 async function toggleGoalCp(id,idx){
@@ -2055,18 +2072,24 @@ async function toggleGoalCp(id,idx){
 }
 
 // ── modal ──
+function goalPickEmoji(e,btn){
+  document.getElementById('gfIcon').value=e;
+  document.querySelectorAll('#gfEmojiGrid .gl-emoji').forEach(b=>b.classList.remove('sel'));
+  if(btn)btn.classList.add('sel');
+}
 function openGoalModal(id){
   const g=id?goals.find(x=>x.id===id):null;
   const sel=document.getElementById('gfParent');
   sel.innerHTML='<option value="">— Aucun (racine) —</option>'+
-    goals.filter(x=>x.id!==id).sort((a,b)=>goalHorizonRank(a.horizon)-goalHorizonRank(b.horizon))
-      .map(x=>`<option value="${x.id}">${goalHorizonMeta(x.horizon)[1]} · ${escapeAttrG(x.title)}</option>`).join('');
+    goals.filter(x=>x.id!==id).sort((a,b)=>goalHorizonRank(goalHorizonFromDate(b.target_date))-goalHorizonRank(goalHorizonFromDate(a.target_date)))
+      .map(x=>`<option value="${x.id}">${goalHorizonMeta(goalHorizonFromDate(x.target_date))[1]} · ${escapeAttrG(x.title)}</option>`).join('');
+  const cur=g?g.icon:'';
+  document.getElementById('gfEmojiGrid').innerHTML=GOAL_EMOJIS.map(e=>`<button type="button" class="gl-emoji${e===cur?' sel':''}" onclick="goalPickEmoji('${e}',this)">${e}</button>`).join('');
   document.getElementById('gfId').value=g?g.id:'';
   document.getElementById('gfTitle').value=g?g.title:'';
-  document.getElementById('gfHorizon').value=g?g.horizon:'month';
   document.getElementById('gfCategory').value=g?g.category:'';
   document.getElementById('gfParent').value=g?g.parent_id:'';
-  document.getElementById('gfIcon').value=g?g.icon:'';
+  document.getElementById('gfIcon').value=cur;
   document.getElementById('gfDesc').value=g?g.description:'';
   document.getElementById('gfProgress').value=g?(g.progress||''):'';
   document.getElementById('gfStatus').value=g?g.status:'active';
@@ -2084,9 +2107,10 @@ async function saveGoal(){
   if(!title){document.getElementById('gfTitle').focus();return;}
   const id=document.getElementById('gfId').value||('g'+Date.now());
   const cps=goalParseCheckpointsText(document.getElementById('gfCheckpoints').value);
+  const target=document.getElementById('gfTarget').value;
   const g={id,
     parent_id:document.getElementById('gfParent').value,
-    horizon:document.getElementById('gfHorizon').value,
+    horizon:goalHorizonFromDate(target),
     category:document.getElementById('gfCategory').value.trim()||'Autre',
     title,
     description:document.getElementById('gfDesc').value.trim(),
