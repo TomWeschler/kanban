@@ -684,43 +684,39 @@ body,body *{font-family:var(--font-body)}
 .gl-add{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.08em;font-weight:700;padding:0.36rem 0.95rem;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;border-radius:99px;text-transform:uppercase}
 .gl-add:hover{background:var(--accent);color:var(--bg)}
 .gl-empty{text-align:center;padding:3rem 0;font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);opacity:0.55}
-/* tree */
-.gl-tree,.gl-children{list-style:none;margin:0;padding:0}
-.gl-tree{display:flex;flex-direction:column;gap:0.85rem}
-.gl-children{margin-left:1.5rem;padding-left:1.4rem;border-left:2px solid var(--border2);display:flex;flex-direction:column;gap:0.7rem;margin-top:0.7rem}
-.gl-node{position:relative}
-.gl-children>.gl-node::before{content:'';position:absolute;left:-1.4rem;top:1.7rem;width:1rem;height:2px;background:var(--border2)}
-/* card */
-.gl-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--gcol,var(--accent));border-radius:10px;padding:0.85rem 1rem;transition:box-shadow 0.15s}
-.gl-card:hover{box-shadow:0 6px 20px rgba(0,0,0,0.3)}
-.gl-card.done{box-shadow:inset 0 0 0 1px rgba(74,222,128,0.25),0 0 22px rgba(74,222,128,0.08)}
-.gl-card-top{display:flex;align-items:flex-start;gap:0.7rem}
-.gl-icon{font-size:1.4rem;line-height:1.1;flex-shrink:0}
-.gl-card-titles{flex:1;min-width:0}
-.gl-title{font-family:var(--font-body);font-size:1rem;font-weight:700;line-height:1.2}
-.gl-meta{display:flex;align-items:center;gap:0.55rem;flex-wrap:wrap;margin-top:0.28rem;font-family:var(--font-mono);font-size:0.52rem}
-.gl-hbadge{background:var(--surface3);color:var(--text-mid);padding:2px 8px;border-radius:99px;letter-spacing:0.08em;text-transform:uppercase}
-.gl-cat{font-weight:700;letter-spacing:0.03em}
-.gl-date{color:var(--text-dim)}
-.gl-done-tag{color:var(--green);font-weight:700}
-.gl-edit{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.8rem;padding:0.1rem 0.3rem;flex-shrink:0;opacity:0;transition:opacity 0.15s}
+/* tree — horizontal, cartes compactes, branches parallèles */
+.gl-forest{display:flex;flex-direction:column;gap:1.4rem;overflow-x:auto;padding-bottom:0.6rem;align-items:flex-start}
+.gl-node{display:flex;align-items:center}
+.gl-link{width:18px;height:2px;background:var(--border2);flex-shrink:0}
+.gl-subtree{display:flex;flex-direction:column;gap:0.7rem;position:relative;padding-left:20px}
+.gl-subtree::before{content:'';position:absolute;left:0;top:24px;bottom:24px;width:2px;background:var(--border2)}
+.gl-subtree:has(>.gl-node:only-child)::before{display:none}
+.gl-subtree>.gl-node{position:relative}
+.gl-subtree>.gl-node::before{content:'';position:absolute;left:-20px;top:50%;transform:translateY(-50%);width:20px;height:2px;background:var(--border2)}
+/* compact card */
+.gl-card{width:238px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gcol,var(--accent));border-radius:10px;padding:0.65rem 0.8rem;cursor:pointer;transition:box-shadow 0.15s,transform 0.15s}
+.gl-card:hover{box-shadow:0 6px 18px rgba(0,0,0,0.32);transform:translateY(-1px)}
+.gl-card.done{box-shadow:inset 0 0 0 1px rgba(74,222,128,0.3),0 0 16px rgba(74,222,128,0.1)}
+.gl-c-head{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem}
+.gl-c-icon{font-size:1.05rem;line-height:1}
+.gl-c-hbadge{font-family:var(--font-mono);font-size:0.46rem;letter-spacing:0.1em;text-transform:uppercase;background:var(--surface3);color:var(--text-mid);padding:2px 7px;border-radius:99px}
+.gl-c-done{margin-left:auto;color:var(--green);font-size:0.72rem;font-weight:700}
+.gl-edit{margin-left:auto;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.72rem;padding:0 0.2rem;opacity:0;transition:opacity 0.15s}
 .gl-card:hover .gl-edit{opacity:1}
 .gl-edit:hover{color:var(--text)}
-.gl-desc{font-size:0.74rem;color:var(--text-mid);margin-top:0.45rem;line-height:1.45}
-.gl-prog{height:7px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-top:0.6rem}
+.gl-c-title{font-family:var(--font-body);font-size:0.85rem;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gl-c-cat{font-family:var(--font-mono);font-size:0.5rem;font-weight:700;margin-top:0.22rem}
+.gl-prog{height:6px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-top:0.5rem}
 .gl-prog-bar{height:100%;border-radius:4px;transition:width 0.5s}
-.gl-prog-row{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-top:0.42rem}
-.gl-prog-pct{font-family:var(--font-mono);font-size:0.62rem;font-weight:700;color:var(--text-mid)}
-.gl-reward{font-family:var(--font-mono);font-size:0.55rem;color:var(--gld);background:rgba(252,211,77,0.08);border:1px solid rgba(252,211,77,0.25);padding:2px 9px;border-radius:99px;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gl-reward.unlocked{background:rgba(252,211,77,0.2);box-shadow:0 0 10px rgba(252,211,77,0.3)}
-.gl-cps{margin-top:0.7rem;display:flex;flex-direction:column;gap:0.32rem;border-top:1px solid var(--border);padding-top:0.6rem}
-.gl-cp{display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.74rem;color:var(--text-mid)}
-.gl-cp:hover .gl-cp-box{border-color:var(--text-mid)}
-.gl-cp-box{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--green);flex-shrink:0}
-.gl-cp.done .gl-cp-box{background:rgba(74,222,128,0.18);border-color:var(--green)}
-.gl-cp.done .gl-cp-txt{text-decoration:line-through;color:var(--text-dim)}
-.gl-cp-txt{flex:1;min-width:0}
-.gl-cp-reward{font-family:var(--font-mono);font-size:0.5rem;color:var(--gld);white-space:nowrap;flex-shrink:0}
+.gl-c-foot{display:flex;align-items:center;gap:0.45rem;margin-top:0.42rem}
+.gl-prog-pct{font-family:var(--font-mono);font-size:0.58rem;font-weight:700;color:var(--text-mid)}
+.gl-cp-dots{display:flex;align-items:center;gap:3px;margin-left:auto}
+.gl-cp-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--border2);cursor:pointer;transition:all 0.12s}
+.gl-cp-dot.done{background:var(--green);border-color:var(--green)}
+.gl-cp-dot:hover{border-color:var(--text-mid)}
+.gl-cp-count{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);margin-left:2px}
+.gl-reward-mini{font-family:var(--font-mono);font-size:0.52rem;color:var(--gld);margin-top:0.42rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gl-reward-mini.unlocked{text-shadow:0 0 8px rgba(252,211,77,0.45)}
 
 /* ═══════════════════════════════
    MOBILE — portrait (≤ 640px, ex. Pixel 8 ≈ 412px)
@@ -806,9 +802,10 @@ body,body *{font-family:var(--font-body)}
   .gl-wrap{padding:0.8rem 0.7rem 4rem}
   .gl-banner{grid-template-columns:1fr 1fr;gap:0.55rem}
   .gl-kpi-val{font-size:1.4rem}
-  .gl-children{margin-left:0.7rem;padding-left:0.85rem}
-  .gl-children>.gl-node::before{left:-0.85rem;width:0.7rem}
-  .gl-reward{max-width:50%}
+  .gl-card{width:210px}
+  .gl-link{width:12px}
+  .gl-subtree{padding-left:14px}
+  .gl-subtree>.gl-node::before{left:-14px;width:14px}
 
   /* Modales lisibles */
   .modal{width:95vw !important;padding:1.1rem}
@@ -2015,30 +2012,18 @@ function goalCard(g){
   const prog=goalProgress(g);
   const cps=goalCheckpoints(g);
   const isDone=g.status==='done'||prog>=100;
-  const cpHtml=cps.length?`<div class="gl-cps">${cps.map((c,i)=>`
-    <div class="gl-cp${c.d?' done':''}" onclick="toggleGoalCp('${g.id}',${i})">
-      <span class="gl-cp-box">${c.d?'✓':''}</span>
-      <span class="gl-cp-txt">${escapeHtmlG(c.t)}</span>
-      ${c.r?`<span class="gl-cp-reward">🎁 ${escapeHtmlG(c.r)}</span>`:''}
-    </div>`).join('')}</div>`:'';
-  return `<div class="gl-card${isDone?' done':''}" style="--gcol:${col}">
-    <div class="gl-card-top">
-      <span class="gl-icon">${g.icon||hm[2]}</span>
-      <div class="gl-card-titles">
-        <div class="gl-title">${escapeHtmlG(g.title)}</div>
-        <div class="gl-meta">
-          <span class="gl-hbadge">${hm[1]}</span>
-          <span class="gl-cat" style="color:${col}">● ${escapeHtmlG(g.category)}</span>
-          ${g.target_date?`<span class="gl-date">⏳ ${g.target_date}</span>`:''}
-          ${isDone?'<span class="gl-done-tag">✓ atteint</span>':''}
-        </div>
-      </div>
-      <button class="gl-edit" onclick="openGoalModal('${g.id}')" title="Éditer">✎</button>
+  const dots=cps.length?`<div class="gl-cp-dots" title="${cps.filter(c=>c.d).length}/${cps.length} checkpoints">${cps.map((c,i)=>`<span class="gl-cp-dot${c.d?' done':''}" onclick="event.stopPropagation();toggleGoalCp('${g.id}',${i})" title="${escapeAttrG(c.t)}${c.r?' · 🎁 '+escapeAttrG(c.r):''}"></span>`).join('')}<span class="gl-cp-count">${cps.filter(c=>c.d).length}/${cps.length}</span></div>`:'';
+  return `<div class="gl-card${isDone?' done':''}" style="--gcol:${col}" onclick="openGoalModal('${g.id}')">
+    <div class="gl-c-head">
+      <span class="gl-c-icon">${g.icon||hm[2]}</span>
+      <span class="gl-c-hbadge">${hm[1]}</span>
+      ${isDone?'<span class="gl-c-done">✓ atteint</span>':`<button class="gl-edit" onclick="event.stopPropagation();openGoalModal('${g.id}')" title="Éditer">✎</button>`}
     </div>
-    ${g.description?`<div class="gl-desc">${escapeHtmlG(g.description)}</div>`:''}
+    <div class="gl-c-title">${escapeHtmlG(g.title)}</div>
+    <div class="gl-c-cat" style="color:${col}">● ${escapeHtmlG(g.category)}</div>
     <div class="gl-prog"><div class="gl-prog-bar" style="width:${prog}%;background:${col}"></div></div>
-    <div class="gl-prog-row"><span class="gl-prog-pct">${prog}%</span>${g.reward?`<span class="gl-reward${isDone?' unlocked':''}" title="${escapeAttrG(g.reward)}">🎁 ${escapeHtmlG(g.reward)}</span>`:''}</div>
-    ${cpHtml}
+    <div class="gl-c-foot"><span class="gl-prog-pct">${prog}%</span>${dots}</div>
+    ${g.reward?`<div class="gl-reward-mini${isDone?' unlocked':''}" title="${escapeAttrG(g.reward)}">🎁 ${escapeHtmlG(g.reward)}</div>`:''}
   </div>`;
 }
 function renderGoalsTree(){
@@ -2050,8 +2035,11 @@ function renderGoalsTree(){
   const sortFn=(a,b)=>goalHorizonRank(a.horizon)-goalHorizonRank(b.horizon)||a.title.localeCompare(b.title);
   const childrenOf=pid=>list.filter(g=>g.parent_id===pid).sort(sortFn);
   const roots=list.filter(g=>!g.parent_id||!ids.has(g.parent_id)).sort(sortFn);
-  const renderNode=g=>`<li class="gl-node">${goalCard(g)}${childrenOf(g.id).length?`<ul class="gl-children">${childrenOf(g.id).map(renderNode).join('')}</ul>`:''}</li>`;
-  el.innerHTML=`<ul class="gl-tree">${roots.map(renderNode).join('')}</ul>`;
+  const renderNode=g=>{
+    const kids=childrenOf(g.id);
+    return `<div class="gl-node">${goalCard(g)}${kids.length?`<div class="gl-link"></div><div class="gl-subtree">${kids.map(renderNode).join('')}</div>`:''}</div>`;
+  };
+  el.innerHTML=`<div class="gl-forest">${roots.map(renderNode).join('')}</div>`;
 }
 
 async function toggleGoalCp(id,idx){
