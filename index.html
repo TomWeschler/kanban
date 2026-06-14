@@ -667,6 +667,62 @@ body,body *{font-family:var(--font-body)}
 .btn-nav{font-family:var(--font-body) !important}
 
 /* ═══════════════════════════════
+   OBJECTIFS — arbre de progression (page dash)
+═══════════════════════════════ */
+#pagedash{overflow-y:auto;flex-direction:column}
+.gl-wrap{padding:1.4rem 1.6rem 3rem;display:flex;flex-direction:column;gap:1.1rem}
+.gl-banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem}
+.gl-kpi{background:var(--surface);border:1px solid var(--border);padding:1rem 1.2rem;border-radius:8px}
+.gl-kpi-lbl{font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-mid);margin-bottom:0.4rem}
+.gl-kpi-val{font-family:var(--font-mono);font-size:1.7rem;font-weight:700;line-height:1}
+.gl-toolbar{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap}
+.gl-filter-lbl{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.18em;color:var(--text-mid);text-transform:uppercase;margin-right:0.4rem}
+.gl-pill{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.05em;font-weight:700;padding:0.32rem 0.8rem;border:1px solid var(--border2);background:transparent;color:var(--text-dim);cursor:pointer;border-radius:99px;transition:all 0.13s}
+.gl-pill:hover{color:var(--text);border-color:var(--text-mid)}
+.gl-pill.active{color:#09090e !important}
+.gl-spacer{flex:1}
+.gl-add{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.08em;font-weight:700;padding:0.36rem 0.95rem;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;border-radius:99px;text-transform:uppercase}
+.gl-add:hover{background:var(--accent);color:var(--bg)}
+.gl-empty{text-align:center;padding:3rem 0;font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);opacity:0.55}
+/* tree */
+.gl-tree,.gl-children{list-style:none;margin:0;padding:0}
+.gl-tree{display:flex;flex-direction:column;gap:0.85rem}
+.gl-children{margin-left:1.5rem;padding-left:1.4rem;border-left:2px solid var(--border2);display:flex;flex-direction:column;gap:0.7rem;margin-top:0.7rem}
+.gl-node{position:relative}
+.gl-children>.gl-node::before{content:'';position:absolute;left:-1.4rem;top:1.7rem;width:1rem;height:2px;background:var(--border2)}
+/* card */
+.gl-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--gcol,var(--accent));border-radius:10px;padding:0.85rem 1rem;transition:box-shadow 0.15s}
+.gl-card:hover{box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.gl-card.done{box-shadow:inset 0 0 0 1px rgba(74,222,128,0.25),0 0 22px rgba(74,222,128,0.08)}
+.gl-card-top{display:flex;align-items:flex-start;gap:0.7rem}
+.gl-icon{font-size:1.4rem;line-height:1.1;flex-shrink:0}
+.gl-card-titles{flex:1;min-width:0}
+.gl-title{font-family:var(--font-body);font-size:1rem;font-weight:700;line-height:1.2}
+.gl-meta{display:flex;align-items:center;gap:0.55rem;flex-wrap:wrap;margin-top:0.28rem;font-family:var(--font-mono);font-size:0.52rem}
+.gl-hbadge{background:var(--surface3);color:var(--text-mid);padding:2px 8px;border-radius:99px;letter-spacing:0.08em;text-transform:uppercase}
+.gl-cat{font-weight:700;letter-spacing:0.03em}
+.gl-date{color:var(--text-dim)}
+.gl-done-tag{color:var(--green);font-weight:700}
+.gl-edit{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.8rem;padding:0.1rem 0.3rem;flex-shrink:0;opacity:0;transition:opacity 0.15s}
+.gl-card:hover .gl-edit{opacity:1}
+.gl-edit:hover{color:var(--text)}
+.gl-desc{font-size:0.74rem;color:var(--text-mid);margin-top:0.45rem;line-height:1.45}
+.gl-prog{height:7px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-top:0.6rem}
+.gl-prog-bar{height:100%;border-radius:4px;transition:width 0.5s}
+.gl-prog-row{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-top:0.42rem}
+.gl-prog-pct{font-family:var(--font-mono);font-size:0.62rem;font-weight:700;color:var(--text-mid)}
+.gl-reward{font-family:var(--font-mono);font-size:0.55rem;color:var(--gld);background:rgba(252,211,77,0.08);border:1px solid rgba(252,211,77,0.25);padding:2px 9px;border-radius:99px;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gl-reward.unlocked{background:rgba(252,211,77,0.2);box-shadow:0 0 10px rgba(252,211,77,0.3)}
+.gl-cps{margin-top:0.7rem;display:flex;flex-direction:column;gap:0.32rem;border-top:1px solid var(--border);padding-top:0.6rem}
+.gl-cp{display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.74rem;color:var(--text-mid)}
+.gl-cp:hover .gl-cp-box{border-color:var(--text-mid)}
+.gl-cp-box{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--green);flex-shrink:0}
+.gl-cp.done .gl-cp-box{background:rgba(74,222,128,0.18);border-color:var(--green)}
+.gl-cp.done .gl-cp-txt{text-decoration:line-through;color:var(--text-dim)}
+.gl-cp-txt{flex:1;min-width:0}
+.gl-cp-reward{font-family:var(--font-mono);font-size:0.5rem;color:var(--gld);white-space:nowrap;flex-shrink:0}
+
+/* ═══════════════════════════════
    MOBILE — portrait (≤ 640px, ex. Pixel 8 ≈ 412px)
    Le viewport pilote le mode : large = PC, étroit = mobile.
 ═══════════════════════════════ */
@@ -746,6 +802,14 @@ body,body *{font-family:var(--font-body)}
   .column{scroll-snap-align:start}
   .board-filters{flex-wrap:wrap;padding:0.5rem 0.6rem}
 
+  /* OBJECTIFS */
+  .gl-wrap{padding:0.8rem 0.7rem 4rem}
+  .gl-banner{grid-template-columns:1fr 1fr;gap:0.55rem}
+  .gl-kpi-val{font-size:1.4rem}
+  .gl-children{margin-left:0.7rem;padding-left:0.85rem}
+  .gl-children>.gl-node::before{left:-0.85rem;width:0.7rem}
+  .gl-reward{max-width:50%}
+
   /* Modales lisibles */
   .modal{width:95vw !important;padding:1.1rem}
 }
@@ -776,7 +840,7 @@ body,body *{font-family:var(--font-body)}
     <button class="nav-tab" data-page="habits" onclick="switchPage('habits')">HABITUDES</button>
     <button class="nav-tab" data-page="sport" onclick="switchPage('sport')">SPORT</button>
     <button class="nav-tab" data-page="finances" onclick="switchPage('finances')">FINANCES</button>
-    <button class="nav-tab" data-page="dash" onclick="switchPage('dash')">DASHBOARD</button>
+    <button class="nav-tab" data-page="dash" onclick="switchPage('dash')">OBJECTIFS</button>
   </nav>
   <div class="nav-sep"></div>
   <div class="proj-shortcuts">
@@ -851,11 +915,55 @@ body,body *{font-family:var(--font-body)}
   </div>
 </div>
 
-<!-- DASHBOARD PAGE -->
+<!-- OBJECTIFS PAGE — arbre de progression -->
 <div class="page" id="pagedash">
-  <div class="dash-grid" id="dashKpis"></div>
-  <div class="proj-row" id="projRow"></div>
-  <div class="charts-row" id="chartsRow"></div>
+  <div class="gl-wrap">
+    <div id="glBanner"></div>
+    <div id="glToolbar"></div>
+    <div id="glTree"></div>
+  </div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="modal-bg" id="goalModal">
+  <div class="modal" style="width:560px">
+    <div class="modal-hdr" id="goalModalTitle">OBJECTIF</div>
+    <button class="modal-close" onclick="closeGoalModal()">✕</button>
+    <input type="hidden" id="gfId">
+    <div class="field"><label>Titre</label><input type="text" id="gfTitle" placeholder="Mon objectif..." autocomplete="off"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
+      <div class="field"><label>Horizon</label>
+        <select id="gfHorizon">
+          <option value="life">Vie</option>
+          <option value="5y">5 ans</option>
+          <option value="annual">Année</option>
+          <option value="quarter">Trimestre</option>
+          <option value="month">Mois</option>
+        </select>
+      </div>
+      <div class="field"><label>Catégorie</label><input type="text" id="gfCategory" placeholder="ex : Finance, Santé..." autocomplete="off"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
+      <div class="field"><label>Rattaché à (parent)</label><select id="gfParent"><option value="">— Aucun (racine) —</option></select></div>
+      <div class="field"><label>Icône (emoji)</label><input type="text" id="gfIcon" placeholder="🎯" maxlength="4" autocomplete="off"></div>
+    </div>
+    <div class="field"><label>Description</label><input type="text" id="gfDesc" placeholder="Détail / pourquoi..." autocomplete="off"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.7rem">
+      <div class="field"><label>Progression %</label><input type="number" id="gfProgress" min="0" max="100" placeholder="0"></div>
+      <div class="field"><label>Statut</label><select id="gfStatus"><option value="active">En cours</option><option value="done">Atteint</option><option value="paused">En pause</option></select></div>
+      <div class="field"><label>Échéance</label><input type="date" id="gfTarget"></div>
+    </div>
+    <div class="field"><label>Récompense 🎁</label><input type="text" id="gfReward" placeholder="Ma récompense en atteignant l'objectif..." autocomplete="off"></div>
+    <div class="field"><label>Checkpoints <span style="color:var(--text-dim);font-weight:400">(un par ligne — coche en préfixant par [x])</span></label>
+      <textarea id="gfCheckpoints" class="fit-input" rows="5" style="width:100%" placeholder="[x] Première étape faite&#10;[ ] Étape suivante&#10;[ ] Dernière étape | récompense étape"></textarea></div>
+    <div style="display:flex;gap:0.5rem;justify-content:space-between;margin-top:0.5rem">
+      <button class="btn-nav out" id="gbtnDel" onclick="deleteGoal()" style="display:none;color:var(--danger);border-color:rgba(248,113,113,0.4)">Supprimer</button>
+      <div style="display:flex;gap:0.5rem;margin-left:auto">
+        <button class="btn-nav out" onclick="closeGoalModal()">Annuler</button>
+        <button class="btn-nav" onclick="saveGoal()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- HABITUDES PAGE — GRILLE HEBDO -->
@@ -1773,7 +1881,246 @@ async function persist(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>save
 // ════════════════════════════════════════════════════
 // DASHBOARD
 // ════════════════════════════════════════════════════
-function renderDash(){ renderKpis(); renderProj(); renderCharts(); }
+function renderDash(){ renderGoalsPage(); }
+
+// ════════════════════════════════════════════════════
+// OBJECTIFS — arbre de progression (page "dash")
+// ════════════════════════════════════════════════════
+let goals=[], goalsLoaded=false, goalCatFilter='all';
+const GOAL_HEADER=['id','parent_id','horizon','category','title','description','progress','reward','status','target_date','icon','checkpoints'];
+const GOAL_DELETED='__deleted__';
+const GOAL_HORIZONS=[['life','Vie','🌟'],['5y','5 ans','🔭'],['annual','Année','📅'],['quarter','Trimestre','🎯'],['month','Mois','📌']];
+const GOAL_PALETTE=['#7c6aff','#4ade80','#fbbf24','#22d3ee','#f87171','#a855f7','#38bdf8','#fb923c','#e879f9','#a3e635'];
+const GOAL_SEED=[
+ ['gx1','','life','Perso','Vivre une vie alignée, libre et en bonne santé','Ma vision long terme','0','Sérénité & liberté totales','active','','🌟',''],
+ ['gx2','gx1','5y','Finance','Atteindre l\'indépendance financière','Patrimoine qui couvre mes besoins','0','Quitter le salariat','active','2030-12-31','🔭','[{"t":"Portefeuille à 6 chiffres","d":false,"r":""},{"t":"Revenus passifs > dépenses","d":false,"r":""}]'],
+ ['gx3','gx2','annual','Finance','Économiser 30 000 € en 2026','Effort d\'épargne de l\'année','0','Week-end à l\'étranger','active','2026-12-31','📅','[{"t":"10 000 € (T1-T2)","d":true,"r":""},{"t":"20 000 € (T3)","d":false,"r":""},{"t":"30 000 € (T4)","d":false,"r":"Resto gastro"}]'],
+ ['gx4','gx3','quarter','Finance','Réduire mes dépenses de 15%','Sur ce trimestre','0','Soirée ciné','active','','🎯','[{"t":"Auditer les abonnements","d":true,"r":""},{"t":"Budget courses -15%","d":false,"r":""}]'],
+ ['gx5','gx4','month','Finance','Tenir 100% mon budget ce mois','Suivi quotidien','60','Nouveau livre','active','','📌',''],
+ ['gx6','gx1','5y','Santé','Être en grande forme physique','Corps fort et endurant','0','Photo souvenir','active','','💪','[{"t":"Routine sport stable","d":false,"r":""},{"t":"Objectif poids atteint","d":false,"r":""}]'],
+ ['gx7','gx6','month','Santé','3 séances de sport / semaine','Régularité avant tout','0','Massage détente','active','','🏋️','']
+];
+function goalHorizonMeta(h){return GOAL_HORIZONS.find(x=>x[0]===h)||['','—','•'];}
+function goalHorizonRank(h){const i=GOAL_HORIZONS.findIndex(x=>x[0]===h);return i<0?99:i;}
+function goalCatColor(cat){
+  const cats=[...new Set(goals.map(g=>g.category).filter(Boolean))].sort();
+  const i=cats.indexOf(cat);
+  return i<0?'var(--text-mid)':GOAL_PALETTE[i%GOAL_PALETTE.length];
+}
+function escapeHtmlG(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escapeAttrG(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+
+// checkpoints: texte "[x] titre | récompense" ↔ JSON [{t,d,r}]
+function goalParseCheckpointsText(txt){
+  return String(txt||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.match(/^\[([ xX])\]\s*(.*)$/);
+    let done=false, body=l;
+    if(m){done=m[1].toLowerCase()==='x';body=m[2];}
+    const parts=body.split('|');
+    return {t:parts[0].trim(), d:done, r:(parts[1]||'').trim()};
+  }).filter(c=>c.t);
+}
+function goalCheckpointsToText(arr){return (arr||[]).map(c=>`[${c.d?'x':' '}] ${c.t}${c.r?` | ${c.r}`:''}`).join('\n');}
+function goalCheckpoints(g){
+  if(!g.checkpoints)return [];
+  try{const a=JSON.parse(g.checkpoints);return Array.isArray(a)?a:[];}catch(e){return [];}
+}
+function goalProgress(g){
+  const cps=goalCheckpoints(g);
+  if(cps.length)return Math.round(cps.filter(c=>c.d).length/cps.length*100);
+  return Math.max(0,Math.min(100,parseInt(g.progress)||0));
+}
+
+// ── Sheets I/O (append-only, dernière ligne par id, tombstone) ──
+async function ensureGoalSheet(){
+  const sid=cfg.spreadsheetId;
+  const meta=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const titles=(meta.sheets||[]).map(s=>s.properties.title);
+  if(titles.includes('goals'))return;
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({requests:[{addSheet:{properties:{title:'goals'}}}]})});
+  await sportPutValues('goals!A1',[GOAL_HEADER,...GOAL_SEED]);
+}
+async function loadGoals(){
+  if(!accessToken)return;
+  await ensureGoalSheet();
+  const sid=cfg.spreadsheetId;
+  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals!A:L`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
+  const rows=r.values||[];
+  const parsed=(rows.length<=1?[]:rows.slice(1)).filter(x=>x[0]).map(x=>({
+    id:String(x[0]||'').trim(),parent_id:String(x[1]||'').trim(),horizon:String(x[2]||'').trim()||'month',
+    category:String(x[3]||'').trim()||'Autre',title:String(x[4]||'').trim(),description:String(x[5]||'').trim(),
+    progress:parseInt(x[6])||0,reward:String(x[7]||'').trim(),status:String(x[8]||'').trim()||'active',
+    target_date:String(x[9]||'').trim(),icon:String(x[10]||'').trim(),checkpoints:String(x[11]||'')
+  }));
+  const map={}; parsed.forEach(g=>{map[g.id]=g;});
+  goals=Object.values(map).filter(g=>g.status!==GOAL_DELETED);
+  goalsLoaded=true;
+}
+function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||''];}
+async function goalAppendRow(row){
+  const sid=cfg.spreadsheetId;
+  return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
+}
+async function goalUpsert(g){
+  const i=goals.findIndex(x=>x.id===g.id);
+  if(i>=0)goals[i]=g;else goals.push(g);
+  await goalAppendRow(goalToRow(g));
+}
+async function goalDelete(id){
+  goals=goals.filter(x=>x.id!==id);
+  await goalAppendRow([id,'','','','','','0','',GOAL_DELETED,'','','']);
+}
+
+// ── render ──
+async function renderGoalsPage(){
+  if(!goalsLoaded){showLoad(true);await loadGoals();showLoad(false);}
+  renderGoalsBanner();
+  renderGoalsToolbar();
+  renderGoalsTree();
+}
+async function reloadGoals(){goalsLoaded=false;goals=[];await renderGoalsPage();}
+
+function renderGoalsBanner(){
+  const total=goals.length;
+  const done=goals.filter(g=>g.status==='done'||goalProgress(g)>=100).length;
+  const avg=total?Math.round(goals.reduce((s,g)=>s+goalProgress(g),0)/total):0;
+  const rewards=goals.filter(g=>(g.status==='done'||goalProgress(g)>=100)&&g.reward).length;
+  document.getElementById('glBanner').innerHTML=`
+    <div class="gl-banner">
+      <div class="gl-kpi"><div class="gl-kpi-lbl">Objectifs</div><div class="gl-kpi-val">${total}</div></div>
+      <div class="gl-kpi"><div class="gl-kpi-lbl">Atteints</div><div class="gl-kpi-val" style="color:var(--green)">${done}</div></div>
+      <div class="gl-kpi"><div class="gl-kpi-lbl">Progression moy.</div><div class="gl-kpi-val" style="color:var(--accent)">${avg}%</div></div>
+      <div class="gl-kpi"><div class="gl-kpi-lbl">Récompenses 🎁</div><div class="gl-kpi-val" style="color:var(--gld)">${rewards}</div></div>
+    </div>`;
+}
+function renderGoalsToolbar(){
+  const cats=[...new Set(goals.map(g=>g.category).filter(Boolean))].sort();
+  const pills=[['all','Toutes'],...cats.map(c=>[c,c])].map(([v,l])=>{
+    const active=goalCatFilter===v;
+    const col=v==='all'?'var(--accent)':goalCatColor(v);
+    return `<button class="gl-pill${active?' active':''}" style="${active?`background:${col};border-color:${col}`:''}" onclick="setGoalFilter('${String(v).replace(/'/g,"\\'")}')">${escapeHtmlG(l)}</button>`;
+  }).join('');
+  document.getElementById('glToolbar').innerHTML=`
+    <div class="gl-toolbar">
+      <span class="gl-filter-lbl">Catégorie</span>${pills}
+      <div class="gl-spacer"></div>
+      <button class="gl-add" onclick="openGoalModal()">+ Objectif</button>
+    </div>`;
+}
+function setGoalFilter(c){goalCatFilter=c;renderGoalsToolbar();renderGoalsTree();}
+
+function goalCard(g){
+  const col=goalCatColor(g.category);
+  const hm=goalHorizonMeta(g.horizon);
+  const prog=goalProgress(g);
+  const cps=goalCheckpoints(g);
+  const isDone=g.status==='done'||prog>=100;
+  const cpHtml=cps.length?`<div class="gl-cps">${cps.map((c,i)=>`
+    <div class="gl-cp${c.d?' done':''}" onclick="toggleGoalCp('${g.id}',${i})">
+      <span class="gl-cp-box">${c.d?'✓':''}</span>
+      <span class="gl-cp-txt">${escapeHtmlG(c.t)}</span>
+      ${c.r?`<span class="gl-cp-reward">🎁 ${escapeHtmlG(c.r)}</span>`:''}
+    </div>`).join('')}</div>`:'';
+  return `<div class="gl-card${isDone?' done':''}" style="--gcol:${col}">
+    <div class="gl-card-top">
+      <span class="gl-icon">${g.icon||hm[2]}</span>
+      <div class="gl-card-titles">
+        <div class="gl-title">${escapeHtmlG(g.title)}</div>
+        <div class="gl-meta">
+          <span class="gl-hbadge">${hm[1]}</span>
+          <span class="gl-cat" style="color:${col}">● ${escapeHtmlG(g.category)}</span>
+          ${g.target_date?`<span class="gl-date">⏳ ${g.target_date}</span>`:''}
+          ${isDone?'<span class="gl-done-tag">✓ atteint</span>':''}
+        </div>
+      </div>
+      <button class="gl-edit" onclick="openGoalModal('${g.id}')" title="Éditer">✎</button>
+    </div>
+    ${g.description?`<div class="gl-desc">${escapeHtmlG(g.description)}</div>`:''}
+    <div class="gl-prog"><div class="gl-prog-bar" style="width:${prog}%;background:${col}"></div></div>
+    <div class="gl-prog-row"><span class="gl-prog-pct">${prog}%</span>${g.reward?`<span class="gl-reward${isDone?' unlocked':''}" title="${escapeAttrG(g.reward)}">🎁 ${escapeHtmlG(g.reward)}</span>`:''}</div>
+    ${cpHtml}
+  </div>`;
+}
+function renderGoalsTree(){
+  const el=document.getElementById('glTree');
+  let list=goals;
+  if(goalCatFilter!=='all')list=goals.filter(g=>g.category===goalCatFilter);
+  if(!list.length){el.innerHTML=`<div class="gl-empty">Aucun objectif${goalCatFilter!=='all'?' dans cette catégorie':''}. Crée ton premier avec « + Objectif ».</div>`;return;}
+  const ids=new Set(list.map(g=>g.id));
+  const sortFn=(a,b)=>goalHorizonRank(a.horizon)-goalHorizonRank(b.horizon)||a.title.localeCompare(b.title);
+  const childrenOf=pid=>list.filter(g=>g.parent_id===pid).sort(sortFn);
+  const roots=list.filter(g=>!g.parent_id||!ids.has(g.parent_id)).sort(sortFn);
+  const renderNode=g=>`<li class="gl-node">${goalCard(g)}${childrenOf(g.id).length?`<ul class="gl-children">${childrenOf(g.id).map(renderNode).join('')}</ul>`:''}</li>`;
+  el.innerHTML=`<ul class="gl-tree">${roots.map(renderNode).join('')}</ul>`;
+}
+
+async function toggleGoalCp(id,idx){
+  const g=goals.find(x=>x.id===id);if(!g)return;
+  const cps=goalCheckpoints(g);if(!cps[idx])return;
+  cps[idx].d=!cps[idx].d;
+  g.checkpoints=JSON.stringify(cps);
+  const prog=goalProgress(g);
+  if(prog>=100&&g.status!=='done')g.status='done';
+  if(prog<100&&g.status==='done')g.status='active';
+  renderGoalsBanner();renderGoalsTree();
+  await goalUpsert(g);
+}
+
+// ── modal ──
+function openGoalModal(id){
+  const g=id?goals.find(x=>x.id===id):null;
+  const sel=document.getElementById('gfParent');
+  sel.innerHTML='<option value="">— Aucun (racine) —</option>'+
+    goals.filter(x=>x.id!==id).sort((a,b)=>goalHorizonRank(a.horizon)-goalHorizonRank(b.horizon))
+      .map(x=>`<option value="${x.id}">${goalHorizonMeta(x.horizon)[1]} · ${escapeAttrG(x.title)}</option>`).join('');
+  document.getElementById('gfId').value=g?g.id:'';
+  document.getElementById('gfTitle').value=g?g.title:'';
+  document.getElementById('gfHorizon').value=g?g.horizon:'month';
+  document.getElementById('gfCategory').value=g?g.category:'';
+  document.getElementById('gfParent').value=g?g.parent_id:'';
+  document.getElementById('gfIcon').value=g?g.icon:'';
+  document.getElementById('gfDesc').value=g?g.description:'';
+  document.getElementById('gfProgress').value=g?(g.progress||''):'';
+  document.getElementById('gfStatus').value=g?g.status:'active';
+  document.getElementById('gfTarget').value=g?g.target_date:'';
+  document.getElementById('gfReward').value=g?g.reward:'';
+  document.getElementById('gfCheckpoints').value=g?goalCheckpointsToText(goalCheckpoints(g)):'';
+  document.getElementById('gbtnDel').style.display=g?'block':'none';
+  document.getElementById('goalModalTitle').textContent=g?"ÉDITER L'OBJECTIF":'NOUVEL OBJECTIF';
+  document.getElementById('goalModal').classList.add('open');
+  setTimeout(()=>document.getElementById('gfTitle').focus(),70);
+}
+function closeGoalModal(){document.getElementById('goalModal').classList.remove('open');}
+async function saveGoal(){
+  const title=document.getElementById('gfTitle').value.trim();
+  if(!title){document.getElementById('gfTitle').focus();return;}
+  const id=document.getElementById('gfId').value||('g'+Date.now());
+  const cps=goalParseCheckpointsText(document.getElementById('gfCheckpoints').value);
+  const g={id,
+    parent_id:document.getElementById('gfParent').value,
+    horizon:document.getElementById('gfHorizon').value,
+    category:document.getElementById('gfCategory').value.trim()||'Autre',
+    title,
+    description:document.getElementById('gfDesc').value.trim(),
+    progress:parseInt(document.getElementById('gfProgress').value)||0,
+    reward:document.getElementById('gfReward').value.trim(),
+    status:document.getElementById('gfStatus').value,
+    target_date:document.getElementById('gfTarget').value,
+    icon:document.getElementById('gfIcon').value.trim(),
+    checkpoints:cps.length?JSON.stringify(cps):''};
+  closeGoalModal();
+  showLoad(true);await goalUpsert(g);showLoad(false);
+  toast('Objectif enregistré ✓','ok');
+  renderGoalsBanner();renderGoalsToolbar();renderGoalsTree();
+}
+async function deleteGoal(){
+  const id=document.getElementById('gfId').value;if(!id)return;
+  if(!confirm('Supprimer cet objectif ? (ses sous-objectifs deviendront des racines)'))return;
+  closeGoalModal();
+  showLoad(true);await goalDelete(id);showLoad(false);
+  toast('Objectif supprimé','info');
+  renderGoalsBanner();renderGoalsToolbar();renderGoalsTree();
+}
 
 function renderHeatmaps() {
   const el = document.getElementById('dashHeatmaps');
@@ -3678,16 +4025,18 @@ async function saveSportPlan(){
 // KEYBOARD
 // ════════════════════════════════════════════════════
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closeHabitModal();closeSportPlanModal();}
+  if(e.key==='Escape'){closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();}
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     if(document.getElementById('taskModal').classList.contains('open'))saveTask();
     if(document.getElementById('habitModal').classList.contains('open'))saveHabit();
     if(document.getElementById('sportPlanModal').classList.contains('open'))saveSportPlan();
+    if(document.getElementById('goalModal').classList.contains('open'))saveGoal();
   }
 });
 document.getElementById('taskModal').addEventListener('click',e=>{if(e.target===document.getElementById('taskModal'))closeModal();});
 document.getElementById('habitModal').addEventListener('click',e=>{if(e.target===document.getElementById('habitModal'))closeHabitModal();});
 document.getElementById('sportPlanModal').addEventListener('click',e=>{if(e.target===document.getElementById('sportPlanModal'))closeSportPlanModal();});
+document.getElementById('goalModal').addEventListener('click',e=>{if(e.target===document.getElementById('goalModal'))closeGoalModal();});
 
 init();
 </script>
