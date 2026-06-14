@@ -3188,6 +3188,7 @@ const SPORT_FORMAT_DOC=[
   '(date,type,duration_min,title,content) en texte, l utilisateur le colle dans l app (Définir le programme).',
 ];
 const SPORT_GOAL_KEY='kanban_sport_goal';
+const SPORT_DELETED='__deleted__'; // tombstone marker in sport_plan.type (append-only delete)
 let sportWeekGoal=parseInt(localStorage.getItem(SPORT_GOAL_KEY)||'4')||4;
 const SPORT_TYPE_COLOR={Muscu:'#a855f7',Cardio:'#f87171',Marche:'#22c55e','Mobilité':'#38bdf8',Mixte:'#fbbf24',Repos:'#60607a',Autre:'#9898b8'};
 function sportTypeColor(t){const k=Object.keys(SPORT_TYPE_COLOR).find(x=>x.toLowerCase()===String(t||'').toLowerCase());return SPORT_TYPE_COLOR[k]||'var(--accent)';}
@@ -3245,7 +3246,7 @@ async function loadSportData(){
     date:String(r[0]||'').trim(),status:String(r[1]||'').trim(),exercises:String(r[2]||''),
     feeling:parseInt(r[3])||0,weight:parseFloat(String(r[4]||'').replace(',','.'))||0,comment:String(r[5]||'').trim()
   }));
-  sportPlans=sportDedupLast(plans);
+  sportPlans=sportDedupLast(plans).filter(p=>p.type!==SPORT_DELETED);
   sportLogs=sportDedupLast(logs);
   sportLoaded=true;
 }
@@ -3261,6 +3262,28 @@ async function sportUpsertPlan(p){
   if(i>=0) sportPlans[i]=p; else sportPlans.push(p);
   sportPlans.sort((a,b)=>a.date.localeCompare(b.date));
   await sportAppendRow('sport_plan',[p.date,p.type,String(p.duration||''),p.title,p.content]);
+}
+async function sportDeletePlan(date){
+  if(!sportPlanFor(date)) return;
+  if(!confirm(`Supprimer le programme du ${date} ?`)) return;
+  sportPlans=sportPlans.filter(p=>p.date!==date);
+  showLoad(true);
+  await sportAppendRow('sport_plan',[date,SPORT_DELETED,'','','']); // tombstone (dernière ligne pour cette date)
+  showLoad(false);
+  toast('Programme supprimé','info');
+  renderSportPage();
+}
+async function sportDeleteFuturePlans(){
+  const today=sportYmd(new Date());
+  const future=sportPlans.filter(p=>p.date>today);
+  if(!future.length) return;
+  if(!confirm(`Supprimer les ${future.length} programme(s) à venir (après aujourd'hui) ?`)) return;
+  showLoad(true);
+  for(const p of future) await sportAppendRow('sport_plan',[p.date,SPORT_DELETED,'','','']);
+  showLoad(false);
+  sportPlans=sportPlans.filter(p=>p.date<=today);
+  toast('Programmes à venir supprimés','info');
+  renderSportPage();
 }
 async function sportUpsertLog(l){
   const i=sportLogs.findIndex(x=>x.date===l.date);
@@ -3366,7 +3389,10 @@ function renderSportToday(){
     </div>`;
   }).join(''):'<p style="opacity:0.5">Aucun détail fourni.</p>';
   el.innerHTML=`<div class="sp-today">
-    <button class="fit-btn" style="position:absolute;top:1rem;right:1rem;font-size:0.46rem;padding:0.25rem 0.5rem" onclick="openSportPlanModal('${today}')">✎ éditer</button>
+    <div style="position:absolute;top:0.9rem;right:0.9rem;display:flex;gap:0.35rem">
+      <button class="fit-btn" style="font-size:0.46rem;padding:0.25rem 0.5rem" onclick="openSportPlanModal('${today}')" title="Éditer">✎</button>
+      <button class="fit-btn" style="font-size:0.46rem;padding:0.25rem 0.5rem" onclick="sportDeletePlan('${today}')" title="Supprimer le programme du jour">🗑</button>
+    </div>
     <div class="sp-today-hdr">
       <span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55">${p.type}</span>
       ${p.duration?`<span class="sp-dur">⏱ ${p.duration} min</span>`:''}
@@ -3461,17 +3487,24 @@ async function saveSportLog(){
 
 function renderSportTomorrow(){
   const t=new Date();t.setDate(t.getDate()+1);const tom=sportYmd(t);
+  const today=sportYmd(new Date());
   const p=sportPlanFor(tom);
   const el=document.getElementById('sportTomorrow');
+  const futureCount=sportPlans.filter(x=>x.date>today).length;
+  const bulkBtn=futureCount?`<button class="fit-btn" style="font-size:0.5rem" onclick="sportDeleteFuturePlans()" title="Effacer tous les programmes après aujourd'hui">🗑 Effacer les ${futureCount} à venir</button>`:'';
+  const hdr=`<div class="fit-section-lbl" style="display:flex;justify-content:space-between;align-items:center">Demain ${bulkBtn}</div>`;
   if(p){
     const col=sportTypeColor(p.type);
-    el.innerHTML=`<div class="fit-section-lbl">Demain</div>
+    el.innerHTML=`${hdr}
       <div class="sp-tom"><div class="sp-tom-info">
         <div class="sp-tom-title"><span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55;margin-right:0.5rem">${p.type}</span>${p.title||''}</div>
         <div class="sp-tom-meta">${p.duration?`⏱ ${p.duration} min · `:''}programme prêt ✓</div>
-      </div><button class="fit-btn" onclick="openSportPlanModal('${tom}')">✎ éditer</button></div>`;
+      </div><div style="display:flex;gap:0.4rem">
+        <button class="fit-btn" onclick="openSportPlanModal('${tom}')">✎ éditer</button>
+        <button class="fit-btn" onclick="sportDeletePlan('${tom}')" title="Supprimer">🗑</button>
+      </div></div>`;
   }else{
-    el.innerHTML=`<div class="fit-section-lbl">Demain</div>
+    el.innerHTML=`${hdr}
       <div class="sp-tom"><div class="sp-tom-info"><div class="sp-tom-title" style="color:var(--text-mid)">Pas encore de programme</div><div class="sp-tom-meta">Demande à Claude « fais-moi mon programme de demain » — ou définis-le toi-même</div></div>
       <button class="fit-btn" onclick="openSportPlanModal('${tom}')">+ Définir</button></div>`;
   }
