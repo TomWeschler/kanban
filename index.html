@@ -50,7 +50,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .btn-nav{background:var(--accent);color:#fff;border:none;font-family:'Syne',sans-serif;font-size:0.73rem;font-weight:700;padding:0.3rem 0.8rem;cursor:pointer;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);transition:background 0.13s;white-space:nowrap}
 .btn-nav:hover{background:#9585ff}
 .btn-nav.out{background:transparent;clip-path:none;border:1px solid var(--border);color:var(--text-dim)}.btn-nav.out:hover{color:var(--text);border-color:var(--text-mid)}
-.app-version{font-family:'Space Mono',monospace;font-size:0.46rem;letter-spacing:0.1em;color:var(--text-dim);opacity:0.45;white-space:nowrap;user-select:none}
+.app-version{font-family:'Space Mono',monospace;font-size:0.56rem;font-weight:700;letter-spacing:0.08em;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(124,106,255,0.3);border-radius:4px;padding:0.18rem 0.45rem;white-space:nowrap;user-select:none}
 
 /* PAGES */
 .page{display:none;flex:1;overflow:hidden;position:relative;z-index:1}
@@ -939,7 +939,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.0.1</span>
+    <span class="app-version">v1.0.2</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1606,12 +1606,12 @@ function renderHabGrid() {
     return list;
   }
 
-  let head = `<tr><th class=”hg-th-name”>Habitude</th>`;
+  let head = `<tr><th class="hg-th-name">Habitude</th>`;
   week.forEach((d,i) => {
     const isToday = habDateToYmd(d) === TODAY;
-    head += `<th class=”hg-day-head${isToday?' hg-col-today':''}”><div class=”hg-day-dow”>${DOW[i]}</div><div class=”hg-day-num”>${d.getDate()}</div></th>`;
+    head += `<th class="hg-day-head${isToday?' hg-col-today':''}"><div class="hg-day-dow">${DOW[i]}</div><div class="hg-day-num">${d.getDate()}</div></th>`;
   });
-  head += `<th class=”hg-th-week”>Sem.</th></tr>`;
+  head += `<th class="hg-th-week">Sem.</th></tr>`;
 
   const CAT_ORDER = ['Santé','Productivité','Esprit','Finance','Autre'];
   let body = '';
@@ -1624,7 +1624,7 @@ function renderHabGrid() {
     hasAny = true;
     filtered.sort((a,b) => a.id - b.id);
 
-    body += `<tr class=”hg-sec-row”><td colspan=”9” style=”color:${catColor}”>◆ ${cat.toUpperCase()}</td></tr>`;
+    body += `<tr class="hg-sec-row"><td colspan="9" style="color:${catColor}">◆ ${cat.toUpperCase()}</td></tr>`;
 
     filtered.forEach(h => {
       const color = HAB_CAT_COLOR[h.category] || 'var(--text-mid)';
@@ -1642,43 +1642,43 @@ function renderHabGrid() {
         if (done) cls += ' done';
         if (!due) cls += ' notdue';
         if (isFuture) cls += ' future';
-        const style = done ? `style=”background:${color};border-color:${color}”` : '';
-        const onclick = isFuture ? '' : `onclick=”toggleHabit(${h.id},'${ds}')”`;
-        return `<td class=”hg-cell${isToday?' hg-col-today':''}”><div class=”${cls}” ${style} ${onclick}></div></td>`;
+        const style = done ? `style="background:${color};border-color:${color}"` : '';
+        const onclick = isFuture ? '' : `onclick="toggleHabit(${h.id},'${ds}')"`;
+        return `<td class="hg-cell${isToday?' hg-col-today':''}"><div class="${cls}" ${style} ${onclick}></div></td>`;
       }).join('');
-      body += `<tr class=”hg-row${h.active?'':' paused'}”>
-      <td class=”hg-name-cell” onclick=”openHabitModal(${h.id})” title=”Éditer”>
-        <div class=”hg-name-inner” style=”display:flex;align-items:center;gap:0.6rem”>
-          <span class=”hg-name-icon”>${icon}</span>
-          <div class=”hg-name-txt”>
-            <div class=”hg-name-title”><span class=”hg-cat-dot” style=”background:${color}”></span>${h.title}${h.active?'':' <span class=”hg-paused-tag”>pause</span>'}</div>
-            <div class=”hg-name-meta”><span class=”hg-name-reward”>+${h.reward_eur.toFixed(2)}€<\/span>${streak>0?`<span class=”hg-name-streak”>🔥 ${streak}<\/span>`:''}<span>${freqLabel(h.frequency)}</span></div>
+      body += `<tr class="hg-row${h.active?'':' paused'}">
+      <td class="hg-name-cell" onclick="openHabitModal(${h.id})" title="Éditer">
+        <div class="hg-name-inner">
+          <span class="hg-name-icon">${icon}</span>
+          <div class="hg-name-txt">
+            <div class="hg-name-title"><span class="hg-cat-dot" style="background:${color}"></span>${h.title}${h.active?'':' <span class="hg-paused-tag">pause</span>'}</div>
+            <div class="hg-name-meta"><span class="hg-name-reward">+${h.reward_eur.toFixed(2)}€</span>${streak>0?`<span class="hg-name-streak">🔥 ${streak}</span>`:''}<span>${freqLabel(h.frequency)}</span></div>
           </div>
         </div>
       </td>
       ${cells}
-      <td class=”hg-week-cell”><span class=”done-cnt”>${weekDone}</span></td>
+      <td class="hg-week-cell"><span class="done-cnt">${weekDone}</span></td>
     </tr>`;
     });
 
-    let foot = `<tr class=”hg-foot”><td class=”hg-foot-lbl”></td>`;
+    let foot = `<tr class="hg-foot"><td class="hg-foot-lbl"></td>`;
     week.forEach(d => {
       const ds = habDateToYmd(d);
       const cnt = filtered.reduce((s,h) => s + (habitsLog.some(l => String(l.habit_id)===String(h.id) && l.date===ds)?1:0), 0);
       const isToday = ds === TODAY;
-      foot += `<td class=”hg-foot-day${isToday?' hg-col-today':''}”><b>${cnt}</b></td>`;
+      foot += `<td class="hg-foot-day${isToday?' hg-col-today':''}"><b>${cnt}</b></td>`;
     });
     const weekEur = filtered.reduce((s,h) =>
       s + week.reduce((ss,d) => ss + (habitsLog.some(l => String(l.habit_id)===String(h.id) && l.date===habDateToYmd(d))?h.reward_eur:0), 0), 0);
-    foot += `<td class=”hg-foot-eur”>+${weekEur.toFixed(0)}€</td></tr>`;
+    foot += `<td class="hg-foot-eur">+${weekEur.toFixed(0)}€</td></tr>`;
     body += foot;
   });
 
   if (!hasAny) {
-    el.innerHTML = `<div class=”hg-empty”>Aucune habitude pour ce filtre.</div>`;
+    el.innerHTML = `<div class="hg-empty">Aucune habitude pour ce filtre.</div>`;
     return;
   }
-  el.innerHTML = `<table class=”hg-table”><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  el.innerHTML = `<table class="hg-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
 }
 
 // ════════════════════════════════════════════════════
