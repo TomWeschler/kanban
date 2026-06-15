@@ -939,7 +939,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.0.0</span>
+    <span class="app-version">v1.0.1</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1648,7 +1648,7 @@ function renderHabGrid() {
       }).join('');
       body += `<tr class=”hg-row${h.active?'':' paused'}”>
       <td class=”hg-name-cell” onclick=”openHabitModal(${h.id})” title=”Éditer”>
-        <div class=”hg-name-inner”>
+        <div class=”hg-name-inner” style=”display:flex;align-items:center;gap:0.6rem”>
           <span class=”hg-name-icon”>${icon}</span>
           <div class=”hg-name-txt”>
             <div class=”hg-name-title”><span class=”hg-cat-dot” style=”background:${color}”></span>${h.title}${h.active?'':' <span class=”hg-paused-tag”>pause</span>'}</div>
