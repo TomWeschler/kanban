@@ -211,9 +211,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .hg-foot-eur{color:var(--green);font-weight:700}
 
 .hg-empty{text-align:center;padding:3rem 0;font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.12em;color:var(--text-dim);opacity:0.5}
-.hg-section{display:block}
-.hg-section+.hg-section{margin-top:1.4rem}
-.hg-section-title{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.22em;font-weight:700;text-transform:uppercase;padding:0.15rem 0;margin-bottom:0.5rem}
+.hg-sec-row td{padding:1rem 1rem 0.35rem !important;text-align:left !important;font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.22em;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border2)}
+.hg-foot+.hg-sec-row td{border-top:1.5px solid var(--border)}
 .hg-day-filters{display:flex;gap:0.35rem}
 
 /* Heatmap section */
@@ -1605,20 +1604,28 @@ function renderHabGrid() {
     return list;
   }
 
-  function buildSection(cat) {
-    const color = HAB_CAT_COLOR[cat] || 'var(--text-mid)';
+  let head = `<tr><th class=”hg-th-name”>Habitude</th>`;
+  week.forEach((d,i) => {
+    const isToday = habDateToYmd(d) === TODAY;
+    head += `<th class=”hg-day-head${isToday?' hg-col-today':''}”><div class=”hg-day-dow”>${DOW[i]}</div><div class=”hg-day-num”>${d.getDate()}</div></th>`;
+  });
+  head += `<th class=”hg-th-week”>Sem.</th></tr>`;
+
+  const CAT_ORDER = ['Santé','Productivité','Esprit','Finance','Autre'];
+  let body = '';
+  let hasAny = false;
+
+  CAT_ORDER.forEach(cat => {
+    const catColor = HAB_CAT_COLOR[cat] || 'var(--text-mid)';
     const filtered = applyDayFilter(habits.filter(h => h.category === cat));
-    if (!filtered.length) return '';
+    if (!filtered.length) return;
+    hasAny = true;
     filtered.sort((a,b) => a.id - b.id);
 
-    let head = `<tr><th class=”hg-th-name”>Habitude</th>`;
-    week.forEach((d,i) => {
-      const isToday = habDateToYmd(d) === TODAY;
-      head += `<th class=”hg-day-head${isToday?' hg-col-today':''}”><div class=”hg-day-dow”>${DOW[i]}</div><div class=”hg-day-num”>${d.getDate()}</div></th>`;
-    });
-    head += `<th class=”hg-th-week”>Sem.</th></tr>`;
+    body += `<tr class=”hg-sec-row”><td colspan=”9” style=”color:${catColor}”>◆ ${cat.toUpperCase()}</td></tr>`;
 
-    const rows = filtered.map(h => {
+    filtered.forEach(h => {
+      const color = HAB_CAT_COLOR[h.category] || 'var(--text-mid)';
       const streak = getStreak(h.id, h.frequency);
       const icon = habitIcon(h.title);
       let weekDone = 0;
@@ -1637,22 +1644,22 @@ function renderHabGrid() {
         const onclick = isFuture ? '' : `onclick=”toggleHabit(${h.id},'${ds}')”`;
         return `<td class=”hg-cell${isToday?' hg-col-today':''}”><div class=”${cls}” ${style} ${onclick}></div></td>`;
       }).join('');
-      return `<tr class=”hg-row${h.active?'':' paused'}”>
-        <td class=”hg-name-cell” onclick=”openHabitModal(${h.id})” title=”Éditer”>
-          <div class=”hg-name-inner”>
-            <span class=”hg-name-icon”>${icon}</span>
-            <div class=”hg-name-txt”>
-              <div class=”hg-name-title”><span class=”hg-cat-dot” style=”background:${color}”></span>${h.title}${h.active?'':' <span class=”hg-paused-tag”>pause</span>'}</div>
-              <div class=”hg-name-meta”><span class=”hg-name-reward”>+${h.reward_eur.toFixed(2)}€</span>${streak>0?`<span class=”hg-name-streak”>🔥 ${streak}</span>`:''}<span>${freqLabel(h.frequency)}</span></div>
-            </div>
+      body += `<tr class=”hg-row${h.active?'':' paused'}”>
+      <td class=”hg-name-cell” onclick=”openHabitModal(${h.id})” title=”Éditer”>
+        <div class=”hg-name-inner”>
+          <span class=”hg-name-icon”>${icon}</span>
+          <div class=”hg-name-txt”>
+            <div class=”hg-name-title”><span class=”hg-cat-dot” style=”background:${color}”></span>${h.title}${h.active?'':' <span class=”hg-paused-tag”>pause</span>'}</div>
+            <div class=”hg-name-meta”><span class=”hg-name-reward”>+${h.reward_eur.toFixed(2)}€<\/span>${streak>0?`<span class=”hg-name-streak”>🔥 ${streak}<\/span>`:''}<span>${freqLabel(h.frequency)}</span></div>
           </div>
-        </td>
-        ${cells}
-        <td class=”hg-week-cell”><span class=”done-cnt”>${weekDone}</span></td>
-      </tr>`;
-    }).join('');
+        </div>
+      </td>
+      ${cells}
+      <td class=”hg-week-cell”><span class=”done-cnt”>${weekDone}</span></td>
+    </tr>`;
+    });
 
-    let foot = `<tr class=”hg-foot”><td class=”hg-foot-lbl”>Complétées / jour</td>`;
+    let foot = `<tr class=”hg-foot”><td class=”hg-foot-lbl”></td>`;
     week.forEach(d => {
       const ds = habDateToYmd(d);
       const cnt = filtered.reduce((s,h) => s + (habitsLog.some(l => String(l.habit_id)===String(h.id) && l.date===ds)?1:0), 0);
@@ -1662,16 +1669,14 @@ function renderHabGrid() {
     const weekEur = filtered.reduce((s,h) =>
       s + week.reduce((ss,d) => ss + (habitsLog.some(l => String(l.habit_id)===String(h.id) && l.date===habDateToYmd(d))?h.reward_eur:0), 0), 0);
     foot += `<td class=”hg-foot-eur”>+${weekEur.toFixed(0)}€</td></tr>`;
+    body += foot;
+  });
 
-    return `<div class=”hg-section”>
-      <div class=”hg-section-title” style=”color:${color}”>◆ ${cat.toUpperCase()}</div>
-      <table class=”hg-table”><thead>${head}</thead><tbody>${rows}</tbody><tfoot>${foot}</tfoot></table>
-    </div>`;
+  if (!hasAny) {
+    el.innerHTML = `<div class=”hg-empty”>Aucune habitude pour ce filtre.</div>`;
+    return;
   }
-
-  const CAT_ORDER = ['Santé','Productivité','Esprit','Finance','Autre'];
-  const html = CAT_ORDER.map(buildSection).join('');
-  el.innerHTML = html || `<div class=”hg-empty”>Aucune habitude pour ce filtre.</div>`;
+  el.innerHTML = `<table class=”hg-table”><thead>${head}</thead><tbody>${body}</tbody></table>`;
 }
 
 // ════════════════════════════════════════════════════
