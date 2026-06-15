@@ -50,6 +50,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .btn-nav{background:var(--accent);color:#fff;border:none;font-family:'Syne',sans-serif;font-size:0.73rem;font-weight:700;padding:0.3rem 0.8rem;cursor:pointer;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);transition:background 0.13s;white-space:nowrap}
 .btn-nav:hover{background:#9585ff}
 .btn-nav.out{background:transparent;clip-path:none;border:1px solid var(--border);color:var(--text-dim)}.btn-nav.out:hover{color:var(--text);border-color:var(--text-mid)}
+.app-version{font-family:'Space Mono',monospace;font-size:0.46rem;letter-spacing:0.1em;color:var(--text-dim);opacity:0.45;white-space:nowrap;user-select:none}
 
 /* PAGES */
 .page{display:none;flex:1;overflow:hidden;position:relative;z-index:1}
@@ -938,6 +939,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
+    <span class="app-version">v1.0.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
