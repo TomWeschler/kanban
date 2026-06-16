@@ -939,7 +939,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.0.4</span>
+    <span class="app-version">v1.0.5</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -2059,18 +2059,34 @@ async function loadGoals(){
   goalsLoaded=true;
 }
 function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||''];}
-async function goalAppendRow(row){
+// Met à jour EN PLACE la dernière ligne dont la colonne A == key (id/date), sinon ajoute
+// une nouvelle ligne. Évite les doublons d'id quand on édite, tout en tolérant les writers
+// concurrents (la stratégie sport peut toujours appender ; le load garde la dernière ligne).
+async function sheetUpsertByKey(sheet,key,row){
+  if(!accessToken) return false;
   const sid=cfg.spreadsheetId;
-  return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
+  let rowNum=0;
+  try{
+    const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheet+'!A:A')}`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(x=>x.ok?x.json():{values:[]});
+    const vals=r.values||[];
+    for(let i=1;i<vals.length;i++){ if(String((vals[i]||[])[0]||'').trim()===String(key).trim()) rowNum=i+1; }
+  }catch(e){ rowNum=0; }
+  if(rowNum>=2){
+    const resp=await sportPutValues(`${sheet}!A${rowNum}`,[row]);
+    return resp.ok;
+  }
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheet)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+  const resp=await fetch(url,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
+  return resp.ok;
 }
 async function goalUpsert(g){
   const i=goals.findIndex(x=>x.id===g.id);
   if(i>=0)goals[i]=g;else goals.push(g);
-  await goalAppendRow(goalToRow(g));
+  await sheetUpsertByKey('goals',g.id,goalToRow(g));
 }
 async function goalDelete(id){
   goals=goals.filter(x=>x.id!==id);
-  await goalAppendRow([id,'','','','','','0','',GOAL_DELETED,'','','']);
+  await sheetUpsertByKey('goals',id,[id,'','','','','','0','',GOAL_DELETED,'','','']);
 }
 
 // ── render ──
@@ -3825,25 +3841,18 @@ async function loadSportData(){
   sportLogs=sportDedupLast(logs);
   sportLoaded=true;
 }
-async function sportAppendRow(sheet,row){
-  if(!accessToken)return false;
-  const sid=cfg.spreadsheetId;
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheet)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
-  const resp=await fetch(url,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
-  return resp.ok;
-}
 async function sportUpsertPlan(p){
   const i=sportPlans.findIndex(x=>x.date===p.date);
   if(i>=0) sportPlans[i]=p; else sportPlans.push(p);
   sportPlans.sort((a,b)=>a.date.localeCompare(b.date));
-  await sportAppendRow('sport_plan',[p.date,p.type,String(p.duration||''),p.title,p.content,p.bonus||'']);
+  await sheetUpsertByKey('sport_plan',p.date,[p.date,p.type,String(p.duration||''),p.title,p.content,p.bonus||'']);
 }
 async function sportDeletePlan(date){
   if(!sportPlanFor(date)) return;
   if(!confirm(`Supprimer le programme du ${date} ?`)) return;
   sportPlans=sportPlans.filter(p=>p.date!==date);
   showLoad(true);
-  await sportAppendRow('sport_plan',[date,SPORT_DELETED,'','','']); // tombstone (dernière ligne pour cette date)
+  await sheetUpsertByKey('sport_plan',date,[date,SPORT_DELETED,'','','','']); // tombstone en place
   showLoad(false);
   toast('Programme supprimé','info');
   renderSportPage();
@@ -3854,7 +3863,7 @@ async function sportDeleteFuturePlans(){
   if(!future.length) return;
   if(!confirm(`Supprimer les ${future.length} programme(s) à venir (après aujourd'hui) ?`)) return;
   showLoad(true);
-  for(const p of future) await sportAppendRow('sport_plan',[p.date,SPORT_DELETED,'','','']);
+  for(const p of future) await sheetUpsertByKey('sport_plan',p.date,[p.date,SPORT_DELETED,'','','','']);
   showLoad(false);
   sportPlans=sportPlans.filter(p=>p.date<=today);
   toast('Programmes à venir supprimés','info');
@@ -3864,7 +3873,7 @@ async function sportUpsertLog(l){
   const i=sportLogs.findIndex(x=>x.date===l.date);
   if(i>=0) sportLogs[i]=l; else sportLogs.push(l);
   sportLogs.sort((a,b)=>a.date.localeCompare(b.date));
-  await sportAppendRow('sport_log',[l.date,l.status,l.exercises||'',String(l.feeling||''),String(l.weight||''),l.comment||'',l.bonusDone?'TRUE':'FALSE']);
+  await sheetUpsertByKey('sport_log',l.date,[l.date,l.status,l.exercises||'',String(l.feeling||''),String(l.weight||''),l.comment||'',l.bonusDone?'TRUE':'FALSE']);
 }
 
 // ── helpers ─────────────────────────────────────────
