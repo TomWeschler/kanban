@@ -939,7 +939,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.0.5</span>
+    <span class="app-version">v1.0.6</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -4233,10 +4233,9 @@ document.addEventListener('keydown',e=>{
     if(document.getElementById('goalModal').classList.contains('open'))saveGoal();
   }
 });
-document.getElementById('taskModal').addEventListener('click',e=>{if(e.target===document.getElementById('taskModal'))closeModal();});
-document.getElementById('habitModal').addEventListener('click',e=>{if(e.target===document.getElementById('habitModal'))closeHabitModal();});
-document.getElementById('sportPlanModal').addEventListener('click',e=>{if(e.target===document.getElementById('sportPlanModal'))closeSportPlanModal();});
-document.getElementById('goalModal').addEventListener('click',e=>{if(e.target===document.getElementById('goalModal'))closeGoalModal();});
+// Fermeture des formulaires : uniquement via la croix ✕, "Annuler" ou Échap.
+// (Pas de fermeture au clic/glissé hors du formulaire — un drag de sélection qui
+//  dépasse du formulaire ne doit plus le fermer.)
 
 init();
 </script>
