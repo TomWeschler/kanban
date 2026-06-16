@@ -939,7 +939,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.0.3</span>
+    <span class="app-version">v1.0.4</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -3690,7 +3690,7 @@ const SPORT_LOG_HEADER =['date','status','exercises','feeling','weight_kg','comm
 // Give the kanban_data Sheet access to the Claude strategy project: it reads
 // this tab + sport_log, and writes sport_plan rows.
 const SPORT_FORMAT_DOC=[
-  'SPEC v3 — BOUCLE SPORT (projet stratégie ↔ Sheet ↔ app)',
+  'SPEC v4 — BOUCLE SPORT (projet stratégie ↔ Sheet ↔ app)',
   '',
   'Tu (projet Claude stratégie) LIS sport_log (retours réels) et ÉCRIS des lignes dans sport_plan (programme).',
   "L'app affiche sport_plan et écrit sport_log quand l'utilisateur coche. Ne JAMAIS écrire/effacer sport_log.",
@@ -3717,15 +3717,17 @@ const SPORT_FORMAT_DOC=[
   "  - Si AUCUNE donnée historique pour cet exercice : N'AJOUTE PAS de marqueur → le champ kg reste VIDE.",
   '  - Exercices au poids du corps (gainage, pompes, tractions sans lest...) : pas de marqueur.',
   '',
-  'Exemple de content :',
-  '# Échauffement',
-  '- 5 min vélo + mobilité épaules',
+  '── STRUCTURE DE SÉANCE ──',
+  'ÉCHAUFFEMENT : pour les séances EN SALLE (Muscu), NE PAS mettre de section Échauffement.',
+  "  L'utilisateur fait une série légère sur chaque exercice en guise d échauffement.",
+  '  (Pour Cardio/Marche/Mobilité, un court échauffement reste OK si pertinent.)',
+  'RETOUR AU CALME : NE JAMAIS ajouter de section Retour au calme / cool-down, sur AUCUNE séance.',
+  '',
+  'Exemple de content (séance en salle) :',
   '# Bloc principal',
   '- Développé couché **4×8** @60kg (RPE 8)',
   '- Squat **4×6** @80kg (RPE 8)',
   '- Gainage **3×45s**',
-  '# Retour au calme',
-  '- Étirements 5 min',
   '',
   '── ONGLET sport_log (tu lis seulement) ──',
   'A date       : YYYY-MM-DD',
