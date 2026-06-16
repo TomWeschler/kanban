@@ -939,7 +939,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.0.2</span>
+    <span class="app-version">v1.0.3</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -3690,7 +3690,7 @@ const SPORT_LOG_HEADER =['date','status','exercises','feeling','weight_kg','comm
 // Give the kanban_data Sheet access to the Claude strategy project: it reads
 // this tab + sport_log, and writes sport_plan rows.
 const SPORT_FORMAT_DOC=[
-  'SPEC v2 — BOUCLE SPORT (projet stratégie ↔ Sheet ↔ app)',
+  'SPEC v3 — BOUCLE SPORT (projet stratégie ↔ Sheet ↔ app)',
   '',
   'Tu (projet Claude stratégie) LIS sport_log (retours réels) et ÉCRIS des lignes dans sport_plan (programme).',
   "L'app affiche sport_plan et écrit sport_log quand l'utilisateur coche. Ne JAMAIS écrire/effacer sport_log.",
@@ -3705,12 +3705,25 @@ const SPORT_FORMAT_DOC=[
   'F bonus        : activité bonus QUOTIDIENNE, courte (ex: "Marche 8000 pas", "Rameur 15 min",',
   '                 "Étirements 10 min"). À remplir CHAQUE JOUR, même les jours de Repos.',
   '',
+  '── RÈGLES DE PRESCRIPTION (répétitions + poids) ──',
+  'RÉPÉTITIONS : donne UN SEUL nombre, JAMAIS de fourchette.',
+  '  - Interdit : "4×8-12", "3×10/12", "8 à 12".  Obligatoire : "4×10", "3×8".',
+  '  - Fixe ce nombre via une stratégie de SCALABILITÉ (double progression) : on vise une cible',
+  '    de reps fixe, on monte le poids dès qu elle est tenue proprement, puis on réajuste la cible.',
+  'POIDS : propose un poids par exercice avec le marqueur @<poids>kg en FIN de ligne (ex: @60kg, @22.5kg).',
+  "  - L'app détache automatiquement ce marqueur et PRÉ-REMPLIT le champ kg de l'exercice avec la valeur.",
+  '  - Calcule chaque poids en ANALYSANT LES DERNIERS LOGS (champ exercises : poids réels + statut) :',
+  '    cible de reps tenue au poids prévu → augmente ; partial/skipped → maintiens ou réduis.',
+  "  - Si AUCUNE donnée historique pour cet exercice : N'AJOUTE PAS de marqueur → le champ kg reste VIDE.",
+  '  - Exercices au poids du corps (gainage, pompes, tractions sans lest...) : pas de marqueur.',
+  '',
   'Exemple de content :',
   '# Échauffement',
   '- 5 min vélo + mobilité épaules',
   '# Bloc principal',
-  '- Développé couché **4×8** @ RPE 8',
-  '- Squat **4×6** @ RPE 8',
+  '- Développé couché **4×8** @60kg (RPE 8)',
+  '- Squat **4×6** @80kg (RPE 8)',
+  '- Gainage **3×45s**',
   '# Retour au calme',
   '- Étirements 5 min',
   '',
@@ -3718,7 +3731,7 @@ const SPORT_FORMAT_DOC=[
   'A date       : YYYY-MM-DD',
   'B status     : done | partial | skipped (statut global, sinon déduit des exercices)',
   'C exercises  : JSON [{"ex":"Développé couché 4×8","status":"done","weight":"60"}, ...]',
-  '               → les POIDS RÉELS et le statut par exercice. SOURCE CLÉ pour la progression.',
+  '               → les POIDS RÉELS et le statut par exercice. SOURCE CLÉ pour la progression et le calcul des @kg.',
   'D feeling    : 1–5 (1 = vidé, 5 = en forme)',
   'E weight_kg  : poids CORPOREL du jour (pesée), nombre ou vide',
   'F comment    : commentaire global libre de la séance',
@@ -3726,7 +3739,7 @@ const SPORT_FORMAT_DOC=[
   '',
   'Le champ exercises te donne, pour chaque ligne de TON programme de ce jour, ce que',
   "l'utilisateur a réellement fait (status) et soulevé (weight). Utilise-le pour la double",
-  'progression : si tous les exercices clés sont done aux poids prévus, augmente la charge.',
+  'progression : si tous les exercices clés sont done aux poids prévus, augmente la charge (donc le @kg).',
   '',
   '── PROTOCOLE (chaque soir) ──',
   '1. Lis les ~14 derniers jours de sport_log.',
@@ -3734,6 +3747,7 @@ const SPORT_FORMAT_DOC=[
   '3. Signaux : skipped répétés → format plus court ; feeling 1-2 ou séances dures d affilée → récup/Repos ;',
   '   tendance weight_kg → ajuste selon objectif (sèche/prise/maintien). bonus_done souvent FALSE → bonus plus simple.',
   '4. Écris UNE ligne dans sport_plan pour la prochaine date : séance (B-E) + TOUJOURS une activité bonus (F).',
+  '   Reps = nombre UNIQUE ; poids = @<poids>kg par exercice, recalculé sur les logs (vide si pas d historique).',
   '',
   'Dates au format ISO YYYY-MM-DD impératif. Si ton connecteur Sheets est en lecture seule : sors le bloc',
   '(date,type,duration_min,title,content,bonus) en texte, l utilisateur le colle dans l app (Définir le programme).',
@@ -3941,7 +3955,15 @@ function sportParseProgram(content){
     const line=raw.trim();
     if(!line) return;
     if(/^#{1,3}\s/.test(line)) items.push({type:'head',text:line.replace(/^#{1,3}\s/,'')});
-    else if(/^[-•*]\s/.test(line)) items.push({type:'ex',idx:exIdx++,text:line.replace(/^[-•*]\s/,'')});
+    else if(/^[-•*]\s/.test(line)){
+      let txt=line.replace(/^[-•*]\s/,'');
+      // Poids suggéré par la stratégie : marqueur @<poids>kg en fin de ligne.
+      // On le détache du texte pour pré-remplir le champ kg de l'exercice.
+      let sugg='';
+      const m=txt.match(/@\s*([\d]+(?:[.,][\d]+)?)\s*kg\b/i);
+      if(m){ sugg=m[1].replace(',','.'); txt=txt.replace(m[0],'').replace(/\s{2,}/g,' ').trim(); }
+      items.push({type:'ex',idx:exIdx++,text:txt,sugg});
+    }
     else items.push({type:'p',text:line});
   });
   return items;
@@ -3975,7 +3997,8 @@ function renderSportToday(){
     if(it.type==='p')    return `<p>${sportExBold(it.text)}</p>`;
     const i=it.idx;
     const status=sportExDraft[i]?.status ?? existing[i]?.status ?? '';
-    const weight=sportExDraft[i]?.weight ?? existing[i]?.weight ?? '';
+    // Priorité : saisie en cours > log du jour > poids suggéré par la stratégie (@kg).
+    const weight=sportExDraft[i]?.weight ?? existing[i]?.weight ?? it.sugg ?? '';
     return `<div class="sp-ex-row">
       <button class="sp-ex-status st-${status||'none'}" onclick="sportCycleEx(${i})" title="Statut : fait → partiel → pas fait">${SP_EX_ICON[status]}</button>
       <div class="sp-ex-txt">${sportExBold(it.text)}</div>
