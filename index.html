@@ -941,7 +941,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.0.8</span>
+    <span class="app-version">v1.0.9</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1186,7 +1186,8 @@ const FREQ_OPTS = [
 const cfg = {
   clientId:      '43084703914-45j926vjo82u4k2tcj9enbtftvtqalul.apps.googleusercontent.com',
   spreadsheetId: '1W3S_g5SjFo9Dx2rpVgx35mD_fWq1bC3NEG6DF3lbdJA',
-  sheetName:     'tasks'
+  sheetName:     'tasks',
+  account:       'weschler.tom@gmail.com'
 };
 
 const SHEET_HEADER      = ['id','title','column','importance','due_date','created_at','completed_at','notes'];
@@ -1201,7 +1202,7 @@ let allTasks = [], tasks = [];
 let habits = [], habitsLog = [];
 let selImp = 3, selCat = 'Finance';
 let dragSrcId = null, charts = {}, curPage = 'board';
-let gisLoaded = false, tokenClient = null;
+let gisLoaded = false, tokenClient = null, silentAuthFailed = false;
 let habDayFilter = 'remaining';
 let habWeekOffset = 0;
 let boardFilter = 'all';
@@ -1290,8 +1291,11 @@ function initTokenClient() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: cfg.clientId,
     scope: 'https://www.googleapis.com/auth/spreadsheets',
+    // compte épinglé : évite le sélecteur de compte à chaque ouverture
+    login_hint: cfg.account,
     callback: async (resp) => {
-      if (resp.error) { document.getElementById('authScreen').style.display='flex'; return; }
+      if (resp.error) { silentAuthFailed = true; document.getElementById('authScreen').style.display='flex'; return; }
+      silentAuthFailed = false;
       accessToken = resp.access_token;
       document.getElementById('authScreen').style.display = 'none';
       document.getElementById('btnLogout').style.display = 'block';
@@ -1307,11 +1311,14 @@ function initTokenClient() {
 async function startAuth() {
   if (!gisLoaded) { toast('Google Auth en cours de chargement, réessaie dans 2s','info'); return; }
   if (!tokenClient) initTokenClient();
-  tokenClient.requestAccessToken({ prompt: 'consent' });
+  // silencieux tant que c'est possible ; on ne réaffiche l'écran Google que si
+  // le consentement manque vraiment (1re utilisation, accès révoqué, déconnexion)
+  tokenClient.requestAccessToken({ prompt: silentAuthFailed ? 'consent' : '' });
 }
 
 function logout() {
   accessToken = null;
+  silentAuthFailed = true;
   document.getElementById('authScreen').style.display = 'flex';
   document.getElementById('btnLogout').style.display = 'none';
   toast('Déconnecté','info');
