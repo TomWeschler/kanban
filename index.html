@@ -941,7 +941,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.0.7</span>
+    <span class="app-version">v1.0.8</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1949,18 +1949,18 @@ function renderObjectifs(){ renderGoalsPage(); }
 // OBJECTIFS — arbre de progression (page "objectifs")
 // ════════════════════════════════════════════════════
 let goals=[], goalsLoaded=false, goalCatFilter='all';
-const GOAL_HEADER=['id','parent_id','horizon','category','title','description','progress','reward','status','target_date','icon','checkpoints'];
+const GOAL_HEADER=['id','parent_id','horizon','category','title','description','progress','reward','status','target_date','icon','checkpoints','level'];
 const GOAL_DELETED='__deleted__';
 const GOAL_HORIZONS=[['life','Vie','🌟'],['5y','5 ans','🔭'],['annual','Année','📅'],['quarter','Trimestre','🎯'],['month','Mois','📌']];
 const GOAL_PALETTE=['#7c6aff','#4ade80','#fbbf24','#22d3ee','#f87171','#a855f7','#38bdf8','#fb923c','#e879f9','#a3e635'];
 const GOAL_SEED=[
- ['gx1','','life','Esprit','Vivre une vie alignée, libre et en bonne santé','Ma vision long terme','0','Sérénité & liberté totales','active','','🌟',''],
- ['gx2','gx1','5y','Finance','Atteindre l\'indépendance financière','Patrimoine qui couvre mes besoins','0','Quitter le salariat','active','2030-12-31','🔭','[{"t":"Portefeuille à 6 chiffres","d":false,"r":""},{"t":"Revenus passifs > dépenses","d":false,"r":""}]'],
- ['gx3','gx2','annual','Finance','Économiser 30 000 € en 2026','Effort d\'épargne de l\'année','0','Week-end à l\'étranger','active','2026-12-31','📅','[{"t":"10 000 € (T1-T2)","d":true,"r":""},{"t":"20 000 € (T3)","d":false,"r":""},{"t":"30 000 € (T4)","d":false,"r":"Resto gastro"}]'],
- ['gx4','gx3','quarter','Finance','Réduire mes dépenses de 15%','Sur ce trimestre','0','Soirée ciné','active','2026-08-31','🎯','[{"t":"Auditer les abonnements","d":true,"r":""},{"t":"Budget courses -15%","d":false,"r":""}]'],
- ['gx5','gx4','month','Finance','Tenir 100% mon budget ce mois','Suivi quotidien','60','Nouveau livre','active','2026-06-30','📌',''],
- ['gx6','gx1','5y','Santé','Être en grande forme physique','Corps fort et endurant','0','Photo souvenir','active','2030-06-30','💪','[{"t":"Routine sport stable","d":false,"r":""},{"t":"Objectif poids atteint","d":false,"r":""}]'],
- ['gx7','gx6','month','Santé','3 séances de sport / semaine','Régularité avant tout','0','Massage détente','active','2026-06-30','🏋️','']
+ ['gx1','','life','Esprit','Vivre une vie alignée, libre et en bonne santé','Ma vision long terme','0','Sérénité & liberté totales','active','','🌟','','1'],
+ ['gx2','gx1','5y','Finance','Atteindre l\'indépendance financière','Patrimoine qui couvre mes besoins','0','Quitter le salariat','active','2030-12-31','🔭','[{"t":"Portefeuille à 6 chiffres","d":false,"r":""},{"t":"Revenus passifs > dépenses","d":false,"r":""}]','2'],
+ ['gx3','gx2','annual','Finance','Économiser 30 000 € en 2026','Effort d\'épargne de l\'année','0','Week-end à l\'étranger','active','2026-12-31','📅','[{"t":"10 000 € (T1-T2)","d":true,"r":""},{"t":"20 000 € (T3)","d":false,"r":""},{"t":"30 000 € (T4)","d":false,"r":"Resto gastro"}]','3'],
+ ['gx4','gx3','quarter','Finance','Réduire mes dépenses de 15%','Sur ce trimestre','0','Soirée ciné','active','2026-08-31','🎯','[{"t":"Auditer les abonnements","d":true,"r":""},{"t":"Budget courses -15%","d":false,"r":""}]','4'],
+ ['gx5','gx4','month','Finance','Tenir 100% mon budget ce mois','Suivi quotidien','60','Nouveau livre','active','2026-06-30','📌','','5'],
+ ['gx6','gx1','5y','Santé','Être en grande forme physique','Corps fort et endurant','0','Photo souvenir','active','2030-06-30','💪','[{"t":"Routine sport stable","d":false,"r":""},{"t":"Objectif poids atteint","d":false,"r":""}]','2'],
+ ['gx7','gx6','month','Santé','3 séances de sport / semaine','Régularité avant tout','0','Massage détente','active','2026-06-30','🏋️','','3']
 ];
 function goalHorizonMeta(h){return GOAL_HORIZONS.find(x=>x[0]===h)||['','—','•'];}
 function goalHorizonRank(h){const i=GOAL_HORIZONS.findIndex(x=>x[0]===h);return i<0?99:i;}
@@ -2048,19 +2048,21 @@ async function loadGoals(){
   if(!accessToken)return;
   await ensureGoalSheet();
   const sid=cfg.spreadsheetId;
-  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals!A:L`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
+  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals!A:M`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
   const rows=r.values||[];
   const parsed=(rows.length<=1?[]:rows.slice(1)).filter(x=>x[0]).map(x=>({
     id:String(x[0]||'').trim(),parent_id:String(x[1]||'').trim(),horizon:String(x[2]||'').trim()||'month',
     category:String(x[3]||'').trim()||'Autre',title:String(x[4]||'').trim(),description:String(x[5]||'').trim(),
     progress:parseInt(x[6])||0,reward:String(x[7]||'').trim(),status:String(x[8]||'').trim()||'active',
-    target_date:String(x[9]||'').trim(),icon:String(x[10]||'').trim(),checkpoints:String(x[11]||'')
+    target_date:String(x[9]||'').trim(),icon:String(x[10]||'').trim(),checkpoints:String(x[11]||''),
+    level:parseInt(x[12])||0
   }));
   const map={}; parsed.forEach(g=>{map[g.id]=g;});
   goals=Object.values(map).filter(g=>g.status!==GOAL_DELETED);
   goalsLoaded=true;
+  await migrateGoalLevels();
 }
-function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||''];}
+function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||'',String(g.level||1)];}
 // Met à jour EN PLACE la dernière ligne dont la colonne A == key (id/date), sinon ajoute
 // une nouvelle ligne. Évite les doublons d'id quand on édite, tout en tolérant les writers
 // concurrents (la stratégie sport peut toujours appender ; le load garde la dernière ligne).
@@ -2088,7 +2090,7 @@ async function goalUpsert(g){
 }
 async function goalDelete(id){
   goals=goals.filter(x=>x.id!==id);
-  await sheetUpsertByKey('goals',id,[id,'','','','','','0','',GOAL_DELETED,'','','']);
+  await sheetUpsertByKey('goals',id,[id,'','','','','','0','',GOAL_DELETED,'','','','']);
 }
 
 // ── render ──
@@ -2202,20 +2204,36 @@ function goalPickEmoji(e,btn){
   document.querySelectorAll('#gfEmojiGrid .gl-emoji').forEach(b=>b.classList.remove('sel'));
   if(btn)btn.classList.add('sel');
 }
-// profondeur d'un objectif dans l'arbre (racine = 1)
-function goalDepth(g){
+// niveau depuis la racine (racine = 1), déduit de la chaîne des parents
+function goalComputeLevel(g,byId){
   let d=1,cur=g,guard=0;
   while(cur&&cur.parent_id&&guard++<64){
-    const p=goals.find(x=>x.id===cur.parent_id);
+    const p=byId[cur.parent_id];
     if(!p)break;
     cur=p;d++;
   }
   return d;
 }
-// numéro d'ordre hiérarchique du futur enfant : « 3 - » sous un parent « 2 - ... »
-function goalChildIndex(p){
-  const m=/^\s*(\d+)\s*[-–—]\s*/.exec(p.title||'');
-  return (m?parseInt(m[1],10):goalDepth(p))+1;
+// recalcule le niveau de tous les objectifs ; renvoie ceux dont la valeur a changé
+function goalRecomputeLevels(){
+  const byId={};goals.forEach(g=>{byId[g.id]=g;});
+  const changed=[];
+  goals.forEach(g=>{
+    const lv=goalComputeLevel(g,byId);
+    if(g.level!==lv){g.level=lv;changed.push(g);}
+  });
+  return changed;
+}
+// migration : retire l'ancien préfixe « 3 - » des titres et renseigne la colonne level.
+// Ne réécrit que les lignes réellement modifiées, donc ne fait rien passé le 1er chargement.
+async function migrateGoalLevels(){
+  const dirty=new Set();
+  goals.forEach(g=>{
+    const clean=String(g.title||'').replace(/^\s*\d+\s*[-–—]\s*/,'').trim();
+    if(clean&&clean!==g.title){g.title=clean;dirty.add(g);}
+  });
+  goalRecomputeLevels().forEach(g=>dirty.add(g));
+  for(const g of dirty){await sheetUpsertByKey('goals',g.id,goalToRow(g));}
 }
 // id de l'objectif + tous ses descendants (empêche de choisir un parent qui créerait un cycle)
 function goalSubtreeIds(id){
@@ -2236,12 +2254,12 @@ function openGoalModal(id,parentId){
   const sel=document.getElementById('gfParent');
   sel.innerHTML='<option value="">— Aucun (racine) —</option>'+
     goals.filter(x=>!excl.has(x.id))
-      .sort((a,b)=>(a.category||'Autre').localeCompare(b.category||'Autre','fr')||(a.title||'').localeCompare(b.title||'','fr'))
-      .map(x=>`<option value="${x.id}">${escapeAttrG(x.category||'Autre')} · ${escapeAttrG(x.title)}</option>`).join('');
+      .sort((a,b)=>(a.category||'Autre').localeCompare(b.category||'Autre','fr')||(a.level||1)-(b.level||1)||(a.title||'').localeCompare(b.title||'','fr'))
+      .map(x=>`<option value="${x.id}">${escapeAttrG(x.category||'Autre')} - ${x.level||1} - ${escapeAttrG(x.title)}</option>`).join('');
   const cur=g?g.icon:'';
   document.getElementById('gfEmojiGrid').innerHTML=GOAL_EMOJIS.map(e=>`<button type="button" class="gl-emoji${e===cur?' sel':''}" onclick="goalPickEmoji('${e}',this)">${e}</button>`).join('');
   document.getElementById('gfId').value=g?g.id:'';
-  document.getElementById('gfTitle').value=g?g.title:(pp?goalChildIndex(pp)+' - ':'');
+  document.getElementById('gfTitle').value=g?g.title:'';
   document.getElementById('gfCategory').value=g?g.category:(pp?(pp.category||'Autre'):'Autre');
   document.getElementById('gfParent').value=g?g.parent_id:(pp?pp.id:'');
   document.getElementById('gfIcon').value=cur;
@@ -2267,8 +2285,11 @@ async function saveGoal(){
   const id=document.getElementById('gfId').value||('g'+Date.now());
   const cps=goalParseCheckpointsText(document.getElementById('gfCheckpoints').value);
   const target=document.getElementById('gfTarget').value;
+  const parentId=document.getElementById('gfParent').value;
+  const par=goals.find(x=>x.id===parentId);
   const g={id,
-    parent_id:document.getElementById('gfParent').value,
+    parent_id:parentId,
+    level:(par?(par.level||1):0)+1,
     horizon:goalHorizonFromDate(target),
     category:document.getElementById('gfCategory').value.trim()||'Autre',
     title,
@@ -2280,7 +2301,11 @@ async function saveGoal(){
     icon:document.getElementById('gfIcon').value.trim(),
     checkpoints:cps.length?JSON.stringify(cps):''};
   closeGoalModal();
-  showLoad(true);await goalUpsert(g);showLoad(false);
+  showLoad(true);
+  await goalUpsert(g);
+  // re-rattacher un objectif décale aussi le niveau de tous ses descendants
+  for(const c of goalRecomputeLevels()){await sheetUpsertByKey('goals',c.id,goalToRow(c));}
+  showLoad(false);
   toast('Objectif enregistré ✓','ok');
   renderGoalsBanner();renderGoalsToolbar();renderGoalsTree();
 }
