@@ -113,7 +113,6 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 
 /* DASHBOARD */
 #pageobjectifs{overflow-y:auto;padding:1.25rem 1.5rem 3rem;gap:1.1rem;flex-direction:column}
-.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem;margin-bottom:1.1rem}
 .kpi{background:var(--surface);border:1px solid var(--border);padding:1.1rem 1.3rem;display:flex;flex-direction:column;gap:0.35rem}
 .kpi-label{font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim)}
 .kpi-value{font-family:'Space Mono',monospace;font-size:1.9rem;font-weight:700;line-height:1}
@@ -823,7 +822,6 @@ body,body *{font-family:var(--font-body)}
   #pageobjectifs,#pagecrypto,#pagefinances{padding:0.8rem 0.7rem 4rem;gap:0.8rem}
 
   /* DASHBOARD */
-  .dash-grid{grid-template-columns:1fr 1fr;gap:0.55rem}
   .kpi-value{font-size:1.5rem}
   .proj-row{grid-template-columns:1fr;gap:0.6rem}
   .charts-row{grid-template-columns:1fr;gap:0.8rem}
@@ -954,7 +952,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.1.0</span>
+    <span class="app-version">v1.2.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1114,6 +1112,15 @@ body,body *{font-family:var(--font-body)}
     <button class="modal-close" onclick="closeModal()">✕</button>
     <input type="hidden" id="fId">
     <div class="field"><label>Titre</label><input type="text" id="fTitle" placeholder="Description..." autocomplete="off"/></div>
+    <div class="field"><label>Projet</label>
+      <select id="fProj">
+        <option value="">— Aucun —</option>
+        <option value="DCB">DCB</option>
+        <option value="GLD">GLD</option>
+        <option value="Airside">Airside</option>
+        <option value="Perso">Perso</option>
+      </select>
+    </div>
     <div class="field"><label>Colonne</label>
       <select id="fCol" onchange="syncDueFromCol()">
         <option value="BackLog">BackLog</option>
@@ -1209,6 +1216,16 @@ function dueDateForColumn(col){
   }
 }
 const PROJECTS = ['DCB','GLD','Airside','Perso'];
+// Le projet est une vraie colonne. Ces deux helpers ne servent plus qu'à migrer
+// l'ancien format, où il était encodé dans le titre (« DCB : Faire X »).
+function projectFromTitle(title){
+  return PROJECTS.find(p=>String(title).startsWith(p+' :')||String(title).startsWith(p+':'))||'';
+}
+function stripProjectPrefix(title,proj){
+  if(!proj)return title;
+  return String(title).slice(proj.length).replace(/^\s*:\s*/,'').trim()||title;
+}
+const projClass=p=>p==='Airside'?'air':String(p).toLowerCase();
 const CATEGORIES = ['Finance','Esprit','Santé','Productivité','Autre'];
 const LS_CACHE = 'kanban_cache_v3';
 
@@ -1238,7 +1255,7 @@ const cfg = {
   account:       'weschler.tom@gmail.com'
 };
 
-const SHEET_HEADER      = ['id','title','column','importance','due_date','created_at','completed_at','notes'];
+const SHEET_HEADER      = ['id','title','column','importance','due_date','created_at','completed_at','notes','project'];
 const HABITS_HEADER     = ['id','title','frequency','reward_eur','category','active'];
 const HABITS_LOG_HEADER = ['id','habit_id','date','reward_eur','category'];
 
@@ -1379,18 +1396,28 @@ const sheetsBase = () => `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sp
 
 async function loadFromSheets() {
   try {
-    const r = await fetch(`${sheetsBase()}/values/${cfg.sheetName}!A:H`, { headers:{Authorization:`Bearer ${accessToken}`} });
+    const r = await fetch(`${sheetsBase()}/values/${cfg.sheetName}!A:I`, { headers:{Authorization:`Bearer ${accessToken}`} });
     if (!r.ok) throw new Error(r.status);
     const data = await r.json();
     const rows = data.values || [];
     allTasks = rows.length <= 1 ? [] : rows.slice(1).map(p => ({
       id: parseInt(p[0])||Date.now(), title:p[1]||'', column:p[2]||'BackLog',
       importance:parseInt(p[3])||3, due_date:p[4]||'', created_at:p[5]||td(),
-      completed_at:p[6]||'', notes:p[7]||''
+      completed_at:p[6]||'', notes:p[7]||'', project:(p[8]||'').trim()
     }));
-    // la colonne stockée n'est plus qu'un reflet de l'échéance : on la réaligne
-    allTasks.forEach(t => { t.column = taskColumnFromDate(t.due_date); });
+    // Migration : le projet vivait dans le titre (« DCB : … »). On le remonte dans
+    // sa colonne et on retire le préfixe, devenu redondant avec le tag de la carte.
+    let migrated=0;
+    allTasks.forEach(t => {
+      if(!t.project){
+        const p=projectFromTitle(t.title);
+        if(p){ t.project=p; t.title=stripProjectPrefix(t.title,p); migrated++; }
+      }
+      // la colonne stockée n'est plus qu'un reflet de l'échéance : on la réaligne
+      t.column = taskColumnFromDate(t.due_date);
+    });
     tasks = allTasks.filter(t => !t.completed_at);
+    if(migrated) persist();
     localStorage.setItem(LS_CACHE, JSON.stringify(allTasks));
     setSyncStatus('ok','SYNCED');
   } catch(e) { setSyncStatus('error','CACHE'); toast('Sheets inaccessible — cache local utilisé','err'); }
@@ -1400,13 +1427,8 @@ async function saveToSheets() {
   if (!accessToken) return;
   setSyncStatus('syncing','SAVING...');
   try {
-    const range = `${cfg.sheetName}!A:H`;
-    await fetch(`${sheetsBase()}/values/${encodeURIComponent(range)}:clear`, { method:'POST', headers:{Authorization:`Bearer ${accessToken}`} });
-    const values = [SHEET_HEADER, ...allTasks.map(t=>[String(t.id),t.title,taskColumnFromDate(t.due_date),String(t.importance),t.due_date||'',t.created_at||'',t.completed_at||'',t.notes||''])];
-    const r = await fetch(`${sheetsBase()}/values/${encodeURIComponent(cfg.sheetName+'!A1')}?valueInputOption=RAW`, {
-      method:'PUT', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'}, body:JSON.stringify({values})
-    });
-    if (!r.ok) throw new Error(r.status);
+    const values = [SHEET_HEADER, ...allTasks.map(t=>[String(t.id),t.title,taskColumnFromDate(t.due_date),String(t.importance),t.due_date||'',t.created_at||'',t.completed_at||'',t.notes||'',t.project||''])];
+    await sheetReplaceAll(cfg.sheetName,'I',values);
     localStorage.setItem(LS_CACHE, JSON.stringify(allTasks));
     setSyncStatus('ok','SYNCED');
     toast('💾 Sauvegardé','ok');
@@ -1517,7 +1539,7 @@ function getStreak(habitId, freq) {
   const today = new Date(); today.setHours(0,0,0,0);
   for (let i = 0; i < 365; i++) {
     const d = new Date(today); d.setDate(d.getDate() - i);
-    if (isHabitDueOnDate(freq, d)) scheduled.push(d.toISOString().split('T')[0]);
+    if (isHabitDueOnDate(freq, d)) scheduled.push(ymd(d));
     if (scheduled.length >= 90) break;
   }
   let streak = 0, started = false;
@@ -1855,10 +1877,7 @@ function setBoardFilter(f) {
 
 function filterTasksByBoard(list) {
   if (boardFilter === 'all') return list;
-  return list.filter(t => {
-    const proj = PROJECTS.find(p => t.title.startsWith(p+' :') || t.title.startsWith(p+':'));
-    return proj === boardFilter;
-  });
+  return list.filter(t => (t.project||'') === boardFilter);
 }
 
 function render() {
@@ -1890,9 +1909,8 @@ function render() {
 function mkCard(t, now) {
   const c = document.createElement('div');
   c.className='card'; c.dataset.id=t.id; c.dataset.imp=t.importance; c.draggable=true;
-  const proj=PROJECTS.find(p=>t.title.startsWith(p+' :')||t.title.startsWith(p+':'));
-  const cls=proj?(proj==='Airside'?'air':proj.toLowerCase()):'';
-  const tag=proj?`<div class="card-tag ${cls}">${proj.toUpperCase()}</div>`:'';
+  const proj=t.project||'';
+  const tag=proj?`<div class="card-tag ${projClass(proj)}">${proj.toUpperCase()}</div>`:'';
   let badge='',ac='';
   if(t.due_date){
     const due=new Date(t.due_date);due.setHours(0,0,0,0);
@@ -1959,10 +1977,11 @@ async function deleteTask(){
 // ════════════════════════════════════════════════════
 // TASK MODAL
 // ════════════════════════════════════════════════════
-function openModal(id, prefill){
+function openModal(id, prefill, proj){
   document.getElementById('fId').value='';document.getElementById('fTitle').value='';
   document.getElementById('fDue').value=plusDays(7);syncColFromDue();
   document.getElementById('fNotes').value='';setImp(3);
+  document.getElementById('fProj').value=proj||'';
   document.getElementById('btnDel').style.display='none';
   document.getElementById('modalTitle').textContent='NOUVELLE TÂCHE';
   if(id){
@@ -1970,6 +1989,7 @@ function openModal(id, prefill){
     document.getElementById('fId').value=t.id;document.getElementById('fTitle').value=t.title;
     document.getElementById('fDue').value=t.due_date||'';syncColFromDue();
     document.getElementById('fNotes').value=t.notes||'';setImp(t.importance);
+    document.getElementById('fProj').value=t.project||'';
     document.getElementById('btnDel').style.display='block';
     document.getElementById('modalTitle').textContent='ÉDITER LA TÂCHE';
   }
@@ -1983,7 +2003,7 @@ function openModal(id, prefill){
 function syncColFromDue(){ document.getElementById('fCol').value=taskColumnFromDate(document.getElementById('fDue').value); }
 function syncDueFromCol(){ document.getElementById('fDue').value=dueDateForColumn(document.getElementById('fCol').value); }
 
-function quickTask(proj){ openModal(null,proj+' : '); }
+function quickTask(proj){ openModal(null,null,proj); }
 function closeModal(){ document.getElementById('taskModal').classList.remove('open'); }
 function setImp(v){ selImp=v; document.querySelectorAll('.imp-btn').forEach(b=>b.classList.toggle('sel',parseInt(b.dataset.v)===v)); }
 
@@ -1992,7 +2012,8 @@ async function saveTask(){
   if(!title){document.getElementById('fTitle').focus();return;}
   const editId=document.getElementById('fId').value;
   const due=document.getElementById('fDue').value;
-  const data={title,column:taskColumnFromDate(due),importance:selImp,due_date:due,notes:document.getElementById('fNotes').value.trim()};
+  const data={title,column:taskColumnFromDate(due),importance:selImp,due_date:due,
+    notes:document.getElementById('fNotes').value.trim(),project:document.getElementById('fProj').value};
   if(editId){
     const t=tasks.find(t=>t.id===parseInt(editId));if(t)Object.assign(t,data);
     const at=allTasks.find(t=>t.id===parseInt(editId));if(at)Object.assign(at,data);
@@ -2133,25 +2154,66 @@ async function loadGoals(){
   await migrateGoalLevels();
 }
 function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||'',String(g.level||1)];}
-// Met à jour EN PLACE la dernière ligne dont la colonne A == key (id/date), sinon ajoute
-// une nouvelle ligne. Évite les doublons d'id quand on édite, tout en tolérant les writers
-// concurrents (la stratégie sport peut toujours appender ; le load garde la dernière ligne).
-async function sheetUpsertByKey(sheet,key,row){
-  if(!accessToken) return false;
-  const sid=cfg.spreadsheetId;
-  let rowNum=0;
+// ── Couche d'écriture Sheets partagée ─────────────────────────────────────
+// Tout ce qui écrit dans le classeur passe par ici. Deux sémantiques seulement :
+//   • sheetBatchUpsert : N lignes repérées par leur clé (colonne A), 3 appels max
+//   • sheetReplaceAll  : réécriture complète d'un onglet, sans fenêtre vide
+const sheetUrl=(path)=>`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}${path}`;
+const authHeaders=()=>({Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'});
+
+async function sheetPut(range,values){
+  return fetch(sheetUrl(`/values/${encodeURIComponent(range)}?valueInputOption=RAW`),
+    {method:'PUT',headers:authHeaders(),body:JSON.stringify({values})});
+}
+async function sheetClear(range){
+  return fetch(sheetUrl(`/values/${encodeURIComponent(range)}:clear`),
+    {method:'POST',headers:authHeaders()});
+}
+// clé (colonne A) → numéro de ligne ; la dernière occurrence gagne, comme au chargement
+async function sheetKeyRows(sheet){
+  const map={};
   try{
-    const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheet+'!A:A')}`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(x=>x.ok?x.json():{values:[]});
+    const r=await fetch(sheetUrl(`/values/${encodeURIComponent(sheet+'!A:A')}`),{headers:authHeaders()}).then(x=>x.ok?x.json():{values:[]});
     const vals=r.values||[];
-    for(let i=1;i<vals.length;i++){ if(String((vals[i]||[])[0]||'').trim()===String(key).trim()) rowNum=i+1; }
-  }catch(e){ rowNum=0; }
-  if(rowNum>=2){
-    const resp=await sportPutValues(`${sheet}!A${rowNum}`,[row]);
-    return resp.ok;
+    for(let i=1;i<vals.length;i++){
+      const k=String((vals[i]||[])[0]||'').trim();
+      if(k)map[k]=i+1;
+    }
+  }catch(e){}
+  return map;
+}
+// Remplace l'ancien upsert ligne par ligne (2 appels PAR ligne) : ici 1 lecture,
+// 1 batchUpdate pour tout ce qui existe déjà, 1 append pour le reste.
+async function sheetBatchUpsert(sheet,rows){
+  if(!accessToken||!rows.length) return false;
+  const map=await sheetKeyRows(sheet);
+  const data=[],add=[];
+  rows.forEach(row=>{
+    const n=map[String(row[0]).trim()];
+    if(n>=2) data.push({range:`${sheet}!A${n}`,values:[row]});
+    else add.push(row);
+  });
+  let ok=true;
+  if(data.length){
+    const r=await fetch(sheetUrl('/values:batchUpdate'),
+      {method:'POST',headers:authHeaders(),body:JSON.stringify({valueInputOption:'RAW',data})});
+    ok=ok&&r.ok;
   }
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(sheet)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
-  const resp=await fetch(url,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
-  return resp.ok;
+  if(add.length){
+    const r=await fetch(sheetUrl(`/values/${encodeURIComponent(sheet)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`),
+      {method:'POST',headers:authHeaders(),body:JSON.stringify({values:add})});
+    ok=ok&&r.ok;
+  }
+  return ok;
+}
+async function sheetUpsertByKey(sheet,key,row){ return sheetBatchUpsert(sheet,[row]); }
+// Réécriture complète : on ÉCRIT d'abord, on purge le reliquat ensuite. L'inverse
+// (clear puis write) laissait l'onglet vide si le write échouait.
+async function sheetReplaceAll(sheet,lastCol,values){
+  const r=await sheetPut(`${sheet}!A1`,values);
+  if(!r.ok) throw new Error(r.status);
+  await sheetClear(`${sheet}!A${values.length+1}:${lastCol}`);
+  return true;
 }
 async function goalUpsert(g){
   const i=goals.findIndex(x=>x.id===g.id);
@@ -2343,7 +2405,7 @@ async function migrateGoalLevels(){
     if(clean&&clean!==g.title){g.title=clean;dirty.add(g);}
   });
   goalRecomputeLevels().forEach(g=>dirty.add(g));
-  for(const g of dirty){await sheetUpsertByKey('goals',g.id,goalToRow(g));}
+  await sheetBatchUpsert('goals',[...dirty].map(goalToRow));
 }
 // id de l'objectif + tous ses descendants (empêche de choisir un parent qui créerait un cycle)
 function goalSubtreeIds(id){
@@ -2414,7 +2476,7 @@ async function saveGoal(){
   showLoad(true);
   await goalUpsert(g);
   // re-rattacher un objectif décale aussi le niveau de tous ses descendants
-  for(const c of goalRecomputeLevels()){await sheetUpsertByKey('goals',c.id,goalToRow(c));}
+  await sheetBatchUpsert('goals',goalRecomputeLevels().map(goalToRow));
   showLoad(false);
   toast('Objectif enregistré ✓','ok');
   renderGoalsBanner();renderGoalsToolbar();renderGoalsTree();
@@ -2460,7 +2522,7 @@ function renderHeatmaps() {
     const cells = [];
     const d = new Date(start);
     while (d <= today) {
-      const ds = d.toISOString().split('T')[0];
+      const ds = ymd(d);
       const inRange = d >= cutoff;
       cells.push({ ds, count: inRange ? (counts[ds] || 0) : -1 });
       d.setDate(d.getDate() + 1);
@@ -2491,57 +2553,6 @@ function renderHeatmaps() {
   }).join('');
 }
 
-function renderKpis(){
-  const now=new Date();now.setHours(0,0,0,0);
-  const todayStr=td();
-  const thisMonth=todayStr.slice(0,7);
-  const dow=now.getDay();
-  const mon=new Date(now);mon.setDate(now.getDate()-(dow===0?6:dow-1));
-  const monStr=mon.toISOString().split('T')[0];
-  const doneToday=allTasks.filter(t=>t.completed_at===todayStr).length;
-  const doneWeek=allTasks.filter(t=>t.completed_at&&t.completed_at>=monStr&&t.completed_at<=todayStr).length;
-  const doneMonth=allTasks.filter(t=>t.completed_at&&t.completed_at.startsWith(thisMonth)).length;
-  const urg=tasks.filter(t=>{if(!t.due_date)return false;const d=new Date(t.due_date);d.setHours(0,0,0,0);return Math.ceil((d-now)/86400000)<=1}).length;
-  const late=tasks.filter(t=>{if(!t.due_date)return false;const d=new Date(t.due_date);d.setHours(0,0,0,0);return d<now}).length;
-  const mini=(label,val)=>`<div><div style="font-family:'Space Mono',monospace;font-size:0.47rem;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:0.2rem">${label}</div><div style="font-family:'Space Mono',monospace;font-size:1.5rem;font-weight:700;color:var(--green);line-height:1">${val}</div></div>`;
-  document.getElementById('dashKpis').innerHTML=`
-    <div class="kpi c-accent"><div class="kpi-label">EN COURS</div><div class="kpi-value">${tasks.length}</div><div class="kpi-sub">tâches actives</div></div>
-    <div class="kpi c-green"><div class="kpi-label">TERMINÉES</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin-top:0.5rem">${mini("AUJOURD'HUI",doneToday)}${mini('SEMAINE',doneWeek)}${mini('CE MOIS',doneMonth)}</div></div>
-    <div class="kpi c-warn"><div class="kpi-label">URGENTES</div><div class="kpi-value">${urg}</div><div class="kpi-sub">échéance ≤ 1 jour</div></div>
-    <div class="kpi c-danger"><div class="kpi-label">EN RETARD</div><div class="kpi-value">${late}</div><div class="kpi-sub">date dépassée</div></div>`;
-}
-
-function renderProj(){
-  const rows=PROJECTS.map(p=>{
-    const cls=p==='Airside'?'air':p.toLowerCase();
-    const a=tasks.filter(t=>t.title.startsWith(p+' :')||t.title.startsWith(p+':')).length;
-    const d=allTasks.filter(t=>t.completed_at&&(t.title.startsWith(p+' :')||t.title.startsWith(p+':'))).length;
-    return `<div class="proj-kpi"><div class="proj-kpi-label ${cls}">${p.toUpperCase()}</div><div class="proj-kpi-val">${a}</div><div class="proj-kpi-sub">${d} terminées · ${a+d} total</div></div>`;
-  }).join('');
-  document.getElementById('projRow').innerHTML=rows;
-}
-
-function renderCharts(){
-  Object.values(charts).forEach(c=>c.destroy());charts={};
-  document.getElementById('chartsRow').innerHTML=`
-    <div class="chart-box"><div class="chart-title">TÂCHES TERMINÉES PAR JOUR — 30 DERNIERS JOURS</div><div class="chart-wrap tall"><canvas id="cDone"></canvas></div></div>
-    <div class="chart-box"><div class="chart-title">RÉPARTITION PAR COLONNE</div><div class="chart-wrap"><canvas id="cCols"></canvas></div></div>
-    <div class="chart-box"><div class="chart-title">DISTRIBUTION PAR IMPORTANCE</div><div class="chart-wrap"><canvas id="cImp"></canvas></div></div>`;
-  const labels=[],vals=[],titlesByDay=[];
-  for(let i=29;i>=0;i--){
-    const d=new Date();d.setDate(d.getDate()-i);d.setHours(0,0,0,0);
-    const ds=d.toISOString().split('T')[0];labels.push(ds.slice(5));
-    const done=allTasks.filter(t=>t.completed_at===ds);
-    vals.push(done.length);
-    titlesByDay.push(done.map(t=>t.title));
-  }
-  Chart.defaults.color='#60607a';
-  charts.done=new Chart(document.getElementById('cDone'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:vals.map(v=>v>0?'rgba(124,106,255,0.72)':'rgba(124,106,255,0.1)'),borderColor:'rgba(124,106,255,0.85)',borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{afterBody:(items)=>{const titles=titlesByDay[items[0].dataIndex]||[];return titles.length?titles.map(t=>'• '+(t.length>45?t.slice(0,45)+'…':t)):['—'];},label:()=>null}}},scales:{x:{ticks:{font:{family:'Space Mono',size:9},maxTicksLimit:10},grid:{color:'#1c1c28'}},y:{ticks:{font:{family:'Space Mono',size:9},stepSize:1},grid:{color:'#1c1c28'}}}}});
-  const cVals=COLUMNS.map(c=>tasks.filter(t=>taskColumnFromDate(t.due_date)===c).length);
-  charts.cols=new Chart(document.getElementById('cCols'),{type:'doughnut',data:{labels:COLUMNS,datasets:[{data:cVals,backgroundColor:['rgba(58,58,85,0.85)','rgba(99,102,241,0.8)','rgba(139,92,246,0.8)','rgba(251,191,36,0.8)','rgba(248,113,113,0.8)'],borderColor:'#09090e',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{font:{family:'Space Mono',size:8},boxWidth:9,padding:6}}}}});
-  const iVals=[1,2,3,4,5].map(i=>tasks.filter(t=>t.importance===i).length);
-  charts.imp=new Chart(document.getElementById('cImp'),{type:'bar',data:{labels:['▪','▪▪','▪▪▪','▪▪▪▪','▪▪▪▪▪'],datasets:[{data:iVals,backgroundColor:['rgba(74,222,128,0.75)','rgba(163,230,53,0.75)','rgba(251,191,36,0.75)','rgba(251,146,60,0.75)','rgba(248,113,113,0.75)'],borderWidth:0,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:14}},grid:{display:false}},y:{ticks:{font:{family:'Space Mono',size:9},stepSize:1},grid:{color:'#1c1c28'}}}}});
-}
 
 // ════════════════════════════════════════════════════
 // NAVIGATION
@@ -2562,8 +2573,8 @@ function switchPage(name){
 // ════════════════════════════════════════════════════
 // UTILS
 // ════════════════════════════════════════════════════
-function td(){ return new Date().toISOString().split('T')[0]; }
-function plusDays(n){ const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]; }
+function td(){ return ymd(new Date()); }
+function plusDays(n){ const d=new Date();d.setDate(d.getDate()+n);return ymd(d); }
 function showLoad(v){ document.getElementById('loadOverlay').style.display=v?'flex':'none'; }
 function toast(msg,type='ok'){
   const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;
@@ -3954,12 +3965,7 @@ function sportEsc(s){return String(s||'').replace(/"/g,'&quot;');}
 function sportStatusLabel(s){return s==='done'?'Fait':s==='partial'?'Partiel':s==='skipped'?'Pas fait':s;}
 
 // ── Sheets I/O ──────────────────────────────────────
-async function sportPutValues(range,values){
-  const sid=cfg.spreadsheetId;
-  return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,{
-    method:'PUT',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values})
-  });
-}
+async function sportPutValues(range,values){ return sheetPut(range,values); }
 async function ensureSportSheets(){
   const sid=cfg.spreadsheetId;
   const meta=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
@@ -4037,7 +4043,7 @@ async function sportDeleteFuturePlans(){
   if(!future.length) return;
   if(!confirm(`Supprimer les ${future.length} programme(s) à venir (après aujourd'hui) ?`)) return;
   showLoad(true);
-  for(const p of future) await sheetUpsertByKey('sport_plan',p.date,[p.date,SPORT_DELETED,'','','','']);
+  await sheetBatchUpsert('sport_plan',future.map(p=>[p.date,SPORT_DELETED,'','','','']));
   showLoad(false);
   sportPlans=sportPlans.filter(p=>p.date<=today);
   toast('Programmes à venir supprimés','info');
