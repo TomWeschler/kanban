@@ -721,6 +721,19 @@ body,body *{font-family:var(--font-body)}
 .gl-c-hbadge{font-family:var(--font-mono);font-size:0.58rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 9px;border-radius:99px}
 .gl-c-date{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim)}
 .gl-c-acts{margin-left:auto;display:flex;align-items:center;gap:0.15rem}
+/* hors filtre/recherche : estompé mais toujours en place, la hiérarchie reste lisible */
+.gl-card.dim{opacity:0.22;filter:grayscale(1)}
+.gl-card.dim:hover{opacity:0.75;filter:grayscale(0.3)}
+/* le replieur reste visible en permanence, sinon on ne verrait pas qu'une branche est cachée */
+.gl-fold{background:var(--surface3);border:1px solid var(--border);color:var(--text-mid);cursor:pointer;
+  font-family:var(--font-mono);font-size:0.52rem;font-weight:700;line-height:1;border-radius:99px;
+  padding:3px 6px;transition:color 0.15s,border-color 0.15s}
+.gl-fold:hover{color:var(--accent);border-color:var(--accent)}
+.gl-fold.on{color:var(--accent);border-color:var(--accent)}
+.gl-search{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);
+  font-family:var(--font-mono);font-size:0.6rem;padding:0.35rem 0.6rem;min-width:170px;outline:none}
+.gl-search:focus{border-color:var(--accent)}
+.gl-nohit{font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim);padding:0.5rem 0 0.9rem}
 .gl-c-done{color:var(--green);font-size:0.8rem;font-weight:700}
 .gl-edit,.gl-child{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.72rem;padding:0 0.2rem;opacity:0;transition:opacity 0.15s}
 .gl-child{font-size:0.9rem;line-height:1}
@@ -941,7 +954,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.0.9</span>
+    <span class="app-version">v1.1.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1102,7 +1115,7 @@ body,body *{font-family:var(--font-body)}
     <input type="hidden" id="fId">
     <div class="field"><label>Titre</label><input type="text" id="fTitle" placeholder="Description..." autocomplete="off"/></div>
     <div class="field"><label>Colonne</label>
-      <select id="fCol">
+      <select id="fCol" onchange="syncDueFromCol()">
         <option value="BackLog">BackLog</option>
         <option value="Ce mois">Ce mois</option>
         <option value="Cette semaine">Cette semaine</option>
@@ -1119,7 +1132,7 @@ body,body *{font-family:var(--font-body)}
         <button class="imp-btn" data-v="5" onclick="setImp(5)">●●●●●</button>
       </div>
     </div>
-    <div class="field"><label>Date d'échéance</label><input type="date" id="fDue"/></div>
+    <div class="field"><label>Date d'échéance</label><input type="date" id="fDue" onchange="syncColFromDue()" oninput="syncColFromDue()"/></div>
     <div class="field"><label>Notes</label><textarea id="fNotes" placeholder="Notes optionnelles..."></textarea></div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Annuler</button>
@@ -1160,6 +1173,41 @@ body,body *{font-family:var(--font-body)}
 // CONFIG & CONSTANTS
 // ════════════════════════════════════════════════════
 const COLUMNS  = ["Aujourd'hui",'Demain','Cette semaine','Ce mois','BackLog'];
+
+// ── La colonne d'une tâche est DÉRIVÉE de son échéance ────────────────────
+// Plus de rangement manuel qui se périme : sans date → BackLog, en retard →
+// Aujourd'hui (sinon la tâche disparaîtrait du board au lieu d'alerter).
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function dayDiff(due){
+  const p=String(due).split('-');
+  const d=new Date(+p[0],+p[1]-1,+p[2]); d.setHours(0,0,0,0);
+  const n=new Date(); n.setHours(0,0,0,0);
+  return Math.round((d-n)/86400000);
+}
+function taskColumnFromDate(due){
+  if(!due) return 'BackLog';
+  const diff=dayDiff(due);
+  if(isNaN(diff)) return 'BackLog';
+  if(diff<=0)  return "Aujourd'hui";
+  if(diff===1) return 'Demain';
+  if(diff<=7)  return 'Cette semaine';
+  if(diff<=31) return 'Ce mois';
+  return 'BackLog';
+}
+// Échéance posée quand on dépose une carte dans une colonne. Les dates choisies
+// retombent toujours dans la colonne visée, sinon la carte sauterait ailleurs au drop.
+function dueDateForColumn(col){
+  const n=new Date(); n.setHours(0,0,0,0);
+  const add=k=>{ const d=new Date(n); d.setDate(d.getDate()+k); return ymd(d); };
+  switch(col){
+    case "Aujourd'hui":   return add(0);
+    case 'Demain':        return add(1);
+    case 'Cette semaine':{ const toSun=6-((n.getDay()+6)%7); return add(toSun>=2?toSun:7); }
+    case 'Ce mois':{ const eom=new Date(n.getFullYear(),n.getMonth()+1,0);
+                     const k=Math.round((eom-n)/86400000); return k>=8?ymd(eom):add(30); }
+    default: return ''; // BackLog = sans échéance
+  }
+}
 const PROJECTS = ['DCB','GLD','Airside','Perso'];
 const CATEGORIES = ['Finance','Esprit','Santé','Productivité','Autre'];
 const LS_CACHE = 'kanban_cache_v3';
@@ -1340,6 +1388,8 @@ async function loadFromSheets() {
       importance:parseInt(p[3])||3, due_date:p[4]||'', created_at:p[5]||td(),
       completed_at:p[6]||'', notes:p[7]||''
     }));
+    // la colonne stockée n'est plus qu'un reflet de l'échéance : on la réaligne
+    allTasks.forEach(t => { t.column = taskColumnFromDate(t.due_date); });
     tasks = allTasks.filter(t => !t.completed_at);
     localStorage.setItem(LS_CACHE, JSON.stringify(allTasks));
     setSyncStatus('ok','SYNCED');
@@ -1352,7 +1402,7 @@ async function saveToSheets() {
   try {
     const range = `${cfg.sheetName}!A:H`;
     await fetch(`${sheetsBase()}/values/${encodeURIComponent(range)}:clear`, { method:'POST', headers:{Authorization:`Bearer ${accessToken}`} });
-    const values = [SHEET_HEADER, ...allTasks.map(t=>[String(t.id),t.title,t.column,String(t.importance),t.due_date||'',t.created_at||'',t.completed_at||'',t.notes||''])];
+    const values = [SHEET_HEADER, ...allTasks.map(t=>[String(t.id),t.title,taskColumnFromDate(t.due_date),String(t.importance),t.due_date||'',t.created_at||'',t.completed_at||'',t.notes||''])];
     const r = await fetch(`${sheetsBase()}/values/${encodeURIComponent(cfg.sheetName+'!A1')}?valueInputOption=RAW`, {
       method:'PUT', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'}, body:JSON.stringify({values})
     });
@@ -1816,7 +1866,7 @@ function render() {
   board.innerHTML = '';
   const now = new Date(); now.setHours(0,0,0,0);
   COLUMNS.forEach(col => {
-    const ct = filterTasksByBoard(tasks.filter(t=>t.column===col));
+    const ct = filterTasksByBoard(tasks.filter(t=>taskColumnFromDate(t.due_date)===col));
     const el = document.createElement('div');
     el.className='column'; el.dataset.col=col;
     el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over')});
@@ -1867,7 +1917,7 @@ function updateHStats(){
   const now=new Date();now.setHours(0,0,0,0);
   const todayStr=td();
   document.getElementById('hTotal').textContent=tasks.length;
-  document.getElementById('hToday').textContent=tasks.filter(t=>t.column==="Aujourd'hui").length;
+  document.getElementById('hToday').textContent=tasks.filter(t=>taskColumnFromDate(t.due_date)==="Aujourd'hui").length;
   document.getElementById('hDoneToday').textContent=allTasks.filter(t=>t.completed_at===todayStr).length;
   document.getElementById('hUrgent').textContent=tasks.filter(t=>{
     if(!t.due_date)return false;const d=new Date(t.due_date);d.setHours(0,0,0,0);return Math.ceil((d-now)/86400000)<=1;
@@ -1879,9 +1929,14 @@ function updateHStats(){
 // ════════════════════════════════════════════════════
 function dropOnCol(col){
   if(!dragSrcId)return;
-  const t=tasks.find(t=>t.id===dragSrcId);if(!t||t.column===col)return;
-  t.column=col;const at=allTasks.find(t=>t.id===dragSrcId);if(at)at.column=col;
+  const t=tasks.find(t=>t.id===dragSrcId);
+  if(!t||taskColumnFromDate(t.due_date)===col)return;
+  // déplacer une carte = déplacer son échéance, la colonne suit
+  const due=dueDateForColumn(col);
+  const at=allTasks.find(x=>x.id===dragSrcId);
+  [t,at].forEach(x=>{ if(x){ x.due_date=due; x.column=col; } });
   render();persist();
+  toast(due?`Échéance → ${due}`:'Échéance retirée','info');
 }
 
 // ════════════════════════════════════════════════════
@@ -1906,14 +1961,14 @@ async function deleteTask(){
 // ════════════════════════════════════════════════════
 function openModal(id, prefill){
   document.getElementById('fId').value='';document.getElementById('fTitle').value='';
-  document.getElementById('fCol').value='BackLog';document.getElementById('fDue').value=plusDays(7);
+  document.getElementById('fDue').value=plusDays(7);syncColFromDue();
   document.getElementById('fNotes').value='';setImp(3);
   document.getElementById('btnDel').style.display='none';
   document.getElementById('modalTitle').textContent='NOUVELLE TÂCHE';
   if(id){
     const t=tasks.find(t=>t.id===id);if(!t)return;
     document.getElementById('fId').value=t.id;document.getElementById('fTitle').value=t.title;
-    document.getElementById('fCol').value=t.column;document.getElementById('fDue').value=t.due_date||plusDays(7);
+    document.getElementById('fDue').value=t.due_date||'';syncColFromDue();
     document.getElementById('fNotes').value=t.notes||'';setImp(t.importance);
     document.getElementById('btnDel').style.display='block';
     document.getElementById('modalTitle').textContent='ÉDITER LA TÂCHE';
@@ -1923,6 +1978,11 @@ function openModal(id, prefill){
   setTimeout(()=>{const inp=document.getElementById('fTitle');inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);},70);
 }
 
+// Le modal laisse raisonner en date OU en colonne : les deux champs se suivent.
+// La date reste la source de vérité, la colonne n'en est qu'une lecture.
+function syncColFromDue(){ document.getElementById('fCol').value=taskColumnFromDate(document.getElementById('fDue').value); }
+function syncDueFromCol(){ document.getElementById('fDue').value=dueDateForColumn(document.getElementById('fCol').value); }
+
 function quickTask(proj){ openModal(null,proj+' : '); }
 function closeModal(){ document.getElementById('taskModal').classList.remove('open'); }
 function setImp(v){ selImp=v; document.querySelectorAll('.imp-btn').forEach(b=>b.classList.toggle('sel',parseInt(b.dataset.v)===v)); }
@@ -1931,7 +1991,8 @@ async function saveTask(){
   const title=document.getElementById('fTitle').value.trim();
   if(!title){document.getElementById('fTitle').focus();return;}
   const editId=document.getElementById('fId').value;
-  const data={title,column:document.getElementById('fCol').value,importance:selImp,due_date:document.getElementById('fDue').value,notes:document.getElementById('fNotes').value.trim()};
+  const due=document.getElementById('fDue').value;
+  const data={title,column:taskColumnFromDate(due),importance:selImp,due_date:due,notes:document.getElementById('fNotes').value.trim()};
   if(editId){
     const t=tasks.find(t=>t.id===parseInt(editId));if(t)Object.assign(t,data);
     const at=allTasks.find(t=>t.id===parseInt(editId));if(at)Object.assign(at,data);
@@ -1955,7 +2016,9 @@ function renderObjectifs(){ renderGoalsPage(); }
 // ════════════════════════════════════════════════════
 // OBJECTIFS — arbre de progression (page "objectifs")
 // ════════════════════════════════════════════════════
-let goals=[], goalsLoaded=false, goalCatFilter='all';
+let goals=[], goalsLoaded=false, goalCatFilter='all', goalSearch='';
+const LS_GOAL_FOLD='kanban_goals_collapsed';
+let goalCollapsed=new Set((()=>{try{return JSON.parse(localStorage.getItem(LS_GOAL_FOLD))||[]}catch(e){return []}})());
 const GOAL_HEADER=['id','parent_id','horizon','category','title','description','progress','reward','status','target_date','icon','checkpoints','level'];
 const GOAL_DELETED='__deleted__';
 const GOAL_HORIZONS=[['life','Vie','🌟'],['5y','5 ans','🔭'],['annual','Année','📅'],['quarter','Trimestre','🎯'],['month','Mois','📌']];
@@ -2134,10 +2197,15 @@ function renderGoalsToolbar(){
     const thumb=w.id==='none'?`<div class="gl-wall-thumb">✕</div>`:`<div class="gl-wall-thumb" style="background-image:url('wallpapers/${w.id}.jpg')"></div>`;
     return `<button class="gl-wall-opt${curWall===w.id?' active':''}" onclick="setGoalWallpaper('${w.id}')">${thumb}<span>${w.label}</span></button>`;
   }).join('');
+  const parents=goals.filter(g=>goals.some(x=>x.parent_id===g.id)).map(g=>g.id);
+  const allFolded=parents.length>0&&parents.every(id=>goalCollapsed.has(id));
   document.getElementById('glToolbar').innerHTML=`
     <div class="gl-toolbar">
       <span class="gl-filter-lbl">Catégorie</span>${pills}
       <div class="gl-spacer"></div>
+      <input type="search" class="gl-search" id="glSearch" placeholder="Rechercher…" autocomplete="off"
+             value="${escapeAttrG(goalSearch)}" oninput="setGoalSearch(this.value)">
+      ${parents.length?`<button class="gl-add" onclick="toggleGoalFoldAll()" title="${allFolded?'Tout déplier':'Tout plier'}">${allFolded?'▾ Déplier':'▸ Plier'}</button>`:''}
       <div class="gl-wall-wrap">
         <button class="gl-add gl-wall-btn" onclick="toggleGoalWallMenu(event)">🖼 Fond</button>
         <div class="gl-wall-menu" id="glWallMenu">${wallThumbs}</div>
@@ -2147,7 +2215,8 @@ function renderGoalsToolbar(){
 }
 function setGoalFilter(c){goalCatFilter=c;renderGoalsToolbar();renderGoalsTree();}
 
-function goalCard(g){
+function goalCard(g,o){
+  o=o||{};
   const col=goalCatColor(g.category);
   const hz=goalHorizonFromDate(g.target_date);
   const hm=goalHorizonMeta(hz);
@@ -2156,12 +2225,14 @@ function goalCard(g){
   const cps=goalCheckpoints(g);
   const isDone=g.status==='done'||prog>=100;
   const dots=cps.length?`<div class="gl-cp-dots" title="${cps.filter(c=>c.d).length}/${cps.length} checkpoints">${cps.map((c,i)=>`<span class="gl-cp-dot${c.d?' done':''}" onclick="event.stopPropagation();toggleGoalCp('${g.id}',${i})" title="${escapeAttrG(c.t)}${c.r?' · 🎁 '+escapeAttrG(c.r):''}"></span>`).join('')}<span class="gl-cp-count">${cps.filter(c=>c.d).length}/${cps.length}</span></div>`:'';
-  return `<div class="gl-card${isDone?' done':''}" style="--gcol:${col}" onclick="openGoalModal('${g.id}')">
+  const fold=o.kids?`<button class="gl-fold${o.collapsed?' on':''}" onclick="event.stopPropagation();toggleGoalCollapse('${g.id}')" title="${o.collapsed?'Déplier':'Plier'} cette branche (${o.kids})">${o.collapsed?'▸ '+o.kids:'▾'}</button>`:'';
+  return `<div class="gl-card${isDone?' done':''}${o.dim?' dim':''}" style="--gcol:${col}" onclick="openGoalModal('${g.id}')">
     <div class="gl-c-head">
       <span class="gl-c-icon">${g.icon||hm[2]}</span>
       <span class="gl-c-hbadge" style="color:${hcol};background:${hcol}1f;border:1px solid ${hcol}55">${hm[1]}</span>
       ${g.target_date?`<span class="gl-c-date">${g.target_date}</span>`:''}
       <div class="gl-c-acts">
+        ${fold}
         <button class="gl-child" onclick="event.stopPropagation();openGoalModal(null,'${g.id}')" title="Créer un objectif enfant">+</button>
         ${isDone?'<span class="gl-c-done">✓</span>':`<button class="gl-edit" onclick="event.stopPropagation();openGoalModal('${g.id}')" title="Éditer">✎</button>`}
       </div>
@@ -2173,25 +2244,57 @@ function goalCard(g){
     ${g.reward?`<div class="gl-reward-mini${isDone?' unlocked':''}" title="${escapeAttrG(g.reward)}">🎁 ${escapeHtmlG(g.reward)}</div>`:''}
   </div>`;
 }
+// Un objectif « ressort » s'il passe le filtre catégorie ET la recherche.
+function goalMatches(g){
+  if(goalCatFilter!=='all'&&g.category!==goalCatFilter)return false;
+  const q=goalSearch.trim().toLowerCase();
+  if(!q)return true;
+  return [g.title,g.description,g.category,g.reward].join(' ').toLowerCase().includes(q);
+}
 function renderGoalsTree(){
   const el=document.getElementById('glTree');
-  let list=goals;
-  if(goalCatFilter!=='all')list=goals.filter(g=>g.category===goalCatFilter);
-  if(!list.length){el.innerHTML=`<div class="gl-empty">Aucun objectif${goalCatFilter!=='all'?' dans cette catégorie':''}. Crée ton premier avec « + Objectif ».</div>`;return;}
+  const list=goals; // l'arbre reste toujours complet : filtrer casserait la hiérarchie
+  if(!list.length){el.innerHTML=`<div class="gl-empty">Aucun objectif. Crée ton premier avec « + Objectif ».</div>`;return;}
+  const byId={};list.forEach(g=>{byId[g.id]=g;});
   const ids=new Set(list.map(g=>g.id));
+  const filtering=goalCatFilter!=='all'||goalSearch.trim()!=='';
+  const hit=new Set(list.filter(goalMatches).map(g=>g.id));
+  // les ancêtres d'un résultat sont dépliés de force, sinon il resterait invisible.
+  // Uniquement pendant un filtre : sans filtre tout « matche », et le pli serait ignoré.
+  const reveal=new Set();
+  if(filtering)hit.forEach(id=>{let cur=byId[id],guard=0;
+    while(cur&&cur.parent_id&&guard++<64){const p=byId[cur.parent_id];if(!p)break;reveal.add(p.id);cur=p;}});
   const hr=g=>goalHorizonRank(goalHorizonFromDate(g.target_date));
   const sortFn=(a,b)=>hr(a)-hr(b)||(a.target_date||'zzz').localeCompare(b.target_date||'zzz')||a.title.localeCompare(b.title);
   const childrenOf=pid=>list.filter(g=>g.parent_id===pid).sort(sortFn);
   const roots=list.filter(g=>!g.parent_id||!ids.has(g.parent_id)).sort(sortFn);
   const renderNode=g=>{
     const kids=childrenOf(g.id);
-    return `<div class="gl-node">${goalCard(g)}${kids.length?`<div class="gl-link"></div><div class="gl-subtree">${kids.map(renderNode).join('')}</div>`:''}</div>`;
+    const collapsed=kids.length>0&&goalCollapsed.has(g.id)&&!reveal.has(g.id);
+    const card=goalCard(g,{dim:filtering&&!hit.has(g.id),kids:kids.length,collapsed});
+    const sub=kids.length&&!collapsed?`<div class="gl-link"></div><div class="gl-subtree">${kids.map(renderNode).join('')}</div>`:'';
+    return `<div class="gl-node">${card}${sub}</div>`;
   };
-  el.innerHTML=`<div class="gl-forest">${roots.map(renderNode).join('')}</div>`;
+  const none=filtering&&!hit.size?`<div class="gl-nohit">Aucun objectif ne correspond${goalSearch.trim()?` à « ${escapeHtmlG(goalSearch.trim())} »`:''}.</div>`:'';
+  el.innerHTML=none+`<div class="gl-forest">${roots.map(renderNode).join('')}</div>`;
   // arbre inversé (racines à droite) → on positionne le scroll à droite
   const f=el.querySelector('.gl-forest');
   if(f)requestAnimationFrame(()=>{f.scrollLeft=f.scrollWidth;});
 }
+function toggleGoalCollapse(id){
+  if(goalCollapsed.has(id))goalCollapsed.delete(id);else goalCollapsed.add(id);
+  localStorage.setItem(LS_GOAL_FOLD,JSON.stringify([...goalCollapsed]));
+  renderGoalsTree();
+}
+// plie tout ce qui a des enfants, ou déplie tout si déjà entièrement plié
+function toggleGoalFoldAll(){
+  const parents=goals.filter(g=>goals.some(x=>x.parent_id===g.id)).map(g=>g.id);
+  const allFolded=parents.length>0&&parents.every(id=>goalCollapsed.has(id));
+  goalCollapsed=allFolded?new Set():new Set(parents);
+  localStorage.setItem(LS_GOAL_FOLD,JSON.stringify([...goalCollapsed]));
+  renderGoalsToolbar();renderGoalsTree();
+}
+function setGoalSearch(v){goalSearch=v;renderGoalsTree();}
 
 async function toggleGoalCp(id,idx){
   const g=goals.find(x=>x.id===id);if(!g)return;
@@ -2434,7 +2537,7 @@ function renderCharts(){
   }
   Chart.defaults.color='#60607a';
   charts.done=new Chart(document.getElementById('cDone'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:vals.map(v=>v>0?'rgba(124,106,255,0.72)':'rgba(124,106,255,0.1)'),borderColor:'rgba(124,106,255,0.85)',borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{afterBody:(items)=>{const titles=titlesByDay[items[0].dataIndex]||[];return titles.length?titles.map(t=>'• '+(t.length>45?t.slice(0,45)+'…':t)):['—'];},label:()=>null}}},scales:{x:{ticks:{font:{family:'Space Mono',size:9},maxTicksLimit:10},grid:{color:'#1c1c28'}},y:{ticks:{font:{family:'Space Mono',size:9},stepSize:1},grid:{color:'#1c1c28'}}}}});
-  const cVals=COLUMNS.map(c=>tasks.filter(t=>t.column===c).length);
+  const cVals=COLUMNS.map(c=>tasks.filter(t=>taskColumnFromDate(t.due_date)===c).length);
   charts.cols=new Chart(document.getElementById('cCols'),{type:'doughnut',data:{labels:COLUMNS,datasets:[{data:cVals,backgroundColor:['rgba(58,58,85,0.85)','rgba(99,102,241,0.8)','rgba(139,92,246,0.8)','rgba(251,191,36,0.8)','rgba(248,113,113,0.8)'],borderColor:'#09090e',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{font:{family:'Space Mono',size:8},boxWidth:9,padding:6}}}}});
   const iVals=[1,2,3,4,5].map(i=>tasks.filter(t=>t.importance===i).length);
   charts.imp=new Chart(document.getElementById('cImp'),{type:'bar',data:{labels:['▪','▪▪','▪▪▪','▪▪▪▪','▪▪▪▪▪'],datasets:[{data:iVals,backgroundColor:['rgba(74,222,128,0.75)','rgba(163,230,53,0.75)','rgba(251,191,36,0.75)','rgba(251,146,60,0.75)','rgba(248,113,113,0.75)'],borderWidth:0,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:14}},grid:{display:false}},y:{ticks:{font:{family:'Space Mono',size:9},stepSize:1},grid:{color:'#1c1c28'}}}}});
