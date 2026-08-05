@@ -92,7 +92,9 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .due-badge{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.05em;padding:2px 5px}
 .due-badge.normal{color:var(--text-dim);background:rgba(255,255,255,0.03)}.due-badge.warn{color:var(--warn);background:rgba(251,191,36,0.09)}.due-badge.danger{color:var(--danger);background:rgba(248,113,113,0.09)}.due-badge.overdue{color:#fff;background:var(--danger)}
 .card-notes{font-size:0.65rem;color:var(--text-dim);font-style:italic;padding:0.28rem 0 0 6px;margin-top:0.35rem;border-top:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card-actions{display:flex;gap:0.3rem;margin-top:0.45rem;padding-left:6px}
+.card-actions{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.45rem;padding-left:6px}
+.btn-snooze{background:rgba(124,106,255,0.07);border:1px solid rgba(124,106,255,0.25);color:var(--accent);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.07em;padding:2px 7px;cursor:pointer;text-transform:uppercase;transition:background 0.11s}
+.btn-snooze:hover{background:rgba(124,106,255,0.2)}
 .btn-done{background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.22);color:var(--green);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.07em;padding:2px 7px;cursor:pointer;text-transform:uppercase;transition:background 0.11s}.btn-done:hover{background:rgba(74,222,128,0.17)}
 .btn-edit{background:rgba(255,255,255,0.02);border:1px solid var(--border);color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.07em;padding:2px 7px;cursor:pointer;text-transform:uppercase;transition:background 0.11s,color 0.11s}.btn-edit:hover{background:rgba(255,255,255,0.06);color:var(--text)}
 .col-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.85rem;color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.12em;padding:1rem}
@@ -273,6 +275,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .toasts{position:fixed;bottom:1.25rem;right:1.25rem;z-index:500;display:flex;flex-direction:column;gap:0.35rem;pointer-events:none}
 .toast{background:var(--surface);border:1px solid var(--border);padding:0.55rem 0.85rem;font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.07em;animation:tin 0.16s ease-out,tout 0.22s ease-in 2.8s forwards}
 .toast.ok{border-left:3px solid var(--green)}.toast.err{border-left:3px solid var(--danger)}.toast.info{border-left:3px solid var(--accent)}
+/* toast actionnable : le conteneur est en pointer-events:none, il faut le rétablir ici */
+.toast.act{animation:tin 0.16s ease-out;pointer-events:auto;display:flex;align-items:center;gap:0.7rem}
+.toast-undo{background:rgba(124,106,255,0.14);border:1px solid var(--accent);color:var(--accent);font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:0.07em;text-transform:uppercase;padding:2px 8px;cursor:pointer;white-space:nowrap;transition:background 0.11s}
+.toast-undo:hover{background:rgba(124,106,255,0.3)}
 @keyframes tin{from{transform:translateX(12px);opacity:0}to{opacity:1;transform:none}}
 @keyframes tout{to{opacity:0;transform:translateX(12px)}}
 /* HEATMAPS */
@@ -952,7 +958,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.2.0</span>
+    <span class="app-version">v1.3.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1925,7 +1931,7 @@ function mkCard(t, now) {
   if(ac)c.classList.add(ac);
   let dots='';for(let i=1;i<=5;i++)dots+=`<div class="idot idot-${i}${i<=t.importance?' on':''}"></div>`;
   const notes=t.notes?`<div class="card-notes">${t.notes}</div>`:'';
-  c.innerHTML=`${tag}<div class="card-title">${t.title}</div><div class="card-meta"><div class="imp-dots">${dots}</div>${badge}</div>${notes}<div class="card-actions"><button class="btn-done" onclick="completeTask(${t.id})">✓ TERMINER</button><button class="btn-edit" onclick="openModal(${t.id})">ÉDITER</button></div>`;
+  c.innerHTML=`${tag}<div class="card-title">${t.title}</div><div class="card-meta"><div class="imp-dots">${dots}</div>${badge}</div>${notes}<div class="card-actions"><button class="btn-done" onclick="completeTask(${t.id})">✓ TERMINER</button><button class="btn-edit" onclick="openModal(${t.id})">ÉDITER</button><button class="btn-snooze" onclick="snoozeTask(${t.id},1)" title="Reporter d'un jour">+1J</button><button class="btn-snooze" onclick="snoozeTask(${t.id},7)" title="Reporter d'une semaine">+1S</button></div>`;
   c.addEventListener('dragstart',()=>{dragSrcId=t.id;setTimeout(()=>c.classList.add('dragging'),0)});
   c.addEventListener('dragend',()=>{dragSrcId=null;c.classList.remove('dragging')});
   return c;
@@ -1960,18 +1966,59 @@ function dropOnCol(col){
 // ════════════════════════════════════════════════════
 // TASK ACTIONS
 // ════════════════════════════════════════════════════
+// `tasks` contient les mêmes objets que `allTasks` (c'est un filter), donc muter
+// l'un suffit ; on recalcule ensuite la liste active.
+const refreshActive=()=>{ tasks=allTasks.filter(t=>!t.completed_at); };
+
 async function completeTask(id){
-  const t=tasks.find(t=>t.id===id);if(!t)return;
-  t.completed_at=td();const at=allTasks.find(t=>t.id===id);if(at)at.completed_at=td();
-  tasks=tasks.filter(t=>t.id!==id);render();
+  const t=allTasks.find(x=>x.id===id);if(!t)return;
+  const prev=t.completed_at;
+  t.completed_at=td();
+  refreshActive();render();
   if(curPage==='objectifs')renderObjectifs();
-  toast('✓ Tâche terminée','ok');await persist();
+  offerUndo('✓ Tâche terminée',async()=>{
+    t.completed_at=prev||'';
+    refreshActive();render();
+    if(curPage==='objectifs')renderObjectifs();
+    await persist();
+  });
+  await persist();
+}
+
+// Report d'échéance : on repart d'aujourd'hui si la tâche est en retard ou sans
+// date, sinon de son échéance — un report ne doit jamais retomber dans le passé.
+async function snoozeTask(id,days){
+  const t=allTasks.find(x=>x.id===id);if(!t)return;
+  const prev=t.due_date;
+  const now=new Date();now.setHours(0,0,0,0);
+  let base=now;
+  if(t.due_date){
+    const p=String(t.due_date).split('-');
+    const d=new Date(+p[0],+p[1]-1,+p[2]);d.setHours(0,0,0,0);
+    if(!isNaN(d)&&d>now)base=d;
+  }
+  const nd=new Date(base);nd.setDate(nd.getDate()+days);
+  t.due_date=ymd(nd);t.column=taskColumnFromDate(t.due_date);
+  render();
+  offerUndo(`Reporté au ${t.due_date}`,async()=>{
+    t.due_date=prev||'';t.column=taskColumnFromDate(t.due_date);
+    render();await persist();
+  });
+  await persist();
 }
 
 async function deleteTask(){
   const id=parseInt(document.getElementById('fId').value);
-  tasks=tasks.filter(t=>t.id!==id);allTasks=allTasks.filter(t=>t.id!==id);
-  closeModal();render();toast('Supprimée','ok');await persist();
+  const idx=allTasks.findIndex(t=>t.id===id);
+  if(idx<0){closeModal();return;}
+  const snap=allTasks[idx];            // on garde la tâche pour pouvoir la remettre
+  allTasks.splice(idx,1);
+  refreshActive();closeModal();render();
+  offerUndo('Tâche supprimée',async()=>{
+    allTasks.splice(Math.min(idx,allTasks.length),0,snap);
+    refreshActive();render();await persist();
+  });
+  await persist();
 }
 
 // ════════════════════════════════════════════════════
@@ -2579,6 +2626,33 @@ function showLoad(v){ document.getElementById('loadOverlay').style.display=v?'fl
 function toast(msg,type='ok'){
   const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;
   document.getElementById('toasts').appendChild(t);setTimeout(()=>t.remove(),3200);
+}
+
+// ── Undo ──────────────────────────────────────────────────────────────────
+// Terminer / supprimer / reporter étaient immédiats et sans retour possible.
+// Le toast reste actionnable quelques secondes, puis la fenêtre se referme.
+let undoFn=null,undoTimer=null,undoEl=null;
+function clearUndo(){
+  clearTimeout(undoTimer);undoFn=null;
+  if(undoEl){undoEl.remove();undoEl=null;}
+}
+function offerUndo(msg,fn,ms=7000){
+  clearUndo();
+  undoFn=fn;
+  const t=document.createElement('div');t.className='toast ok act';
+  const s=document.createElement('span');s.textContent=msg;t.appendChild(s);
+  const b=document.createElement('button');b.className='toast-undo';b.textContent='↩ Annuler';
+  b.onclick=runUndo;t.appendChild(b);
+  document.getElementById('toasts').appendChild(t);
+  undoEl=t;
+  undoTimer=setTimeout(()=>{ if(undoEl===t)clearUndo(); },ms);
+}
+async function runUndo(){
+  const fn=undoFn;
+  if(!fn)return;
+  clearUndo();
+  await fn();
+  toast('↩ Rétabli','info');
 }
 
 // ════════════════════════════════════════════════════
@@ -4411,6 +4485,13 @@ document.addEventListener('keydown',e=>{
     if(document.getElementById('habitModal').classList.contains('open'))saveHabit();
     if(document.getElementById('sportPlanModal').classList.contains('open'))saveSportPlan();
     if(document.getElementById('goalModal').classList.contains('open'))saveGoal();
+  }
+  // Ctrl+Z annule la dernière action, sauf pendant une saisie où le navigateur
+  // doit garder son propre undo de texte.
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey&&undoFn){
+    const el=e.target,tag=(el&&el.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='select'||(el&&el.isContentEditable))return;
+    e.preventDefault();runUndo();
   }
 });
 // Fermeture des formulaires : uniquement via la croix ✕, "Annuler" ou Échap.
