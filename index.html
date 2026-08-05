@@ -104,6 +104,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 
 /* BOARD FILTER BAR */
 .board-filters{flex-shrink:0;display:flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;border-bottom:1px solid var(--border);background:rgba(9,9,14,0.7)}
+.bf-spacer{flex:1}
+.bf-search{background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Space Mono',monospace;font-size:0.58rem;padding:0.3rem 0.55rem;min-width:190px;outline:none}
+.bf-search:focus{border-color:var(--accent)}
+.bf-count{font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--text-dim);min-width:64px}
 .board-filter{font-family:'Space Mono',monospace;font-size:0.56rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.26rem 0.7rem;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%);transition:all 0.13s}
 .board-filter:hover{color:var(--text);border-color:var(--text-mid)}
 .board-filter.active{color:var(--bg);border-color:transparent;background:var(--text-mid)}
@@ -740,9 +744,14 @@ body,body *{font-family:var(--font-body)}
 .gl-search:focus{border-color:var(--accent)}
 .gl-nohit{font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim);padding:0.5rem 0 0.9rem}
 .gl-c-done{color:var(--green);font-size:0.8rem;font-weight:700}
-.gl-edit,.gl-child{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.72rem;padding:0 0.2rem;opacity:0;transition:opacity 0.15s}
+/* Visibles par défaut : sur écran tactile il n'y a pas de survol, et ces boutons
+   restaient donc inatteignables (impossible d'éditer un objectif au doigt). */
+.gl-edit,.gl-child{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.72rem;padding:0 0.2rem;opacity:1;transition:opacity 0.15s}
 .gl-child{font-size:0.9rem;line-height:1}
-.gl-card:hover .gl-edit,.gl-card:hover .gl-child{opacity:1}
+@media (hover:hover) and (pointer:fine){
+  .gl-edit,.gl-child{opacity:0}
+  .gl-card:hover .gl-edit,.gl-card:hover .gl-child{opacity:1}
+}
 .gl-edit:hover,.gl-child:hover{color:var(--accent)}
 .gl-c-title{font-family:var(--font-body);font-size:0.85rem;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .gl-c-cat{font-family:var(--font-mono);font-size:0.5rem;font-weight:700;margin-top:0.22rem}
@@ -916,7 +925,7 @@ body,body *{font-family:var(--font-body)}
     <div class="hstat" style="color:var(--green)">✓ <b id="hDoneToday">0</b></div>
     <div class="hstat" style="color:var(--danger)">URGENTES <b id="hUrgent">0</b></div>
     <div class="sync-status"><div class="sync-dot ok" id="syncDot"></div><span id="syncLabel">PRÊT</span></div>
-    <button class="btn-nav" onclick="openModal()">+ TÂCHE</button>
+    <button class="btn-nav" onclick="openModal()" title="Nouvelle tâche (N)">+ TÂCHE</button>
     <div class="theme-picker-wrap">
       <button class="btn-theme" onclick="toggleThemePicker(event)" title="Changer le thème">◐ THÈME</button>
       <div class="theme-menu" id="themeMenu">
@@ -958,7 +967,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.3.0</span>
+    <span class="app-version">v1.4.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -967,11 +976,15 @@ body,body *{font-family:var(--font-body)}
 <div class="page active" id="pageboard">
   <div class="pg-bg" id="boardBg"></div>
   <div class="board-filters" id="boardFilters">
-    <button class="board-filter f-all active" onclick="setBoardFilter('all')">TOUS</button>
-    <button class="board-filter f-dcb" onclick="setBoardFilter('DCB')">DCB</button>
-    <button class="board-filter f-gld" onclick="setBoardFilter('GLD')">GLD</button>
-    <button class="board-filter f-air" onclick="setBoardFilter('Airside')">AIRSIDE</button>
-    <button class="board-filter f-perso" onclick="setBoardFilter('Perso')">PERSO</button>
+    <button class="board-filter f-all active" title="Raccourci : 0" onclick="setBoardFilter('all')">TOUS</button>
+    <button class="board-filter f-dcb" title="Raccourci : 1" onclick="setBoardFilter('DCB')">DCB</button>
+    <button class="board-filter f-gld" title="Raccourci : 2" onclick="setBoardFilter('GLD')">GLD</button>
+    <button class="board-filter f-air" title="Raccourci : 3" onclick="setBoardFilter('Airside')">AIRSIDE</button>
+    <button class="board-filter f-perso" title="Raccourci : 4" onclick="setBoardFilter('Perso')">PERSO</button>
+    <div class="bf-spacer"></div>
+    <input type="search" class="bf-search" id="bfSearch" placeholder="Rechercher…  ( / )" autocomplete="off"
+           oninput="setBoardSearch(this.value)">
+    <span class="bf-count" id="bfCount"></span>
   </div>
   <div class="board-scroll">
     <div class="board" id="board"></div>
@@ -1276,7 +1289,8 @@ let dragSrcId = null, charts = {}, curPage = 'board';
 let gisLoaded = false, tokenClient = null, silentAuthFailed = false;
 let habDayFilter = 'remaining';
 let habWeekOffset = 0;
-let boardFilter = 'all';
+let boardFilter = 'all', boardSearch = '';
+function setBoardSearch(v){ boardSearch=v; render(); }
 
 // ════════════════════════════════════════════════════
 // INIT
@@ -1882,8 +1896,11 @@ function setBoardFilter(f) {
 }
 
 function filterTasksByBoard(list) {
-  if (boardFilter === 'all') return list;
-  return list.filter(t => (t.project||'') === boardFilter);
+  const q=boardSearch.trim().toLowerCase();
+  return list.filter(t =>
+    (boardFilter==='all'||(t.project||'')===boardFilter) &&
+    (!q||[t.title,t.notes,t.project].join(' ').toLowerCase().includes(q))
+  );
 }
 
 function render() {
@@ -1909,6 +1926,11 @@ function render() {
     }
     else ct.forEach(t=>body.appendChild(mkCard(t,now)));
   });
+  const cnt=document.getElementById('bfCount');
+  if(cnt){
+    const narrowed=boardSearch.trim()!==''||boardFilter!=='all';
+    cnt.textContent=narrowed?`${filterTasksByBoard(tasks).length} / ${tasks.length}`:'';
+  }
   updateHStats();
 }
 
@@ -4478,8 +4500,29 @@ async function saveSportPlan(){
 // ════════════════════════════════════════════════════
 // KEYBOARD
 // ════════════════════════════════════════════════════
+// ── Raccourcis globaux ────────────────────────────────────────────────────
+const anyModalOpen=()=>!!document.querySelector('.modal-bg.open');
+const isTyping=el=>{
+  const tag=(el&&el.tagName||'').toLowerCase();
+  return tag==='input'||tag==='textarea'||tag==='select'||!!(el&&el.isContentEditable);
+};
+const pageSearchInput=()=>document.getElementById(curPage==='objectifs'?'glSearch':'bfSearch');
+function focusPageSearch(){
+  const el=pageSearchInput();
+  if(el){el.focus();el.select();}
+}
+
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();}
+  if(e.key==='Escape'){
+    // dans une recherche, Échap vide le champ plutôt que de ne rien faire
+    const el=e.target;
+    if(el&&el.type==='search'&&el.value){
+      el.value='';
+      (el.id==='glSearch'?setGoalSearch:setBoardSearch)('');
+      return;
+    }
+    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();
+  }
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     if(document.getElementById('taskModal').classList.contains('open'))saveTask();
     if(document.getElementById('habitModal').classList.contains('open'))saveHabit();
@@ -4492,6 +4535,21 @@ document.addEventListener('keydown',e=>{
     const el=e.target,tag=(el&&el.tagName||'').toLowerCase();
     if(tag==='input'||tag==='textarea'||tag==='select'||(el&&el.isContentEditable))return;
     e.preventDefault();runUndo();
+  }
+
+  // Les raccourcis à une touche ne s'activent ni pendant une saisie, ni quand un
+  // formulaire est ouvert, ni combinés à un modificateur.
+  if(anyModalOpen()||isTyping(e.target)||e.ctrlKey||e.metaKey||e.altKey)return;
+
+  if(e.key==='/'){ e.preventDefault();focusPageSearch();return; }
+  if(e.key==='n'||e.key==='N'){
+    e.preventDefault();
+    if(curPage==='objectifs')openGoalModal();else openModal();
+    return;
+  }
+  if(curPage==='board'&&/^[0-4]$/.test(e.key)){
+    e.preventDefault();
+    setBoardFilter(e.key==='0'?'all':PROJECTS[parseInt(e.key,10)-1]);
   }
 });
 // Fermeture des formulaires : uniquement via la croix ✕, "Annuler" ou Échap.
