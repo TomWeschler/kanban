@@ -99,6 +99,12 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .due-badge{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.05em;padding:2px 5px}
 .due-badge.normal{color:var(--text-dim);background:rgba(255,255,255,0.03)}.due-badge.warn{color:var(--warn);background:rgba(251,191,36,0.09)}.due-badge.danger{color:var(--danger);background:rgba(248,113,113,0.09)}.due-badge.overdue{color:#fff;background:var(--danger)}
 .card-notes{font-size:0.65rem;color:var(--text-dim);font-style:italic;padding:0.28rem 0 0 6px;margin-top:0.35rem;border-top:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-cps{display:flex;align-items:center;gap:3px;margin-top:0.35rem;padding-left:6px;flex-wrap:wrap}
+.card-cp{width:9px;height:9px;border-radius:2px;border:1px solid var(--border2);cursor:pointer;transition:background 0.12s,border-color 0.12s}
+.card-cp:hover{border-color:var(--accent)}
+.card-cp.done{background:var(--green);border-color:var(--green)}
+.card-cp-count{font-family:'Space Mono',monospace;font-size:0.48rem;color:var(--text-dim);margin-left:2px}
+.card-rec{font-family:'Space Mono',monospace;font-size:0.62rem;color:var(--accent);margin-left:2px}
 .card-actions{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.45rem;padding-left:6px}
 .btn-snooze{background:rgba(124,106,255,0.07);border:1px solid rgba(124,106,255,0.25);color:var(--accent);font-family:'Space Mono',monospace;font-size:0.52rem;letter-spacing:0.07em;padding:2px 7px;cursor:pointer;text-transform:uppercase;transition:background 0.11s}
 .btn-snooze:hover{background:rgba(124,106,255,0.2)}
@@ -111,7 +117,44 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 
 /* BOARD FILTER BAR */
 .board-filters{flex-shrink:0;display:flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;border-bottom:1px solid var(--border);background:rgba(9,9,14,0.7)}
+/* ── Vue Aujourd'hui ── */
+#pagetoday{overflow-y:auto;flex-direction:column}
+.td-wrap{position:relative;z-index:1;padding:1.25rem 1.5rem 3rem}
+.td-hdr{font-family:'Space Mono',monospace;font-size:0.7rem;letter-spacing:0.18em;color:var(--accent);margin-bottom:1rem}
+.td-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;align-items:start}
+.td-col{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1rem}
+.td-t{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-mid);display:flex;align-items:center;gap:0.5rem;margin-bottom:0.7rem;padding-bottom:0.45rem;border-bottom:1px solid var(--border)}
+.td-n{color:var(--accent)}
+.td-late{color:var(--danger);margin-left:auto}
+.td-row{display:flex;align-items:center;gap:0.55rem;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.td-row.done .td-lbl{opacity:0.45;text-decoration:line-through}
+.td-check{flex-shrink:0;width:15px;height:15px;border-radius:4px;border:1px solid var(--border2);background:none;cursor:pointer;transition:background 0.12s,border-color 0.12s}
+.td-check:hover{border-color:var(--green)}
+.td-check.on{background:var(--green);border-color:var(--green)}
+.td-lbl{flex:1;font-size:0.8rem;line-height:1.3}
+.td-tag{font-family:'Space Mono',monospace;font-size:0.5rem;background:var(--surface3);color:var(--text-dim);padding:1px 5px;border-radius:3px;margin-right:0.35rem}
+.td-sub{font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-dim);margin-left:0.3rem}
+.td-flag{font-family:'Space Mono',monospace;font-size:0.46rem;color:var(--danger);letter-spacing:0.08em}
+.td-imp{font-size:0.42rem;color:var(--accent);letter-spacing:1px;white-space:nowrap}
+.td-eur{font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--green)}
+.td-empty{font-family:'Space Mono',monospace;font-size:0.58rem;color:var(--text-dim);padding:0.9rem 0}
+.td-sport-h{font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:0.1em;color:var(--accent);text-transform:uppercase}
+.td-sport-t{font-size:0.85rem;font-weight:700;margin:0.25rem 0 0.45rem}
+.td-sport-c{font-size:0.72rem;line-height:1.45;color:var(--text-mid)}
+.td-sport-b{font-size:0.7rem;color:var(--green);margin-top:0.45rem}
+.td-go{margin-top:0.8rem;width:100%;background:rgba(124,106,255,0.08);border:1px solid rgba(124,106,255,0.28);color:var(--accent);font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:0.1em;padding:0.4rem;cursor:pointer;text-transform:uppercase}
+.td-go:hover{background:rgba(124,106,255,0.2)}
+@media (max-width:900px){.td-grid{grid-template-columns:1fr}.td-wrap{padding:0.9rem 0.7rem 4rem}}
 .bf-spacer{flex:1}
+.board-filter.f-done{color:var(--green);border-color:rgba(74,222,128,0.3)}
+.done-list{max-height:56vh;overflow-y:auto;margin-top:0.4rem}
+.done-day{font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:0.1em;color:var(--text-dim);margin:0.8rem 0 0.35rem;border-bottom:1px solid var(--border);padding-bottom:0.25rem}
+.done-row{display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0.2rem;border-bottom:1px solid rgba(255,255,255,0.03)}
+.done-title{flex:1;font-size:0.78rem;line-height:1.25}
+.done-proj{font-family:'Space Mono',monospace;font-size:0.5rem;padding:1px 5px;border-radius:3px;background:var(--surface3);color:var(--text-dim)}
+.done-restore{background:rgba(124,106,255,0.1);border:1px solid rgba(124,106,255,0.3);color:var(--accent);font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.06em;padding:2px 7px;cursor:pointer;text-transform:uppercase;white-space:nowrap}
+.done-restore:hover{background:rgba(124,106,255,0.24)}
+.done-empty{font-family:'Space Mono',monospace;font-size:0.6rem;color:var(--text-dim);padding:1.4rem 0;text-align:center}
 .bf-search{background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Space Mono',monospace;font-size:0.58rem;padding:0.3rem 0.55rem;min-width:190px;outline:none}
 .bf-search:focus{border-color:var(--accent)}
 .bf-count{font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--text-dim);min-width:64px}
@@ -912,7 +955,8 @@ body,body *{font-family:var(--font-body)}
   <div class="logo">◆ KANBAN</div>
   <div class="nav-sep"></div>
   <nav class="nav-tabs">
-    <button class="nav-tab active" data-page="board" onclick="switchPage('board')">BOARD</button>
+    <button class="nav-tab active" data-page="today" onclick="switchPage('today')">AUJOURD'HUI</button>
+    <button class="nav-tab" data-page="board" onclick="switchPage('board')">BOARD</button>
     <button class="nav-tab" data-page="crypto" onclick="switchPage('crypto')">CRYPTOBOT</button>
     <button class="nav-tab" data-page="habits" onclick="switchPage('habits')">HABITUDES</button>
     <button class="nav-tab" data-page="sport" onclick="switchPage('sport')">SPORT</button>
@@ -974,13 +1018,25 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.5.0</span>
+    <span class="app-version">v1.6.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
 
 <!-- BOARD PAGE -->
-<div class="page active" id="pageboard">
+<div class="page active" id="pagetoday">
+  <div class="pg-bg" id="todayBg"></div>
+  <div class="td-wrap">
+    <div class="td-hdr" id="tdDate"></div>
+    <div class="td-grid">
+      <section class="td-col" id="tdTasks"></section>
+      <section class="td-col" id="tdHabits"></section>
+      <section class="td-col" id="tdSport"></section>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="pageboard">
   <div class="pg-bg" id="boardBg"></div>
   <div class="board-filters" id="boardFilters">
     <button class="board-filter f-all active" title="Raccourci : 0" onclick="setBoardFilter('all')">TOUS</button>
@@ -989,6 +1045,7 @@ body,body *{font-family:var(--font-body)}
     <button class="board-filter f-air" title="Raccourci : 3" onclick="setBoardFilter('Airside')">AIRSIDE</button>
     <button class="board-filter f-perso" title="Raccourci : 4" onclick="setBoardFilter('Perso')">PERSO</button>
     <div class="bf-spacer"></div>
+    <button class="board-filter f-done" onclick="openDoneModal()" title="Historique des tâches terminées">✓ TERMINÉES</button>
     <input type="search" class="bf-search" id="bfSearch" placeholder="Rechercher…  ( / )" autocomplete="off"
            oninput="setBoardSearch(this.value)">
     <span class="bf-count" id="bfCount"></span>
@@ -1132,6 +1189,25 @@ body,body *{font-family:var(--font-body)}
 </div>
 
 <!-- TASK MODAL -->
+<div class="modal-bg" id="doneModal">
+  <div class="modal" style="width:600px">
+    <div class="modal-hdr">TÂCHES TERMINÉES</div>
+    <button class="modal-close" onclick="closeDoneModal()">✕</button>
+    <div class="field"><label>Période</label>
+      <select id="dnRange" onchange="renderDoneList()">
+        <option value="7">7 derniers jours</option>
+        <option value="30" selected>30 derniers jours</option>
+        <option value="90">3 derniers mois</option>
+        <option value="0">Tout</option>
+      </select>
+    </div>
+    <div class="field"><label>Recherche</label>
+      <input type="search" id="dnSearch" placeholder="Titre, notes, projet…" autocomplete="off" oninput="renderDoneList()">
+    </div>
+    <div class="done-list" id="dnList"></div>
+  </div>
+</div>
+
 <div class="modal-bg" id="taskModal">
   <div class="modal">
     <div class="modal-hdr" id="modalTitle">NOUVELLE TÂCHE</div>
@@ -1166,6 +1242,17 @@ body,body *{font-family:var(--font-body)}
       </div>
     </div>
     <div class="field"><label>Date d'échéance</label><input type="date" id="fDue" onchange="syncColFromDue()" oninput="syncColFromDue()"/></div>
+    <div class="field"><label>Récurrence</label>
+      <select id="fRec">
+        <option value="">Aucune</option>
+        <option value="daily">Tous les jours</option>
+        <option value="weekly">Toutes les semaines</option>
+        <option value="monthly">Tous les mois</option>
+        <option value="yearly">Tous les ans</option>
+      </select>
+    </div>
+    <div class="field"><label>Sous-tâches <span style="color:var(--text-dim);text-transform:none;letter-spacing:0">— une par ligne, « [x] » si faite</span></label>
+      <textarea id="fCheck" placeholder="[ ] Première étape&#10;[x] Étape déjà faite"></textarea></div>
     <div class="field"><label>Notes</label><textarea id="fNotes" placeholder="Notes optionnelles..."></textarea></div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Annuler</button>
@@ -1281,7 +1368,11 @@ const cfg = {
   account:       'weschler.tom@gmail.com'
 };
 
-const SHEET_HEADER      = ['id','title','column','importance','due_date','created_at','completed_at','notes','project'];
+const SHEET_HEADER      = ['id','title','column','importance','due_date','created_at','completed_at','notes','project','recurrence','checklist'];
+const TASK_LAST_COL     = 'K';
+// Récurrence : cocher une tâche récurrente en recrée aussitôt la suivante.
+const RECURRENCES = [['','Aucune'],['daily','Tous les jours'],['weekly','Toutes les semaines'],
+                     ['monthly','Tous les mois'],['yearly','Tous les ans']];
 const HABITS_HEADER     = ['id','title','frequency','reward_eur','category','active'];
 const HABITS_LOG_HEADER = ['id','habit_id','date','reward_eur','category'];
 
@@ -1292,7 +1383,7 @@ let accessToken = null;
 let allTasks = [], tasks = [];
 let habits = [], habitsLog = [];
 let selImp = 3, selCat = 'Finance';
-let dragSrcId = null, charts = {}, curPage = 'board';
+let dragSrcId = null, charts = {}, curPage = 'today';
 let gisLoaded = false, tokenClient = null, silentAuthFailed = false;
 let habDayFilter = 'remaining';
 let habWeekOffset = 0;
@@ -1423,14 +1514,15 @@ const sheetsBase = () => `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sp
 
 async function loadFromSheets() {
   try {
-    const r = await fetch(`${sheetsBase()}/values/${cfg.sheetName}!A:I`, { headers:{Authorization:`Bearer ${accessToken}`} });
+    const r = await fetch(`${sheetsBase()}/values/${cfg.sheetName}!A:${TASK_LAST_COL}`, { headers:{Authorization:`Bearer ${accessToken}`} });
     if (!r.ok) throw new Error(r.status);
     const data = await r.json();
     const rows = data.values || [];
     allTasks = rows.length <= 1 ? [] : rows.slice(1).map(p => ({
       id: parseInt(p[0])||Date.now(), title:p[1]||'', column:p[2]||'BackLog',
       importance:parseInt(p[3])||3, due_date:p[4]||'', created_at:p[5]||td(),
-      completed_at:p[6]||'', notes:p[7]||'', project:(p[8]||'').trim()
+      completed_at:p[6]||'', notes:p[7]||'', project:(p[8]||'').trim(),
+      recurrence:(p[9]||'').trim(), checklist:p[10]||''
     }));
     // Migration : le projet vivait dans le titre (« DCB : … »). On le remonte dans
     // sa colonne et on retire le préfixe, devenu redondant avec le tag de la carte.
@@ -1444,19 +1536,58 @@ async function loadFromSheets() {
       t.column = taskColumnFromDate(t.due_date);
     });
     tasks = allTasks.filter(t => !t.completed_at);
+    remoteFingerprint = fingerprint(rows);   // référence pour détecter une écriture concurrente
     if(migrated) persist();
     localStorage.setItem(LS_CACHE, JSON.stringify(allTasks));
     setSyncStatus('ok','SYNCED');
   } catch(e) { setSyncStatus('error','CACHE'); toast('Sheets inaccessible — cache local utilisé','err'); }
 }
 
-async function saveToSheets() {
+// ── Écriture concurrente ──────────────────────────────────────────────────
+// saveToSheets réécrit l'onglet entier. Sans garde-fou, un second appareil
+// écrase en silence ce que le premier vient d'enregistrer.
+let remoteFingerprint = null;
+function fingerprint(rows){
+  const s=JSON.stringify(rows||[]);
+  let h=5381;
+  for(let i=0;i<s.length;i++)h=((h*33)^s.charCodeAt(i))>>>0;
+  return s.length+':'+h;
+}
+async function fetchRemoteRows(){
+  const r=await fetch(`${sheetsBase()}/values/${cfg.sheetName}!A:${TASK_LAST_COL}`,{headers:{Authorization:`Bearer ${accessToken}`}});
+  if(!r.ok)throw new Error(r.status);
+  return (await r.json()).values||[];
+}
+
+function taskToRow(t){
+  return [String(t.id),t.title,taskColumnFromDate(t.due_date),String(t.importance),
+          t.due_date||'',t.created_at||'',t.completed_at||'',t.notes||'',t.project||'',t.recurrence||'',t.checklist||''];
+}
+let conflictPending=false;
+async function saveToSheets(force) {
   if (!accessToken) return;
+  localStorage.setItem(LS_CACHE, JSON.stringify(allTasks)); // filet local avant tout
+  if (!navigator.onLine) { setSyncStatus('error','HORS LIGNE'); return; }
+  if (conflictPending && !force) return;                    // ne pas re-crier à chaque frappe
   setSyncStatus('syncing','SAVING...');
   try {
-    const values = [SHEET_HEADER, ...allTasks.map(t=>[String(t.id),t.title,taskColumnFromDate(t.due_date),String(t.importance),t.due_date||'',t.created_at||'',t.completed_at||'',t.notes||'',t.project||''])];
-    await sheetReplaceAll(cfg.sheetName,'I',values);
-    localStorage.setItem(LS_CACHE, JSON.stringify(allTasks));
+    // Quelqu'un a-t-il écrit depuis notre dernière lecture ? Si oui, on n'écrase pas.
+    if (!force && remoteFingerprint !== null) {
+      const remote = await fetchRemoteRows();
+      if (fingerprint(remote) !== remoteFingerprint) {
+        conflictPending=true;
+        setSyncStatus('error','CONFLIT');
+        offerChoice('Modifié depuis un autre appareil — tes changements locaux ne sont PAS enregistrés',[
+          ['Recharger',async()=>{conflictPending=false;await loadFromSheets();render();toast('Rechargé','ok');}],
+          ['Écraser',  async()=>{conflictPending=false;await saveToSheets(true);}]
+        ],0,'err');
+        return;
+      }
+    }
+    const values = [SHEET_HEADER, ...allTasks.map(taskToRow)];
+    const written = await sheetReplaceAll(cfg.sheetName,TASK_LAST_COL,values);
+    remoteFingerprint = written ? fingerprint(written) : await fetchRemoteRows().then(fingerprint).catch(()=>null);
+    conflictPending=false;
     setSyncStatus('ok','SYNCED');
     toast('💾 Sauvegardé','ok');
   } catch(e) { setSyncStatus('error','ERREUR SYNC'); toast('Erreur sauvegarde Sheets','err'); }
@@ -1801,13 +1932,13 @@ async function toggleHabit(habitId, dateStr) {
   if (existing >= 0) {
     // Uncheck — remove from log and rewrite sheet
     habitsLog.splice(existing, 1);
-    renderHabitsPage();
+    renderHabitsPage();if(curPage==='today')renderTodayPage();
     await rewriteHabitsLog();
   } else {
     // Check — append to log
     const entry = { id: Date.now(), habit_id: habitId, date: day, reward_eur: h.reward_eur, category: h.category };
     habitsLog.push(entry);
-    renderHabitsPage();
+    renderHabitsPage();if(curPage==='today')renderTodayPage();
     await appendHabitsLog(entry);
     toast(`✓ +${h.reward_eur.toFixed(2)}€ · ${h.title}`,'ok');
   }
@@ -1960,7 +2091,13 @@ function mkCard(t, now) {
   if(ac)c.classList.add(ac);
   let dots='';for(let i=1;i<=5;i++)dots+=`<div class="idot idot-${i}${i<=t.importance?' on':''}"></div>`;
   const notes=t.notes?`<div class="card-notes">${t.notes}</div>`:'';
-  c.innerHTML=`${tag}<div class="card-title">${t.title}</div><div class="card-meta"><div class="imp-dots">${dots}</div>${badge}</div>${notes}<div class="card-actions"><button class="btn-done" onclick="completeTask(${t.id})">✓ TERMINER</button><button class="btn-edit" onclick="openModal(${t.id})">ÉDITER</button><button class="btn-snooze" onclick="snoozeTask(${t.id},1)" title="Reporter d'un jour">+1J</button><button class="btn-snooze" onclick="snoozeTask(${t.id},7)" title="Reporter d'une semaine">+1S</button></div>`;
+  const cps=taskChecklist(t);
+  const done=cps.filter(c=>c.d).length;
+  const sub=cps.length?`<div class="card-cps">${cps.map((c,i)=>
+      `<span class="card-cp${c.d?' done':''}" title="${String(c.t).replace(/"/g,'&quot;')}" onclick="event.stopPropagation();toggleTaskCp(${t.id},${i})"></span>`).join('')
+    }<span class="card-cp-count">${done}/${cps.length}</span></div>`:'';
+  const rec=t.recurrence?`<span class="card-rec" title="Récurrente : ${(RECURRENCES.find(r=>r[0]===t.recurrence)||['','?'])[1].toLowerCase()}">↻</span>`:'';
+  c.innerHTML=`${tag}<div class="card-title">${t.title}</div><div class="card-meta"><div class="imp-dots">${dots}</div>${rec}${badge}</div>${sub}${notes}<div class="card-actions"><button class="btn-done" onclick="completeTask(${t.id})">✓ TERMINER</button><button class="btn-edit" onclick="openModal(${t.id})">ÉDITER</button><button class="btn-snooze" onclick="snoozeTask(${t.id},1)" title="Reporter d'un jour">+1J</button><button class="btn-snooze" onclick="snoozeTask(${t.id},7)" title="Reporter d'une semaine">+1S</button></div>`;
   c.addEventListener('dragstart',()=>{dragSrcId=t.id;setTimeout(()=>c.classList.add('dragging'),0)});
   c.addEventListener('dragend',()=>{dragSrcId=null;c.classList.remove('dragging')});
   return c;
@@ -1999,15 +2136,73 @@ function dropOnCol(col){
 // l'un suffit ; on recalcule ensuite la liste active.
 const refreshActive=()=>{ tasks=allTasks.filter(t=>!t.completed_at); };
 
+// ── Sous-tâches ───────────────────────────────────────────────────────────
+// Même format texte que les checkpoints d'objectifs : « [x] intitulé » par ligne.
+function taskChecklist(t){
+  try{ const a=JSON.parse(t.checklist||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; }
+}
+function checklistToText(cps){ return cps.map(c=>`${c.d?'[x]':'[ ]'} ${c.t}`).join('\n'); }
+function parseChecklistText(txt){
+  return String(txt||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=/^\[( |x|X)\]\s*(.*)$/.exec(l);
+    return m?{t:m[2].trim(),d:m[1].toLowerCase()==='x'}:{t:l,d:false};
+  }).filter(c=>c.t);
+}
+async function toggleTaskCp(id,idx){
+  const t=allTasks.find(x=>x.id===id);if(!t)return;
+  const cps=taskChecklist(t);
+  if(!cps[idx])return;
+  cps[idx].d=!cps[idx].d;
+  t.checklist=JSON.stringify(cps);
+  render();await persist();
+}
+
+// ── Récurrence ────────────────────────────────────────────────────────────
+function nextDueDate(due,rec){
+  const p=String(due||'').split('-');
+  const base=(p.length===3)?new Date(+p[0],+p[1]-1,+p[2]):new Date();
+  base.setHours(0,0,0,0);
+  if(rec==='daily')  base.setDate(base.getDate()+1);
+  else if(rec==='weekly') base.setDate(base.getDate()+7);
+  else if(rec==='monthly'){
+    const d=base.getDate();
+    base.setDate(1);base.setMonth(base.getMonth()+1);
+    // 31 janvier + 1 mois → 28/29 février, pas le 3 mars
+    base.setDate(Math.min(d,new Date(base.getFullYear(),base.getMonth()+1,0).getDate()));
+  }
+  else if(rec==='yearly'){
+    const d=base.getDate(),m=base.getMonth();
+    base.setDate(1);base.setFullYear(base.getFullYear()+1);
+    // 29 février + 1 an → 28 février, pas le 1er mars
+    base.setDate(Math.min(d,new Date(base.getFullYear(),m+1,0).getDate()));
+  }
+  else return '';
+  return ymd(base);
+}
+
 async function completeTask(id){
   const t=allTasks.find(x=>x.id===id);if(!t)return;
   const prev=t.completed_at;
   t.completed_at=td();
+  // une tâche récurrente réapparaît immédiatement à sa prochaine échéance
+  let spawned=null;
+  if(t.recurrence){
+    const nd=nextDueDate(t.due_date||td(),t.recurrence);
+    if(nd){
+      const cps=taskChecklist(t).map(c=>({t:c.t,d:false})); // la checklist repart vierge
+      spawned={...t,id:Date.now(),created_at:td(),completed_at:'',due_date:nd,
+               column:taskColumnFromDate(nd),checklist:cps.length?JSON.stringify(cps):''};
+      allTasks.push(spawned);
+    }
+  }
   refreshActive();render();
+  if(curPage==='today')renderTodayPage();
   if(curPage==='objectifs')renderObjectifs();
-  offerUndo('✓ Tâche terminée',async()=>{
+  offerUndo(spawned?`✓ Terminée — prochaine le ${spawned.due_date}`:'✓ Tâche terminée',async()=>{
     t.completed_at=prev||'';
+    if(spawned){ const i=allTasks.indexOf(spawned); if(i>=0)allTasks.splice(i,1); }
     refreshActive();render();
+    if(curPage==='today')renderTodayPage();
     if(curPage==='objectifs')renderObjectifs();
     await persist();
   });
@@ -2058,6 +2253,7 @@ function openModal(id, prefill, proj){
   document.getElementById('fDue').value=plusDays(7);syncColFromDue();
   document.getElementById('fNotes').value='';setImp(3);
   document.getElementById('fProj').value=proj||'';
+  document.getElementById('fRec').value='';document.getElementById('fCheck').value='';
   document.getElementById('btnDel').style.display='none';
   document.getElementById('modalTitle').textContent='NOUVELLE TÂCHE';
   if(id){
@@ -2066,6 +2262,8 @@ function openModal(id, prefill, proj){
     document.getElementById('fDue').value=t.due_date||'';syncColFromDue();
     document.getElementById('fNotes').value=t.notes||'';setImp(t.importance);
     document.getElementById('fProj').value=t.project||'';
+    document.getElementById('fRec').value=t.recurrence||'';
+    document.getElementById('fCheck').value=checklistToText(taskChecklist(t));
     document.getElementById('btnDel').style.display='block';
     document.getElementById('modalTitle').textContent='ÉDITER LA TÂCHE';
   }
@@ -2079,6 +2277,102 @@ function openModal(id, prefill, proj){
 function syncColFromDue(){ document.getElementById('fCol').value=taskColumnFromDate(document.getElementById('fDue').value); }
 function syncDueFromCol(){ document.getElementById('fDue').value=dueDateForColumn(document.getElementById('fCol').value); }
 
+// ── Vue « Aujourd'hui » ───────────────────────────────────────────────────
+// Le quotidien était éclaté sur trois onglets : tâches, habitudes, séance.
+// Cette page les agrège et ne montre que ce qui concerne la journée.
+const tdEsc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function renderTodayPage(){
+  if(accessToken&&!sportLoaded){showLoad(true);await loadSportData();showLoad(false);}
+  const today=td();
+  const d=new Date();
+  document.getElementById('tdDate').textContent=
+    d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}).toUpperCase();
+
+  // ── tâches du jour (les retards remontent ici) ──
+  const list=tasks.filter(t=>taskColumnFromDate(t.due_date)==="Aujourd'hui")
+    .sort((a,b)=>b.importance-a.importance||(a.due_date||'zzz').localeCompare(b.due_date||'zzz'));
+  const late=list.filter(t=>t.due_date&&t.due_date<today).length;
+  document.getElementById('tdTasks').innerHTML=
+    `<div class="td-t">Tâches <span class="td-n">${list.length}</span>${late?`<span class="td-late">${late} en retard</span>`:''}</div>`+
+    (list.length?list.map(t=>{
+      const cps=taskChecklist(t);
+      return `<div class="td-row">
+        <button class="td-check" onclick="completeTask(${t.id})" title="Terminer"></button>
+        <span class="td-lbl">${t.project?`<span class="td-tag">${tdEsc(t.project)}</span>`:''}${tdEsc(t.title)}
+          ${cps.length?`<span class="td-sub">${cps.filter(c=>c.d).length}/${cps.length}</span>`:''}</span>
+        ${t.due_date&&t.due_date<today?'<span class="td-flag">EN RETARD</span>':''}
+        <span class="td-imp" title="Importance ${t.importance}">${'●'.repeat(t.importance)}</span>
+      </div>`;
+    }).join(''):'<div class="td-empty">Rien pour aujourd\'hui.</div>');
+
+  // ── habitudes du jour ──
+  const due=habits.filter(h=>h.active&&isHabitDueToday(h.frequency));
+  const doneSet=new Set(habitsLog.filter(l=>l.date===today).map(l=>String(l.habit_id)));
+  const nDone=due.filter(h=>doneSet.has(String(h.id))).length;
+  document.getElementById('tdHabits').innerHTML=
+    `<div class="td-t">Habitudes <span class="td-n">${nDone}/${due.length}</span></div>`+
+    (due.length?due.map(h=>{
+      const ok=doneSet.has(String(h.id));
+      return `<div class="td-row${ok?' done':''}">
+        <button class="td-check${ok?' on':''}" onclick="toggleHabit(${h.id},'${today}')" title="${ok?'Décocher':'Cocher'}"></button>
+        <span class="td-lbl">${tdEsc(h.title)}</span>
+        <span class="td-eur">${h.reward_eur.toFixed(2)}€</span>
+      </div>`;
+    }).join(''):'<div class="td-empty">Aucune habitude prévue.</div>');
+
+  // ── séance du jour ──
+  const plan=sportPlanFor(today),log=sportLogFor(today);
+  const st=log?(log.status||''):'';
+  document.getElementById('tdSport').innerHTML=
+    `<div class="td-t">Séance${st?` <span class="td-n">${tdEsc(st)}</span>`:''}</div>`+
+    (plan?`<div class="td-sport">
+        <div class="td-sport-h">${tdEsc(plan.type||'')}${plan.duration?` · ${plan.duration} min`:''}</div>
+        <div class="td-sport-t">${tdEsc(plan.title||'')}</div>
+        ${plan.content?`<div class="td-sport-c">${tdEsc(plan.content).replace(/\n/g,'<br>')}</div>`:''}
+        ${plan.bonus?`<div class="td-sport-b">★ ${tdEsc(plan.bonus)}</div>`:''}
+      </div>`:'<div class="td-empty">Aucune séance programmée.</div>')+
+    `<button class="td-go" onclick="switchPage('sport')">Ouvrir SPORT →</button>`;
+}
+
+// ── Historique des tâches terminées ───────────────────────────────────────
+// Elles étaient stockées mais aucune interface ne les listait.
+function openDoneModal(){ document.getElementById('doneModal').classList.add('open'); renderDoneList(); }
+function closeDoneModal(){ document.getElementById('doneModal').classList.remove('open'); }
+function renderDoneList(){
+  const days=parseInt(document.getElementById('dnRange').value,10);
+  const q=document.getElementById('dnSearch').value.trim().toLowerCase();
+  let cut='';
+  if(days>0){ const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-days);cut=ymd(d); }
+  const list=allTasks
+    .filter(t=>t.completed_at && (!cut||t.completed_at>=cut))
+    .filter(t=>!q||[t.title,t.notes,t.project].join(' ').toLowerCase().includes(q))
+    .sort((a,b)=>b.completed_at.localeCompare(a.completed_at)||String(b.id).localeCompare(String(a.id)));
+  const el=document.getElementById('dnList');
+  if(!list.length){ el.innerHTML='<div class="done-empty">Aucune tâche terminée sur cette période.</div>'; return; }
+  const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let html='',day='';
+  list.forEach(t=>{
+    if(t.completed_at!==day){ day=t.completed_at; html+=`<div class="done-day">${day}</div>`; }
+    html+=`<div class="done-row">
+      ${t.project?`<span class="done-proj">${esc(t.project)}</span>`:''}
+      <span class="done-title">${esc(t.title)}</span>
+      <button class="done-restore" onclick="restoreTask(${t.id})">Restaurer</button>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+async function restoreTask(id){
+  const t=allTasks.find(x=>x.id===id);if(!t)return;
+  const prev=t.completed_at;
+  t.completed_at='';
+  refreshActive();render();renderDoneList();
+  offerUndo(`Restaurée — ${taskColumnFromDate(t.due_date)}`,async()=>{
+    t.completed_at=prev;refreshActive();render();renderDoneList();await persist();
+  });
+  await persist();
+}
+
 function quickTask(proj){ openModal(null,null,proj); }
 function closeModal(){ document.getElementById('taskModal').classList.remove('open'); }
 function setImp(v){ selImp=v; document.querySelectorAll('.imp-btn').forEach(b=>b.classList.toggle('sel',parseInt(b.dataset.v)===v)); }
@@ -2089,7 +2383,9 @@ async function saveTask(){
   const editId=document.getElementById('fId').value;
   const due=document.getElementById('fDue').value;
   const data={title,column:taskColumnFromDate(due),importance:selImp,due_date:due,
-    notes:document.getElementById('fNotes').value.trim(),project:document.getElementById('fProj').value};
+    notes:document.getElementById('fNotes').value.trim(),project:document.getElementById('fProj').value,
+    recurrence:document.getElementById('fRec').value,
+    checklist:(()=>{const c=parseChecklistText(document.getElementById('fCheck').value);return c.length?JSON.stringify(c):''})()};
   if(editId){
     const t=tasks.find(t=>t.id===parseInt(editId));if(t)Object.assign(t,data);
     const at=allTasks.find(t=>t.id===parseInt(editId));if(at)Object.assign(at,data);
@@ -2237,8 +2533,11 @@ function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,
 const sheetUrl=(path)=>`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}${path}`;
 const authHeaders=()=>({Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'});
 
-async function sheetPut(range,values){
-  return fetch(sheetUrl(`/values/${encodeURIComponent(range)}?valueInputOption=RAW`),
+async function sheetPut(range,values,includeValues){
+  // includeValuesInResponse renvoie ce que la feuille contient VRAIMENT après
+  // écriture : évite une relecture pour connaître l'état de référence.
+  const q=`?valueInputOption=RAW${includeValues?'&includeValuesInResponse=true':''}`;
+  return fetch(sheetUrl(`/values/${encodeURIComponent(range)}${q}`),
     {method:'PUT',headers:authHeaders(),body:JSON.stringify({values})});
 }
 async function sheetClear(range){
@@ -2286,10 +2585,11 @@ async function sheetUpsertByKey(sheet,key,row){ return sheetBatchUpsert(sheet,[r
 // Réécriture complète : on ÉCRIT d'abord, on purge le reliquat ensuite. L'inverse
 // (clear puis write) laissait l'onglet vide si le write échouait.
 async function sheetReplaceAll(sheet,lastCol,values){
-  const r=await sheetPut(`${sheet}!A1`,values);
+  const r=await sheetPut(`${sheet}!A1`,values,true);
   if(!r.ok) throw new Error(r.status);
+  const j=await r.json().catch(()=>null);
   await sheetClear(`${sheet}!A${values.length+1}:${lastCol}`);
-  return true;
+  return (j&&j.updatedData&&j.updatedData.values)||null;
 }
 async function goalUpsert(g){
   const i=goals.findIndex(x=>x.id===g.id);
@@ -2641,6 +2941,7 @@ function switchPage(name){
   if(name==='objectifs')renderObjectifs();
   if(name==='habits'){applyPageWallpaper('habBg',randomWallpaper());renderHabitsPage();}
   if(name==='board')applyPageWallpaper('boardBg',randomWallpaper());
+  if(name==='today'){applyPageWallpaper('todayBg',randomWallpaper());renderTodayPage();}
   if(name==='crypto')renderCryptoBot();
   if(name==='finances')renderFinancesPage();
   if(name==='sport')renderSportPage();
@@ -2668,13 +2969,22 @@ function clearUndo(){
 function offerUndo(msg,fn,ms=7000){
   clearUndo();
   undoFn=fn;
-  const t=document.createElement('div');t.className='toast ok act';
-  const s=document.createElement('span');s.textContent=msg;t.appendChild(s);
-  const b=document.createElement('button');b.className='toast-undo';b.textContent='↩ Annuler';
-  b.onclick=runUndo;t.appendChild(b);
-  document.getElementById('toasts').appendChild(t);
-  undoEl=t;
+  undoEl=offerChoice(msg,[['↩ Annuler',runUndo]],ms,'ok');
+  const t=undoEl;
   undoTimer=setTimeout(()=>{ if(undoEl===t)clearUndo(); },ms);
+}
+// Toast avec un ou plusieurs boutons. Renvoie l'élément pour pouvoir le retirer.
+function offerChoice(msg,actions,ms=7000,type='info'){
+  const t=document.createElement('div');t.className=`toast ${type} act`;
+  const s=document.createElement('span');s.textContent=msg;t.appendChild(s);
+  actions.forEach(([label,fn])=>{
+    const b=document.createElement('button');b.className='toast-undo';b.textContent=label;
+    b.onclick=()=>{t.remove();fn();};
+    t.appendChild(b);
+  });
+  document.getElementById('toasts').appendChild(t);
+  if(ms>0)setTimeout(()=>t.remove(),ms);
+  return t;
 }
 async function runUndo(){
   const fn=undoFn;
@@ -4528,7 +4838,7 @@ document.addEventListener('keydown',e=>{
       (el.id==='glSearch'?setGoalSearch:setBoardSearch)('');
       return;
     }
-    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();
+    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     if(document.getElementById('taskModal').classList.contains('open'))saveTask();
