@@ -1027,7 +1027,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.6.3</span>
+    <span class="app-version">v1.6.4</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -4889,12 +4889,20 @@ function focusPageSearch(){
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
-    // dans une recherche, Échap vide le champ plutôt que de ne rien faire
+    // Échap dans une recherche en sort : on vide, on réinitialise le filtre et
+    // on rend le focus à la page. Sur un champ déjà vide on ne retient pas la
+    // touche, qui va alors fermer le formulaire ouvert.
     const el=e.target;
-    if(el&&el.type==='search'&&el.value){
-      el.value='';
-      (el.id==='glSearch'?setGoalSearch:setBoardSearch)('');
-      return;
+    if(el&&el.type==='search'){
+      const had=!!el.value;
+      if(had){
+        el.value='';
+        if(el.id==='glSearch')setGoalSearch('');
+        else if(el.id==='bfSearch')setBoardSearch('');
+        else if(el.id==='dnSearch')renderDoneList();
+      }
+      el.blur();
+      if(had)return;
     }
     closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();
   }
