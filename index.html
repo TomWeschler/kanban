@@ -1027,7 +1027,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.6.2</span>
+    <span class="app-version">v1.6.3</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1413,6 +1413,15 @@ function setBoardSearch(v){ boardSearch=v; render(); }
 // ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
+// render() ne dessine que le board. Sans ce dispatcheur, la page affichee au
+// chargement (AUJOURD'HUI par defaut) restait vide jusqu'au premier changement
+// d'onglet, seul switchPage() sachant la redessiner.
+function renderCurrentPage(){
+  if(curPage==='today')renderTodayPage();
+  else if(curPage==='habits')renderHabitsPage();
+  else if(curPage==='objectifs')renderObjectifs();
+}
+
 function init() {
   applySavedTheme();
   try {
@@ -1420,8 +1429,10 @@ function init() {
     allTasks = cached; tasks = allTasks.filter(t => !t.completed_at);
     render();
   } catch(e){}
+  renderCurrentPage();
   buildHabitModalSelects();
   applyPageWallpaper('boardBg',randomWallpaper());
+  applyPageWallpaper('todayBg',randomWallpaper());
   document.getElementById('authScreen').style.display = 'none';
   preloadGIS();
 }
@@ -1506,7 +1517,7 @@ function initTokenClient() {
       await Promise.all([loadFromSheets(), loadHabits(), loadHabitsLog()]);
       showLoad(false);
       render();
-      if (curPage === 'habits') renderHabitsPage();
+      renderCurrentPage();
     }
   });
 }
