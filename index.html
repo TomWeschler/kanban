@@ -139,6 +139,9 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .td-sub{font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-dim);margin-left:0.3rem}
 .td-imp{flex-shrink:0}
 .td-icon{font-size:1rem;line-height:1;flex-shrink:0}
+/* en-tête de section, calqué sur .hg-sec-row de la page HABITUDES */
+.td-sec{font-family:var(--font-mono);font-size:0.53rem;letter-spacing:0.22em;font-weight:700;text-transform:uppercase;padding:0.75rem 0 0.3rem;border-bottom:1px solid var(--border2)}
+.td-sec:first-of-type{padding-top:0.1rem}
 .td-meta{display:block;font-family:'Space Mono',monospace;font-size:0.48rem;color:var(--text-dim);margin-top:2px;letter-spacing:0.05em}
 .td-row .hg-cat-dot{margin-right:0.4rem;vertical-align:middle}
 .td-row .due-badge{flex-shrink:0}
@@ -1024,7 +1027,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.6.1</span>
+    <span class="app-version">v1.6.2</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1299,6 +1302,17 @@ body,body *{font-family:var(--font-body)}
 // CONFIG & CONSTANTS
 // ════════════════════════════════════════════════════
 const COLUMNS  = ["Aujourd'hui",'Demain','Cette semaine','Ce mois','BackLog'];
+// Ordre des sections d'habitudes, commun à la page HABITUDES et à AUJOURD'HUI.
+const HAB_CAT_ORDER = ['Santé','Productivité','Esprit','Finance','Autre'];
+// Tri commun au board et à la vue Aujourd'hui : importance décroissante, puis
+// échéance croissante, les tâches sans échéance en dernier.
+function taskSort(a,b){
+  if(b.importance!==a.importance) return b.importance-a.importance;
+  if(!a.due_date&&!b.due_date) return 0;
+  if(!a.due_date) return 1;
+  if(!b.due_date) return -1;
+  return a.due_date.localeCompare(b.due_date);
+}
 
 // ── La colonne d'une tâche est DÉRIVÉE de son échéance ────────────────────
 // Plus de rangement manuel qui se périme : sans date → BackLog, en retard →
@@ -1858,11 +1872,10 @@ function renderHabGrid() {
   });
   head += `<th class="hg-th-week">Sem.</th></tr>`;
 
-  const CAT_ORDER = ['Santé','Productivité','Esprit','Finance','Autre'];
   let body = '';
   let hasAny = false;
 
-  CAT_ORDER.forEach(cat => {
+  HAB_CAT_ORDER.forEach(cat => {
     const catColor = HAB_CAT_COLOR[cat] || 'var(--text-mid)';
     const filtered = applyDayFilter(habits.filter(h => h.category === cat));
     if (!filtered.length) return;
@@ -2052,7 +2065,7 @@ function render() {
   board.innerHTML = '';
   const now = new Date(); now.setHours(0,0,0,0);
   COLUMNS.forEach(col => {
-    const ct = filterTasksByBoard(tasks.filter(t=>taskColumnFromDate(t.due_date)===col));
+    const ct = filterTasksByBoard(tasks.filter(t=>taskColumnFromDate(t.due_date)===col)).sort(taskSort);
     const el = document.createElement('div');
     el.className='column'; el.dataset.col=col;
     el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over')});
@@ -2297,7 +2310,7 @@ async function renderTodayPage(){
 
   // ── tâches du jour (les retards remontent ici) ──
   const list=tasks.filter(t=>taskColumnFromDate(t.due_date)==="Aujourd'hui")
-    .sort((a,b)=>b.importance-a.importance||(a.due_date||'zzz').localeCompare(b.due_date||'zzz'));
+    .sort(taskSort);
   const late=list.filter(t=>t.due_date&&t.due_date<today).length;
   document.getElementById('tdTasks').innerHTML=
     `<div class="td-t">Tâches <span class="td-n">${list.length}</span>${late?`<span class="td-late">${late} en retard</span>`:''}</div>`+
@@ -2325,24 +2338,18 @@ async function renderTodayPage(){
   const due=habits.filter(h=>h.active&&isHabitDueToday(h.frequency));
   const doneSet=new Set(habitsLog.filter(l=>l.date===today).map(l=>String(l.habit_id)));
   const nDone=due.filter(h=>doneSet.has(String(h.id))).length;
+  // même découpage que la page HABITUDES : sections par catégorie dans l'ordre
+  // HAB_CAT_ORDER, catégories vides masquées, tri par id à l'intérieur
+  const habSections=HAB_CAT_ORDER.map(cat=>{
+    const inCat=due.filter(h=>h.category===cat).sort((a,b)=>a.id-b.id);
+    if(!inCat.length)return '';
+    const catColor=HAB_CAT_COLOR[cat]||'var(--text-mid)';
+    return `<div class="td-sec" style="color:${catColor}">◆ ${cat.toUpperCase()}</div>`+
+      inCat.map(h=>habRowToday(h,doneSet,today)).join('');
+  }).join('');
   document.getElementById('tdHabits').innerHTML=
     `<div class="td-t">Habitudes <span class="td-n">${nDone}/${due.length}</span></div>`+
-    (due.length?due.map(h=>{
-      const ok=doneSet.has(String(h.id));
-      // mêmes repères que la page HABITUDES : émoji déduit du titre, pastille de
-      // catégorie, série en cours, gain et fréquence
-      const color=HAB_CAT_COLOR[h.category]||'var(--text-mid)';
-      const streak=getStreak(h.id,h.frequency);
-      return `<div class="td-row${ok?' done':''}">
-        <button class="td-check${ok?' on':''}" onclick="toggleHabit(${h.id},'${today}')" title="${ok?'Décocher':'Cocher'}"></button>
-        <span class="td-icon">${habitIcon(h.title)}</span>
-        <span class="td-lbl">
-          <span class="hg-cat-dot" style="background:${color}" title="${tdEsc(h.category)}"></span><span class="td-name">${tdEsc(h.title)}</span>
-          <span class="td-meta">${tdEsc(freqLabel(h.frequency))}${streak>0?` · 🔥 ${streak}`:''}</span>
-        </span>
-        <span class="td-eur">+${h.reward_eur.toFixed(2)}€</span>
-      </div>`;
-    }).join(''):'<div class="td-empty">Aucune habitude prévue.</div>');
+    (due.length?habSections:'<div class="td-empty">Aucune habitude prévue.</div>');
 
   // ── séance du jour ──
   const plan=sportPlanFor(today),log=sportLogFor(today);
@@ -2356,6 +2363,23 @@ async function renderTodayPage(){
         ${plan.bonus?`<div class="td-sport-b">★ ${tdEsc(plan.bonus)}</div>`:''}
       </div>`:'<div class="td-empty">Aucune séance programmée.</div>')+
     `<button class="td-go" onclick="switchPage('sport')">Ouvrir SPORT →</button>`;
+}
+
+// Une ligne d'habitude, avec les mêmes repères que la page HABITUDES :
+// émoji déduit du titre, pastille de catégorie, fréquence, série et gain.
+function habRowToday(h,doneSet,today){
+  const ok=doneSet.has(String(h.id));
+  const color=HAB_CAT_COLOR[h.category]||'var(--text-mid)';
+  const streak=getStreak(h.id,h.frequency);
+  return `<div class="td-row${ok?' done':''}">
+    <button class="td-check${ok?' on':''}" onclick="toggleHabit(${h.id},'${today}')" title="${ok?'Décocher':'Cocher'}"></button>
+    <span class="td-icon">${habitIcon(h.title)}</span>
+    <span class="td-lbl">
+      <span class="hg-cat-dot" style="background:${color}" title="${tdEsc(h.category)}"></span><span class="td-name">${tdEsc(h.title)}</span>
+      <span class="td-meta">${tdEsc(freqLabel(h.frequency))}${streak>0?` · 🔥 ${streak}`:''}</span>
+    </span>
+    <span class="td-eur">+${h.reward_eur.toFixed(2)}€</span>
+  </div>`;
 }
 
 // ── Historique des tâches terminées ───────────────────────────────────────
