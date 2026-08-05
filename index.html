@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KANBAN OPS</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2309090e'/%3E%3Cpolygon points='16,4 28,16 16,28 4,16' fill='%237c6aff' opacity='0.15'/%3E%3Cpolygon points='16,4 28,16 16,28 4,16' fill='none' stroke='%237c6aff' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%237c6aff'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#7c6aff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kanban">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -967,7 +974,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.4.0</span>
+    <span class="app-version">v1.5.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -4555,6 +4562,33 @@ document.addEventListener('keydown',e=>{
 // Fermeture des formulaires : uniquement via la croix ✕, "Annuler" ou Échap.
 // (Pas de fermeture au clic/glissé hors du formulaire — un drag de sélection qui
 //  dépasse du formulaire ne doit plus le fermer.)
+
+// ── PWA ───────────────────────────────────────────────────────────────────
+// Installable et consultable hors ligne. Les données restent celles du cache
+// local (LS_CACHE) : le service worker ne met en cache que la coquille.
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      reg.addEventListener('updatefound',()=>{
+        const w=reg.installing;if(!w)return;
+        w.addEventListener('statechange',()=>{
+          // controller déjà présent = ce n'est pas la première installation
+          if(w.state==='installed'&&navigator.serviceWorker.controller)
+            toast('Nouvelle version disponible — recharge la page','info');
+        });
+      });
+    }).catch(()=>{});
+  });
+}
+// L'état de synchro doit dire la vérité quand il n'y a pas de réseau, plutôt
+// que d'afficher une erreur de sauvegarde.
+function reflectOnline(){
+  if(navigator.onLine)setSyncStatus('ok','EN LIGNE');
+  else setSyncStatus('error','HORS LIGNE');
+}
+window.addEventListener('online',()=>{reflectOnline();toast('Connexion rétablie','ok');});
+window.addEventListener('offline',()=>{reflectOnline();toast('Hors ligne — les modifications seront envoyées au retour du réseau','info');});
+if(!navigator.onLine)reflectOnline();
 
 init();
 </script>
