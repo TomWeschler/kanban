@@ -1223,7 +1223,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.19.0</span>
+    <span class="app-version">v1.20.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -3610,7 +3610,11 @@ function zipStore(files){
   let off=0;
   const u16=n=>[n&255,(n>>8)&255], u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>24)&255];
   files.forEach(f=>{
-    const name=enc.encode(f.name), data=enc.encode(f.data), crc=crc32(data);
+    // f.data accepte du texte comme du binaire : les pieces jointes entrent
+    // telles quelles, sans passer par une conversion en chaine
+    const name=enc.encode(f.name);
+    const data=typeof f.data==='string'?enc.encode(f.data):new Uint8Array(f.data);
+    const crc=crc32(data);
     const local=[...u32(0x04034b50),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0),
                  ...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),...u16(0)];
     chunks.push(new Uint8Array(local),name,data);
@@ -3629,13 +3633,56 @@ function zipStore(files){
   return new Blob(chunks,{type:'application/zip'});
 }
 const mdSafeName=t=>String(t||'note').replace(/[\\/:*?"<>|#\[\]]/g,'-').replace(/\s+/g,' ').trim().slice(0,80)||'note';
-function exportNotesMarkdown(){
+
+// Recupere les octets d'une piece jointe et son vrai nom cote Drive
+async function driveFetch(id,fallback){
+  const meta=await authFetch(`https://www.googleapis.com/drive/v3/files/${id}?fields=name`,{headers:{}})
+    .then(r=>r.ok?r.json():null).catch(()=>null);
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`,{headers:{}}).catch(()=>null);
+  if(!r||!r.ok)return null;
+  return {name:(meta&&meta.name)||fallback||('piece-'+id),buf:await r.arrayBuffer()};
+}
+
+// Export autonome : les .md ET les pieces jointes, avec des liens relatifs.
+// L'archive s'ouvre telle quelle dans Obsidian, sans dependre de Kanban.
+async function exportNotesMarkdown(){
   if(!notes.length){ toast('Aucune note à exporter','info'); return; }
-  const used={};
-  const files=notes.map(n=>{
+  const ATT='attachments';
+  // 1. recenser les pieces jointes referencees, avec le libelle comme nom de repli
+  const refs=new Map();
+  notes.forEach(n=>String(n.content||'').replace(/\[([^\]]*)\]\(drive:([A-Za-z0-9_\-]+)\)/g,(m,label,id)=>{
+    if(!refs.has(id))refs.set(id,String(label).replace(/^📎\s*/,'').trim());
+    return m;
+  }));
+
+  // 2. les telecharger
+  const files=[], resolved=new Map(), used={};
+  let manques=0;
+  if(refs.size){
+    if(!navigator.onLine){ toast('Hors ligne : export sans les pièces jointes','info'); }
+    else{
+      showLoad(true);
+      let i=0;
+      for(const [id,label] of refs){
+        i++;
+        const got=await driveFetch(id,label);
+        if(!got){ manques++; continue; }
+        let nom=mdSafeName(got.name)||('piece-'+id);
+        used[nom]=(used[nom]||0)+1;
+        if(used[nom]>1){ const d=nom.lastIndexOf('.'); nom=d>0?`${nom.slice(0,d)} (${used[nom]})${nom.slice(d)}`:`${nom} (${used[nom]})`; }
+        resolved.set(id,nom);
+        files.push({name:`${ATT}/${nom}`,data:got.buf});
+      }
+      showLoad(false);
+    }
+  }
+
+  // 3. ecrire les notes, liens reecrits en chemins relatifs
+  const usedMd={};
+  notes.forEach(n=>{
     let name=mdSafeName(n.title);
-    used[name]=(used[name]||0)+1;
-    if(used[name]>1)name+=' ('+used[name]+')';
+    usedMd[name]=(usedMd[name]||0)+1;
+    if(usedMd[name]>1)name+=' ('+usedMd[name]+')';
     const tags=noteTags(n);
     const parent=n.parent_id?noteById(n.parent_id):null;
     const fm=['---','title: '+JSON.stringify(n.title),
@@ -3644,14 +3691,19 @@ function exportNotesMarkdown(){
       n.created_at?'created: '+n.created_at:null,
       n.updated_at?'updated: '+n.updated_at:null,
       n.icon?'icon: '+n.icon:null,'---',''].filter(x=>x!==null).join('\n');
-    return {name:name+'.md',data:fm+(n.content||'')+'\n'};
+    const body=String(n.content||'').replace(/\[([^\]]*)\]\(drive:([A-Za-z0-9_\-]+)\)/g,(m,label,id)=>{
+      const f=resolved.get(id);
+      return f?`[${label}](${ATT}/${encodeURIComponent(f)})`:m;   // non recuperee : on garde le lien d'origine
+    });
+    files.push({name:name+'.md',data:fm+body+'\n'});
   });
+
   const a=document.createElement('a');
   a.href=URL.createObjectURL(zipStore(files));
   a.download=`second-brain-${ymd(new Date())}.zip`;
   document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-  toast(`${files.length} note(s) exportée(s) en .md`,'ok');
+  setTimeout(()=>URL.revokeObjectURL(a.href),8000);
+  toast(`${notes.length} note(s) et ${resolved.size} pièce(s) jointe(s) exportées`+(manques?` · ${manques} illisible(s)`:''), manques?'info':'ok');
 }
 
 // ── Selecteur d'emoji ─────────────────────────────────────────────────────
@@ -3690,7 +3742,6 @@ function renderEmoji(current){
 }
 function chooseEmoji(e){ const f=emPick; closeEmojiPicker(); if(f)f(e); }
 function clearEmoji(){ const f=emPick; closeEmojiPicker(); if(f)f(''); }
-
 // ── Pieces jointes (Google Drive) ─────────────────────────────────────────
 // Les fichiers restent PRIVES : ils ne sont jamais partages publiquement. On
 // les relit avec le jeton et on les affiche via une URL blob locale. Les
