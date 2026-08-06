@@ -214,13 +214,31 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sb-lk small{display:block;font-family:var(--font-mono);font-size:0.55rem;color:var(--text-dim);margin-top:1px}
 .sb-none{font-family:var(--font-mono);font-size:0.55rem;color:var(--text-dim);padding:0.3rem 0}
 /* graphe */
-.gr-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
-#grSvg{width:100%;height:min(56vh,520px);display:block}
-#grSvg line{stroke:var(--border2)}
-#grSvg circle{cursor:pointer;transition:r 0.12s}
-#grSvg circle:hover{stroke:var(--text);stroke-width:2}
-#grSvg text{font-family:var(--font-mono);font-size:8px;fill:var(--text-dim);pointer-events:none}
-.gr-hint{font-family:var(--font-mono);font-size:0.53rem;color:var(--text-dim);margin-top:0.6rem;text-align:center}
+/* Graphe plein ecran */
+#graphOverlay{display:none;position:fixed;inset:0;z-index:880;background:#07070d}
+#graphOverlay.open{display:block}
+#grSvg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#grSvg.panning{cursor:grabbing}
+#grSvg line{stroke:var(--border2);stroke-width:1.2}
+#grSvg .nd{cursor:grab}
+#grSvg .nd:active{cursor:grabbing}
+#grSvg .nd circle{transition:stroke-width 0.1s}
+#grSvg .nd:hover circle:not(.hit){stroke:var(--text);stroke-width:2}
+#grSvg .nd .hit{cursor:grab}
+/* liseré doré = position enregistrée ; jamais sur le cercle de préhension */
+#grSvg .nd.fixed circle:not(.hit){stroke:var(--gld);stroke-width:2}
+#grSvg text{font-family:var(--font-mono);font-size:9px;fill:var(--text-mid);pointer-events:none;paint-order:stroke;stroke:#07070d;stroke-width:3px}
+.gr-bar{position:absolute;top:0.8rem;right:0.8rem;display:flex;align-items:center;gap:0.3rem;
+  background:rgba(15,15,23,0.92);border:1px solid var(--border);border-radius:8px;padding:0.35rem}
+.gr-b{background:none;border:1px solid var(--border2);color:var(--text-mid);font-family:var(--font-mono);
+  font-size:0.62rem;min-width:2rem;height:2rem;padding:0 0.55rem;border-radius:5px;cursor:pointer}
+.gr-b:hover{color:var(--accent);border-color:var(--accent)}
+.gr-b.close:hover{color:var(--danger);border-color:var(--danger)}
+.gr-k{font-family:var(--font-mono);font-size:0.58rem;color:var(--text-dim);min-width:3rem;text-align:center}
+.gr-info{position:absolute;left:0.9rem;bottom:0.9rem;font-family:var(--font-mono);font-size:0.55rem;
+  color:var(--text-dim);background:rgba(15,15,23,0.9);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.7rem;line-height:1.6}
+@media (max-width:700px){.gr-bar{top:auto;bottom:0.8rem;right:0.8rem;left:0.8rem;justify-content:center}
+  .gr-b{height:2.6rem;min-width:2.6rem}.gr-info{display:none}}
 @media (max-width:1100px){
   .sb-layout{grid-template-columns:200px 1fr}
   .sb-meta{display:none}
@@ -1172,7 +1190,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.16.0</span>
+    <span class="app-version">v1.17.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1211,13 +1229,18 @@ body,body *{font-family:var(--font-body)}
   </div>
 </div>
 
-<div class="modal-bg" id="graphModal">
-  <div class="modal" style="width:min(920px,94vw)">
-    <div class="modal-hdr">GRAPHE DES LIENS</div>
-    <button class="modal-close" onclick="closeGraph()">✕</button>
-    <div class="gr-wrap"><svg id="grSvg" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet"></svg></div>
-    <div class="gr-hint">Chaque point est une note · les traits sont les liens [[…]] · cliquez pour ouvrir</div>
+<!-- Graphe plein ecran : deplacable, zoomable, positions enregistrees -->
+<div id="graphOverlay">
+  <svg id="grSvg"><g id="grRoot"></g></svg>
+  <div class="gr-bar">
+    <button class="gr-b" onclick="grZoom(1/1.25)" title="Dézoomer">−</button>
+    <span class="gr-k" id="grK">100%</span>
+    <button class="gr-b" onclick="grZoom(1.25)" title="Zoomer">+</button>
+    <button class="gr-b" onclick="grFit()" title="Tout voir">Ajuster</button>
+    <button class="gr-b" onclick="grRelayout()" title="Recalculer les positions">Réorganiser</button>
+    <button class="gr-b close" onclick="closeGraph()" title="Fermer">✕</button>
   </div>
+  <div class="gr-info" id="grInfo"></div>
 </div>
 
 <div class="page" id="pagereview">
@@ -2973,15 +2996,16 @@ function habRowToday(h,doneSet,today){
 // note, upsert par cle, cache local et file d'ecritures hors ligne.
 // La colonne content porte du markdown ; la limite d'une cellule Sheets est de
 // 50 000 caracteres, largement au-dela d'une note.
-const NOTE_HEADER=['id','title','content','tags','parent_id','icon','pinned','status','created_at','updated_at'];
+const NOTE_HEADER=['id','title','content','tags','parent_id','icon','pinned','status','created_at','updated_at','gx','gy'];
+const NOTE_RANGE='notes!A:L';
 const NOTE_DELETED='__deleted__';
 const NOTE_SEED=[
  ['n1','Bienvenue dans ton Second Brain',
   "Cette note est un point de depart : modifie-la ou supprime-la.\n\n## Comment ca marche\n\n- **Ecris en markdown** — titres, listes, `code`, > citations, tableaux.\n- **Relie tes notes** avec des doubles crochets : [[Comment prendre des notes]].\n  Un lien vers une note inexistante s'affiche en jaune ; un clic la cree.\n- **Classe avec des tags** en ecrivant #exemple directement dans le texte.\n- **Imbrique** les notes : chaque note peut avoir des enfants, comme des pages.\n\n## A essayer\n\n- [ ] Cliquer sur *Graphe* en bas a gauche\n- [ ] Creer une note enfant depuis la barre du haut\n- [x] Lire cette note\n\n> Les liens entrants apparaissent a droite, sous *Retrolins*.",
-  'exemple','','🧠','TRUE','active','',''],
+  'exemple','','🧠','TRUE','active','','','',''],
  ['n2','Comment prendre des notes',
   "Quelques principes qui marchent bien avec ce type d'outil. #methode\n\n1. **Une idee par note.** Une note qui traite de trois sujets ne se relie a rien.\n2. **Titre explicite.** C'est lui qui sert de cible aux liens [[Bienvenue dans ton Second Brain]].\n3. **Relier plutot que ranger.** L'arborescence aide, les liens font le vrai travail.\n\n```\nUne note utile est une note qu'on retrouve.\n```",
-  'methode','n1','📝','FALSE','active','','']
+  'methode','n1','📝','FALSE','active','','','','']
 ];
 
 let notes=[], notesLoaded=false, noteCurId=null, noteSearch='', noteTag='',
@@ -3004,7 +3028,7 @@ async function loadNotes(){
   if(!accessToken)return;
   await ensureNotesSheet();
   const sid=cfg.spreadsheetId;
-  const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/notes!A:J`,{headers:{}})
+  const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/notes!A:L`,{headers:{}})
     .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
   const rows=r.values||[];
   const parsed=(rows.length<=1?[]:rows.slice(1)).filter(x=>x[0]).map(x=>({
@@ -3012,7 +3036,9 @@ async function loadNotes(){
     content:String(x[2]||''), tags:String(x[3]||'').trim(), parent_id:String(x[4]||'').trim(),
     icon:String(x[5]||'').trim(), pinned:String(x[6]||'').toUpperCase()==='TRUE',
     status:String(x[7]||'').trim()||'active', created_at:String(x[8]||'').trim(),
-    updated_at:String(x[9]||'').trim()
+    updated_at:String(x[9]||'').trim(),
+    gx:x[10]===''||x[10]==null?null:parseFloat(x[10]),
+    gy:x[11]===''||x[11]==null?null:parseFloat(x[11])
   }));
   const map={}; parsed.forEach(n=>{map[n.id]=n;});          // la derniere ligne gagne
   notes=Object.values(map).filter(n=>n.status!==NOTE_DELETED);
@@ -3022,7 +3048,8 @@ async function loadNotes(){
 }
 function noteToRow(n){
   return [n.id,n.title,n.content||'',n.tags||'',n.parent_id||'',n.icon||'',
-          n.pinned?'TRUE':'FALSE',n.status||'active',n.created_at||td(),n.updated_at||td()];
+          n.pinned?'TRUE':'FALSE',n.status||'active',n.created_at||td(),n.updated_at||td(),
+          n.gx==null?'':String(Math.round(n.gx)),n.gy==null?'':String(Math.round(n.gy))];
 }
 async function noteUpsert(n){
   n.updated_at=td();
@@ -3034,7 +3061,7 @@ async function noteUpsert(n){
 async function noteDeleteById(id){
   notes=notes.filter(n=>n.id!==id);
   cacheSet('notes',notes);
-  return sheetUpsertByKey('notes',id,[id,'','','','','','FALSE',NOTE_DELETED,'','']);
+  return sheetUpsertByKey('notes',id,[id,'','','','','','FALSE',NOTE_DELETED,'','','','']);
 }
 const noteById=id=>notes.find(n=>n.id===id)||null;
 const noteByTitle=t=>notes.find(n=>n.title.toLowerCase()===String(t||'').trim().toLowerCase())||null;
@@ -3391,56 +3418,227 @@ async function noteDrop(e,id){
 // Petite simulation de forces maison : ressorts sur les liens, repulsion entre
 // noeuds, attraction vers le centre. Quelques centaines d'iterations suffisent.
 function openGraph(){
-  document.getElementById('graphModal').classList.add('open');
-  drawGraph();
+  document.getElementById('graphOverlay').classList.add('open');
+  grBuild();
+  if(grNodes.some(n=>n.fixed))grFit(); else grFit();
+  grBind();
 }
-function closeGraph(){ document.getElementById('graphModal').classList.remove('open'); }
-function drawGraph(){
-  const svg=document.getElementById('grSvg');
-  const W=800,H=520;
-  if(!notes.length){ svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle">Aucune note</text>`; return; }
-  const idx={},nodes=notes.map((n,i)=>{ idx[n.title.toLowerCase()]=i;
-    const a=i/notes.length*Math.PI*2;                       // depart en cercle : deterministe
-    return {n,x:W/2+Math.cos(a)*160,y:H/2+Math.sin(a)*160,vx:0,vy:0,deg:0}; });
-  const edges=[];
+function closeGraph(){
+  document.getElementById('graphOverlay').classList.remove('open');
+  grFlushPositions();
+}
+
+// ── Graphe : etat ─────────────────────────────────────────────────────────
+// Les positions vivent dans la feuille (colonnes gx/gy) : elles suivent
+// l'utilisateur d'un appareil a l'autre. Le zoom et le cadrage restent locaux,
+// ils dependent de l'ecran.
+let grNodes=[], grEdges=[], grK=1, grTx=0, grTy=0, grBound=false;
+const LS_GR_VIEW='kanban_graph_view';
+let grDirty=new Set(), grSaveTimer=null;
+
+// Construit le graphe : les notes deja positionnees sont figees, les autres
+// sont placees par une simulation de forces qui les prend comme ancrages.
+function grBuild(){
+  const idx={};
+  grNodes=notes.map((n,i)=>{
+    idx[n.title.toLowerCase()]=i;
+    const has=n.gx!=null&&n.gy!=null&&!isNaN(n.gx)&&!isNaN(n.gy);
+    const a=i/Math.max(1,notes.length)*Math.PI*2, ring=140+notes.length*6;
+    return {n,i,fixed:has,deg:0,
+            x:has?n.gx:Math.cos(a)*ring, y:has?n.gy:Math.sin(a)*ring, vx:0,vy:0};
+  });
+  grEdges=[];
   notes.forEach((n,i)=>noteOutLinks(n).forEach(t=>{
     const j=idx[t.toLowerCase()];
-    if(j!==undefined&&j!==i){ edges.push([i,j]); nodes[i].deg++; nodes[j].deg++; }
+    if(j!==undefined&&j!==i){ grEdges.push([i,j]); grNodes[i].deg++; grNodes[j].deg++; }
   }));
-  // la repulsion doit rester lisible quel que soit le nombre de notes : avec
-  // peu de noeuds l'attraction centrale ecrasait tout au milieu du cadre
-  const REP=Math.max(9000,60000/Math.max(4,nodes.length));
-  for(let it=0;it<320;it++){
-    const k=it/320, cool=1-k;
-    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
-      const a=nodes[i],b=nodes[j];
+  grLayout(false);
+  grRender();
+}
+
+// force=true : on replace TOUT, meme les noeuds figes (bouton Réorganiser)
+function grLayout(force){
+  const free=grNodes.filter(p=>force||!p.fixed);
+  if(!free.length)return;
+  const REP=Math.max(9000,60000/Math.max(4,grNodes.length));
+  for(let it=0;it<340;it++){
+    const cool=1-it/340;
+    for(let i=0;i<grNodes.length;i++)for(let j=i+1;j<grNodes.length;j++){
+      const a=grNodes[i],b=grNodes[j];
+      if(!force&&a.fixed&&b.fixed)continue;
       let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy||0.01;
-      const f=REP/d2, d=Math.sqrt(d2);
-      dx/=d;dy/=d;
-      a.vx-=dx*f;a.vy-=dy*f;b.vx+=dx*f;b.vy+=dy*f;
+      const f=REP/d2,d=Math.sqrt(d2); dx/=d;dy/=d;
+      if(force||!a.fixed){a.vx-=dx*f;a.vy-=dy*f;}
+      if(force||!b.fixed){b.vx+=dx*f;b.vy+=dy*f;}
     }
-    edges.forEach(([i,j])=>{
-      const a=nodes[i],b=nodes[j];
-      const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||0.01;
-      const f=(d-130)*0.012;
-      a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;
+    grEdges.forEach(([i,j])=>{
+      const a=grNodes[i],b=grNodes[j];
+      const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||0.01;
+      const f=(d-150)*0.012;
+      if(force||!a.fixed){a.vx+=dx/d*f;a.vy+=dy/d*f;}
+      if(force||!b.fixed){b.vx-=dx/d*f;b.vy-=dy/d*f;}
     });
-    nodes.forEach(p=>{
-      p.vx+=(W/2-p.x)*0.0011; p.vy+=(H/2-p.y)*0.0011;
+    free.forEach(p=>{
+      p.vx-=p.x*0.0011; p.vy-=p.y*0.0011;       // rappel vers l'origine
       p.x+=p.vx*cool; p.y+=p.vy*cool;
       p.vx*=0.86; p.vy*=0.86;
-      p.x=Math.max(28,Math.min(W-28,p.x)); p.y=Math.max(20,Math.min(H-20,p.y));
     });
   }
-  const col=n=>n.n.id===noteCurId?'var(--green)':(n.deg?'var(--accent)':'var(--text-dim)');
-  svg.innerHTML=
-    edges.map(([i,j])=>`<line x1="${nodes[i].x.toFixed(1)}" y1="${nodes[i].y.toFixed(1)}" x2="${nodes[j].x.toFixed(1)}" y2="${nodes[j].y.toFixed(1)}" stroke-width="1"/>`).join('')+
-    nodes.map(p=>{
-      const r=5+Math.min(7,p.deg*1.6);
-      return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r.toFixed(1)}" fill="${col(p)}"
-        onclick="closeGraph();openNote('${p.n.id}')"><title>${tdEsc(p.n.title)} · ${p.deg} lien(s)</title></circle>
-        <text x="${p.x.toFixed(1)}" y="${(p.y-r-4).toFixed(1)}" text-anchor="middle">${tdEsc(p.n.title.slice(0,22))}</text>`;
+}
+
+const grNodeR=p=>6+Math.min(9,p.deg*1.7);
+function grRender(){
+  const root=document.getElementById('grRoot');
+  if(!root)return;
+  if(!grNodes.length){ root.innerHTML='<text x="0" y="0" text-anchor="middle">Aucune note</text>'; grApply(); return; }
+  const col=p=>p.n.id===noteCurId?'var(--green)':(p.deg?'var(--accent)':'var(--text-dim)');
+  root.innerHTML=
+    grEdges.map(([i,j])=>`<line x1="${grNodes[i].x.toFixed(1)}" y1="${grNodes[i].y.toFixed(1)}" x2="${grNodes[j].x.toFixed(1)}" y2="${grNodes[j].y.toFixed(1)}"/>`).join('')+
+    grNodes.map(p=>{
+      const r=grNodeR(p);
+      return `<g class="nd${p.fixed?' fixed':''}" data-i="${p.i}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})">
+        <circle class="hit" r="${(r+16).toFixed(1)}" fill="transparent"></circle>
+        <circle r="${r.toFixed(1)}" fill="${col(p)}" pointer-events="none"><title>${tdEsc(p.n.title)} · ${p.deg} lien(s)${p.fixed?' · position enregistrée':''}</title></circle>
+        <text y="${(-r-5).toFixed(1)}" text-anchor="middle">${tdEsc(p.n.title.slice(0,26))}</text>
+      </g>`;
     }).join('');
+  grApply();
+  const fx=grNodes.filter(p=>p.fixed).length;
+  const info=document.getElementById('grInfo');
+  if(info)info.innerHTML=`${grNodes.length} note(s) · ${grEdges.length} lien(s) · ${fx} position(s) enregistrée(s)<br>`+
+    `Glisser un point pour le placer · glisser le fond pour naviguer · molette ou pincement pour zoomer`;
+}
+function grApply(){
+  const root=document.getElementById('grRoot');
+  if(root)root.setAttribute('transform',`translate(${grTx},${grTy}) scale(${grK})`);
+  const k=document.getElementById('grK');
+  if(k)k.textContent=Math.round(grK*100)+'%';
+  try{ localStorage.setItem(LS_GR_VIEW,JSON.stringify({k:grK,x:grTx,y:grTy})); }catch(e){}
+}
+const grSize=()=>{ const s=document.getElementById('grSvg'); const r=s.getBoundingClientRect(); return {w:r.width||800,h:r.height||600,left:r.left,top:r.top}; };
+
+function grZoom(f,cx,cy){
+  const s=grSize();
+  if(cx===undefined){ cx=s.w/2; cy=s.h/2; }
+  const nk=Math.max(0.05,Math.min(8,grK*f));
+  // on zoome autour du point vise : sa position a l'ecran ne doit pas bouger
+  grTx=cx-(cx-grTx)*(nk/grK);
+  grTy=cy-(cy-grTy)*(nk/grK);
+  grK=nk; grApply();
+}
+function grFit(){
+  const s=grSize();
+  if(!grNodes.length){ grK=1;grTx=s.w/2;grTy=s.h/2;grApply();return; }
+  const xs=grNodes.map(p=>p.x),ys=grNodes.map(p=>p.y);
+  const pad=90;
+  const x0=Math.min(...xs)-pad,x1=Math.max(...xs)+pad,y0=Math.min(...ys)-pad,y1=Math.max(...ys)+pad;
+  grK=Math.max(0.05,Math.min(3,Math.min(s.w/Math.max(1,x1-x0),s.h/Math.max(1,y1-y0))));
+  grTx=s.w/2-((x0+x1)/2)*grK;
+  grTy=s.h/2-((y0+y1)/2)*grK;
+  grApply();
+}
+async function grRelayout(){
+  grNodes.forEach(p=>{p.vx=0;p.vy=0;});
+  grLayout(true);
+  grNodes.forEach(p=>{ p.fixed=true; p.n.gx=p.x; p.n.gy=p.y; grDirty.add(p.n.id); });
+  grRender(); grFit();
+  await grFlushPositions();
+  toast('Graphe réorganisé','ok');
+}
+async function grFlushPositions(){
+  clearTimeout(grSaveTimer);
+  if(!grDirty.size)return;
+  const rows=[...grDirty].map(id=>noteById(id)).filter(Boolean);
+  grDirty.clear();
+  rows.forEach(n=>{ n.updated_at=td(); });
+  cacheSet('notes',notes);
+  const ok=await sheetBatchUpsert('notes',rows.map(noteToRow));
+  if(!ok)toast('ÉCHEC de l\'enregistrement des positions','err');
+}
+const grQueueSave=()=>{ clearTimeout(grSaveTimer); grSaveTimer=setTimeout(grFlushPositions,900); };
+
+// ── Interactions : souris et tactile, via les evenements pointeur ─────────
+function grBind(){
+  if(grBound)return; grBound=true;
+  const svg=document.getElementById('grSvg');
+  const pts=new Map();               // pointeurs actifs, pour le pincement
+  let mode=null,drag=null,pan=null,pinch=null,moved=0;
+  const toWorld=(cx,cy)=>{ const s=grSize(); return {x:(cx-s.left-grTx)/grK, y:(cy-s.top-grTy)/grK}; };
+
+  svg.addEventListener('pointerdown',e=>{
+    svg.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2){
+      const [a,c]=[...pts.values()];
+      pinch={d:Math.hypot(a.x-c.x,a.y-c.y),cx:(a.x+c.x)/2,cy:(a.y+c.y)/2};
+      mode='pinch'; drag=null; pan=null; return;
+    }
+    moved=0;
+    const g=e.target.closest('.nd');
+    if(g){
+      const p=grNodes[+g.dataset.i];
+      const w=toWorld(e.clientX,e.clientY);
+      drag={p,dx:p.x-w.x,dy:p.y-w.y,el:g}; mode='drag';
+    } else {
+      pan={x:e.clientX,y:e.clientY,tx:grTx,ty:grTy}; mode='pan';
+      svg.classList.add('panning');
+    }
+  });
+
+  svg.addEventListener('pointermove',e=>{
+    if(pts.has(e.pointerId))pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(mode==='pinch'&&pts.size>=2){
+      const [a,c]=[...pts.values()];
+      const d=Math.hypot(a.x-c.x,a.y-c.y);
+      if(pinch.d>0){ const s=grSize(); grZoom(d/pinch.d,(a.x+c.x)/2-s.left,(a.y+c.y)/2-s.top); }
+      pinch.d=d; return;
+    }
+    if(mode==='drag'&&drag){
+      const w=toWorld(e.clientX,e.clientY);
+      drag.p.x=w.x+drag.dx; drag.p.y=w.y+drag.dy;
+      moved++;
+      drag.el.setAttribute('transform',`translate(${drag.p.x.toFixed(1)},${drag.p.y.toFixed(1)})`);
+      grUpdateEdges();
+      return;
+    }
+    if(mode==='pan'&&pan){
+      grTx=pan.tx+(e.clientX-pan.x); grTy=pan.ty+(e.clientY-pan.y);
+      moved++; grApply();
+    }
+  });
+
+  const end=e=>{
+    pts.delete(e.pointerId);
+    if(mode==='drag'&&drag){
+      if(moved<2){ closeGraph(); openNote(drag.p.n.id); }   // simple clic : ouvrir la note
+      else {
+        drag.p.fixed=true; drag.p.n.gx=drag.p.x; drag.p.n.gy=drag.p.y;
+        grDirty.add(drag.p.n.id); grQueueSave();
+        drag.el.classList.add('fixed');
+        grRender();
+      }
+    }
+    if(pts.size<2&&mode==='pinch')mode=null;
+    if(mode!=='pinch'){ mode=null; drag=null; pan=null; }
+    svg.classList.remove('panning');
+  };
+  svg.addEventListener('pointerup',end);
+  svg.addEventListener('pointercancel',end);
+  svg.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const s=grSize();
+    grZoom(e.deltaY<0?1.12:1/1.12,e.clientX-s.left,e.clientY-s.top);
+  },{passive:false});
+}
+// pendant le glissement on ne redessine que les traits concernes
+function grUpdateEdges(){
+  const root=document.getElementById('grRoot');
+  const lines=root.querySelectorAll('line');
+  grEdges.forEach(([i,j],k)=>{
+    const l=lines[k]; if(!l)return;
+    l.setAttribute('x1',grNodes[i].x.toFixed(1)); l.setAttribute('y1',grNodes[i].y.toFixed(1));
+    l.setAttribute('x2',grNodes[j].x.toFixed(1)); l.setAttribute('y2',grNodes[j].y.toFixed(1));
+  });
 }
 
 // ── Palette de commandes ──────────────────────────────────────────────────
@@ -6268,7 +6466,7 @@ document.addEventListener('keydown',e=>{
       el.blur();
       if(had)return;
     }
-    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();closeCmd();closeGraph();
+    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();closeCmd();if(document.getElementById('graphOverlay').classList.contains('open'))closeGraph();
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     if(document.getElementById('taskModal').classList.contains('open'))saveTask();
