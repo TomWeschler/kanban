@@ -144,6 +144,15 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .cmd-hint{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.1em;color:var(--text-dim);margin-top:0.6rem;text-align:right}
 .cmd-empty{font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim);padding:1.2rem;text-align:center}
 /* ══ SECOND BRAIN ══ */
+.modal-btns{display:flex;justify-content:flex-end;margin-top:0.8rem}
+.em-grid{max-height:56vh;overflow-y:auto;margin-top:0.3rem}
+.em-cat{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);margin:0.8rem 0 0.35rem;padding-bottom:0.2rem;border-bottom:1px solid var(--border)}
+.em-cat:first-child{margin-top:0}
+.em-row{display:flex;flex-wrap:wrap;gap:0.25rem}
+.em-b{width:2.3rem;height:2.3rem;font-size:1.15rem;line-height:1;background:var(--surface2);border:1px solid transparent;border-radius:6px;cursor:pointer}
+.em-b:hover{border-color:var(--accent);background:var(--accent-dim)}
+.em-b.sel{border-color:var(--accent);background:var(--accent-dim)}
+
 .ac-box{display:none;position:fixed;z-index:940;min-width:230px;max-width:320px;background:var(--surface);
   border:1px solid var(--accent);border-radius:6px;box-shadow:0 8px 26px rgba(0,0,0,0.5);overflow:hidden}
 .ac-row{display:flex;align-items:baseline;gap:0.5rem;padding:0.35rem 0.6rem;cursor:pointer;font-size:0.78rem}
@@ -1208,7 +1217,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.18.0</span>
+    <span class="app-version">v1.18.1</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1455,6 +1464,16 @@ body,body *{font-family:var(--font-body)}
            oninput="renderCmdResults()" onkeydown="cmdKey(event)">
     <div class="cmd-list" id="cmdList"></div>
     <div class="cmd-hint">↑ ↓ naviguer · ↵ ouvrir · Échap fermer</div>
+  </div>
+</div>
+
+<div class="modal-bg" id="emojiModal">
+  <div class="modal" style="width:min(560px,94vw)">
+    <div class="modal-hdr">CHOISIR UNE ICÔNE</div>
+    <button class="modal-close" onclick="closeEmojiPicker()">✕</button>
+    <div class="field"><input type="search" id="emSearch" placeholder="Filtrer par catégorie : notes, idées, santé…" autocomplete="off" oninput="renderEmoji()"></div>
+    <div class="em-grid" id="emGrid"></div>
+    <div class="modal-btns"><button class="btn-nav out" onclick="clearEmoji()">Aucune icône</button></div>
   </div>
 </div>
 
@@ -3617,6 +3636,43 @@ function exportNotesMarkdown(){
   toast(`${files.length} note(s) exportée(s) en .md`,'ok');
 }
 
+// ── Selecteur d'emoji ─────────────────────────────────────────────────────
+// Reutilisable : rendait un prompt() ou il fallait coller un emoji soi-meme.
+const EMOJI_SET=[
+ ['Notes & écriture','📄 📝 📋 📑 📚 📖 📕 📗 📘 📙 🗒️ 🗂️ 📔 📓 ✏️ 🖊️ 🖋️ ✒️ 📎 🔖 🏷️ 📌 📍 🗓️ 📅'],
+ ['Idées & savoir','🧠 💡 🔍 🔬 🔭 🧩 🗝️ 🎓 🧾 📊 📈 📉 🗺️ 🧭 ⚗️ 🧪 🔮 ♟️ 🎲 🧮'],
+ ['Projets & travail','💼 🏗️ 🛠️ ⚙️ 🔧 🔩 🧰 🖥️ 💻 ⌨️ 🖱️ 📱 🗄️ 🏢 📦 🚀 🎯 ✅ ⏱️ ⏳'],
+ ['Vie & santé','💪 🏃 🚴 🧘 🏋️ ⚽ 🏀 🎾 🥗 🍎 💊 🩺 😴 🚿 ☀️ 🌙 🌱 🌳 🐾 ❤️'],
+ ['Argent','💰 💶 💵 🏦 💳 📊 🧾 🪙 💎 🏷️'],
+ ['Création & loisirs','🎨 🎬 🎵 🎸 🎹 📷 🕹️ 🎮 ✈️ 🗼 🏖️ 🍽️ ☕ 🍷 🎁 🎉 🏆 ⭐ 🌟 🔥'],
+ ['Repères','⚡ ❗ ❓ ⚠️ 🚧 🔒 🔓 ♻️ 🔗 ⛳ 🧵 🪄 👁️ 🗣️ 🤝 🌐 🧭 ⏰ 🔔 🚩']
+].map(([c,e])=>[c,e.split(' ')]);
+const EMOJI_ALL=EMOJI_SET.flatMap(([c,e])=>e.map(x=>({e:x,c})));
+
+let emPick=null;
+function openEmojiPicker(current,onPick){
+  emPick=onPick;
+  document.getElementById('emojiModal').classList.add('open');
+  const inp=document.getElementById('emSearch');
+  inp.value=''; renderEmoji(current);
+  setTimeout(()=>inp.focus(),60);
+}
+function closeEmojiPicker(){ document.getElementById('emojiModal').classList.remove('open'); emPick=null; }
+function renderEmoji(current){
+  const q=(document.getElementById('emSearch').value||'').trim().toLowerCase();
+  const el=document.getElementById('emGrid');
+  const groups=q
+    ? [['Résultats',EMOJI_ALL.filter(x=>x.c.toLowerCase().includes(q)).map(x=>x.e)]]
+    : EMOJI_SET;
+  const html=groups.map(([c,list])=>list.length?
+    `<div class="em-cat">${c}</div><div class="em-row">`+
+    list.map(e=>`<button class="em-b${e===current?' sel':''}" onclick="chooseEmoji('${e}')" title="${e}">${e}</button>`).join('')+
+    '</div>':'').join('');
+  el.innerHTML=html||'<div class="sb-none" style="padding:0.8rem">Aucun emoji pour cette recherche.</div>';
+}
+function chooseEmoji(e){ const f=emPick; closeEmojiPicker(); if(f)f(e); }
+function clearEmoji(){ const f=emPick; closeEmojiPicker(); if(f)f(''); }
+
 // ── Actions ───────────────────────────────────────────────────────────────
 let noteSaveTimer=null;
 function noteQueueSave(){
@@ -3672,9 +3728,10 @@ function toggleNoteFold(id){
 async function toggleNotePin(){ const n=noteById(noteCurId); if(!n)return; n.pinned=!n.pinned; await noteUpsert(n); renderNoteMain();renderNoteTree(); }
 function pickNoteIcon(){
   const n=noteById(noteCurId); if(!n)return;
-  const v=prompt('Icône de la note (un emoji) :',n.icon||'📄');
-  if(v===null)return;
-  n.icon=v.trim().slice(0,4); noteUpsert(n).then(()=>{renderNoteMain();renderNoteTree();});
+  openEmojiPicker(n.icon||'📄',v=>{
+    n.icon=String(v).trim().slice(0,4);
+    noteUpsert(n).then(()=>{renderNoteMain();renderNoteTree();if(document.getElementById('graphOverlay').classList.contains('open'))grRender();});
+  });
 }
 function openNote(id){
   if(noteCurId===id)return;
@@ -6820,7 +6877,7 @@ document.addEventListener('keydown',e=>{
       el.blur();
       if(had)return;
     }
-    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();closeHist();closeCmd();if(document.getElementById('graphOverlay').classList.contains('open'))closeGraph();
+    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();closeHist();closeEmojiPicker();closeCmd();if(document.getElementById('graphOverlay').classList.contains('open'))closeGraph();
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     if(document.getElementById('taskModal').classList.contains('open'))saveTask();
