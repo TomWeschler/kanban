@@ -1062,7 +1062,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.12.0</span>
+    <span class="app-version">v1.13.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1548,6 +1548,71 @@ function setBoardSearch(v){ boardSearch=v; render(); }
 // ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
+// ── Capture rapide depuis le telephone ────────────────────────────────────
+// Trois entrees possibles, toutes ramenees au meme traitement :
+//   ?new=<titre>   raccourci d'icone (appui long) ou lien direct
+//   ?st= ?sx= ?su= partage Android vers l'app (share_target du manifest)
+//   ?page=<id>     ouverture directe sur une page
+// Parametres facultatifs : proj, imp (1-5), due (today|tomorrow|+N|AAAA-MM-JJ|none)
+let startIntent=null, startIntentDone=false;
+(function readStartIntent(){
+  const q=new URLSearchParams(location.search);
+  if(![...q.keys()].length)return;
+  const shared=[q.get('st'),q.get('sx'),q.get('su')].filter(Boolean);
+  const hasNew=q.has('new')||shared.length>0;
+  startIntent={
+    page:q.get('page')||null,
+    isNew:hasNew,
+    title:(q.get('new')||shared.join(' ')||'').trim(),
+    proj:q.get('proj')||'',
+    imp:Math.min(5,Math.max(1,parseInt(q.get('imp'),10)||3)),
+    due:q.get('due')
+  };
+  // sans nettoyage, un simple rafraichissement recreerait la tache
+  history.replaceState(null,'',location.pathname);
+})();
+
+function intentDue(v){
+  if(v===null||v===undefined) return plusDays(7);          // defaut du formulaire
+  const t=String(v).trim().toLowerCase();
+  if(t===''||t==='none'||t==='backlog') return '';
+  if(t==='today'||t==="aujourd'hui") return td();
+  if(t==='tomorrow'||t==='demain') return plusDays(1);
+  const rel=/^\+(\d+)$/.exec(t);
+  if(rel) return plusDays(parseInt(rel[1],10));
+  if(/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  return plusDays(7);
+}
+
+async function quickAddTask(o){
+  const due=intentDue(o.due);
+  const nt={id:Date.now(),title:o.title,column:taskColumnFromDate(due),importance:o.imp||3,
+            due_date:due,created_at:td(),completed_at:'',notes:'',project:o.proj||'',
+            recurrence:'',checklist:''};
+  allTasks.push(nt);refreshActive();
+  render();renderCurrentPage();
+  offerUndo(`Tâche ajoutée · ${nt.title}`,async()=>{
+    const i=allTasks.indexOf(nt);if(i>=0)allTasks.splice(i,1);
+    refreshActive();render();renderCurrentPage();await persist();
+  });
+  await persist();
+  return nt;
+}
+
+// Appelee une seule fois, apres le chargement initial : creer une tache avant
+// d'avoir lu la feuille ecraserait un etat perime.
+function applyStartIntent(){
+  if(!startIntent||startIntentDone)return;
+  startIntentDone=true;
+  const it=startIntent;
+  if(it.page&&!it.isNew){ switchPage(it.page); return; }
+  if(!it.isNew)return;
+  if(it.title){ quickAddTask(it); return; }
+  // raccourci sans titre : on ouvre le formulaire pret a saisir
+  switchPage('board');
+  openModal(null,null,it.proj||undefined);
+}
+
 // render() ne dessine que le board. Sans ce dispatcheur, la page affichee au
 // chargement (AUJOURD'HUI par defaut) restait vide jusqu'au premier changement
 // d'onglet, seul switchPage() sachant la redessiner.
@@ -1574,6 +1639,9 @@ function init() {
   applyPageWallpaper('todayBg',randomWallpaper());
   document.getElementById('authScreen').style.display = 'none';
   preloadGIS();
+  // hors ligne, aucun jeton n'arrivera : on travaille sur le cache, l'ecriture
+  // partira toute seule au retour du reseau grace a la file
+  if(!navigator.onLine)applyStartIntent();
 }
 // Fermer le menu galerie au clic extérieur
 document.addEventListener('click',e=>{
@@ -1660,6 +1728,7 @@ function initTokenClient() {
       showLoad(false);
       render();
       renderCurrentPage();
+      applyStartIntent();
     }
   });
 }
