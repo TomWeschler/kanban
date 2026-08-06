@@ -3,13 +3,14 @@
 // Règle absolue : on n'intercepte JAMAIS les appels authentifiés à Google
 // (Sheets, identité). Ce sont des données vivantes et personnelles ; les servir
 // depuis un cache afficherait un état périmé, ou pire, après déconnexion.
-const VERSION = 'v1.22.0';
+const VERSION = 'v1.22.1';
 const SHELL   = 'kanban-shell-' + VERSION;
 const ASSETS  = 'kanban-assets-' + VERSION;
 
 const SHELL_FILES = [
   './', './index.html', './manifest.webmanifest',
-  './icon-192.png', './icon-512.png', './icon-maskable.png'
+  './icon-192.png', './icon-512.png', './icon-maskable.png',
+  './sc-task.png', './sc-mic.png', './sc-note.png', './sc-notemic.png', './sc-board.png'
 ];
 
 // Tiers immuables et versionnés : sûrs à mettre en cache, indispensables au
