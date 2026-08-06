@@ -117,6 +117,17 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 
 /* BOARD FILTER BAR */
 .board-filters{flex-shrink:0;display:flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;border-bottom:1px solid var(--border);background:rgba(9,9,14,0.7)}
+.cmd-modal{width:640px;max-width:94vw;padding:0.9rem}
+.cmd-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--font-body);font-size:0.9rem;padding:0.6rem 0.8rem;outline:none}
+.cmd-input:focus{border-color:var(--accent)}
+.cmd-list{max-height:52vh;overflow-y:auto;margin-top:0.6rem}
+.cmd-row{display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0.6rem;border-radius:5px;cursor:pointer}
+.cmd-row.sel{background:var(--accent-dim);outline:1px solid rgba(124,106,255,0.4)}
+.cmd-kind{font-family:var(--font-mono);font-size:0.46rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);background:var(--surface3);padding:2px 6px;border-radius:3px;flex-shrink:0;min-width:66px;text-align:center}
+.cmd-lbl{flex:1;font-size:0.82rem;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmd-meta{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);flex-shrink:0}
+.cmd-hint{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.1em;color:var(--text-dim);margin-top:0.6rem;text-align:right}
+.cmd-empty{font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim);padding:1.2rem;text-align:center}
 /* ── Revue ── */
 #pagereview{overflow-y:auto;flex-direction:column}
 .rv-wrap{position:relative;z-index:1;padding:1.25rem 1.5rem 3rem}
@@ -809,6 +820,9 @@ body,body *{font-family:var(--font-body)}
 .gl-c-acts{margin-left:auto;display:flex;align-items:center;gap:0.15rem}
 /* hors filtre/recherche : estompé mais toujours en place, la hiérarchie reste lisible */
 .gl-card.dim{opacity:0.22;filter:grayscale(1)}
+.gl-card.drop-in{outline:2px dashed var(--accent);outline-offset:2px}
+.gl-card[draggable=true]{cursor:grab}
+.gl-card:active{cursor:grabbing}
 .gl-card.dim:hover{opacity:0.75;filter:grayscale(0.3)}
 /* le replieur reste visible en permanence, sinon on ne verrait pas qu'une branche est cachée */
 .gl-fold{background:var(--surface3);border:1px solid var(--border);color:var(--text-mid);cursor:pointer;
@@ -1048,7 +1062,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.11.0</span>
+    <span class="app-version">v1.12.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1239,6 +1253,15 @@ body,body *{font-family:var(--font-body)}
 </div>
 
 <!-- TASK MODAL -->
+<div class="modal-bg" id="cmdModal">
+  <div class="modal cmd-modal">
+    <input type="search" id="cmdInput" class="cmd-input" placeholder="Chercher une tâche, un objectif, une habitude, ou une page…" autocomplete="off"
+           oninput="renderCmdResults()" onkeydown="cmdKey(event)">
+    <div class="cmd-list" id="cmdList"></div>
+    <div class="cmd-hint">↑ ↓ naviguer · ↵ ouvrir · Échap fermer</div>
+  </div>
+</div>
+
 <div class="modal-bg" id="doneModal">
   <div class="modal" style="width:600px">
     <div class="modal-hdr">TÂCHES TERMINÉES</div>
@@ -2528,6 +2551,66 @@ function habRowToday(h,doneSet,today){
   </div>`;
 }
 
+// ── Palette de commandes ──────────────────────────────────────────────────
+// Il y avait trois recherches, chacune enfermee dans sa page : pour retrouver
+// quelque chose il fallait deja savoir ou c'etait.
+let cmdItems=[], cmdSel=0;
+const PAGES=[['today',"Aujourd'hui"],['board','Board'],['objectifs','Objectifs'],['habits','Habitudes'],
+             ['sport','Sport'],['finances','Finances'],['crypto','Cryptobot'],['review','Revue']];
+
+function openCmd(){
+  const m=document.getElementById('cmdModal');
+  m.classList.add('open');
+  const i=document.getElementById('cmdInput');
+  i.value='';cmdSel=0;renderCmdResults();
+  setTimeout(()=>i.focus(),50);
+}
+function closeCmd(){ document.getElementById('cmdModal').classList.remove('open'); }
+
+function cmdSearch(q){
+  const n=q.trim().toLowerCase();
+  const hit=t=>!n||String(t||'').toLowerCase().includes(n);
+  const out=[];
+  PAGES.filter(([,l])=>hit(l)).forEach(([id,l])=>out.push({kind:'Page',label:l,meta:'',go:()=>switchPage(id)}));
+  tasks.filter(t=>hit(t.title)||hit(t.notes)||hit(t.project)).slice(0,20).forEach(t=>
+    out.push({kind:'Tâche',label:t.title,meta:t.project||taskColumnFromDate(t.due_date),
+              go:()=>{switchPage('board');openModal(t.id);}}));
+  goals.filter(g=>hit(g.title)||hit(g.description)||hit(g.category)).slice(0,20).forEach(g=>
+    out.push({kind:'Objectif',label:g.title,meta:`${g.category} · N${g.level||1}`,
+              go:()=>{switchPage('objectifs');openGoalModal(g.id);}}));
+  habits.filter(h=>h.active&&(hit(h.title)||hit(h.category))).slice(0,20).forEach(h=>
+    out.push({kind:'Habitude',label:h.title,meta:h.category,
+              go:()=>{switchPage('habits');openHabitModal(h.id);}}));
+  // Sans recherche, on ne noie pas l'utilisateur : seules les pages
+  return n?out.slice(0,40):out.filter(o=>o.kind==='Page');
+}
+function renderCmdResults(){
+  cmdItems=cmdSearch(document.getElementById('cmdInput').value);
+  if(cmdSel>=cmdItems.length)cmdSel=Math.max(0,cmdItems.length-1);
+  const el=document.getElementById('cmdList');
+  if(!cmdItems.length){ el.innerHTML='<div class="cmd-empty">Aucun résultat.</div>'; return; }
+  el.innerHTML=cmdItems.map((it,i)=>
+    `<div class="cmd-row${i===cmdSel?' sel':''}" onmouseenter="cmdSel=${i};renderCmdResults()" onclick="cmdRun(${i})">
+       <span class="cmd-kind">${it.kind}</span>
+       <span class="cmd-lbl">${tdEsc(it.label)}</span>
+       ${it.meta?`<span class="cmd-meta">${tdEsc(it.meta)}</span>`:''}
+     </div>`).join('');
+  const sel=el.querySelector('.cmd-row.sel');
+  if(sel)sel.scrollIntoView({block:'nearest'});
+}
+function cmdRun(i){
+  const it=cmdItems[i];
+  if(!it)return;
+  closeCmd();
+  it.go();
+}
+function cmdKey(e){
+  if(e.key==='ArrowDown'){e.preventDefault();cmdSel=Math.min(cmdSel+1,cmdItems.length-1);renderCmdResults();}
+  else if(e.key==='ArrowUp'){e.preventDefault();cmdSel=Math.max(cmdSel-1,0);renderCmdResults();}
+  else if(e.key==='Enter'){e.preventDefault();cmdRun(cmdSel);}
+  else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeCmd();}
+}
+
 // ── Export de sauvegarde ──────────────────────────────────────────────────
 // Tout le systeme tient dans un seul Google Sheet, sans aucun instantane.
 // Ceci en produit un, notamment avant une migration de schema.
@@ -3052,7 +3135,11 @@ function goalCard(g,o){
   const isDone=g.status==='done'||prog>=100;
   const dots=cps.length?`<div class="gl-cp-dots" title="${cps.filter(c=>c.d).length}/${cps.length} checkpoints">${cps.map((c,i)=>`<span class="gl-cp-dot${c.d?' done':''}" onclick="event.stopPropagation();toggleGoalCp('${g.id}',${i})" title="${escapeAttrG(c.t)}${c.r?' · 🎁 '+escapeAttrG(c.r):''}"></span>`).join('')}<span class="gl-cp-count">${cps.filter(c=>c.d).length}/${cps.length}</span></div>`:'';
   const fold=o.kids?`<button class="gl-fold${o.collapsed?' on':''}" onclick="event.stopPropagation();toggleGoalCollapse('${g.id}')" title="${o.collapsed?'Déplier':'Plier'} cette branche (${o.kids})">${o.collapsed?'▸ '+o.kids:'▾'}</button>`:'';
-  return `<div class="gl-card${isDone?' done':''}${o.dim?' dim':''}" style="--gcol:${col}" onclick="openGoalModal('${g.id}')">
+  return `<div class="gl-card${isDone?' done':''}${o.dim?' dim':''}" style="--gcol:${col}" draggable="true"
+    ondragstart="goalDragStart(event,'${g.id}')" ondragend="goalDragEnd(event)"
+    ondragover="goalDragOver(event,'${g.id}')" ondragleave="this.classList.remove('drop-in')"
+    ondrop="goalDrop(event,'${g.id}')"
+    onclick="openGoalModal('${g.id}')">
     <div class="gl-c-head">
       <span class="gl-c-icon">${g.icon||hm[2]}</span>
       <span class="gl-c-hbadge" style="color:${hcol};background:${hcol}1f;border:1px solid ${hcol}55">${hm[1]}</span>
@@ -3107,6 +3194,41 @@ function renderGoalsTree(){
   const f=el.querySelector('.gl-forest');
   if(f)requestAnimationFrame(()=>{f.scrollLeft=f.scrollWidth;});
 }
+// ── Réorganisation par glisser-déposer ────────────────────────────────────
+// Rattacher un objectif passait uniquement par le menu déroulant du formulaire.
+let goalDragId=null;
+function goalDragStart(e,id){ goalDragId=id; e.dataTransfer.effectAllowed='move'; e.stopPropagation(); }
+function goalDragEnd(e){ goalDragId=null; document.querySelectorAll('.gl-card.drop-in').forEach(x=>x.classList.remove('drop-in')); }
+function goalDragOver(e,id){
+  // interdit de se déposer sur soi-même ou sur un de ses descendants : cela
+  // créerait un cycle, et renderGoalsTree récursait alors à l'infini
+  if(!goalDragId||goalSubtreeIds(goalDragId).has(id))return;
+  e.preventDefault(); e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('drop-in');
+}
+async function goalDrop(e,id){
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.remove('drop-in');
+  const src=goals.find(x=>x.id===goalDragId);
+  goalDragId=null;
+  if(!src||src.id===id||src.parent_id===id)return;
+  const prev=src.parent_id;
+  src.parent_id=id;
+  const moved=goalRecomputeLevels();
+  renderGoalsTree();
+  const rows=[src,...moved.filter(m=>m.id!==src.id)];
+  const ok=await sheetBatchUpsert('goals',rows.map(goalToRow));
+  if(!ok){ toast("ÉCHEC du déplacement",'err'); src.parent_id=prev; goalRecomputeLevels(); renderGoalsTree(); return; }
+  const target=goals.find(x=>x.id===id);
+  offerUndo(`Rattaché à « ${target?target.title:'?'} »`,async()=>{
+    src.parent_id=prev;
+    const back=goalRecomputeLevels();
+    renderGoalsTree();
+    await sheetBatchUpsert('goals',[src,...back.filter(m=>m.id!==src.id)].map(goalToRow));
+  });
+  renderGoalsBanner();
+}
+
 function toggleGoalCollapse(id){
   if(goalCollapsed.has(id))goalCollapsed.delete(id);else goalCollapsed.add(id);
   localStorage.setItem(LS_GOAL_FOLD,JSON.stringify([...goalCollapsed]));
@@ -5249,13 +5371,19 @@ document.addEventListener('keydown',e=>{
       el.blur();
       if(had)return;
     }
-    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();
+    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();closeCmd();
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     if(document.getElementById('taskModal').classList.contains('open'))saveTask();
     if(document.getElementById('habitModal').classList.contains('open'))saveHabit();
     if(document.getElementById('sportPlanModal').classList.contains('open'))saveSportPlan();
     if(document.getElementById('goalModal').classList.contains('open'))saveGoal();
+  }
+  // Ctrl+K : accessible partout, y compris depuis un champ de saisie
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){
+    e.preventDefault();
+    document.getElementById('cmdModal').classList.contains('open')?closeCmd():openCmd();
+    return;
   }
   // Ctrl+Z annule la dernière action, sauf pendant une saisie où le navigateur
   // doit garder son propre undo de texte.
