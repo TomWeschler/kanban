@@ -1048,7 +1048,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.8.0</span>
+    <span class="app-version">v1.9.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1444,6 +1444,36 @@ let habits = [], habitsLog = [];
 let selImp = 3, selCat = 'Finance';
 let dragSrcId = null, charts = {}, curPage = 'today';
 let gisLoaded = false, tokenClient = null, silentAuthFailed = false;
+// ── Renouvellement du jeton ───────────────────────────────────────────────
+// Un jeton GIS expire au bout d'environ une heure. Sans renouvellement, toutes
+// les ecritures echouaient passe ce delai — d'autant plus genant en PWA, ou la
+// fenetre reste ouverte des jours.
+let tokenWaiters=[];
+function resolveToken(tok){ const w=tokenWaiters; tokenWaiters=[]; w.forEach(f=>f(tok)); }
+function refreshToken(){
+  return new Promise(resolve=>{
+    tokenWaiters.push(resolve);
+    if(tokenWaiters.length>1)return;                 // un seul renouvellement a la fois
+    if(!tokenClient){ resolveToken(null); return; }
+    try{ tokenClient.requestAccessToken({prompt:''}); }catch(e){ resolveToken(null); return; }
+    setTimeout(()=>{ if(tokenWaiters.length)resolveToken(null); },15000);
+  });
+}
+// Tout appel authentifie passe par ici : sur un 401/403 on renouvelle en
+// silence et on rejoue une fois.
+async function authFetch(url,opts){
+  const build=()=>{
+    const o=Object.assign({},opts||{});
+    o.headers=Object.assign({},o.headers||{},{Authorization:`Bearer ${accessToken}`});
+    return o;
+  };
+  let r=await fetch(url,build());
+  if(r.status===401||r.status===403){
+    const tok=await refreshToken();
+    if(tok)r=await fetch(url,build());
+  }
+  return r;
+}
 let habDayFilter = 'remaining';
 let habWeekOffset = 0;
 let boardFilter = 'all', boardSearch = '';
@@ -1548,9 +1578,12 @@ function initTokenClient() {
     // compte épinglé : évite le sélecteur de compte à chaque ouverture
     login_hint: cfg.account,
     callback: async (resp) => {
-      if (resp.error) { silentAuthFailed = true; document.getElementById('authScreen').style.display='flex'; return; }
+      if (resp.error) { silentAuthFailed = true; resolveToken(null); if(!accessToken)document.getElementById('authScreen').style.display='flex'; return; }
       silentAuthFailed = false;
+      const firstAuth = !accessToken;
       accessToken = resp.access_token;
+      resolveToken(accessToken);
+      if (!firstAuth) return;              // simple renouvellement : ne pas tout recharger
       document.getElementById('authScreen').style.display = 'none';
       document.getElementById('btnLogout').style.display = 'block';
       showLoad(true);
@@ -1585,7 +1618,7 @@ const sheetsBase = () => `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sp
 
 async function loadFromSheets() {
   try {
-    const r = await fetch(`${sheetsBase()}/values/${cfg.sheetName}!A:${TASK_LAST_COL}`, { headers:{Authorization:`Bearer ${accessToken}`} });
+    const r = await authFetch(`${sheetsBase()}/values/${cfg.sheetName}!A:${TASK_LAST_COL}`, { headers:{Authorization:`Bearer ${accessToken}`} });
     if (!r.ok) throw new Error(r.status);
     const data = await r.json();
     const rows = data.values || [];
@@ -1625,7 +1658,7 @@ function fingerprint(rows){
   return s.length+':'+h;
 }
 async function fetchRemoteRows(){
-  const r=await fetch(`${sheetsBase()}/values/${cfg.sheetName}!A:${TASK_LAST_COL}`,{headers:{Authorization:`Bearer ${accessToken}`}});
+  const r=await authFetch(`${sheetsBase()}/values/${cfg.sheetName}!A:${TASK_LAST_COL}`,{headers:{Authorization:`Bearer ${accessToken}`}});
   if(!r.ok)throw new Error(r.status);
   return (await r.json()).values||[];
 }
@@ -1669,7 +1702,7 @@ async function saveToSheets(force) {
 // ════════════════════════════════════════════════════
 async function loadHabits() {
   try {
-    const r = await fetch(`${sheetsBase()}/values/habits!A:F`, { headers:{Authorization:`Bearer ${accessToken}`} });
+    const r = await authFetch(`${sheetsBase()}/values/habits!A:F`, { headers:{Authorization:`Bearer ${accessToken}`} });
     if (!r.ok) throw new Error(r.status);
     const data = await r.json();
     const rows = data.values || [];
@@ -1682,19 +1715,18 @@ async function loadHabits() {
 }
 
 async function saveHabits() {
-  if (!accessToken) return;
+  if (!accessToken) return false;
   try {
-    await fetch(`${sheetsBase()}/values/${encodeURIComponent('habits!A:F')}:clear`, { method:'POST', headers:{Authorization:`Bearer ${accessToken}`} });
+    // ecrit PUIS purge le reliquat : l'inverse laissait l'onglet vide en cas d'echec
     const values = [HABITS_HEADER, ...habits.map(h=>[String(h.id),h.title,h.frequency,String(h.reward_eur),h.category,h.active?'TRUE':'FALSE'])];
-    await fetch(`${sheetsBase()}/values/${encodeURIComponent('habits!A1')}?valueInputOption=RAW`, {
-      method:'PUT', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'}, body:JSON.stringify({values})
-    });
-  } catch(e) { toast('Erreur sauvegarde habitudes','err'); }
+    await sheetReplaceAll('habits','F',values);
+    return true;
+  } catch(e) { toast('Erreur sauvegarde habitudes','err'); return false; }
 }
 
 async function loadHabitsLog() {
   try {
-    const r = await fetch(`${sheetsBase()}/values/habits_log!A:E`, { headers:{Authorization:`Bearer ${accessToken}`} });
+    const r = await authFetch(`${sheetsBase()}/values/habits_log!A:E`, { headers:{Authorization:`Bearer ${accessToken}`} });
     if (!r.ok) throw new Error(r.status);
     const data = await r.json();
     const rows = data.values || [];
@@ -1709,7 +1741,7 @@ async function appendHabitsLog(entry) {
   try {
     // Ensure header exists on first use
     const row = [String(entry.id), String(entry.habit_id), entry.date, String(entry.reward_eur), entry.category];
-    await fetch(`${sheetsBase()}/values/${encodeURIComponent('habits_log!A:E')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
+    await authFetch(`${sheetsBase()}/values/${encodeURIComponent('habits_log!A:E')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
       method:'POST', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
       body: JSON.stringify({ values: [row] })
     });
@@ -1718,12 +1750,11 @@ async function appendHabitsLog(entry) {
 
 async function rewriteHabitsLog() {
   try {
-    await fetch(`${sheetsBase()}/values/${encodeURIComponent('habits_log!A:E')}:clear`, { method:'POST', headers:{Authorization:`Bearer ${accessToken}`} });
+    // habits_log porte tout l'historique de gains : ne jamais le vider avant d'ecrire
     const values = [HABITS_LOG_HEADER, ...habitsLog.map(l=>[String(l.id),String(l.habit_id),l.date,String(l.reward_eur),l.category])];
-    await fetch(`${sheetsBase()}/values/${encodeURIComponent('habits_log!A1')}?valueInputOption=RAW`, {
-      method:'PUT', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'}, body:JSON.stringify({values})
-    });
-  } catch(e) { toast('Erreur sync log','err'); }
+    await sheetReplaceAll('habits_log','E',values);
+    return true;
+  } catch(e) { toast('Erreur sync log — historique NON enregistre','err'); return false; }
 }
 
 function setSyncStatus(state, label) {
@@ -2733,17 +2764,17 @@ function goalProgress(g){
 // ── Sheets I/O (append-only, dernière ligne par id, tombstone) ──
 async function ensureGoalSheet(){
   const sid=cfg.spreadsheetId;
-  const meta=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
   const titles=(meta.sheets||[]).map(s=>s.properties.title);
   if(titles.includes('goals'))return;
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({requests:[{addSheet:{properties:{title:'goals'}}}]})});
+  await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({requests:[{addSheet:{properties:{title:'goals'}}}]})});
   await sportPutValues('goals!A1',[GOAL_HEADER,...GOAL_SEED]);
 }
 async function loadGoals(){
   if(!accessToken)return;
   await ensureGoalSheet();
   const sid=cfg.spreadsheetId;
-  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals!A:N`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
+  const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals!A:N`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
   const rows=r.values||[];
   const parsed=(rows.length<=1?[]:rows.slice(1)).filter(x=>x[0]).map(x=>({
     id:String(x[0]||'').trim(),parent_id:String(x[1]||'').trim(),horizon:String(x[2]||'').trim()||'month',
@@ -2770,18 +2801,18 @@ async function sheetPut(range,values,includeValues){
   // includeValuesInResponse renvoie ce que la feuille contient VRAIMENT après
   // écriture : évite une relecture pour connaître l'état de référence.
   const q=`?valueInputOption=RAW${includeValues?'&includeValuesInResponse=true':''}`;
-  return fetch(sheetUrl(`/values/${encodeURIComponent(range)}${q}`),
+  return authFetch(sheetUrl(`/values/${encodeURIComponent(range)}${q}`),
     {method:'PUT',headers:authHeaders(),body:JSON.stringify({values})});
 }
 async function sheetClear(range){
-  return fetch(sheetUrl(`/values/${encodeURIComponent(range)}:clear`),
+  return authFetch(sheetUrl(`/values/${encodeURIComponent(range)}:clear`),
     {method:'POST',headers:authHeaders()});
 }
 // clé (colonne A) → numéro de ligne ; la dernière occurrence gagne, comme au chargement
 async function sheetKeyRows(sheet){
   const map={};
   try{
-    const r=await fetch(sheetUrl(`/values/${encodeURIComponent(sheet+'!A:A')}`),{headers:authHeaders()}).then(x=>x.ok?x.json():{values:[]});
+    const r=await authFetch(sheetUrl(`/values/${encodeURIComponent(sheet+'!A:A')}`),{headers:authHeaders()}).then(x=>x.ok?x.json():{values:[]});
     const vals=r.values||[];
     for(let i=1;i<vals.length;i++){
       const k=String((vals[i]||[])[0]||'').trim();
@@ -2803,12 +2834,12 @@ async function sheetBatchUpsert(sheet,rows){
   });
   let ok=true;
   if(data.length){
-    const r=await fetch(sheetUrl('/values:batchUpdate'),
+    const r=await authFetch(sheetUrl('/values:batchUpdate'),
       {method:'POST',headers:authHeaders(),body:JSON.stringify({valueInputOption:'RAW',data})});
     ok=ok&&r.ok;
   }
   if(add.length){
-    const r=await fetch(sheetUrl(`/values/${encodeURIComponent(sheet)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`),
+    const r=await authFetch(sheetUrl(`/values/${encodeURIComponent(sheet)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`),
       {method:'POST',headers:authHeaders(),body:JSON.stringify({values:add})});
     ok=ok&&r.ok;
   }
@@ -2827,11 +2858,11 @@ async function sheetReplaceAll(sheet,lastCol,values){
 async function goalUpsert(g){
   const i=goals.findIndex(x=>x.id===g.id);
   if(i>=0)goals[i]=g;else goals.push(g);
-  await sheetUpsertByKey('goals',g.id,goalToRow(g));
+  return sheetUpsertByKey('goals',g.id,goalToRow(g));
 }
 async function goalDelete(id){
   goals=goals.filter(x=>x.id!==id);
-  await sheetUpsertByKey('goals',id,[id,'','','','','','0','',GOAL_DELETED,'','','','','0']);
+  return sheetUpsertByKey('goals',id,[id,'','','','','','0','',GOAL_DELETED,'','','','','0']);
 }
 
 // ── render ──
@@ -3109,8 +3140,8 @@ async function deleteGoal(){
   const id=document.getElementById('gfId').value;if(!id)return;
   if(!confirm('Supprimer cet objectif ? (ses sous-objectifs deviendront des racines)'))return;
   closeGoalModal();
-  showLoad(true);await goalDelete(id);showLoad(false);
-  toast('Objectif supprimé','info');
+  showLoad(true);const ok=await goalDelete(id);showLoad(false);
+  toast(ok?'Objectif supprimé':"ÉCHEC de la suppression — l'objectif est toujours là", ok?'info':'err');
   renderGoalsBanner();renderGoalsToolbar();renderGoalsTree();
 }
 
@@ -3929,11 +3960,11 @@ async function loadFinancesData() {
     // Step 3: fetch data from matched sheets
     const fetches = [];
     if (comptesSheet) fetches.push(
-      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/${encodeURIComponent(comptesSheet)}!A:Z`,
+      authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/${encodeURIComponent(comptesSheet)}!A:Z`,
         { headers: { Authorization: `Bearer ${accessToken}` } })
     );
     if (financeSheet) fetches.push(
-      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/${encodeURIComponent(financeSheet)}!A:Z`,
+      authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${FIN_SHEET_ID}/values/${encodeURIComponent(financeSheet)}!A:Z`,
         { headers: { Authorization: `Bearer ${accessToken}` } })
     );
     const results = await Promise.all(fetches);
@@ -4630,7 +4661,7 @@ function sportStatusLabel(s){return s==='done'?'Fait':s==='partial'?'Partiel':s=
 async function sportPutValues(range,values){ return sheetPut(range,values); }
 async function ensureSportSheets(){
   const sid=cfg.spreadsheetId;
-  const meta=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
   const titles=(meta.sheets||[]).map(s=>s.properties.title);
   const toCreate=[];
   if(!titles.includes('sport_plan'))   toCreate.push({sheet:'sport_plan',rows:[SPORT_PLAN_HEADER]});
@@ -4638,7 +4669,7 @@ async function ensureSportSheets(){
   const formatExists=titles.includes('sport_format');
   if(!formatExists) toCreate.push({sheet:'sport_format',rows:SPORT_FORMAT_DOC.map(l=>[l])});
   if(toCreate.length){
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{
+    await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{
       method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
       body:JSON.stringify({requests:toCreate.map(t=>({addSheet:{properties:{title:t.sheet}}}))})
     });
@@ -4646,8 +4677,8 @@ async function ensureSportSheets(){
   }
   // Resync the spec tab if it pre-existed (propagate the current SPEC version)
   if(formatExists){
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${encodeURIComponent('sport_format!A:Z')}:clear`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`}});
-    await sportPutValues('sport_format!A1',SPORT_FORMAT_DOC.map(l=>[l]));
+    // ecriture d'abord, purge du reliquat ensuite
+    await sheetReplaceAll('sport_format','Z',SPORT_FORMAT_DOC.map(l=>[l]));
   }
 }
 // Dedup rows keeping the LAST occurrence per date (append-only sheets,
@@ -4662,8 +4693,8 @@ async function loadSportData(){
   await ensureSportSheets();
   const sid=cfg.spreadsheetId;
   const [planR,logR]=await Promise.all([
-    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_plan!A:F`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
-    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_log!A:G`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
+    authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_plan!A:F`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
+    authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_log!A:G`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
   ]);
   const pr=planR.values||[], lr=logR.values||[];
   // Reconcile header labels if a tab pre-existed with an older schema (positions unchanged → safe)
@@ -4687,7 +4718,7 @@ async function sportUpsertPlan(p){
   const i=sportPlans.findIndex(x=>x.date===p.date);
   if(i>=0) sportPlans[i]=p; else sportPlans.push(p);
   sportPlans.sort((a,b)=>a.date.localeCompare(b.date));
-  await sheetUpsertByKey('sport_plan',p.date,[p.date,p.type,String(p.duration||''),p.title,p.content,p.bonus||'']);
+  return sheetUpsertByKey('sport_plan',p.date,[p.date,p.type,String(p.duration||''),p.title,p.content,p.bonus||'']);
 }
 async function sportDeletePlan(date){
   if(!sportPlanFor(date)) return;
@@ -4715,7 +4746,7 @@ async function sportUpsertLog(l){
   const i=sportLogs.findIndex(x=>x.date===l.date);
   if(i>=0) sportLogs[i]=l; else sportLogs.push(l);
   sportLogs.sort((a,b)=>a.date.localeCompare(b.date));
-  await sheetUpsertByKey('sport_log',l.date,[l.date,l.status,l.exercises||'',String(l.feeling||''),String(l.weight||''),l.comment||'',l.bonusDone?'TRUE':'FALSE']);
+  return sheetUpsertByKey('sport_log',l.date,[l.date,l.status,l.exercises||'',String(l.feeling||''),String(l.weight||''),l.comment||'',l.bonusDone?'TRUE':'FALSE']);
 }
 
 // ── helpers ─────────────────────────────────────────
@@ -4764,7 +4795,8 @@ async function sportToggleBonus(){
     weight:ex?ex.weight:0,
     comment:ex?ex.comment:'',
     bonusDone:!(ex&&ex.bonusDone)};
-  showLoad(true);await sportUpsertLog(log);showLoad(false);
+  showLoad(true);const okB=await sportUpsertLog(log);showLoad(false);
+  if(!okB)toast("ÉCHEC de l'enregistrement — réessaie",'err');
   renderSportBonus();renderSportBanner();
 }
 async function reloadSportData(){
@@ -4949,7 +4981,8 @@ async function saveSportLog(){
     weight:parseFloat(sportDraft.weight??(ex?ex.weight:''))||0,
     comment:(sportDraft.comment??ex?.comment)||'',
     bonusDone:!!(ex&&ex.bonusDone)};
-  showLoad(true);await sportUpsertLog(log);showLoad(false);
+  showLoad(true);const okL=await sportUpsertLog(log);showLoad(false);
+  if(!okL)toast("ÉCHEC de l'enregistrement — réessaie",'err');
   sportDraft={status:null,feeling:null,weight:null,comment:null};
   sportExDraft={};
   toast('Retour enregistré ✓','ok');
@@ -5056,9 +5089,9 @@ async function saveSportPlan(){
     title:document.getElementById('spfTitle').value.trim(),
     content:document.getElementById('spfContent').value,
     bonus:document.getElementById('spfBonus').value.trim()};
-  showLoad(true);await sportUpsertPlan(plan);showLoad(false);
+  showLoad(true);const okP=await sportUpsertPlan(plan);showLoad(false);
   closeSportPlanModal();
-  toast('Programme enregistré ✓','ok');
+  toast(okP?'Programme enregistré ✓':"ÉCHEC de l'enregistrement — réessaie", okP?'ok':'err');
   renderSportPage();
 }
 
