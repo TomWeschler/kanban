@@ -1083,7 +1083,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.15.0</span>
+    <span class="app-version">v1.15.1</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1635,6 +1635,16 @@ function toggleDictation(){
 // L'app ecoute, cree la tache, confirme A VOIX HAUTE (les yeux restent sur la
 // route) et se remet a ecouter. On en sort a la voix.
 let hfActive=false, hfRec=null, hfSpeaking=false, hfLast=null, hfWakeLock=null;
+// hfBusy : un resultat est en cours de traitement, on ignore tout le reste.
+// hfSpoken / hfPrev : garde-fous contre l'app qui s'entend elle-meme et contre
+// les resultats finaux livres en double par la reconnaissance.
+let hfBusy=false, hfSpoken='', hfPrev='', hfPrevAt=0;
+
+// Commandes acceptees dans une phrase COURTE : « c'est terminé » doit fermer,
+// mais « appeler le client, j'ai fini le devis » reste une tache.
+const HF_STOP=/\b(termine|terminer|fini|finir|stop|arrete|arreter|fermer|ferme|quitter|quitte|au revoir|c est bon|voila)\b/;
+const HF_UNDO=/\b(annule|annuler|supprime|supprimer|oublie|oublier|efface|effacer|retire)\b/;
+const hfIsCommand=(n,re)=>n.split(/\s+/).length<=4 && re.test(n);
 
 const voEl=id=>document.getElementById(id);
 function voSet(state,cls){ voEl('voState').textContent=state;
@@ -1645,6 +1655,10 @@ function say(txt,then){
   if(!('speechSynthesis' in window)){ if(then)then(); return; }
   try{
     hfSpeaking=true;
+    hfSpoken=voNorm(txt);          // pour ignorer un eventuel retour de notre propre voix
+    // couper le micro AVANT de parler : sinon la confirmation est captee,
+    // devient une tache, qui declenche une confirmation... en boucle
+    if(hfRec){ try{hfRec.abort();}catch(e){} hfRec=null; }
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(txt);
     u.lang='fr-FR'; u.rate=1.05;
@@ -1675,58 +1689,74 @@ function startHandsFree(){
   if(!dictationAvailable()){ voSet('Dictée non gérée par ce navigateur'); return; }
   hfActive=true;
   keepAwake(true);
-  say('Je vous écoute', hfListen);
+  hfBusy=false;hfPrev='';hfSpoken='';
+  say('Je vous écoute', hfResume);
 }
 
 function hfListen(){
-  if(!hfActive||hfSpeaking)return;
+  if(!hfActive||hfSpeaking||hfBusy)return;
   if(hfRec){ try{hfRec.abort();}catch(e){} hfRec=null; }
   const r=new SpeechRec();
   r.lang='fr-FR'; r.continuous=false; r.interimResults=true; r.maxAlternatives=1;
   r.onstart=()=>voSet('Parlez…','listening');
   r.onresult=e=>{
+    if(hfBusy)return;
     let txt='',final=false;
     for(let i=e.resultIndex;i<e.results.length;i++){ txt+=e.results[i][0].transcript; if(e.results[i].isFinal)final=true; }
     voEl('voHeard').textContent=txt.trim();
-    if(final)hfHandle(txt.trim());
+    if(!final)return;
+    hfBusy=true;
+    if(hfRec){ try{hfRec.abort();}catch(e){} hfRec=null; }  // plus rien apres ce resultat
+    hfHandle(txt.trim());
   };
   r.onerror=ev=>{ if(ev.error==='not-allowed'){ voSet('Micro refusé'); hfActive=false; } };
   // Chrome coupe l'ecoute a chaque silence : on relance en boucle
-  r.onend=()=>{ hfRec=null; if(hfActive&&!hfSpeaking) setTimeout(hfListen,250); };
+  r.onend=()=>{ hfRec=null; if(hfActive&&!hfSpeaking&&!hfBusy) setTimeout(hfListen,250); };
   hfRec=r;
   try{ r.start(); }catch(e){ hfRec=null; }
 }
 
+const hfResume=()=>{ hfBusy=false; setTimeout(hfListen,400); };  // laisser retomber le haut-parleur
+
 async function hfHandle(raw){
   const n=voNorm(raw);
-  if(!n)return;
+  if(!n){ hfResume(); return; }
   voSet('…');
-  if(/^(stop|termine|terminer|fini|fermer|quitter|au revoir)$/.test(n)){
-    say('Terminé', stopHandsFree); return;
-  }
-  if(/^(annuler|annule|supprime|oublie)$/.test(n)){ voiceUndo(); return; }
+
+  // 1. notre propre confirmation revenue par le micro
+  if(hfSpoken&&(n===hfSpoken||hfSpoken.includes(n)||n.includes(hfSpoken))){ hfResume(); return; }
+  // 2. meme phrase relivree dans la foulee (finaux en double)
+  const now=performance.now();
+  if(n===hfPrev&&now-hfPrevAt<4000){ hfResume(); return; }
+  hfPrev=n; hfPrevAt=now;
+
+  if(hfIsCommand(n,HF_STOP)){ say('Terminé', stopHandsFree); return; }
+  if(hfIsCommand(n,HF_UNDO)){ voiceUndo(); return; }
+
   // on retire les formules d'amorce eventuelles
   const title=raw.replace(/^\s*(ajoute[rz]?|nouvelle t[âa]che|note[rz]?|rappelle[- ]moi de?)\s+/i,'').trim();
-  if(!title)return;
+  if(!title){ hfResume(); return; }
   hfLast=await quickAddTask({title,imp:3});
   voEl('voLast').textContent='✓ '+hfLast.title;
   voEl('voHeard').textContent='';
-  say('Ajouté. '+hfLast.title, hfListen);
+  // on ne repete PAS le titre : le micro le recapterait, et cela rallonge
+  // inutilement le silence entre deux dictees
+  say('Ajouté', hfResume);
 }
 
 async function voiceUndo(){
-  if(!hfLast){ say('Rien à annuler', hfListen); return; }
+  if(!hfLast){ say('Rien à annuler', hfResume); return; }
   const t=hfLast; hfLast=null;
   const i=allTasks.indexOf(t);
   if(i>=0)allTasks.splice(i,1);
   refreshActive(); render(); renderCurrentPage();
   voEl('voLast').textContent='✗ annulé';
   await persist();
-  say('Annulé', hfListen);
+  say('Annulé', hfResume);
 }
 
 function stopHandsFree(){
-  hfActive=false;
+  hfActive=false; hfBusy=false; hfSpoken=''; hfPrev='';
   if(hfRec){ try{hfRec.abort();}catch(e){} hfRec=null; }
   try{ speechSynthesis.cancel(); }catch(e){}
   hfSpeaking=false;
