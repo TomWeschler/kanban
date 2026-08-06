@@ -43,9 +43,9 @@
       ]
     },
     {
-      "name": "Dicter une tâche",
+      "name": "Dicter",
       "short_name": "Dicter",
-      "description": "Saisir une tâche à la voix",
+      "description": "Mains libres — dire « note » pour basculer vers les notes",
       "url": "./?new=&voice=1",
       "icons": [
         {
@@ -56,26 +56,26 @@
       ]
     },
     {
-      "name": "Noter une idée",
-      "short_name": "Noter",
-      "description": "Ajouter au journal du Second Brain",
-      "url": "./?note=",
+      "name": "Nouvelle note",
+      "short_name": "Note",
+      "description": "Créer une note vierge",
+      "url": "./?newnote=1",
       "icons": [
         {
-          "src": "./sc-note.png",
+          "src": "./sc-newnote.png",
           "sizes": "192x192",
           "type": "image/png"
         }
       ]
     },
     {
-      "name": "Dicter une note",
-      "short_name": "Dicter note",
-      "description": "Noter une idée à la voix",
-      "url": "./?note=&voice=1",
+      "name": "Journal du jour",
+      "short_name": "Journal",
+      "description": "Ajouter au journal du Second Brain",
+      "url": "./?note=",
       "icons": [
         {
-          "src": "./sc-notemic.png",
+          "src": "./sc-note.png",
           "sizes": "192x192",
           "type": "image/png"
         }

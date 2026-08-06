@@ -36,6 +36,11 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.25rem;gap:0.75rem;z-index:200;position:relative}
 .logo{font-family:'Space Mono',monospace;font-size:0.68rem;font-weight:700;letter-spacing:0.3em;color:var(--accent);white-space:nowrap;flex-shrink:0}
 .nav-sep{width:1px;height:22px;background:var(--border);flex-shrink:0}
+.hstats{display:flex;align-items:center;gap:0.55rem}
+.subtabs{display:none;align-items:center;gap:0.25rem;padding:0.4rem 1rem;border-bottom:1px solid var(--border);background:rgba(9,9,14,0.65);flex-shrink:0;overflow-x:auto}
+.subtab{background:none;border:1px solid transparent;color:var(--text-dim);font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.25rem 0.7rem;border-radius:99px;cursor:pointer;white-space:nowrap}
+.subtab:hover{color:var(--text)}
+.subtab.active{background:var(--accent);border-color:var(--accent);color:#09090e;font-weight:700}
 .nav-tabs{display:flex;gap:0.1rem;flex-shrink:0}
 .nav-tab{background:none;border:none;font-family:'Space Mono',monospace;font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;padding:0.3rem 0.65rem;border-bottom:2px solid transparent;transition:color 0.13s,border-color 0.13s;white-space:nowrap}
 .nav-tab:hover{color:var(--text-mid)}
@@ -1192,13 +1197,9 @@ body,body *{font-family:var(--font-body)}
   <nav class="nav-tabs">
     <button class="nav-tab active" data-page="today" onclick="switchPage('today')">AUJOURD'HUI</button>
     <button class="nav-tab" data-page="board" onclick="switchPage('board')">BOARD</button>
-    <button class="nav-tab" data-page="crypto" onclick="switchPage('crypto')">CRYPTOBOT</button>
-    <button class="nav-tab" data-page="habits" onclick="switchPage('habits')">HABITUDES</button>
-    <button class="nav-tab" data-page="sport" onclick="switchPage('sport')">SPORT</button>
-    <button class="nav-tab" data-page="finances" onclick="switchPage('finances')">FINANCES</button>
-    <button class="nav-tab" data-page="objectifs" onclick="switchPage('objectifs')">OBJECTIFS</button>
+    <button class="nav-tab" data-page="brain" onclick="switchPage('brain')">NOTES</button>
+    <button class="nav-tab" data-page="omega" onclick="switchPage('omega')">OMEGA</button>
     <button class="nav-tab" data-page="review" onclick="switchPage('review')">REVUE</button>
-    <button class="nav-tab" data-page="brain" onclick="switchPage('brain')">SECOND BRAIN</button>
   </nav>
   <div class="nav-sep"></div>
   <div class="proj-shortcuts">
@@ -1208,12 +1209,9 @@ body,body *{font-family:var(--font-body)}
     <button class="proj-btn perso" onclick="quickTask('Perso')">+ PERSO</button>
   </div>
   <div class="header-right">
-    <div class="hstat">ACTIVES <b id="hTotal">0</b></div>
-    <div class="hstat">AUJ. <b id="hToday">0</b></div>
-    <div class="hstat" style="color:var(--green)">✓ <b id="hDoneToday">0</b></div>
-    <div class="hstat" style="color:var(--danger)">URGENTES <b id="hUrgent">0</b></div>
+    <div class="hstats" id="hStats"></div>
     <div class="sync-status"><div class="sync-dot ok" id="syncDot"></div><span id="syncLabel">PRÊT</span></div>
-    <button class="btn-nav" onclick="openModal()" title="Nouvelle tâche (N)">+ TÂCHE</button>
+    <button class="btn-nav" id="hAction" title="Nouvelle tâche (N)">+ TÂCHE</button>
     <div class="theme-picker-wrap">
       <button class="btn-theme" onclick="toggleThemePicker(event)" title="Changer le thème">◐ THÈME</button>
       <div class="theme-menu" id="themeMenu">
@@ -1255,12 +1253,14 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.22.2</span>
+    <span class="app-version">v1.23.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
 
 <!-- BOARD PAGE -->
+<div class="subtabs" id="subTabs"></div>
+
 <div class="page active" id="pagetoday">
   <div class="pg-bg" id="todayBg"></div>
   <div class="td-wrap">
@@ -2019,6 +2019,7 @@ function stopHandsFree(){
   keepAwake(false);
   voEl('voiceOverlay').classList.remove('open');
   renderCurrentPage();
+  renderSubTabs();updateHStats();
 }
 
 // ── Capture rapide depuis le telephone ────────────────────────────────────
@@ -2041,7 +2042,8 @@ let startIntent=null, startIntentDone=false;
     imp:Math.min(5,Math.max(1,parseInt(q.get('imp'),10)||3)),
     due:q.get('due'),
     voice:q.get('voice')==='1',
-    note:q.has('note')?String(q.get('note')||'').trim():null
+    note:q.has('note')?String(q.get('note')||'').trim():null,
+    newnote:q.has('newnote')
   };
   // sans nettoyage, un simple rafraichissement recreerait la tache
   history.replaceState(null,'',location.pathname);
@@ -2084,6 +2086,8 @@ function applyStartIntent(){
   if(!startIntent||startIntentDone)return;
   startIntentDone=true;
   const it=startIntent;
+  // ?newnote= cree une note vierge, distincte du journal du jour
+  if(it.newnote){ switchPage('brain'); newNote(null); return; }
   // capture d'une note AVANT le garde sur isNew : ?note= n'est pas une tache
   if(it.note!==null){
     if(it.voice){ hfTarget='note'; startHandsFree(); return; }
@@ -2852,16 +2856,7 @@ function mkCard(t, now) {
   return c;
 }
 
-function updateHStats(){
-  const now=new Date();now.setHours(0,0,0,0);
-  const todayStr=td();
-  document.getElementById('hTotal').textContent=tasks.length;
-  document.getElementById('hToday').textContent=tasks.filter(t=>taskColumnFromDate(t.due_date)==="Aujourd'hui").length;
-  document.getElementById('hDoneToday').textContent=allTasks.filter(t=>t.completed_at===todayStr).length;
-  document.getElementById('hUrgent').textContent=tasks.filter(t=>{
-    if(!t.due_date)return false;const d=new Date(t.due_date);d.setHours(0,0,0,0);return Math.ceil((d-now)/86400000)<=1;
-  }).length;
-}
+
 
 // ════════════════════════════════════════════════════
 // DRAG & DROP
@@ -3472,6 +3467,70 @@ function setNoteOrder(o){
   noteOrder=o;
   try{ localStorage.setItem(LS_NOTE_ORDER,o); }catch(e){}
   renderNoteTree();
+}
+
+// ── Navigation : OMEGA regroupe les pages de suivi ────────────────────────
+// Neuf onglets ne tenaient plus. Les cinq pages de pilotage passent en
+// sous-onglets d'une seule entree ; les pages elles-memes sont inchangees.
+const OMEGA=[['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],
+             ['finances','Finances'],['crypto','Cryptobot']];
+const LS_OMEGA='kanban_omega_last';
+let omegaLast=localStorage.getItem(LS_OMEGA)||'objectifs';
+const inOmega=n=>OMEGA.some(([v])=>v===n);
+function renderSubTabs(){
+  const el=document.getElementById('subTabs');
+  if(!el)return;
+  const on=inOmega(curPage);
+  el.style.display=on?'flex':'none';
+  el.innerHTML=on?OMEGA.map(([v,l])=>
+    `<button class="subtab${curPage===v?' active':''}" onclick="switchPage('${v}')">${l}</button>`).join(''):'';
+}
+
+// ── Indicateurs du header ─────────────────────────────────────────────────
+// Ils etaient tous issus du board et restaient identiques partout. Ils suivent
+// desormais la page ouverte, et montrent ce qui s'y decide.
+function updateHStats(){
+  const el=document.getElementById('hStats');
+  if(!el)return;
+  const todayStr=td();
+  const auj=tasks.filter(t=>taskColumnFromDate(t.due_date)==="Aujourd'hui").length;
+  const retard=tasks.filter(t=>t.due_date&&t.due_date<todayStr).length;
+  const kpi=(l,v,c)=>`<div class="hstat"${c?` style="color:${c}"`:''}>${l} <b>${v}</b></div>`;
+  const habDue=habits.filter(x=>x.active&&isHabitDueToday(x.frequency));
+  const habOk=habDue.filter(x=>habitsLog.some(l=>String(l.habit_id)===String(x.id)&&l.date===todayStr)).length;
+  let h='';
+  if(curPage==='today'||curPage==='board'){
+    h=kpi('À FAIRE',auj)
+     +(retard?kpi('EN RETARD',retard,'var(--danger)'):'')
+     +kpi('✓',allTasks.filter(t=>t.completed_at===todayStr).length,'var(--green)')
+     +(habDue.length?kpi('HABITUDES',`${habOk}/${habDue.length}`,'var(--accent)'):'')
+     +(curPage==='board'?kpi('ACTIVES',tasks.length,'var(--text-dim)'):'');
+  } else if(curPage==='brain'){
+    const orph=notes.filter(n=>!noteOutLinks(n).length&&!noteBacklinks(n).length).length;
+    h=kpi('NOTES',notes.length)+kpi('TAGS',allNoteTags().length,'var(--accent)')
+     +(orph?kpi('ORPHELINES',orph,'var(--warn)'):'');
+  } else if(inOmega(curPage)){
+    const atteints=goals.filter(g=>g.status==='done'||goalProgress(g)>=100).length;
+    const c=cagnotte();
+    h=(goals.length?kpi('OBJECTIFS',`${atteints}/${goals.length}`,'var(--green)'):'')
+     +(habDue.length?kpi('HABITUDES',`${habOk}/${habDue.length}`,'var(--accent)'):'')
+     +kpi('CAGNOTTE',eur(c),c<0?'var(--danger)':'var(--green)');
+  } else if(curPage==='review'){
+    const r=rvRange(rvPeriod), t=rvTaskStats(r), hh=rvHabitStats(r);
+    h=kpi('TERMINÉES',t.done,'var(--green)')+kpi('RÉGULARITÉ',Math.round(hh.rate)+'%','var(--accent)')
+     +kpi('GAINS',hh.eur.toFixed(0)+'€','var(--gld)');
+  }
+  el.innerHTML=h;
+  // action principale et raccourcis projet : contextuels eux aussi
+  const act=document.getElementById('hAction');
+  if(act){
+    const n=curPage==='brain';
+    act.textContent=n?'+ NOTE':'+ TÂCHE';
+    act.title=n?'Nouvelle note (N)':'Nouvelle tâche (N)';
+    act.onclick=()=>{ n?newNote(null):openModal(); };
+  }
+  const pr=document.querySelector('.proj-shortcuts');
+  if(pr)pr.style.display=curPage==='board'?'flex':'none';
 }
 
 // ── Rendu de la page ──────────────────────────────────────────────────────
@@ -5418,10 +5477,18 @@ function renderHeatmaps() {
 // NAVIGATION
 // ════════════════════════════════════════════════════
 function switchPage(name){
+  if(name==='omega')name=omegaLast;              // groupe : on ouvre le dernier consulte
+  if(inOmega(name)){ omegaLast=name; try{localStorage.setItem(LS_OMEGA,name);}catch(e){} }
   curPage=name;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page'+name).classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.page===name));
+  // l'entree OMEGA reste active tant qu'on est sur l'une de ses pages
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',
+    t.dataset.page==='omega'?inOmega(name):t.dataset.page===name));
+  renderSubTabs();
+  // les indicateurs dependent de la page : ils etaient jusqu'ici rafraichis par
+  // le seul rendu du board, donc figes des qu'on en sortait
+  updateHStats();
   if(name==='objectifs')renderObjectifs();
   if(name==='habits'){applyPageWallpaper('habBg',randomWallpaper());renderHabitsPage();}
   if(name==='board')applyPageWallpaper('boardBg',randomWallpaper());
