@@ -1253,7 +1253,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version" onclick="forceUpdate()" title="Vérifier les mises à jour et recharger">v1.23.2</span>
+    <span class="app-version" onclick="forceUpdate()" title="Vider le cache et recharger (les données sont conservées)">v1.23.3</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -7461,7 +7461,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.23.2';
+const APP_VERSION='v1.23.3';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
@@ -7511,9 +7511,33 @@ if('serviceWorker' in navigator){
 // Echappatoire manuelle : un appui sur le numero de version force la
 // verification et recharge.
 async function forceUpdate(){
-  toast('Recherche d\'une mise à jour…','info');
-  await swCheck(true);
-  swReloading=true; location.reload();
+  // Hors ligne, se priver du cache ET du service worker rendrait l'app
+  // incapable de se charger : on refuse plutot que de la casser.
+  if(!navigator.onLine){ toast("Hors ligne — impossible de vider le cache maintenant",'err'); return; }
+  offerChoice('Vider le cache et recharger ? (tes données sont conservées)',
+    [['Vider et recharger',hardReset]],0,'info');
+}
+// Remise a zero complete de la couche de distribution : caches et service
+// worker. Ne touche PAS a localStorage, donc ni les taches, ni les notes, ni la
+// file d'ecritures hors ligne, ni le theme ne sont perdus.
+async function hardReset(){
+  swReloading=true;
+  toast('Vidage du cache…','info');
+  try{
+    if('caches' in window){
+      const ks=await caches.keys();
+      await Promise.all(ks.map(k=>caches.delete(k)));
+    }
+  }catch(e){}
+  try{
+    if('serviceWorker' in navigator){
+      const rs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(rs.map(r=>r.unregister()));
+    }
+  }catch(e){}
+  // URL differente a chaque fois : force une relecture reseau du HTML, sans
+  // passer par le cache du navigateur. readStartIntent nettoie ensuite l'URL.
+  location.replace(location.pathname+'?v='+Date.now());
 }
 // L'état de synchro doit dire la vérité quand il n'y a pas de réseau, plutôt
 // que d'afficher une erreur de sauvegarde.
