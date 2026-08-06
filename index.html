@@ -1048,7 +1048,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.9.0</span>
+    <span class="app-version">v1.10.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1400,6 +1400,47 @@ function stripProjectPrefix(title,proj){
 const projClass=p=>p==='Airside'?'air':String(p).toLowerCase();
 const CATEGORIES = ['Finance','Esprit','Santé','Productivité','Autre'];
 const LS_CACHE = 'kanban_cache_v3';
+// ── Cache local generique ─────────────────────────────────────────────────
+// Seules les taches etaient mises en cache : hors ligne, HABITUDES, OBJECTIFS
+// et SPORT s'ouvraient vides, ce qui rendait le PWA a moitie utile.
+const LS_DATA = 'kanban_data_';
+function cacheSet(key,data){ try{ localStorage.setItem(LS_DATA+key,JSON.stringify(data)); }catch(e){} }
+function cacheGet(key,fallback){
+  try{ const v=localStorage.getItem(LS_DATA+key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; }
+}
+
+// ── File d'ecritures hors ligne ───────────────────────────────────────────
+// Sans reseau on n'ecrivait pas du tout, et la modification etait perdue au
+// rechargement. Les operations sont mises en file, persistees, puis rejouees.
+// Toutes sont idempotentes : reecriture d'un onglet complet, ou upsert par cle.
+const LS_QUEUE = 'kanban_write_queue';
+let writeQueue = (()=>{ try{ return JSON.parse(localStorage.getItem(LS_QUEUE))||[] }catch(e){ return [] } })();
+const queueSave = ()=>{ try{ localStorage.setItem(LS_QUEUE,JSON.stringify(writeQueue)); }catch(e){} };
+function enqueueWrite(op){
+  // une reecriture complete remplace la precedente du meme onglet : inutile de
+  // rejouer dix etats intermediaires du meme onglet
+  if(op.kind==='replace') writeQueue=writeQueue.filter(o=>!(o.kind==='replace'&&o.sheet===op.sheet));
+  writeQueue.push(op); queueSave();
+  setSyncStatus('error',`HORS LIGNE · ${writeQueue.length} EN ATTENTE`);
+}
+async function flushWriteQueue(){
+  if(!writeQueue.length||!navigator.onLine||!accessToken) return;
+  const pending=writeQueue.slice();
+  setSyncStatus('syncing',`ENVOI · ${pending.length}`);
+  const rest=[];
+  for(const op of pending){
+    try{
+      const ok = op.kind==='replace'
+        ? await sheetReplaceAll(op.sheet,op.lastCol,op.values,true)
+        : await sheetBatchUpsert(op.sheet,op.rows,true);
+      if(!ok) rest.push(op);
+    }catch(e){ rest.push(op); }
+  }
+  writeQueue=rest; queueSave();
+  if(rest.length){ setSyncStatus('error',`${rest.length} EN ATTENTE`); }
+  else { setSyncStatus('ok','SYNCED'); toast(`${pending.length} modification(s) envoyée(s)`,'ok'); }
+}
+window.addEventListener('online',()=>flushWriteQueue());
 
 const FREQ_OPTS = [
   ['daily',             'Tous les jours'],
@@ -1500,6 +1541,9 @@ function init() {
     render();
   } catch(e){}
   renderCurrentPage();
+  // hors ligne, les pages doivent afficher le dernier etat connu
+  habits=cacheGet('habits',[]); habitsLog=cacheGet('habitsLog',[]);
+  goals=cacheGet('goals',[]); sportPlans=cacheGet('sportPlans',[]); sportLogs=cacheGet('sportLogs',[]);
   buildHabitModalSelects();
   applyPageWallpaper('boardBg',randomWallpaper());
   applyPageWallpaper('todayBg',randomWallpaper());
@@ -1671,7 +1715,12 @@ let conflictPending=false;
 async function saveToSheets(force) {
   if (!accessToken) return;
   localStorage.setItem(LS_CACHE, JSON.stringify(allTasks)); // filet local avant tout
-  if (!navigator.onLine) { setSyncStatus('error','HORS LIGNE'); return; }
+  // hors ligne : sheetReplaceAll met l'etat complet en file, il sera rejoue au
+  // retour du reseau. On saute la detection de conflit, qui exige une lecture.
+  if (!navigator.onLine) {
+    await sheetReplaceAll(cfg.sheetName,TASK_LAST_COL,[SHEET_HEADER,...allTasks.map(taskToRow)]);
+    return;
+  }
   if (conflictPending && !force) return;                    // ne pas re-crier à chaque frappe
   setSyncStatus('syncing','SAVING...');
   try {
@@ -1711,7 +1760,8 @@ async function loadHabits() {
       frequency:p[2]||'daily', reward_eur:parseFloat(p[3])||0,
       category:p[4]||'Productivité', active:p[5]!=='FALSE'
     }));
-  } catch(e) { habits = []; }
+    cacheSet('habits',habits);
+  } catch(e) { habits = cacheGet('habits',[]); }
 }
 
 async function saveHabits() {
@@ -1734,7 +1784,8 @@ async function loadHabitsLog() {
       id: String(p[0]||''), habit_id:String(p[1]||''), date:p[2]||'',
       reward_eur:parseFloat(p[3])||0, category:p[4]||''
     }));
-  } catch(e) { habitsLog = []; }
+    cacheSet('habitsLog',habitsLog);
+  } catch(e) { habitsLog = cacheGet('habitsLog',[]); }
 }
 
 async function appendHabitsLog(entry) {
@@ -2787,6 +2838,9 @@ async function loadGoals(){
   const map={}; parsed.forEach(g=>{map[g.id]=g;});
   goals=Object.values(map).filter(g=>g.status!==GOAL_DELETED);
   goalsLoaded=true;
+  // une lecture vide alors qu'on a un cache = echec reseau, pas un classeur vide
+  if(!goals.length&&!rows.length){ goals=cacheGet('goals',[]); return; }
+  cacheSet('goals',goals);
   await migrateGoalLevels();
 }
 function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||'',String(g.level||1),String(g.reward_eur||0)];}
@@ -2823,8 +2877,10 @@ async function sheetKeyRows(sheet){
 }
 // Remplace l'ancien upsert ligne par ligne (2 appels PAR ligne) : ici 1 lecture,
 // 1 batchUpdate pour tout ce qui existe déjà, 1 append pour le reste.
-async function sheetBatchUpsert(sheet,rows){
+async function sheetBatchUpsert(sheet,rows,replaying){
   if(!accessToken||!rows.length) return false;
+  // hors ligne : on met en file plutot que de perdre la modification
+  if(!replaying&&!navigator.onLine){ enqueueWrite({kind:'upsert',sheet,rows}); return true; }
   const map=await sheetKeyRows(sheet);
   const data=[],add=[];
   rows.forEach(row=>{
@@ -2848,7 +2904,8 @@ async function sheetBatchUpsert(sheet,rows){
 async function sheetUpsertByKey(sheet,key,row){ return sheetBatchUpsert(sheet,[row]); }
 // Réécriture complète : on ÉCRIT d'abord, on purge le reliquat ensuite. L'inverse
 // (clear puis write) laissait l'onglet vide si le write échouait.
-async function sheetReplaceAll(sheet,lastCol,values){
+async function sheetReplaceAll(sheet,lastCol,values,replaying){
+  if(!replaying&&!navigator.onLine){ enqueueWrite({kind:'replace',sheet,lastCol,values}); return null; }
   const r=await sheetPut(`${sheet}!A1`,values,true);
   if(!r.ok) throw new Error(r.status);
   const j=await r.json().catch(()=>null);
@@ -4713,6 +4770,8 @@ async function loadSportData(){
   sportPlans=sportDedupLast(plans).filter(p=>p.type!==SPORT_DELETED);
   sportLogs=sportDedupLast(logs);
   sportLoaded=true;
+  if(!pr.length&&!lr.length){ sportPlans=cacheGet('sportPlans',[]);sportLogs=cacheGet('sportLogs',[]); return; }
+  cacheSet('sportPlans',sportPlans);cacheSet('sportLogs',sportLogs);
 }
 async function sportUpsertPlan(p){
   const i=sportPlans.findIndex(x=>x.date===p.date);
