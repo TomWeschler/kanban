@@ -774,7 +774,8 @@ body,body *{font-family:var(--font-body)}
 ═══════════════════════════════ */
 #pageobjectifs{overflow-y:auto;flex-direction:column}
 .gl-wrap{padding:1.4rem 1.6rem 3rem;display:flex;flex-direction:column;gap:1.1rem}
-.gl-banner{display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem}
+.gl-banner{display:grid;grid-template-columns:repeat(5,1fr);gap:0.85rem}
+@media (max-width:1100px){.gl-banner{grid-template-columns:repeat(2,1fr)}}
 .gl-kpi{background:var(--surface);border:1px solid var(--border);padding:1rem 1.2rem;border-radius:8px}
 .gl-kpi-lbl{font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--text-mid);margin-bottom:0.4rem}
 .gl-kpi-val{font-family:var(--font-mono);font-size:1.7rem;font-weight:700;line-height:1}
@@ -840,6 +841,8 @@ body,body *{font-family:var(--font-body)}
 .gl-cp-dot.done{background:var(--green);border-color:var(--green)}
 .gl-cp-dot:hover{border-color:var(--text-mid)}
 .gl-cp-count{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);margin-left:2px}
+.gl-reward-eur{font-family:var(--font-mono);font-weight:700;margin-left:0.4rem;color:var(--green)}
+.gl-reward-eur.neg{color:var(--danger)}
 .gl-reward-mini{font-family:var(--font-mono);font-size:0.52rem;color:var(--gld);margin-top:0.42rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gl-reward-mini.unlocked{text-shadow:0 0 8px rgba(252,211,77,0.45)}
 /* emoji picker (modal) */
@@ -1045,7 +1048,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.7.0</span>
+    <span class="app-version">v1.8.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1135,6 +1138,8 @@ body,body *{font-family:var(--font-body)}
     <div class="field"><label>Progression % <span style="color:var(--text-dim);font-weight:400">(ignoré si checkpoints)</span></label><input type="number" id="gfProgress" min="0" max="100" placeholder="0"></div>
     <div class="field"><label>Icône</label><input type="hidden" id="gfIcon"><div class="gl-emoji-grid" id="gfEmojiGrid"></div></div>
     <div class="field"><label>Récompense 🎁</label><input type="text" id="gfReward" placeholder="Ma récompense en atteignant l'objectif..." autocomplete="off"></div>
+    <div class="field"><label>Euro <span style="color:var(--text-dim);text-transform:none;letter-spacing:0">— négatif si l'objectif est un achat</span></label>
+      <input type="number" step="0.01" id="gfEuro" placeholder="0" autocomplete="off"></div>
     <div class="field"><label>Checkpoints <span style="color:var(--text-dim);font-weight:400">(un par ligne — coche en préfixant par [x])</span></label>
       <textarea id="gfCheckpoints" class="fit-input" rows="5" style="width:100%" placeholder="[x] Première étape faite&#10;[ ] Étape suivante&#10;[ ] Dernière étape | récompense étape"></textarea></div>
     <div style="display:flex;gap:0.5rem;justify-content:space-between;margin-top:0.5rem">
@@ -2535,6 +2540,7 @@ async function renderReviewPage(){
     rvKpi('Régularité',`${Math.round(h.rate)}%`,rvDelta(h.rate,hp.rate))+
     rvKpi('Faites',`${h.done}/${h.due}`,'')+
     rvKpi('Gains',`${h.eur.toFixed(2)}€`,rvDelta(h.eur,hp.eur))+
+    rvKpi('Cagnotte',`<span style="color:${cagnotte()<0?'var(--danger)':'var(--green)'}">${eur(cagnotte())}</span>`,'')+
     (best&&best.s>0?`<div class="td-row"><span class="td-icon">🔥</span><span class="td-lbl">Meilleure série · <span class="td-name">${tdEsc(best.h.title)}</span></span><span class="rv-n">${best.s}</span></div>`:'')+
     (worst&&worst.done<worst.due?`<div class="td-row"><span class="td-icon">⚠️</span><span class="td-lbl">La plus manquée · <span class="td-name">${tdEsc(worst.h.title)}</span></span><span class="rv-n">${worst.done}/${worst.due}</span></div>`:'')+
     (h.due?'':'<div class="td-empty">Aucune habitude due sur la période.</div>');
@@ -2638,18 +2644,18 @@ function renderObjectifs(){ renderGoalsPage(); }
 let goals=[], goalsLoaded=false, goalCatFilter='all', goalSearch='';
 const LS_GOAL_FOLD='kanban_goals_collapsed';
 let goalCollapsed=new Set((()=>{try{return JSON.parse(localStorage.getItem(LS_GOAL_FOLD))||[]}catch(e){return []}})());
-const GOAL_HEADER=['id','parent_id','horizon','category','title','description','progress','reward','status','target_date','icon','checkpoints','level'];
+const GOAL_HEADER=['id','parent_id','horizon','category','title','description','progress','reward','status','target_date','icon','checkpoints','level','reward_eur'];
 const GOAL_DELETED='__deleted__';
 const GOAL_HORIZONS=[['life','Vie','🌟'],['5y','5 ans','🔭'],['annual','Année','📅'],['quarter','Trimestre','🎯'],['month','Mois','📌']];
 const GOAL_PALETTE=['#7c6aff','#4ade80','#fbbf24','#22d3ee','#f87171','#a855f7','#38bdf8','#fb923c','#e879f9','#a3e635'];
 const GOAL_SEED=[
- ['gx1','','life','Esprit','Vivre une vie alignée, libre et en bonne santé','Ma vision long terme','0','Sérénité & liberté totales','active','','🌟','','1'],
- ['gx2','gx1','5y','Finance','Atteindre l\'indépendance financière','Patrimoine qui couvre mes besoins','0','Quitter le salariat','active','2030-12-31','🔭','[{"t":"Portefeuille à 6 chiffres","d":false,"r":""},{"t":"Revenus passifs > dépenses","d":false,"r":""}]','2'],
- ['gx3','gx2','annual','Finance','Économiser 30 000 € en 2026','Effort d\'épargne de l\'année','0','Week-end à l\'étranger','active','2026-12-31','📅','[{"t":"10 000 € (T1-T2)","d":true,"r":""},{"t":"20 000 € (T3)","d":false,"r":""},{"t":"30 000 € (T4)","d":false,"r":"Resto gastro"}]','3'],
- ['gx4','gx3','quarter','Finance','Réduire mes dépenses de 15%','Sur ce trimestre','0','Soirée ciné','active','2026-08-31','🎯','[{"t":"Auditer les abonnements","d":true,"r":""},{"t":"Budget courses -15%","d":false,"r":""}]','4'],
- ['gx5','gx4','month','Finance','Tenir 100% mon budget ce mois','Suivi quotidien','60','Nouveau livre','active','2026-06-30','📌','','5'],
- ['gx6','gx1','5y','Santé','Être en grande forme physique','Corps fort et endurant','0','Photo souvenir','active','2030-06-30','💪','[{"t":"Routine sport stable","d":false,"r":""},{"t":"Objectif poids atteint","d":false,"r":""}]','2'],
- ['gx7','gx6','month','Santé','3 séances de sport / semaine','Régularité avant tout','0','Massage détente','active','2026-06-30','🏋️','','3']
+ ['gx1','','life','Esprit','Vivre une vie alignée, libre et en bonne santé','Ma vision long terme','0','Sérénité & liberté totales','active','','🌟','','1','0'],
+ ['gx2','gx1','5y','Finance','Atteindre l\'indépendance financière','Patrimoine qui couvre mes besoins','0','Quitter le salariat','active','2030-12-31','🔭','[{"t":"Portefeuille à 6 chiffres","d":false,"r":""},{"t":"Revenus passifs > dépenses","d":false,"r":""}]','2','0'],
+ ['gx3','gx2','annual','Finance','Économiser 30 000 € en 2026','Effort d\'épargne de l\'année','0','Week-end à l\'étranger','active','2026-12-31','📅','[{"t":"10 000 € (T1-T2)","d":true,"r":""},{"t":"20 000 € (T3)","d":false,"r":""},{"t":"30 000 € (T4)","d":false,"r":"Resto gastro"}]','3','0'],
+ ['gx4','gx3','quarter','Finance','Réduire mes dépenses de 15%','Sur ce trimestre','0','Soirée ciné','active','2026-08-31','🎯','[{"t":"Auditer les abonnements","d":true,"r":""},{"t":"Budget courses -15%","d":false,"r":""}]','4','0'],
+ ['gx5','gx4','month','Finance','Tenir 100% mon budget ce mois','Suivi quotidien','60','Nouveau livre','active','2026-06-30','📌','','5','0'],
+ ['gx6','gx1','5y','Santé','Être en grande forme physique','Corps fort et endurant','0','Photo souvenir','active','2030-06-30','💪','[{"t":"Routine sport stable","d":false,"r":""},{"t":"Objectif poids atteint","d":false,"r":""}]','2','0'],
+ ['gx7','gx6','month','Santé','3 séances de sport / semaine','Régularité avant tout','0','Massage détente','active','2026-06-30','🏋️','','3','0']
 ];
 function goalHorizonMeta(h){return GOAL_HORIZONS.find(x=>x[0]===h)||['','—','•'];}
 function goalHorizonRank(h){const i=GOAL_HORIZONS.findIndex(x=>x[0]===h);return i<0?99:i;}
@@ -2737,21 +2743,22 @@ async function loadGoals(){
   if(!accessToken)return;
   await ensureGoalSheet();
   const sid=cfg.spreadsheetId;
-  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals!A:M`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
+  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals!A:N`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
   const rows=r.values||[];
   const parsed=(rows.length<=1?[]:rows.slice(1)).filter(x=>x[0]).map(x=>({
     id:String(x[0]||'').trim(),parent_id:String(x[1]||'').trim(),horizon:String(x[2]||'').trim()||'month',
     category:String(x[3]||'').trim()||'Autre',title:String(x[4]||'').trim(),description:String(x[5]||'').trim(),
     progress:parseInt(x[6])||0,reward:String(x[7]||'').trim(),status:String(x[8]||'').trim()||'active',
     target_date:String(x[9]||'').trim(),icon:String(x[10]||'').trim(),checkpoints:String(x[11]||''),
-    level:parseInt(x[12])||0
+    level:parseInt(x[12])||0,
+    reward_eur:parseFloat(String(x[13]||'').replace(',','.'))||0
   }));
   const map={}; parsed.forEach(g=>{map[g.id]=g;});
   goals=Object.values(map).filter(g=>g.status!==GOAL_DELETED);
   goalsLoaded=true;
   await migrateGoalLevels();
 }
-function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||'',String(g.level||1)];}
+function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||'',String(g.level||1),String(g.reward_eur||0)];}
 // ── Couche d'écriture Sheets partagée ─────────────────────────────────────
 // Tout ce qui écrit dans le classeur passe par ici. Deux sémantiques seulement :
 //   • sheetBatchUpsert : N lignes repérées par leur clé (colonne A), 3 appels max
@@ -2824,7 +2831,7 @@ async function goalUpsert(g){
 }
 async function goalDelete(id){
   goals=goals.filter(x=>x.id!==id);
-  await sheetUpsertByKey('goals',id,[id,'','','','','','0','',GOAL_DELETED,'','','','']);
+  await sheetUpsertByKey('goals',id,[id,'','','','','','0','',GOAL_DELETED,'','','','','0']);
 }
 
 // ── render ──
@@ -2837,6 +2844,16 @@ async function renderGoalsPage(){
 }
 async function reloadGoals(){goalsLoaded=false;goals=[];await renderGoalsPage();}
 
+// ── Cagnotte ──────────────────────────────────────────────────────────────
+// Les habitudes alimentent, les objectifs atteints débitent ou créditent selon
+// le signe de leur montant (négatif = achat). Aucun lien avec les finances,
+// qui restent gérées à la main.
+const goalReached=g=>g.status==='done'||goalProgress(g)>=100;
+function habitsEarned(){ return habitsLog.reduce((s,l)=>s+(l.reward_eur||0),0); }
+function goalsBalance(){ return goals.filter(goalReached).reduce((s,g)=>s+(g.reward_eur||0),0); }
+function cagnotte(){ return habitsEarned()+goalsBalance(); }
+const eur=n=>`${n<0?'−':''}${Math.abs(n).toFixed(2)}€`;
+
 function renderGoalsBanner(){
   const total=goals.length;
   const done=goals.filter(g=>g.status==='done'||goalProgress(g)>=100).length;
@@ -2848,6 +2865,9 @@ function renderGoalsBanner(){
       <div class="gl-kpi"><div class="gl-kpi-lbl">Atteints</div><div class="gl-kpi-val" style="color:var(--green)">${done}</div></div>
       <div class="gl-kpi"><div class="gl-kpi-lbl">Progression moy.</div><div class="gl-kpi-val" style="color:var(--accent)">${avg}%</div></div>
       <div class="gl-kpi"><div class="gl-kpi-lbl">Récompenses 🎁</div><div class="gl-kpi-val" style="color:var(--gld)">${rewards}</div></div>
+      <div class="gl-kpi" title="Gains des habitudes ${eur(habitsEarned())} · objectifs atteints ${eur(goalsBalance())}">
+        <div class="gl-kpi-lbl">Cagnotte</div>
+        <div class="gl-kpi-val" style="color:${cagnotte()<0?'var(--danger)':'var(--green)'}">${eur(cagnotte())}</div></div>
     </div>`;
 }
 function renderGoalsToolbar(){
@@ -2905,7 +2925,7 @@ function goalCard(g,o){
     <div class="gl-c-cat" style="color:${col}">● ${escapeHtmlG(g.category)}</div>
     <div class="gl-prog"><div class="gl-prog-bar" style="width:${prog}%;background:${col}"></div></div>
     <div class="gl-c-foot"><span class="gl-prog-pct">${prog}%</span>${dots}</div>
-    ${g.reward?`<div class="gl-reward-mini${isDone?' unlocked':''}" title="${escapeAttrG(g.reward)}">🎁 ${escapeHtmlG(g.reward)}</div>`:''}
+    ${(g.reward||g.reward_eur)?`<div class="gl-reward-mini${isDone?' unlocked':''}" title="${escapeAttrG(g.reward)}">🎁 ${escapeHtmlG(g.reward)}${g.reward_eur?`<span class="gl-reward-eur${g.reward_eur<0?' neg':''}">${eur(g.reward_eur)}</span>`:''}</div>`:''}
   </div>`;
 }
 // Un objectif « ressort » s'il passe le filtre catégorie ET la recherche.
@@ -3042,6 +3062,7 @@ function openGoalModal(id,parentId){
   document.getElementById('gfStatus').value=g?g.status:'active';
   document.getElementById('gfTarget').value=g?g.target_date:(pp?(pp.target_date||''):'');
   document.getElementById('gfReward').value=g?g.reward:'';
+  document.getElementById('gfEuro').value=g&&g.reward_eur?g.reward_eur:'';
   document.getElementById('gfCheckpoints').value=g?goalCheckpointsToText(goalCheckpoints(g)):'';
   document.getElementById('gbtnDel').style.display=g?'block':'none';
   document.getElementById('goalModalTitle').textContent=g?"ÉDITER L'OBJECTIF":(pp?'NOUVEL OBJECTIF ENFANT':'NOUVEL OBJECTIF');
@@ -3070,6 +3091,7 @@ async function saveGoal(){
     description:document.getElementById('gfDesc').value.trim(),
     progress:parseInt(document.getElementById('gfProgress').value)||0,
     reward:document.getElementById('gfReward').value.trim(),
+    reward_eur:parseFloat(document.getElementById('gfEuro').value)||0,
     status:document.getElementById('gfStatus').value,
     target_date:document.getElementById('gfTarget').value,
     icon:document.getElementById('gfIcon').value.trim(),
