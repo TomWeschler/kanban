@@ -1048,7 +1048,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.10.0</span>
+    <span class="app-version">v1.11.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1072,6 +1072,8 @@ body,body *{font-family:var(--font-body)}
     <div class="rv-hdr">
       <div class="rv-pills" id="rvPills"></div>
       <span class="rv-range" id="rvRange"></span>
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="exportBackup()" title="Exporter tout l'état en JSON">⬇ Sauvegarde</button>
     </div>
     <div class="rv-grid">
       <section class="td-col" id="rvTasks"></section>
@@ -2083,8 +2085,14 @@ async function toggleHabit(habitId, dateStr) {
 
   if (existing >= 0) {
     // Uncheck — remove from log and rewrite sheet
+    const removed=habitsLog[existing];
     habitsLog.splice(existing, 1);
     renderHabitsPage();if(curPage==='today')renderTodayPage();
+    offerUndo(`Décoché · ${h.title}`,async()=>{
+      habitsLog.push(removed);
+      renderHabitsPage();if(curPage==='today')renderTodayPage();
+      await rewriteHabitsLog();
+    });
     await rewriteHabitsLog();
   } else {
     // Check — append to log
@@ -2092,7 +2100,12 @@ async function toggleHabit(habitId, dateStr) {
     habitsLog.push(entry);
     renderHabitsPage();if(curPage==='today')renderTodayPage();
     await appendHabitsLog(entry);
-    toast(`✓ +${h.reward_eur.toFixed(2)}€ · ${h.title}`,'ok');
+    offerUndo(`✓ +${h.reward_eur.toFixed(2)}€ · ${h.title}`,async()=>{
+      const i=habitsLog.indexOf(entry);
+      if(i>=0)habitsLog.splice(i,1);
+      renderHabitsPage();if(curPage==='today')renderTodayPage();
+      await rewriteHabitsLog();
+    });
   }
 }
 
@@ -2513,6 +2526,46 @@ function habRowToday(h,doneSet,today){
     </span>
     <span class="td-eur">+${h.reward_eur.toFixed(2)}€</span>
   </div>`;
+}
+
+// ── Export de sauvegarde ──────────────────────────────────────────────────
+// Tout le systeme tient dans un seul Google Sheet, sans aucun instantane.
+// Ceci en produit un, notamment avant une migration de schema.
+function exportBackup(){
+  const data={exported_at:new Date().toISOString(),version:document.querySelector('.app-version').textContent,
+    tasks:allTasks,habits,habitsLog,goals,sportPlans,sportLogs};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`kanban-sauvegarde-${ymd(new Date())}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  const n=allTasks.length+habits.length+habitsLog.length+goals.length+sportPlans.length+sportLogs.length;
+  toast(`Sauvegarde exportée · ${n} lignes`,'ok');
+}
+
+// ── Reprise des montants euro ─────────────────────────────────────────────
+// Les libelles de recompense contiennent deja des montants (« 2000€ »). On les
+// propose, sans deviner le signe : l'utilisateur tranche achat ou gain.
+function euroInLabel(txt){
+  const m=/(\d[\d\s  .]*(?:[.,]\d{1,2})?)\s*(?:€|eur\b|euros?\b)/i.exec(String(txt||''));
+  if(!m)return 0;
+  const n=parseFloat(m[1].replace(/[\s  ]/g,'').replace(',','.'));
+  return isNaN(n)?0:n;
+}
+function scanGoalEuros(){
+  const found=goals.filter(g=>!g.reward_eur&&euroInLabel(g.reward)).map(g=>({g,n:euroInLabel(g.reward)}));
+  if(!found.length){toast('Aucun montant à reprendre dans les libellés','info');return;}
+  const list=found.map(f=>`  • ${f.g.title} — ${f.g.reward} → ${f.n}€`).join('\n');
+  const sign=confirm(`${found.length} montant(s) détecté(s) dans les libellés :\n\n${list}\n\n`+
+    `OK = ce sont des ACHATS (montants négatifs)\nAnnuler = ce sont des GAINS (montants positifs)`);
+  found.forEach(f=>{ f.g.reward_eur = sign ? -f.n : f.n; });
+  showLoad(true);
+  sheetBatchUpsert('goals',found.map(f=>goalToRow(f.g))).then(ok=>{
+    showLoad(false);
+    toast(ok?`${found.length} montant(s) repris`:"ÉCHEC de l'enregistrement", ok?'ok':'err');
+    renderGoalsBanner();renderGoalsTree();
+  });
 }
 
 // ── Revue périodique ──────────────────────────────────────────────────────
@@ -2982,6 +3035,7 @@ function renderGoalsToolbar(){
         <button class="gl-add gl-wall-btn" onclick="toggleGoalWallMenu(event)">🖼 Fond</button>
         <div class="gl-wall-menu" id="glWallMenu">${wallThumbs}</div>
       </div>
+      <button class="gl-add" onclick="scanGoalEuros()" title="Reprendre les montants écrits dans les libellés de récompense">€ Reprendre</button>
       <button class="gl-add" onclick="openGoalModal()">+ Objectif</button>
     </div>`;
 }
@@ -3195,11 +3249,19 @@ async function saveGoal(){
 }
 async function deleteGoal(){
   const id=document.getElementById('gfId').value;if(!id)return;
-  if(!confirm('Supprimer cet objectif ? (ses sous-objectifs deviendront des racines)'))return;
+  const snap=goals.find(g=>g.id===id);
+  if(!snap)return;
   closeGoalModal();
   showLoad(true);const ok=await goalDelete(id);showLoad(false);
-  toast(ok?'Objectif supprimé':"ÉCHEC de la suppression — l'objectif est toujours là", ok?'info':'err');
-  renderGoalsBanner();renderGoalsToolbar();renderGoalsTree();
+  const refresh=()=>{renderGoalsBanner();renderGoalsToolbar();renderGoalsTree();};
+  refresh();
+  if(!ok){ toast("ÉCHEC de la suppression — l'objectif est toujours là",'err'); return; }
+  // undo plutôt qu'un confirm() qu'on valide machinalement
+  offerUndo(`Objectif supprimé · ${snap.title}`,async()=>{
+    goals.push(snap);goalRecomputeLevels();
+    await goalUpsert(snap);
+    refresh();
+  });
 }
 
 function renderHeatmaps() {
