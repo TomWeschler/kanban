@@ -144,6 +144,18 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .cmd-hint{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.1em;color:var(--text-dim);margin-top:0.6rem;text-align:right}
 .cmd-empty{font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim);padding:1.2rem;text-align:center}
 /* ══ SECOND BRAIN ══ */
+.ac-box{display:none;position:fixed;z-index:940;min-width:230px;max-width:320px;background:var(--surface);
+  border:1px solid var(--accent);border-radius:6px;box-shadow:0 8px 26px rgba(0,0,0,0.5);overflow:hidden}
+.ac-row{display:flex;align-items:baseline;gap:0.5rem;padding:0.35rem 0.6rem;cursor:pointer;font-size:0.78rem}
+.ac-row.sel{background:var(--accent-dim)}
+.ac-l{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-s{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);white-space:nowrap}
+.ac-mirror{position:fixed;visibility:hidden;pointer-events:none;top:-9999px;left:-9999px;white-space:pre-wrap;word-wrap:break-word}
+.sb-um{display:flex;align-items:center;gap:0.4rem}
+.sb-um .sb-lk{flex:1}
+.sb-umb{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:var(--font-mono);font-size:0.48rem;padding:1px 5px;border-radius:3px;cursor:pointer}
+.sb-umb:hover{color:var(--accent);border-color:var(--accent)}
+
 #pagebrain{overflow:hidden;flex-direction:column}
 .sb-layout{display:grid;grid-template-columns:250px 1fr 260px;height:100%;overflow:hidden}
 .sb-side,.sb-meta{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
@@ -175,6 +187,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 /* zone centrale */
 .sb-main{display:flex;flex-direction:column;overflow:hidden}
 .sb-bar{display:flex;align-items:center;gap:0.4rem;padding:0.5rem 0.9rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.sb-len{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);white-space:nowrap}
 .sb-title{flex:1;min-width:8rem;background:none;border:none;color:var(--text);font-family:var(--font-body);font-size:1.15rem;font-weight:700;outline:none;padding:0.15rem 0}
 .sb-btn{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:var(--font-mono);font-size:0.53rem;letter-spacing:0.07em;padding:0.28rem 0.55rem;border-radius:4px;cursor:pointer;text-transform:uppercase;white-space:nowrap}
 .sb-btn:hover{color:var(--text);border-color:var(--text-mid)}
@@ -312,6 +325,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .done-proj{font-family:'Space Mono',monospace;font-size:0.5rem;padding:1px 5px;border-radius:3px;background:var(--surface3);color:var(--text-dim)}
 .done-restore{background:rgba(124,106,255,0.1);border:1px solid rgba(124,106,255,0.3);color:var(--accent);font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.06em;padding:2px 7px;cursor:pointer;text-transform:uppercase;white-space:nowrap}
 .done-restore:hover{background:rgba(124,106,255,0.24)}
+.hs-row{padding:0.5rem 0.2rem;border-bottom:1px solid rgba(255,255,255,0.04);display:grid;grid-template-columns:1fr auto;gap:0.4rem 0.6rem}
+.hs-meta{font-family:var(--font-mono);font-size:0.55rem;color:var(--text-dim)}
+.hs-t{color:var(--warn);margin-left:0.4rem}
+.hs-ap{grid-column:1;font-size:0.72rem;color:var(--text-mid);line-height:1.35}
+.hs-row .done-restore{grid-column:2;grid-row:1/3;align-self:center}
 .done-empty{font-family:'Space Mono',monospace;font-size:0.6rem;color:var(--text-dim);padding:1.4rem 0;text-align:center}
 .bf-search{background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Space Mono',monospace;font-size:0.58rem;padding:0.3rem 0.55rem;min-width:190px;outline:none}
 .bf-search:focus{border-color:var(--accent)}
@@ -1190,7 +1208,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.17.0</span>
+    <span class="app-version">v1.18.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1219,11 +1237,14 @@ body,body *{font-family:var(--font-body)}
       <div class="sb-tree" id="sbTree"></div>
       <div class="sb-side-foot">
         <button class="sb-foot-btn" onclick="openGraph()" title="Vue graphe des liens">◍ Graphe</button>
+        <button class="sb-foot-btn" onclick="exportNotesMarkdown()" title="Exporter toutes les notes en .md (ouvrable dans Obsidian)">⬇ .md</button>
         <span class="sb-count" id="sbCount"></span>
       </div>
     </aside>
 
     <main class="sb-main" id="sbMain"></main>
+    <div id="sbAc" class="ac-box"></div>
+    <div id="sbMirror" class="ac-mirror"></div>
 
     <aside class="sb-meta" id="sbMeta"></aside>
   </div>
@@ -1434,6 +1455,14 @@ body,body *{font-family:var(--font-body)}
            oninput="renderCmdResults()" onkeydown="cmdKey(event)">
     <div class="cmd-list" id="cmdList"></div>
     <div class="cmd-hint">↑ ↓ naviguer · ↵ ouvrir · Échap fermer</div>
+  </div>
+</div>
+
+<div class="modal-bg" id="histModal">
+  <div class="modal" style="width:min(640px,94vw)">
+    <div class="modal-hdr" id="histTitle">HISTORIQUE</div>
+    <button class="modal-close" onclick="closeHist()">✕</button>
+    <div class="done-list" id="histList"></div>
   </div>
 </div>
 
@@ -2996,16 +3025,24 @@ function habRowToday(h,doneSet,today){
 // note, upsert par cle, cache local et file d'ecritures hors ligne.
 // La colonne content porte du markdown ; la limite d'une cellule Sheets est de
 // 50 000 caracteres, largement au-dela d'une note.
-const NOTE_HEADER=['id','title','content','tags','parent_id','icon','pinned','status','created_at','updated_at','gx','gy'];
-const NOTE_RANGE='notes!A:L';
+// Une cellule Sheets plafonne a 50 000 caracteres. Le contenu deborde donc sur
+// des colonnes de continuation : ~196 000 caracteres par note, et un refus
+// explicite au-dela plutot qu'une troncature silencieuse de l'API.
+const NOTE_HEADER=['id','title','content','tags','parent_id','icon','pinned','status','created_at','updated_at','gx','gy','content2','content3','content4'];
+const NOTE_CELL=49000, NOTE_PARTS=4;
+const NOTE_MAX=NOTE_CELL*NOTE_PARTS;
+const noteSplit=t=>{ const out=[];let s=String(t||'');
+  for(let i=0;i<NOTE_PARTS;i++){ out.push(s.slice(i*NOTE_CELL,(i+1)*NOTE_CELL)); }
+  return out; };
+const noteJoin=(a,b,c,d)=>[a,b,c,d].map(x=>String(x==null?'':x)).join('');
 const NOTE_DELETED='__deleted__';
 const NOTE_SEED=[
  ['n1','Bienvenue dans ton Second Brain',
   "Cette note est un point de depart : modifie-la ou supprime-la.\n\n## Comment ca marche\n\n- **Ecris en markdown** — titres, listes, `code`, > citations, tableaux.\n- **Relie tes notes** avec des doubles crochets : [[Comment prendre des notes]].\n  Un lien vers une note inexistante s'affiche en jaune ; un clic la cree.\n- **Classe avec des tags** en ecrivant #exemple directement dans le texte.\n- **Imbrique** les notes : chaque note peut avoir des enfants, comme des pages.\n\n## A essayer\n\n- [ ] Cliquer sur *Graphe* en bas a gauche\n- [ ] Creer une note enfant depuis la barre du haut\n- [x] Lire cette note\n\n> Les liens entrants apparaissent a droite, sous *Retrolins*.",
-  'exemple','','🧠','TRUE','active','','','',''],
+  'exemple','','🧠','TRUE','active','','','','','','',''],
  ['n2','Comment prendre des notes',
   "Quelques principes qui marchent bien avec ce type d'outil. #methode\n\n1. **Une idee par note.** Une note qui traite de trois sujets ne se relie a rien.\n2. **Titre explicite.** C'est lui qui sert de cible aux liens [[Bienvenue dans ton Second Brain]].\n3. **Relier plutot que ranger.** L'arborescence aide, les liens font le vrai travail.\n\n```\nUne note utile est une note qu'on retrouve.\n```",
-  'methode','n1','📝','FALSE','active','','','','']
+  'methode','n1','📝','FALSE','active','','','','','','','']
 ];
 
 let notes=[], notesLoaded=false, noteCurId=null, noteSearch='', noteTag='',
@@ -3028,12 +3065,12 @@ async function loadNotes(){
   if(!accessToken)return;
   await ensureNotesSheet();
   const sid=cfg.spreadsheetId;
-  const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/notes!A:L`,{headers:{}})
+  const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/notes!A:O`,{headers:{}})
     .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
   const rows=r.values||[];
   const parsed=(rows.length<=1?[]:rows.slice(1)).filter(x=>x[0]).map(x=>({
     id:String(x[0]||'').trim(), title:String(x[1]||'').trim()||'Sans titre',
-    content:String(x[2]||''), tags:String(x[3]||'').trim(), parent_id:String(x[4]||'').trim(),
+    content:noteJoin(x[2],x[12],x[13],x[14]), tags:String(x[3]||'').trim(), parent_id:String(x[4]||'').trim(),
     icon:String(x[5]||'').trim(), pinned:String(x[6]||'').toUpperCase()==='TRUE',
     status:String(x[7]||'').trim()||'active', created_at:String(x[8]||'').trim(),
     updated_at:String(x[9]||'').trim(),
@@ -3042,14 +3079,17 @@ async function loadNotes(){
   }));
   const map={}; parsed.forEach(n=>{map[n.id]=n;});          // la derniere ligne gagne
   notes=Object.values(map).filter(n=>n.status!==NOTE_DELETED);
-  notesLoaded=true;
+  notesLoaded=true; notesLoadedAt=Date.now();
   if(!notes.length&&!rows.length){ notes=cacheGet('notes',[]); return; }
   cacheSet('notes',notes);
 }
 function noteToRow(n){
-  return [n.id,n.title,n.content||'',n.tags||'',n.parent_id||'',n.icon||'',
+  const [c1,c2,c3,c4]=noteSplit(n.content);
+  // la colonne tags etait ecrite vide et jamais relue : on y met desormais les
+  // tags deduits du contenu, la feuille devient lisible et filtrable telle quelle
+  return [n.id,n.title,c1,noteTags(n).join(','),n.parent_id||'',n.icon||'',
           n.pinned?'TRUE':'FALSE',n.status||'active',n.created_at||td(),n.updated_at||td(),
-          n.gx==null?'':String(Math.round(n.gx)),n.gy==null?'':String(Math.round(n.gy))];
+          n.gx==null?'':String(Math.round(n.gx)),n.gy==null?'':String(Math.round(n.gy)),c2,c3,c4];
 }
 async function noteUpsert(n){
   n.updated_at=td();
@@ -3061,7 +3101,7 @@ async function noteUpsert(n){
 async function noteDeleteById(id){
   notes=notes.filter(n=>n.id!==id);
   cacheSet('notes',notes);
-  return sheetUpsertByKey('notes',id,[id,'','','','','','FALSE',NOTE_DELETED,'','','','']);
+  return sheetUpsertByKey('notes',id,[id,'','','','','','FALSE',NOTE_DELETED,'','','','','','','']);
 }
 const noteById=id=>notes.find(n=>n.id===id)||null;
 const noteByTitle=t=>notes.find(n=>n.title.toLowerCase()===String(t||'').trim().toLowerCase())||null;
@@ -3182,9 +3222,99 @@ const allNoteTags=()=>{
 };
 
 
+// ── Historique des versions ───────────────────────────────────────────────
+// L'undo ne couvrait que la suppression d'une note : une frappe malheureuse
+// ecrasait le contenu sans recours. On archive l'etat PRECEDENT avant chaque
+// enregistrement, au plus une fois toutes les 5 minutes par note.
+const NHIST_HEADER=['key','note_id','ts','title','content','content2','content3','content4'];
+const NHIST_MAX=20, NHIST_GAP=5*60*1000;
+let nhist=[], nhistLoaded=false, nhistLast={};
+
+async function ensureHistSheet(){
+  const sid=cfg.spreadsheetId;
+  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
+  if(((meta.sheets||[]).map(x=>x.properties.title)).includes('notes_history'))return;
+  await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requests:[{addSheet:{properties:{title:'notes_history'}}}]})});
+  await sheetPut('notes_history!A1',[NHIST_HEADER]);
+}
+async function loadHist(){
+  if(!accessToken||nhistLoaded)return;
+  await ensureHistSheet();
+  const sid=cfg.spreadsheetId;
+  const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/notes_history!A:H`,{headers:{}})
+    .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
+  const rows=r.values||[];
+  nhist=(rows.length<=1?[]:rows.slice(1)).filter(x=>x[0]).map(x=>({
+    key:String(x[0]), note_id:String(x[1]||''), ts:parseInt(x[2])||0,
+    title:String(x[3]||''), content:noteJoin(x[4],x[5],x[6],x[7])
+  }));
+  nhistLoaded=true;
+  cacheSet('nhist',nhist);
+}
+const histOf=id=>nhist.filter(h=>h.note_id===id).sort((a,b)=>b.ts-a.ts);
+
+// Archive l'etat precedent de la note, si assez de temps s'est ecoule
+async function noteSnapshot(prevTitle,prevContent,noteId){
+  if(!prevContent&&!prevTitle)return;
+  const now=Date.now();
+  if(nhistLast[noteId]&&now-nhistLast[noteId]<NHIST_GAP)return;
+  const last=histOf(noteId)[0];
+  if(last&&last.content===prevContent&&last.title===prevTitle)return;   // rien de neuf
+  nhistLast[noteId]=now;
+  const [c1,c2,c3,c4]=noteSplit(prevContent);
+  const h={key:noteId+'_'+now,note_id:noteId,ts:now,title:prevTitle,content:prevContent};
+  nhist.push(h); cacheSet('nhist',nhist);
+  const rows=[[h.key,h.note_id,String(h.ts),h.title,c1,c2,c3,c4]];
+  // au-dela de NHIST_MAX versions, les plus anciennes sont neutralisees
+  const olds=histOf(noteId).slice(NHIST_MAX);
+  olds.forEach(o=>{ nhist=nhist.filter(x=>x.key!==o.key); rows.push([o.key,'','0','','','','','']); });
+  await sheetBatchUpsert('notes_history',rows);
+}
+
+function openHist(){
+  const n=noteById(noteCurId); if(!n)return;
+  document.getElementById('histModal').classList.add('open');
+  renderHist();
+  if(!nhistLoaded&&accessToken)loadHist().then(renderHist);
+}
+function closeHist(){ document.getElementById('histModal').classList.remove('open'); }
+function renderHist(){
+  const n=noteById(noteCurId); if(!n)return;
+  const el=document.getElementById('histList');
+  const list=histOf(n.id);
+  document.getElementById('histTitle').textContent='HISTORIQUE · '+n.title;
+  if(!list.length){ el.innerHTML='<div class="done-empty">Aucune version antérieure enregistrée pour cette note.</div>'; return; }
+  el.innerHTML=list.map(h=>{
+    const d=new Date(h.ts);
+    const quand=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const ap=(h.content||'').slice(0,150).replace(/\n/g,' ');
+    return `<div class="hs-row">
+      <div class="hs-meta"><b>${quand}</b> · ${(h.content||'').length.toLocaleString('fr-FR')} car.
+        ${h.title!==n.title?`<span class="hs-t">titre : ${tdEsc(h.title)}</span>`:''}</div>
+      <div class="hs-ap">${tdEsc(ap)}${(h.content||'').length>150?'…':''}</div>
+      <button class="done-restore" onclick="restoreHist('${h.key}')">Restaurer</button>
+    </div>`;
+  }).join('');
+}
+async function restoreHist(key){
+  const h=nhist.find(x=>x.key===key), n=noteById(noteCurId);
+  if(!h||!n)return;
+  const prevC=n.content, prevT=n.title;
+  await noteSnapshot(prevT,prevC,n.id);        // l'etat courant devient lui aussi une version
+  n.content=h.content; if(h.title)n.title=h.title;
+  await noteUpsert(n);
+  closeHist(); renderNoteMain(); renderNoteTree(); renderNoteMeta();
+  offerUndo('Version restaurée',async()=>{
+    n.content=prevC; n.title=prevT;
+    await noteUpsert(n); renderNoteMain(); renderNoteTree(); renderNoteMeta();
+  });
+}
+
 // ── Rendu de la page ──────────────────────────────────────────────────────
 async function renderBrain(){
   if(accessToken&&!notesLoaded){showLoad(true);await loadNotes();showLoad(false);}
+  else if(await refreshNotesIfStale()){ /* la feuille a pu changer ailleurs */ }
   if(!noteCurId||!noteById(noteCurId)){
     const first=notes.slice().sort(noteSort)[0];
     noteCurId=first?first.id:null;
@@ -3249,7 +3379,9 @@ function renderNoteMain(){
       <button class="sb-btn${noteMode==='edit'?' on':''}" onclick="setNoteMode('edit')">Écrire</button>
       <button class="sb-btn${n.pinned?' on':''}" onclick="toggleNotePin()" title="Épingler">★</button>
       <button class="sb-btn" onclick="newNote('${n.id}')" title="Créer une note enfant">+ Enfant</button>
+      <button class="sb-btn" onclick="openHist()" title="Versions antérieures">Historique</button>
       <button class="sb-btn danger" onclick="deleteNote()">Supprimer</button>
+      <span class="sb-len" id="sbLen"></span>
     </div>
     <div class="sb-body" id="sbBody"></div>`;
   renderNoteBody();
@@ -3260,7 +3392,7 @@ function renderNoteBody(){
   if(noteMode==='edit'){
     body.innerHTML=`<textarea class="sb-edit" id="sbEdit" spellcheck="true"
       placeholder="Écris en markdown. [[Double crochets]] pour relier une note, #tag pour classer."
-      oninput="onNoteContent(this.value)"></textarea>`;
+      oninput="onNoteContent(this.value);acOpen()" onkeydown="if(acKey(event))return;" onclick="acOpen()" onblur="setTimeout(acClose,120)"></textarea>`;
     const ta=document.getElementById('sbEdit');
     ta.value=n.content||'';
     ta.focus();
@@ -3281,6 +3413,9 @@ function renderNoteMeta(){
     (back.length?back.map(o=>lk(o.title)).join(''):'<div class="sb-none">Aucune note ne pointe ici.</div>')+
     `<div class="sb-mt">Liens sortants ${outs.length?`(${outs.length})`:''}</div>`+
     (outs.length?outs.map(t=>lk(t,noteByTitle(t)?'':'note à créer')).join(''):'<div class="sb-none">Aucun lien.</div>')+
+    (()=>{const um=noteUnlinked(n);return um.length?`<div class="sb-mt">Mentions non liées (${um.length})</div>`+
+      um.slice(0,8).map(o=>`<div class="sb-um"><span class="sb-lk" onclick="openNote('${o.id}')">${tdEsc(o.title)}</span>
+        <button class="sb-umb" onclick="linkMention('${o.id}')" title="Transformer la mention en lien">lier</button></div>`).join(''):'';})()+
     `<div class="sb-mt">Tags</div>`+
     (tags.length?`<div class="sb-tags" style="padding:0;border:none;max-height:none">${tags.map(t=>
       `<button class="sb-tag${noteTag===t?' active':''}" onclick="setNoteTag('${t.replace(/'/g,"\\'")}')">#${tdEsc(t)}</button>`).join('')}</div>`
@@ -3290,19 +3425,238 @@ function renderNoteMeta(){
 }
 
 
+// ── Auto-completion des [[liens]] ─────────────────────────────────────────
+// Le geste central d'Obsidian : sans lui, relier suppose de connaitre le titre
+// exact, et un titre approximatif cree un doublon.
+let acItems=[], acSel=0, acFrom=-1;
+function acClose(){ const el=document.getElementById('sbAc'); if(el)el.style.display='none'; acItems=[]; acFrom=-1; }
+function acOpen(){
+  const ta=document.getElementById('sbEdit'); if(!ta)return acClose();
+  const pos=ta.selectionStart, before=ta.value.slice(0,pos);
+  const m=/\[\[([^\[\]\n]*)$/.exec(before);      // des [[ ouverts, non refermes
+  if(!m)return acClose();
+  acFrom=pos-m[1].length;
+  const q=m[1].toLowerCase();
+  const cur=noteById(noteCurId);
+  acItems=notes.filter(n=>(!cur||n.id!==cur.id)&&n.title.toLowerCase().includes(q))
+    .sort((a,b)=>{
+      const ai=a.title.toLowerCase().startsWith(q)?0:1, bi=b.title.toLowerCase().startsWith(q)?0:1;
+      return ai-bi||a.title.localeCompare(b.title,'fr');
+    }).slice(0,8).map(n=>({label:n.title,sub:noteTags(n).slice(0,2).map(t=>'#'+t).join(' '),create:false}));
+  if(m[1].trim()&&!notes.some(n=>n.title.toLowerCase()===q))
+    acItems.push({label:m[1].trim(),sub:'créer cette note',create:true});
+  if(!acItems.length)return acClose();
+  if(acSel>=acItems.length)acSel=0;
+  acRender(ta);
+}
+function acRender(ta){
+  const el=document.getElementById('sbAc');
+  el.innerHTML=acItems.map((it,i)=>
+    `<div class="ac-row${i===acSel?' sel':''}" onmousedown="event.preventDefault();acPick(${i})">
+       <span class="ac-l">${tdEsc(it.label)}</span>${it.sub?`<span class="ac-s">${tdEsc(it.sub)}</span>`:''}</div>`).join('');
+  // positionne sous le curseur grace a un calque miroir du textarea
+  const r=ta.getBoundingClientRect(), cs=getComputedStyle(ta);
+  const mir=document.getElementById('sbMirror');
+  ['fontFamily','fontSize','lineHeight','padding','width','whiteSpace','wordWrap','letterSpacing'].forEach(k=>mir.style[k]=cs[k]);
+  mir.style.width=r.width+'px';
+  mir.textContent=ta.value.slice(0,ta.selectionStart);
+  const mark=document.createElement('span'); mark.textContent='​'; mir.appendChild(mark);
+  const top=mark.offsetTop-ta.scrollTop, left=mark.offsetLeft;
+  el.style.display='block';
+  el.style.left=Math.min(r.left+left, window.innerWidth-260)+'px';
+  el.style.top=Math.min(r.top+top+parseFloat(cs.lineHeight||18), window.innerHeight-200)+'px';
+}
+function acPick(i){
+  const it=acItems[i], ta=document.getElementById('sbEdit');
+  if(!it||!ta)return;
+  const v=ta.value, pos=ta.selectionStart;
+  const ins=it.label+']] ';
+  ta.value=v.slice(0,acFrom)+ins+v.slice(pos);
+  const caret=acFrom+ins.length;
+  ta.setSelectionRange(caret,caret);
+  acClose();
+  onNoteContent(ta.value);
+  ta.focus();
+}
+function acKey(e){
+  if(!acItems.length)return false;
+  if(e.key==='ArrowDown'){e.preventDefault();acSel=Math.min(acSel+1,acItems.length-1);acRender(document.getElementById('sbEdit'));return true;}
+  if(e.key==='ArrowUp'){e.preventDefault();acSel=Math.max(acSel-1,0);acRender(document.getElementById('sbEdit'));return true;}
+  if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();acPick(acSel);return true;}
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();acClose();return true;}
+  return false;
+}
+
+// ── Mentions non liees ────────────────────────────────────────────────────
+// Les notes qui citent ce titre sans le lier : c'est ce qui fait emerger le
+// reseau sans travail manuel.
+// Bornes d'une mention : ni lettre, ni chiffre, ni crochet autour du titre —
+// « Methodes » ne doit pas compter comme une mention de « Methode ».
+const BORD='(^|[^\\p{L}\\d\\[])', BORD2='([^\\p{L}\\d\\]]|$)';
+const esc=t=>String(t).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+function noteUnlinked(n){
+  const t=n.title.trim();
+  if(t.length<3)return [];
+  const re=new RegExp(BORD+esc(t)+BORD2,'iu');
+  const linked=new Set(noteBacklinks(n).map(o=>o.id));
+  return notes.filter(o=>o.id!==n.id&&!linked.has(o.id)&&re.test(o.content||''));
+}
+async function linkMention(otherId){
+  const n=noteById(noteCurId), o=noteById(otherId);
+  if(!n||!o)return;
+  const prev=o.content;
+  const t=n.title.trim();
+  const re=new RegExp(BORD+'('+esc(t)+')'+BORD2,'iu');
+  if(!re.test(o.content||''))return;
+  o.content=String(o.content).replace(re,(m,a,mid,z)=>a+'[['+mid+']]'+z);
+  const ok=await noteUpsert(o);
+  if(!ok){ o.content=prev; toast('ÉCHEC','err'); return; }
+  renderNoteMeta();
+  offerUndo(`Lien créé dans « ${o.title} »`,async()=>{ o.content=prev; await noteUpsert(o); renderNoteMeta(); });
+}
+
+// ── Fraicheur et ecriture concurrente ─────────────────────────────────────
+// notesLoaded etait pose une fois : l'app ne relisait jamais la feuille, deux
+// appareils divergeaient donc en silence.
+let notesLoadedAt=0, notePending=false;
+const NOTES_STALE=120000;                 // 2 min
+async function refreshNotesIfStale(force){
+  if(!accessToken||!navigator.onLine)return false;
+  // ne jamais relire par-dessus une saisie non encore enregistree
+  if(notePending)return false;
+  if(!force&&Date.now()-notesLoadedAt<NOTES_STALE)return false;
+  const cur=noteCurId, dirty=noteDirtySince;
+  notesLoaded=false;
+  await loadNotes();
+  noteCurId=cur&&noteById(cur)?cur:noteCurId;
+  noteDirtySince=dirty;
+  return true;
+}
+// L'etat distant de la note ouverte est memorise a l'ouverture ; on verifie
+// une fois, au premier enregistrement, que personne ne l'a modifiee entre-temps.
+let noteBase=null, noteDirtySince=0, noteChecked=false;
+function noteTakeBase(n){ noteBase=n?{id:n.id,content:n.content,updated_at:n.updated_at}:null; noteChecked=false; }
+async function noteConflictCheck(n){
+  if(noteChecked||!noteBase||noteBase.id!==n.id||!accessToken||!navigator.onLine)return true;
+  noteChecked=true;
+  try{
+    const sid=cfg.spreadsheetId;
+    const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/notes!A:O`,{headers:{}})
+      .then(x=>x.ok?x.json():null);
+    if(!r)return true;
+    const row=(r.values||[]).slice(1).filter(x=>x[0]).reverse().find(x=>String(x[0]).trim()===n.id);
+    if(!row)return true;
+    const remote=noteJoin(row[2],row[12],row[13],row[14]);
+    if(remote===noteBase.content)return true;
+    // divergence : on n'ecrase pas sans demander
+    offerChoice(`« ${n.title} » a été modifiée ailleurs — ta version n'est PAS enregistrée`,[
+      ['Recharger',async()=>{ await refreshNotesIfStale(true); noteTakeBase(noteById(n.id)); renderBrain(); }],
+      ['Écraser',  async()=>{ noteBase={id:n.id,content:remote,updated_at:''}; noteChecked=true; await noteUpsert(n); renderBrain(); }]
+    ],0,'err');
+    return false;
+  }catch(e){ return true; }
+}
+
+// ── Export markdown ───────────────────────────────────────────────────────
+// Assurance anti-enfermement : une archive de fichiers .md, liens [[…]]
+// intacts, directement ouvrable dans Obsidian. ZIP ecrit a la main, sans
+// compression (methode "stored") pour ne dependre d'aucune bibliotheque.
+function crc32(buf){
+  let c, t=crc32.t;
+  if(!t){ t=crc32.t=[]; for(let n=0;n<256;n++){ c=n; for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } }
+  let crc=0xFFFFFFFF;
+  for(let i=0;i<buf.length;i++)crc=(crc>>>8)^t[(crc^buf[i])&0xFF];
+  return (crc^0xFFFFFFFF)>>>0;
+}
+function zipStore(files){
+  const enc=new TextEncoder(), chunks=[], central=[];
+  let off=0;
+  const u16=n=>[n&255,(n>>8)&255], u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>24)&255];
+  files.forEach(f=>{
+    const name=enc.encode(f.name), data=enc.encode(f.data), crc=crc32(data);
+    const local=[...u32(0x04034b50),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0),
+                 ...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),...u16(0)];
+    chunks.push(new Uint8Array(local),name,data);
+    central.push({name,crc,len:data.length,off});
+    off+=local.length+name.length+data.length;
+  });
+  const cs=off; let cl=0;
+  central.forEach(c=>{
+    const h=[...u32(0x02014b50),...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0),
+             ...u32(c.crc),...u32(c.len),...u32(c.len),...u16(c.name.length),...u16(0),...u16(0),
+             ...u16(0),...u16(0),...u32(0),...u32(c.off)];
+    chunks.push(new Uint8Array(h),c.name); cl+=h.length+c.name.length;
+  });
+  chunks.push(new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),
+    ...u16(central.length),...u16(central.length),...u32(cl),...u32(cs),...u16(0)]));
+  return new Blob(chunks,{type:'application/zip'});
+}
+const mdSafeName=t=>String(t||'note').replace(/[\\/:*?"<>|#\[\]]/g,'-').replace(/\s+/g,' ').trim().slice(0,80)||'note';
+function exportNotesMarkdown(){
+  if(!notes.length){ toast('Aucune note à exporter','info'); return; }
+  const used={};
+  const files=notes.map(n=>{
+    let name=mdSafeName(n.title);
+    used[name]=(used[name]||0)+1;
+    if(used[name]>1)name+=' ('+used[name]+')';
+    const tags=noteTags(n);
+    const parent=n.parent_id?noteById(n.parent_id):null;
+    const fm=['---','title: '+JSON.stringify(n.title),
+      tags.length?'tags: ['+tags.join(', ')+']':null,
+      parent?'parent: '+JSON.stringify(parent.title):null,
+      n.created_at?'created: '+n.created_at:null,
+      n.updated_at?'updated: '+n.updated_at:null,
+      n.icon?'icon: '+n.icon:null,'---',''].filter(x=>x!==null).join('\n');
+    return {name:name+'.md',data:fm+(n.content||'')+'\n'};
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(zipStore(files));
+  a.download=`second-brain-${ymd(new Date())}.zip`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast(`${files.length} note(s) exportée(s) en .md`,'ok');
+}
+
 // ── Actions ───────────────────────────────────────────────────────────────
 let noteSaveTimer=null;
 function noteQueueSave(){
+  notePending=true;
   clearTimeout(noteSaveTimer);
   noteSaveTimer=setTimeout(async()=>{
     const n=noteById(noteCurId); if(!n)return;
+    if(!(await noteConflictCheck(n)))return;      // modifiee ailleurs : on n'ecrase pas
     const ok=await noteUpsert(n);
-    if(!ok)toast("ÉCHEC de l'enregistrement de la note",'err');
+    notePending=false;
+    if(ok)noteBase={id:n.id,content:n.content,updated_at:n.updated_at};
+    else toast("ÉCHEC de l'enregistrement de la note",'err');
     renderNoteTree();renderNoteMeta();
   },800);
 }
-function onNoteTitle(v){ const n=noteById(noteCurId); if(!n)return; n.title=v.trim()||'Sans titre'; noteQueueSave(); }
-function onNoteContent(v){ const n=noteById(noteCurId); if(!n)return; n.content=v; noteQueueSave(); }
+function onNoteTitle(v){
+  const n=noteById(noteCurId); if(!n)return;
+  noteSnapshot(n.title,n.content,n.id);
+  n.title=v.trim()||'Sans titre'; noteQueueSave();
+}
+function onNoteContent(v){
+  const n=noteById(noteCurId); if(!n)return;
+  if(v.length>NOTE_MAX){
+    // on refuse plutot que de laisser l'API tronquer en silence
+    const ta=document.getElementById('sbEdit');
+    if(ta){ ta.value=n.content; }
+    toast(`Limite atteinte : ${NOTE_MAX.toLocaleString('fr-FR')} caractères par note`,'err');
+    return;
+  }
+  noteSnapshot(n.title,n.content,n.id);   // archive l'etat AVANT modification
+  n.content=v; noteCount(); noteQueueSave();
+}
+function noteCount(){
+  const n=noteById(noteCurId), el=document.getElementById('sbLen');
+  if(!n||!el)return;
+  const L=(n.content||'').length, pct=L/NOTE_MAX;
+  el.textContent=L.toLocaleString('fr-FR')+' car.';
+  el.style.color=pct>0.95?'var(--danger)':pct>0.8?'var(--warn)':'var(--text-dim)';
+  el.title=`${L.toLocaleString('fr-FR')} / ${NOTE_MAX.toLocaleString('fr-FR')} caractères`;
+}
 function setNoteMode(m){ noteMode=m; renderNoteMain(); }
 function setNoteSearch(v){ noteSearch=v; renderNoteTree(); }
 function setNoteTag(t){
@@ -3327,7 +3681,7 @@ function openNote(id){
   clearTimeout(noteSaveTimer);
   const prev=noteById(noteCurId);
   if(prev)noteUpsert(prev);            // ne jamais perdre une saisie en cours
-  noteCurId=id;
+  noteCurId=id; noteTakeBase(noteById(id));
   renderNoteTree();renderNoteMain();renderNoteMeta();
 }
 async function newNote(parentId,title){
@@ -6466,7 +6820,7 @@ document.addEventListener('keydown',e=>{
       el.blur();
       if(had)return;
     }
-    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();closeCmd();if(document.getElementById('graphOverlay').classList.contains('open'))closeGraph();
+    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();closeHist();closeCmd();if(document.getElementById('graphOverlay').classList.contains('open'))closeGraph();
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     if(document.getElementById('taskModal').classList.contains('open'))saveTask();
@@ -6532,6 +6886,7 @@ function reflectOnline(){
   if(navigator.onLine)setSyncStatus('ok','EN LIGNE');
   else setSyncStatus('error','HORS LIGNE');
 }
+window.addEventListener('focus',()=>{ if(curPage==='brain')refreshNotesIfStale().then(o=>{if(o)renderBrain();}); });
 window.addEventListener('online',()=>{reflectOnline();toast('Connexion rétablie','ok');});
 window.addEventListener('offline',()=>{reflectOnline();toast('Hors ligne — les modifications seront envoyées au retour du réseau','info');});
 if(!navigator.onLine)reflectOnline();
