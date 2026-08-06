@@ -3,7 +3,7 @@
 // Règle absolue : on n'intercepte JAMAIS les appels authentifiés à Google
 // (Sheets, identité). Ce sont des données vivantes et personnelles ; les servir
 // depuis un cache afficherait un état périmé, ou pire, après déconnexion.
-const VERSION = 'v1.23.0';
+const VERSION = 'v1.23.2';
 const SHELL   = 'kanban-shell-' + VERSION;
 const ASSETS  = 'kanban-assets-' + VERSION;
 
@@ -40,6 +40,10 @@ self.addEventListener('fetch', e => {
 
   let url;
   try { url = new URL(req.url); } catch (_) { return; }
+
+  // Sonde de version : toujours reseau, sinon l'app ne saurait jamais qu'elle
+  // est perimee — c'est precisement le fichier qui sert a le detecter.
+  if (url.pathname.endsWith('/version.json')) return;
 
   if (url.origin !== self.location.origin) {
     if (!CACHEABLE_HOSTS.includes(url.hostname)) return;   // Google API / identité : jamais touché

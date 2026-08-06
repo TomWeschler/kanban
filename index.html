@@ -62,7 +62,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .btn-nav{background:var(--accent);color:#fff;border:none;font-family:'Syne',sans-serif;font-size:0.73rem;font-weight:700;padding:0.3rem 0.8rem;cursor:pointer;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);transition:background 0.13s;white-space:nowrap}
 .btn-nav:hover{background:#9585ff}
 .btn-nav.out{background:transparent;clip-path:none;border:1px solid var(--border);color:var(--text-dim)}.btn-nav.out:hover{color:var(--text);border-color:var(--text-mid)}
-.app-version{font-family:'Space Mono',monospace;font-size:0.56rem;font-weight:700;letter-spacing:0.08em;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(124,106,255,0.3);border-radius:4px;padding:0.18rem 0.45rem;white-space:nowrap;user-select:none}
+.app-version{cursor:pointer;font-family:'Space Mono',monospace;font-size:0.56rem;font-weight:700;letter-spacing:0.08em;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(124,106,255,0.3);border-radius:4px;padding:0.18rem 0.45rem;white-space:nowrap;user-select:none}
 
 /* PAGES */
 .page{display:none;flex:1;overflow:hidden;position:relative;z-index:1}
@@ -1253,7 +1253,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.23.0</span>
+    <span class="app-version" onclick="forceUpdate()" title="Vérifier les mises à jour et recharger">v1.23.2</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -7450,19 +7450,70 @@ document.addEventListener('keydown',e=>{
 // ── PWA ───────────────────────────────────────────────────────────────────
 // Installable et consultable hors ligne. Les données restent celles du cache
 // local (LS_CACHE) : le service worker ne met en cache que la coquille.
+//
+// Mise a jour. Une app installee ne "navigue" jamais : on la quitte, on y
+// revient, et le document reste celui du premier chargement. Sans verification
+// periodique elle pouvait rester plusieurs versions en arriere. Trois gardes :
+//   1. updateViaCache:'none' — le script du SW n'est plus servi par le cache HTTP
+//   2. une verification a chaque retour au premier plan, au plus une par minute
+//   3. rechargement automatique quand un nouveau SW prend la main, differe tant
+//      qu'un formulaire est ouvert ou qu'une saisie n'est pas enregistree
+let swReloading=false, swLastCheck=0;
+// On interroge le navigateur plutot que de garder une reference : la
+// verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
+const APP_VERSION='v1.23.2';
+// Deux mecanismes complementaires. Le service worker sait se mettre a jour,
+// mais son declenchement depend du navigateur ; la sonde de version, elle, est
+// deterministe : un petit fichier lu SANS cache, compare a la version en cours.
+async function swCheck(force){
+  if(!force&&Date.now()-swLastCheck<60000)return;
+  swLastCheck=Date.now();
+  try{
+    if('serviceWorker' in navigator){
+      const r=await navigator.serviceWorker.getRegistration();
+      if(r)r.update().catch(()=>{});
+    }
+  }catch(e){}
+  try{
+    const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    const j=await r.json();
+    if(j&&j.v&&j.v!==APP_VERSION)swReload();
+  }catch(e){}
+}
+function swReload(){
+  if(swReloading)return;
+  const busy=document.querySelector('.modal-bg.open')
+    ||(typeof notePending!=='undefined'&&notePending)
+    ||(document.getElementById('voiceOverlay')||{classList:{contains:()=>false}}).classList.contains('open');
+  if(busy){ setTimeout(swReload,4000); return; }   // ne jamais couper une saisie
+  swReloading=true;
+  location.reload();
+}
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').then(reg=>{
+    navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+      swLastCheck=Date.now();
       reg.addEventListener('updatefound',()=>{
         const w=reg.installing;if(!w)return;
         w.addEventListener('statechange',()=>{
           // controller déjà présent = ce n'est pas la première installation
           if(w.state==='installed'&&navigator.serviceWorker.controller)
-            toast('Nouvelle version disponible — recharge la page','info');
+            offerChoice('Nouvelle version disponible',[['Recharger',()=>{swReloading=true;location.reload();}]],0,'info');
         });
       });
     }).catch(()=>{});
+    navigator.serviceWorker.addEventListener('controllerchange',swReload);
   });
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden)swCheck(); });
+  window.addEventListener('focus',()=>swCheck());
+}
+// Echappatoire manuelle : un appui sur le numero de version force la
+// verification et recharge.
+async function forceUpdate(){
+  toast('Recherche d\'une mise à jour…','info');
+  await swCheck(true);
+  swReloading=true; location.reload();
 }
 // L'état de synchro doit dire la vérité quand il n'y a pas de réseau, plutôt
 // que d'afficher une erreur de sauvegarde.
