@@ -144,6 +144,12 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .cmd-hint{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.1em;color:var(--text-dim);margin-top:0.6rem;text-align:right}
 .cmd-empty{font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim);padding:1.2rem;text-align:center}
 /* ══ SECOND BRAIN ══ */
+.md-img{max-width:100%;border-radius:6px;border:1px solid var(--border);display:block;margin:0.7rem 0;min-height:1.2rem;background:var(--surface2)}
+.md-att{display:inline-block;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 8px;margin:0.15rem 0;color:var(--accent);text-decoration:none}
+.md-att:hover{border-color:var(--accent)}
+.md-att-err{font-family:var(--font-mono);font-size:0.6rem;color:var(--warn)}
+.sb-edit.drop{outline:2px dashed var(--accent);outline-offset:-4px}
+
 .modal-btns{display:flex;justify-content:flex-end;margin-top:0.8rem}
 .em-grid{max-height:56vh;overflow-y:auto;margin-top:0.3rem}
 .em-cat{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);margin:0.8rem 0 0.35rem;padding-bottom:0.2rem;border-bottom:1px solid var(--border)}
@@ -1217,7 +1223,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.18.1</span>
+    <span class="app-version">v1.19.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1252,6 +1258,7 @@ body,body *{font-family:var(--font-body)}
     </aside>
 
     <main class="sb-main" id="sbMain"></main>
+    <input type="file" id="sbFile" multiple style="display:none" onchange="attachFiles(this.files);this.value=''">
     <div id="sbAc" class="ac-box"></div>
     <div id="sbMirror" class="ac-mirror"></div>
 
@@ -2127,7 +2134,10 @@ function preloadGIS() {
 function initTokenClient() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: cfg.clientId,
-    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    // drive.file : acces UNIQUEMENT aux fichiers crees par cette app, pas a
+    // tout le Drive. C'est le perimetre le plus etroit qui permette les pieces
+    // jointes.
+    scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
     // compte épinglé : évite le sélecteur de compte à chaque ouverture
     login_hint: cfg.account,
     callback: async (resp) => {
@@ -3138,10 +3148,14 @@ function mdInline(t){
   const spans=[];
   t=String(t).replace(/`([^`\n]+)`/g,(m,c)=>{ spans.push(c); return `\u0001C${spans.length-1}\u0001`; });
   return (t
-    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g,(m,a,u)=>/^https?:\/\//.test(u)?`<img src="${u}" alt="${a}" style="max-width:100%">`:m)
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g,(m,a,u)=>
+      /^drive:/.test(u)?`<img data-drive="${u.slice(6)}" alt="${a}" class="md-img" loading="lazy">`
+      :/^https?:\/\//.test(u)?`<img src="${u}" alt="${a}" class="md-img">`:m)
     .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g,(m,tgt,al)=>wlHtml(tgt,al))
     .replace(/\[\[([^\]]+)\]\]/g,(m,tgt)=>wlHtml(tgt,tgt))
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(m,txt,u)=>/^(https?:|mailto:)/.test(u)?`<a href="${u}" target="_blank" rel="noopener">${txt}</a>`:txt)
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(m,txt,u)=>
+      /^drive:/.test(u)?`<a class="md-att" data-drive="${u.slice(6)}" download href="#">${txt}</a>`
+      :/^(https?:|mailto:)/.test(u)?`<a href="${u}" target="_blank" rel="noopener">${txt}</a>`:txt)
     .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,'$1<a href="$2" target="_blank" rel="noopener">$2</a>')
     .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
@@ -3398,6 +3412,7 @@ function renderNoteMain(){
       <button class="sb-btn${noteMode==='edit'?' on':''}" onclick="setNoteMode('edit')">Écrire</button>
       <button class="sb-btn${n.pinned?' on':''}" onclick="toggleNotePin()" title="Épingler">★</button>
       <button class="sb-btn" onclick="newNote('${n.id}')" title="Créer une note enfant">+ Enfant</button>
+      <button class="sb-btn" onclick="pickAttachment()" title="Joindre une image ou un fichier">📎 Joindre</button>
       <button class="sb-btn" onclick="openHist()" title="Versions antérieures">Historique</button>
       <button class="sb-btn danger" onclick="deleteNote()">Supprimer</button>
       <span class="sb-len" id="sbLen"></span>
@@ -3411,12 +3426,15 @@ function renderNoteBody(){
   if(noteMode==='edit'){
     body.innerHTML=`<textarea class="sb-edit" id="sbEdit" spellcheck="true"
       placeholder="Écris en markdown. [[Double crochets]] pour relier une note, #tag pour classer."
-      oninput="onNoteContent(this.value);acOpen()" onkeydown="if(acKey(event))return;" onclick="acOpen()" onblur="setTimeout(acClose,120)"></textarea>`;
+      oninput="onNoteContent(this.value);acOpen()" onkeydown="if(acKey(event))return;" onclick="acOpen()" onblur="setTimeout(acClose,120)"
+      onpaste="onEditorPaste(event)" ondragover="event.preventDefault();this.classList.add('drop')"
+      ondragleave="this.classList.remove('drop')" ondrop="onEditorDrop(event)"></textarea>`;
     const ta=document.getElementById('sbEdit');
     ta.value=n.content||'';
     ta.focus();
   } else {
     body.innerHTML=`<div class="md" id="sbRead">${mdRender(n.content)}</div>`;
+    resolveDriveMedia(document.getElementById('sbRead'));
   }
 }
 function renderNoteMeta(){
@@ -3672,6 +3690,111 @@ function renderEmoji(current){
 }
 function chooseEmoji(e){ const f=emPick; closeEmojiPicker(); if(f)f(e); }
 function clearEmoji(){ const f=emPick; closeEmojiPicker(); if(f)f(''); }
+
+// ── Pieces jointes (Google Drive) ─────────────────────────────────────────
+// Les fichiers restent PRIVES : ils ne sont jamais partages publiquement. On
+// les relit avec le jeton et on les affiche via une URL blob locale. Les
+// stocker en base64 dans la feuille aurait sature la note en une capture.
+const LS_DRIVE_FOLDER='kanban_drive_folder';
+const DRIVE_FOLDER_NAME='Kanban — pièces jointes';
+const driveBlobs={};                 // id -> URL blob, le temps de la session
+
+async function driveFolder(){
+  const cached=localStorage.getItem(LS_DRIVE_FOLDER);
+  if(cached)return cached;
+  const q=encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${DRIVE_FOLDER_NAME}' and trashed=false`);
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{}}).then(x=>x.ok?x.json():null);
+  if(r&&r.files&&r.files.length){ localStorage.setItem(LS_DRIVE_FOLDER,r.files[0].id); return r.files[0].id; }
+  const c=await authFetch('https://www.googleapis.com/drive/v3/files?fields=id',
+    {method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({name:DRIVE_FOLDER_NAME,mimeType:'application/vnd.google-apps.folder'})}).then(x=>x.ok?x.json():null);
+  if(!c||!c.id)return null;
+  localStorage.setItem(LS_DRIVE_FOLDER,c.id);
+  return c.id;
+}
+
+// Televersement en deux temps : les octets bruts, puis le nom et le dossier.
+// Evite d'assembler un corps multipart binaire a la main.
+async function driveUpload(file){
+  const up=await authFetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=media&fields=id`,
+    {method:'POST',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});
+  if(up.status===401||up.status===403){
+    toast("Autorisation Drive requise — accepte la demande Google",'err');
+    try{ tokenClient.requestAccessToken({prompt:'consent'}); }catch(e){}
+    return null;
+  }
+  if(!up.ok)return null;
+  const j=await up.json();
+  const folder=await driveFolder();
+  await authFetch(`https://www.googleapis.com/drive/v3/files/${j.id}?fields=id`+(folder?`&addParents=${folder}`:''),
+    {method:'PATCH',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({name:file.name||('capture-'+Date.now()+'.png')})});
+  return j.id;
+}
+
+async function driveUrl(id){
+  if(driveBlobs[id])return driveBlobs[id];
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`,{headers:{}});
+  if(!r.ok)return null;
+  const bl=await r.blob();
+  return (driveBlobs[id]=URL.createObjectURL(bl));
+}
+// Les images drive: sont rendues vides puis remplies quand le blob arrive
+async function resolveDriveMedia(root){
+  if(!root)return;
+  for(const el of root.querySelectorAll('[data-drive]')){
+    const id=el.dataset.drive;
+    if(el.dataset.done)continue;
+    el.dataset.done='1';
+    const u=await driveUrl(id);
+    if(!u){ el.replaceWith(Object.assign(document.createElement('span'),{className:'md-att-err',textContent:'⚠ pièce jointe illisible'})); continue; }
+    if(el.tagName==='IMG')el.src=u;
+    else{ el.href=u; el.removeAttribute('data-drive'); }
+  }
+}
+
+// ── Insertion depuis l'editeur ────────────────────────────────────────────
+async function attachFiles(list){
+  const n=noteById(noteCurId); if(!n||!list||!list.length)return;
+  if(!navigator.onLine){ toast('Les pièces jointes nécessitent le réseau','err'); return; }
+  showLoad(true);
+  const bits=[];
+  for(const f of list){
+    if(f.size>25*1024*1024){ toast(`${f.name||'fichier'} : au-delà de 25 Mo`,'err'); continue; }
+    const id=await driveUpload(f);
+    if(!id){ toast('Échec du téléversement','err'); continue; }
+    const nom=(f.name||'capture').replace(/[\[\]()]/g,'');
+    bits.push((f.type||'').startsWith('image/')?`![${nom}](drive:${id})`:`[📎 ${nom}](drive:${id})`);
+  }
+  showLoad(false);
+  if(!bits.length)return;
+  const ta=document.getElementById('sbEdit');
+  const ins='\n'+bits.join('\n')+'\n';
+  if(ta){
+    const pos=ta.selectionStart;
+    ta.value=ta.value.slice(0,pos)+ins+ta.value.slice(pos);
+    ta.setSelectionRange(pos+ins.length,pos+ins.length);
+    onNoteContent(ta.value);
+  }else{
+    n.content=(n.content||'')+ins; noteQueueSave(); renderNoteBody();
+  }
+  toast(`${bits.length} pièce(s) jointe(s)`,'ok');
+}
+function pickAttachment(){ document.getElementById('sbFile').click(); }
+// Coller une capture d'ecran directement dans l'editeur
+function onEditorPaste(e){
+  const items=[...(e.clipboardData&&e.clipboardData.items||[])].filter(i=>i.kind==='file');
+  if(!items.length)return;                      // du texte : comportement normal
+  e.preventDefault();
+  attachFiles(items.map(i=>i.getAsFile()).filter(Boolean));
+}
+function onEditorDrop(e){
+  const f=e.dataTransfer&&e.dataTransfer.files;
+  e.currentTarget.classList.remove('drop');
+  if(!f||!f.length)return;
+  e.preventDefault();
+  attachFiles([...f]);
+}
 
 // ── Actions ───────────────────────────────────────────────────────────────
 let noteSaveTimer=null;
