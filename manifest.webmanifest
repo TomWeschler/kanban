@@ -9,9 +9,24 @@
   "background_color": "#09090e",
   "theme_color": "#7c6aff",
   "icons": [
-    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "./icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
     {
@@ -19,26 +34,61 @@
       "short_name": "Tâche",
       "description": "Saisir une tâche, le reste par défaut",
       "url": "./?new=",
-      "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Dicter une tâche",
+      "short_name": "Dicter",
+      "description": "Saisir une tâche à la voix",
+      "url": "./?new=&voice=1",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Aujourd'hui",
       "short_name": "Aujourd'hui",
       "description": "Tâches, habitudes et séance du jour",
       "url": "./?page=today",
-      "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Board",
       "short_name": "Board",
       "description": "Toutes les colonnes",
       "url": "./?page=board",
-      "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ],
   "share_target": {
     "action": "./",
     "method": "GET",
-    "params": { "title": "st", "text": "sx", "url": "su" }
+    "params": {
+      "title": "st",
+      "text": "sx",
+      "url": "su"
+    }
   }
 }
