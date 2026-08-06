@@ -117,6 +117,21 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 
 /* BOARD FILTER BAR */
 .board-filters{flex-shrink:0;display:flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;border-bottom:1px solid var(--border);background:rgba(9,9,14,0.7)}
+/* Mode mains libres — tout est surdimensionne : on ne vise pas en conduisant */
+#voiceOverlay{display:none;position:fixed;inset:0;z-index:900;background:#05050a;
+  flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;text-align:center}
+#voiceOverlay.open{display:flex}
+.vo-state{font-family:var(--font-mono);font-size:0.8rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--text-dim)}
+#voiceOverlay.listening .vo-state{color:var(--danger);animation:voPulse 1.2s ease-in-out infinite}
+@keyframes voPulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.vo-heard{font-size:1.9rem;font-weight:700;line-height:1.25;margin:1.6rem 0;min-height:4.5rem;max-width:22ch}
+.vo-last{font-family:var(--font-mono);font-size:0.8rem;color:var(--green);min-height:1.4rem}
+.vo-actions{display:flex;gap:1rem;margin-top:2.4rem;width:100%;max-width:460px}
+.vo-btn{flex:1;min-height:5.5rem;border:2px solid;background:none;font-family:var(--font-mono);
+  font-size:1rem;font-weight:700;letter-spacing:0.12em;cursor:pointer;border-radius:12px}
+.vo-btn.undo{border-color:var(--warn);color:var(--warn)}
+.vo-btn.stop{border-color:var(--danger);color:var(--danger)}
+.vo-help{font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim);margin-top:1.6rem;letter-spacing:0.08em}
 .cmd-modal{width:640px;max-width:94vw;padding:0.9rem}
 .cmd-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--font-body);font-size:0.9rem;padding:0.6rem 0.8rem;outline:none}
 .cmd-input:focus{border-color:var(--accent)}
@@ -1068,7 +1083,7 @@ body,body *{font-family:var(--font-body)}
         </button>
       </div>
     </div>
-    <span class="app-version">v1.14.0</span>
+    <span class="app-version">v1.15.0</span>
     <button class="btn-nav out" id="btnLogout" onclick="logout()" style="display:none">DÉCO.</button>
   </div>
 </header>
@@ -1259,6 +1274,18 @@ body,body *{font-family:var(--font-body)}
 </div>
 
 <!-- TASK MODAL -->
+<!-- Mode mains libres : concu pour la voiture, aucune cible de clic precise -->
+<div id="voiceOverlay">
+  <div class="vo-state" id="voState">Préparation…</div>
+  <div class="vo-heard" id="voHeard"></div>
+  <div class="vo-last" id="voLast"></div>
+  <div class="vo-actions">
+    <button class="vo-btn undo" onclick="voiceUndo()">ANNULER</button>
+    <button class="vo-btn stop" onclick="stopHandsFree()">TERMINER</button>
+  </div>
+  <div class="vo-help">Dictez une tâche · « annuler » · « terminé »</div>
+</div>
+
 <div class="modal-bg" id="cmdModal">
   <div class="modal cmd-modal">
     <input type="search" id="cmdInput" class="cmd-input" placeholder="Chercher une tâche, un objectif, une habitude, ou une page…" autocomplete="off"
@@ -1603,6 +1630,111 @@ function toggleDictation(){
   try{ recog.start(); }catch(e){ recog=null;btn.classList.remove('on'); }
 }
 
+// ── Mode mains libres ─────────────────────────────────────────────────────
+// Pense pour la conduite : un seul appui pour lancer, puis plus rien a toucher.
+// L'app ecoute, cree la tache, confirme A VOIX HAUTE (les yeux restent sur la
+// route) et se remet a ecouter. On en sort a la voix.
+let hfActive=false, hfRec=null, hfSpeaking=false, hfLast=null, hfWakeLock=null;
+
+const voEl=id=>document.getElementById(id);
+function voSet(state,cls){ voEl('voState').textContent=state;
+  voEl('voiceOverlay').classList.toggle('listening',cls==='listening'); }
+
+// Confirmation parlee : indispensable, on ne peut pas lire l'ecran en conduisant
+function say(txt,then){
+  if(!('speechSynthesis' in window)){ if(then)then(); return; }
+  try{
+    hfSpeaking=true;
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(txt);
+    u.lang='fr-FR'; u.rate=1.05;
+    // Garde-fou : si onend ne se declenche pas (synthese muette ou coupee), la
+    // boucle d'ecoute resterait bloquee en pleine conduite.
+    let done=false;
+    const finish=()=>{ if(done)return; done=true; hfSpeaking=false; if(then)then(); };
+    u.onend=u.onerror=finish;
+    setTimeout(finish, Math.min(9000, 1800+txt.length*90));
+    speechSynthesis.speak(u);
+  }catch(e){ hfSpeaking=false; if(then)then(); }
+}
+
+const voNorm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[.,!?;:]/g,'').trim();
+
+async function keepAwake(on){
+  try{
+    if(on&&'wakeLock' in navigator){ hfWakeLock=await navigator.wakeLock.request('screen'); }
+    else if(hfWakeLock){ await hfWakeLock.release(); hfWakeLock=null; }
+  }catch(e){}
+}
+
+function startHandsFree(){
+  voEl('voiceOverlay').classList.add('open');
+  voEl('voHeard').textContent='';
+  voEl('voLast').textContent='';
+  if(!dictationAvailable()){ voSet('Dictée non gérée par ce navigateur'); return; }
+  hfActive=true;
+  keepAwake(true);
+  say('Je vous écoute', hfListen);
+}
+
+function hfListen(){
+  if(!hfActive||hfSpeaking)return;
+  if(hfRec){ try{hfRec.abort();}catch(e){} hfRec=null; }
+  const r=new SpeechRec();
+  r.lang='fr-FR'; r.continuous=false; r.interimResults=true; r.maxAlternatives=1;
+  r.onstart=()=>voSet('Parlez…','listening');
+  r.onresult=e=>{
+    let txt='',final=false;
+    for(let i=e.resultIndex;i<e.results.length;i++){ txt+=e.results[i][0].transcript; if(e.results[i].isFinal)final=true; }
+    voEl('voHeard').textContent=txt.trim();
+    if(final)hfHandle(txt.trim());
+  };
+  r.onerror=ev=>{ if(ev.error==='not-allowed'){ voSet('Micro refusé'); hfActive=false; } };
+  // Chrome coupe l'ecoute a chaque silence : on relance en boucle
+  r.onend=()=>{ hfRec=null; if(hfActive&&!hfSpeaking) setTimeout(hfListen,250); };
+  hfRec=r;
+  try{ r.start(); }catch(e){ hfRec=null; }
+}
+
+async function hfHandle(raw){
+  const n=voNorm(raw);
+  if(!n)return;
+  voSet('…');
+  if(/^(stop|termine|terminer|fini|fermer|quitter|au revoir)$/.test(n)){
+    say('Terminé', stopHandsFree); return;
+  }
+  if(/^(annuler|annule|supprime|oublie)$/.test(n)){ voiceUndo(); return; }
+  // on retire les formules d'amorce eventuelles
+  const title=raw.replace(/^\s*(ajoute[rz]?|nouvelle t[âa]che|note[rz]?|rappelle[- ]moi de?)\s+/i,'').trim();
+  if(!title)return;
+  hfLast=await quickAddTask({title,imp:3});
+  voEl('voLast').textContent='✓ '+hfLast.title;
+  voEl('voHeard').textContent='';
+  say('Ajouté. '+hfLast.title, hfListen);
+}
+
+async function voiceUndo(){
+  if(!hfLast){ say('Rien à annuler', hfListen); return; }
+  const t=hfLast; hfLast=null;
+  const i=allTasks.indexOf(t);
+  if(i>=0)allTasks.splice(i,1);
+  refreshActive(); render(); renderCurrentPage();
+  voEl('voLast').textContent='✗ annulé';
+  await persist();
+  say('Annulé', hfListen);
+}
+
+function stopHandsFree(){
+  hfActive=false;
+  if(hfRec){ try{hfRec.abort();}catch(e){} hfRec=null; }
+  try{ speechSynthesis.cancel(); }catch(e){}
+  hfSpeaking=false;
+  keepAwake(false);
+  voEl('voiceOverlay').classList.remove('open');
+  renderCurrentPage();
+}
+
 // ── Capture rapide depuis le telephone ────────────────────────────────────
 // Trois entrees possibles, toutes ramenees au meme traitement :
 //   ?new=<titre>   raccourci d'icone (appui long) ou lien direct
@@ -1626,6 +1758,10 @@ let startIntent=null, startIntentDone=false;
   };
   // sans nettoyage, un simple rafraichissement recreerait la tache
   history.replaceState(null,'',location.pathname);
+  // affiche l'ecran tout de suite : en voiture, une seconde d'ecran noir inquiete
+  if(startIntent.voice)document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('voiceOverlay').classList.add('open');
+  });
 })();
 
 function intentDue(v){
@@ -1664,11 +1800,10 @@ function applyStartIntent(){
   if(it.page&&!it.isNew){ switchPage(it.page); return; }
   if(!it.isNew)return;
   if(it.title){ quickAddTask(it); return; }
+  if(it.voice){ startHandsFree(); return; }
   // raccourci sans titre : on ouvre le formulaire pret a saisir
   switchPage('board');
   openModal(null,null,it.proj||undefined);
-  // et on lance la dictee directement si c'est le raccourci vocal
-  if(it.voice&&dictationAvailable())setTimeout(toggleDictation,350);
 }
 
 // render() ne dessine que le board. Sans ce dispatcheur, la page affichee au
