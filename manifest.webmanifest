@@ -80,19 +80,6 @@
           "type": "image/png"
         }
       ]
-    },
-    {
-      "name": "Board",
-      "short_name": "Board",
-      "description": "Toutes les colonnes",
-      "url": "./?page=board",
-      "icons": [
-        {
-          "src": "./sc-board.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
     }
   ],
   "share_target": {
