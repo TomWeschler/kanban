@@ -320,7 +320,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .rv-hdr{display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-bottom:1rem}
 .rv-pills{display:flex;gap:0.35rem;flex-wrap:wrap}
 .rv-range{font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--text-dim);letter-spacing:0.1em}
-.rv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;align-items:start}
+.rv-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;align-items:start}
 .rv-kpi{display:flex;align-items:baseline;justify-content:space-between;gap:0.5rem;padding:0.3rem 0}
 .rv-kpi-l{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim)}
 .rv-kpi-v{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700}
@@ -329,7 +329,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .rv-sub{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);margin:0.8rem 0 0.2rem;padding-bottom:0.25rem;border-bottom:1px solid var(--border)}
 .rv-n{font-family:'Space Mono',monospace;font-size:0.7rem;font-weight:700;flex-shrink:0}
 .rv-n.warn{color:var(--warn)}
-@media (max-width:1200px){.rv-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:1500px){.rv-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:1100px){.rv-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:700px){.rv-grid{grid-template-columns:1fr}.rv-wrap{padding:0.9rem 0.7rem 4rem}}
 /* ── Vue Aujourd'hui ── */
 #pagetoday{overflow-y:auto;flex-direction:column}
@@ -1241,6 +1242,7 @@ body,body *{font-family:var(--font-body)}
   <div class="header-right">
     <div class="hstats" id="hStats"></div>
     <div class="sync-status"><div class="sync-dot ok" id="syncDot"></div><span id="syncLabel">PRÊT</span></div>
+    <button class="btn-theme" onclick="openCmd()" title="Rechercher partout (Ctrl+K)" aria-label="Rechercher">🔍</button>
     <button class="btn-nav" id="hAction" title="Nouvelle tâche (N)">+ TÂCHE</button>
     <div class="more-wrap">
       <button class="btn-theme" onclick="toggleMoreMenu(event)" title="Réglages">⋯</button>
@@ -1338,6 +1340,7 @@ body,body *{font-family:var(--font-body)}
       <section class="td-col" id="rvHabits"></section>
       <section class="td-col" id="rvSport"></section>
       <section class="td-col" id="rvGoals"></section>
+      <section class="td-col" id="rvMoney"></section>
     </div>
   </div>
 </div>
@@ -2147,6 +2150,7 @@ function init() {
   // hors ligne, les pages doivent afficher le dernier etat connu
   habits=cacheGet('habits',[]); habitsLog=cacheGet('habitsLog',[]);
   goals=cacheGet('goals',[]); sportPlans=cacheGet('sportPlans',[]); sportLogs=cacheGet('sportLogs',[]);
+  finComptes=cacheGet('finComptes',[]); finDepenses=cacheGet('finDepenses',[]);
   notes=cacheGet('notes',[]);
   if(!dictationAvailable()){ const mb=document.getElementById('micBtn'); if(mb)mb.style.display='none'; }
   buildHabitModalSelects();
@@ -3198,6 +3202,7 @@ async function loadNotes(){
   }));
   const map={}; parsed.forEach(n=>{map[n.id]=n;});          // la derniere ligne gagne
   notes=Object.values(map).filter(n=>n.status!==NOTE_DELETED);
+  noteIndexInvalidate();
   notesLoaded=true; notesLoadedAt=Date.now();
   if(!notes.length&&!rows.length){ notes=cacheGet('notes',[]); return; }
   cacheSet('notes',notes);
@@ -3212,6 +3217,7 @@ function noteToRow(n){
 }
 async function noteUpsert(n){
   n.updated_at=td();
+  noteIndexInvalidate();
   const i=notes.findIndex(x=>x.id===n.id);
   if(i>=0)notes[i]=n;else notes.push(n);
   cacheSet('notes',notes);
@@ -3219,11 +3225,12 @@ async function noteUpsert(n){
 }
 async function noteDeleteById(id){
   notes=notes.filter(n=>n.id!==id);
+  noteIndexInvalidate();
   cacheSet('notes',notes);
   return sheetUpsertByKey('notes',id,[id,'','','','','','FALSE',NOTE_DELETED,'','','','','','','']);
 }
 const noteById=id=>notes.find(n=>n.id===id)||null;
-const noteByTitle=t=>notes.find(n=>n.title.toLowerCase()===String(t||'').trim().toLowerCase())||null;
+const noteByTitle=t=>noteIndex().byTitle[String(t||'').trim().toLowerCase()]||null;
 
 
 // ── Rendu markdown ────────────────────────────────────────────────────────
@@ -3334,25 +3341,45 @@ function mdRender(src){
 }
 
 // ── Liens et tags deduits du contenu ──────────────────────────────────────
-function noteOutLinks(n){
+// ── Index des liens et des tags ───────────────────────────────────────────
+// Ces informations etaient recalculees a chaque appel : noteBacklinks
+// reparcourait toutes les notes en reanalysant leur contenu, et l'indicateur
+// "orphelines" du header le faisait pour chacune — soit un cout quadratique a
+// chaque rendu. L'index est construit une fois puis invalide a l'ecriture.
+let noteIdx=null;
+const noteIndexInvalidate=()=>{ noteIdx=null; };
+function parseLinks(n){
   const out=[];
   String(n.content||'').replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g,(m,t)=>{ out.push(t.trim()); return m; });
   return [...new Set(out)];
 }
-function noteBacklinks(n){
-  const t=n.title.toLowerCase();
-  return notes.filter(o=>o.id!==n.id&&noteOutLinks(o).some(l=>l.toLowerCase()===t));
-}
-function noteTags(n){
+function parseTags(n){
   const set=new Set(String(n.tags||'').split(',').map(x=>x.trim()).filter(Boolean));
   String(n.content||'').replace(/(^|\s)#([\p{L}\d_\-\/]{2,})/gu,(m,p,tag)=>{ set.add(tag); return m; });
   return [...set];
 }
-const allNoteTags=()=>{
-  const c={};
-  notes.forEach(n=>noteTags(n).forEach(t=>{c[t]=(c[t]||0)+1;}));
-  return Object.entries(c).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
-};
+function noteIndex(){
+  if(noteIdx)return noteIdx;
+  const byTitle={}, out={}, back={}, tags={}, tagCount={};
+  notes.forEach(n=>{ byTitle[n.title.toLowerCase()]=n; back[n.id]=[]; });
+  notes.forEach(n=>{
+    out[n.id]=parseLinks(n);
+    tags[n.id]=parseTags(n);
+    tags[n.id].forEach(t=>{ tagCount[t]=(tagCount[t]||0)+1; });
+  });
+  notes.forEach(n=>out[n.id].forEach(t=>{
+    const o=byTitle[String(t).toLowerCase()];
+    if(o&&o.id!==n.id&&!back[o.id].includes(n))back[o.id].push(n);
+  }));
+  return (noteIdx={byTitle,out,back,tags,tagCount});
+}
+// Repli sur l'analyse directe pour une note hors de la liste courante
+const noteOutLinks=n=>noteIndex().out[n.id]||parseLinks(n);
+const noteBacklinks=n=>noteIndex().back[n.id]||[];
+const noteTags=n=>noteIndex().tags[n.id]||parseTags(n);
+const allNoteTags=()=>Object.entries(noteIndex().tagCount)
+  .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+
 
 
 // ── Historique des versions ───────────────────────────────────────────────
@@ -4157,7 +4184,7 @@ async function dailyNote(){
   if(n)return n;
   n={id:'n'+Date.now(),title:t,content:'',tags:'journal',parent_id:'',icon:'📆',
      pinned:false,status:'active',created_at:td(),updated_at:td(),gx:null,gy:null};
-  notes.push(n); cacheSet('notes',notes);
+  notes.push(n); noteIndexInvalidate(); cacheSet('notes',notes);
   await noteUpsert(n);
   return n;
 }
@@ -4197,7 +4224,7 @@ function noteQueueSave(){
 function onNoteTitle(v){
   const n=noteById(noteCurId); if(!n)return;
   noteSnapshot(n.title,n.content,n.id);
-  n.title=v.trim()||'Sans titre'; noteQueueSave();
+  n.title=v.trim()||'Sans titre'; noteIndexInvalidate(); noteQueueSave();
 }
 function onNoteContent(v){
   const n=noteById(noteCurId); if(!n)return;
@@ -4209,7 +4236,7 @@ function onNoteContent(v){
     return;
   }
   noteSnapshot(n.title,n.content,n.id);   // archive l'etat AVANT modification
-  n.content=v; noteCount(); noteQueueSave();
+  n.content=v; noteIndexInvalidate(); noteCount(); noteQueueSave();
 }
 function noteCount(){
   const n=noteById(noteCurId), el=document.getElementById('sbLen');
@@ -4251,7 +4278,7 @@ async function newNote(parentId,title){
   const n={id:'n'+Date.now(),title:title||'Nouvelle note',content:'',tags:'',
            parent_id:parentId||'',icon:'📄',pinned:false,status:'active',
            created_at:td(),updated_at:td()};
-  notes.push(n);
+  notes.push(n); noteIndexInvalidate();
   if(parentId)noteCollapsed.delete(parentId);
   noteCurId=n.id; noteMode='edit';
   renderNoteTree();renderNoteMain();renderNoteMeta();
@@ -4652,6 +4679,23 @@ function openShortcuts(){
 }
 function closeShortcuts(){ document.getElementById('scModal').classList.remove('open'); }
 
+// ── Piège de focus ────────────────────────────────────────────────────────
+// Sans lui, la tabulation sortait du formulaire ouvert et parcourait la page
+// derriere, invisible : on tapait dans le vide.
+const FOCUSABLE='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Tab')return;
+  const box=document.querySelector('.modal-bg.open .modal')
+          ||(document.getElementById('graphOverlay')||{classList:{contains:()=>false}}).classList.contains('open')&&document.getElementById('graphOverlay');
+  if(!box)return;
+  const els=[...box.querySelectorAll(FOCUSABLE)].filter(el=>el.offsetParent!==null||el===document.activeElement);
+  if(!els.length)return;
+  const first=els[0], last=els[els.length-1];
+  if(e.shiftKey&&document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); }
+  else if(!box.contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+},true);
+
 // ── Palette de commandes ──────────────────────────────────────────────────
 // Il y avait trois recherches, chacune enfermee dans sa page : pour retrouver
 // quelque chose il fallait deja savoir ou c'etait.
@@ -4835,6 +4879,8 @@ function rvGoalStats(){
 }
 
 async function renderReviewPage(){
+  // la revue lit les finances : on les charge si l'onglet n'a jamais ete ouvert
+  if(accessToken&&!finLoaded&&navigator.onLine){try{await loadFinancesData();}catch(e){}}
   if(accessToken&&!sportLoaded){showLoad(true);await loadSportData();showLoad(false);}
   if(accessToken&&!goalsLoaded){showLoad(true);await loadGoals();showLoad(false);}
   const r=rvRange(rvPeriod),pr=rvPrev(r);
@@ -4876,6 +4922,28 @@ async function renderReviewPage(){
     (s.feeling?rvKpi('Ressenti moyen',s.feeling.toFixed(1)+'/5',rvDelta(s.feeling,sp.feeling)):'')+
     (s.w1?rvKpi('Poids',`${s.w1.weight} kg`,dw===null?'':`<span class="rv-d ${dw<0?'up':dw>0?'down':'flat'}">${dw>0?'+':''}${Math.round(dw*10)/10}</span>`):'')+
     (s.planned||s.done?'':'<div class="td-empty">Aucune séance sur la période.</div>');
+
+  // ── patrimoine ──
+  // La revue ignorait l'argent, alors que c'est la matiere la plus naturelle
+  // d'un bilan. Les donnees viennent du classeur Finances et du Cryptobot.
+  const cptes=(typeof parseComptes==='function')?parseComptes():[];
+  const patri=cptes.reduce((s,c)=>s+c.current,0);
+  const initial=cptes.reduce((s,c)=>s+c.initial,0);
+  const gain=patri-initial;
+  const crypto=(cryptoTrades||[]).length;
+  const cash=cagnotte();
+  document.getElementById('rvMoney').innerHTML=
+    `<div class="td-t">Patrimoine</div>`+
+    (cptes.length
+      ? rvKpi('Total',eur(patri))
+        +rvKpi('Depuis janvier',eur(gain),`<span class="rv-d ${gain>=0?'up':'down'}">${gain>=0?'+':''}${initial?Math.round(gain/initial*100):0}%</span>`)
+        +rvKpi('Objectif 1 M€',Math.round(patri/FIN_GOAL*1000)/10+'%','')
+        +`<div class="rv-sub">Comptes</div>`+
+        cptes.slice().sort((a,b)=>b.current-a.current).slice(0,5).map(c=>
+          `<div class="td-row"><span class="td-lbl">${tdEsc(c.name)}</span><span class="rv-n">${eur(c.current)}</span></div>`).join('')
+      : '<div class="td-empty">Finances non chargées — ouvre l\'onglet une fois.</div>')+
+    rvKpi('Cagnotte',`<span style="color:${cash<0?'var(--danger)':'var(--green)'}">${eur(cash)}</span>`,'')+
+    (crypto?rvKpi('Opérations crypto',crypto,''):'');
 
   const g=rvGoalStats();
   document.getElementById('rvGoals').innerHTML=
@@ -6325,8 +6393,16 @@ async function loadFinancesData() {
     let ri = 0;
     if (comptesSheet) { const r = results[ri++]; if (r.ok) { const d = await r.json(); finComptes  = d.values || []; } }
     if (financeSheet) { const r = results[ri++]; if (r.ok) { const d = await r.json(); finDepenses = d.values || []; } }
+    // Finances etait la seule page sans repli local : hors ligne elle
+    // s'ouvrait vide alors que tout le reste fonctionnait.
+    if (finComptes.length || finDepenses.length) {
+      cacheSet('finComptes', finComptes); cacheSet('finDepenses', finDepenses);
+    } else {
+      finComptes = cacheGet('finComptes', []); finDepenses = cacheGet('finDepenses', []);
+    }
     finLoaded = true;
   } catch(e) {
+    finComptes = cacheGet('finComptes', []); finDepenses = cacheGet('finDepenses', []);
     finDebugInfo.error = String(e);
     console.error('Finances load error', e);
     toast('Erreur chargement données Finances', 'err');
@@ -7558,7 +7634,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.24.0';
+const APP_VERSION='v1.25.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
