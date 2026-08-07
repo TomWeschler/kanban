@@ -987,10 +987,28 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sig-more{width:100%;background:none;border:1px dashed var(--border2);color:var(--text-dim);border-radius:6px;padding:0.3rem;cursor:pointer;font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase}
 .sig-more:hover{color:var(--text);border-color:var(--text-dim)}
 
+/* ── Procédures exécutables ──────────────────────────────────────────────── */
+.run-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1rem}
+.run-steps{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1rem;margin-bottom:0.8rem}
+.run-bar{height:4px;border-radius:99px;background:var(--surface3);overflow:hidden;margin:0.45rem 0 0.2rem}
+.run-bar-in{height:100%;background:var(--accent);border-radius:99px;transition:width 0.25s}
+.run-edit{display:flex;align-items:center;gap:0.35rem;padding:0.3rem 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.run-drag{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);width:1.1rem;text-align:center;flex-shrink:0}
+.run-f{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);
+  font-family:var(--font-body);font-size:0.72rem;padding:0.22rem 0.4rem;outline:none}
+.run-f:focus{border-color:var(--accent)}
+.run-lbl{flex:1;min-width:150px}
+.run-off{display:flex;align-items:center;gap:0.2rem;font-family:var(--font-mono);font-size:0.55rem;color:var(--text-dim);flex-shrink:0}
+.run-off .run-f{width:3.6rem;text-align:right}
+.run-prev{max-height:38vh;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.5rem}
+.run-pl{display:flex;align-items:baseline;gap:0.45rem;padding:0.16rem 0;font-size:0.74rem}
+.run-pl-t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* ── Budget du portefeuille ──────────────────────────────────────────────── */
 /* Les largeurs des colonnes figées sont des variables : les décalages sticky
    sont calculés à partir d'elles, la mise en page reste juste sur mobile. */
-:root{--w1:300px;--w2:130px;--w3:130px;--wy:112px}
+:root{--w1:300px;--w2:130px;--w3:130px;--wy:112px;
+      --edit-bg:rgba(124,106,255,0.07);--edit-bg2:rgba(124,106,255,0.13);--edit-brd:rgba(124,106,255,0.28)}
 .bud-wrap{overflow:auto;max-height:calc(100vh - 210px);border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .bud{border-collapse:separate;border-spacing:0;font-size:0.72rem;width:max-content;min-width:100%}
 .bud th{position:sticky;top:0;z-index:3;background:var(--surface2);font-family:var(--font-mono);font-size:0.5rem;
@@ -1035,9 +1053,20 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .bud-i:focus{border-color:var(--accent);background:var(--surface3)}
 .bud-edit{padding:0.08rem 0.25rem}
 .bud-est{color:var(--text)}
+/* Ce qui se saisit doit se voir sans avoir a cliquer partout : les lignes de
+   nature et les cellules d'estime portent une teinte propre et un cadre
+   discret. Tout le reste du tableau est calcule. */
+.bud-nat .bud-edit,.bud-cx .bud-c2,.bud-cx .bud-y{background:var(--edit-bg)}
+.bud-r:hover .bud-cx-void{background:inherit}
+.bud-nat{background:linear-gradient(90deg,var(--edit-bg),transparent 90%)}
+.bud-nat:hover .bud-c1{background:var(--edit-bg2)}
+.bud-nat .bud-edit .bud-i,.bud-cx .bud-c2 .bud-i,.bud-cx .bud-y .bud-i{border-color:var(--edit-brd)}
+.bud-nat .bud-edit .bud-i:hover,.bud-cx .bud-c2 .bud-i:hover,.bud-cx .bud-y .bud-i:hover{border-color:var(--accent)}
+.bud-i:focus{border-color:var(--accent);background:var(--surface3);box-shadow:0 0 0 2px var(--accent-dim)}
 input.bud-y-e{font-size:0.58rem;padding:0;color:var(--text-dim);margin-top:1px}
 input.bud-y-e:focus{color:var(--text)}
 .bud-legend{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;color:var(--text-dim)}
+.bud-legend b{display:inline-block;width:0.6rem;height:0.6rem;border-radius:2px;background:var(--edit-bg2);border:1px solid var(--edit-brd);vertical-align:-1px;margin-right:0.2rem}
 @media(max-width:900px){
   :root{--w1:150px;--w2:96px;--w3:96px;--wy:88px}
   .bud .bud-n{min-width:84px}
@@ -1800,6 +1829,18 @@ body,body *{font-family:var(--font-body)}
   </div>
 </div>
 
+<div class="modal-bg" id="runLaunchModal">
+  <div class="modal" style="width:min(560px,94vw)">
+    <div class="modal-hdr">LANCER LA PROCÉDURE</div>
+    <button class="modal-close" onclick="closeRunLaunch()">✕</button>
+    <div id="runLaunchFields"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeRunLaunch()">Annuler</button>
+      <button class="btn-primary" onclick="launchRun()">▶ Lancer</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="composeModal">
   <div class="modal" style="width:min(860px,95vw)">
     <div class="modal-hdr">RÉDIGER À PARTIR D'UN MODÈLE</div>
@@ -1808,6 +1849,7 @@ body,body *{font-family:var(--font-body)}
       <div id="cpFields"></div>
       <div class="cp-prev" id="cpPreview"></div>
     </div>
+    <div id="cpFollow" style="display:none"></div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeAdpCompose()">Fermer</button>
       <button class="btn-secondary" id="cpMail">✉ Ouvrir dans le mail</button>
@@ -5788,13 +5830,14 @@ const MES_SEED=[
 const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at','budget','domaine'];
 const ADP_CONT_HEADER = ['id','name','org','role','email','phone','project_id','cadence','last_contact','status','notes','updated_at'];
 const ADP_MILE_HEADER = ['id','project_id','title','due_date','status','kind','done_at','updated_at'];
-const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at'];
+const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at','steps','followup'];
+const ADP_RUN_HEADER=['id','template_id','project_id','title','start_date','status','steps','updated_at'];
 const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updated_at'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
 const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'M'],['adp_contacts',ADP_CONT_HEADER,'L'],
                     ['adp_milestones',ADP_MILE_HEADER,'H'],['adp_templates',ADP_TPL_HEADER,'G'],
-                    ['adp_budget',ADP_BUD_HEADER,'G']];
+                    ['adp_budget',ADP_BUD_HEADER,'G'],['adp_runs',ADP_RUN_HEADER,'H']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
 const ADP_HEALTH  = [['vert','Sous contrôle'],['orange','Vigilance'],['rouge','En difficulté']];
@@ -5845,10 +5888,10 @@ async function adpFetch(sheet,range){
 async function loadAdp(){
   if(!accessToken)return;
   await ensureAdpSheets();
-  const [pr,co,mi,tp,bu]=await Promise.all([
+  const [pr,co,mi,tp,bu,ru]=await Promise.all([
     adpFetch('adp_projects','A:M'), adpFetch('adp_contacts','A:L'),
-    adpFetch('adp_milestones','A:H'), adpFetch('adp_templates','A:G'),
-    adpFetch('adp_budget','A:G')]);
+    adpFetch('adp_milestones','A:H'), adpFetch('adp_templates','A:I'),
+    adpFetch('adp_budget','A:G'), adpFetch('adp_runs','A:H')]);
   const dedupe=arr=>{const m={};arr.forEach(o=>{m[o.id]=o;});return Object.values(m);};  // la dernière ligne gagne
   adpProjects=dedupe(pr.map(x=>({id:adpCell(x,0),name:adpCell(x,1)||'Sans nom',client:adpCell(x,2),
     status:adpCell(x,3)||'actif',start_date:adpCell(x,4),deadline:adpCell(x,5),
@@ -5865,7 +5908,8 @@ async function loadAdp(){
     done_at:adpCell(x,6),updated_at:adpCell(x,7)})));
   adpTemplates=dedupe(tp.map(x=>({id:adpCell(x,0),kind:adpCell(x,1)||'mail',title:adpCell(x,2)||'Sans titre',
     category:adpCell(x,3),body:String(x[4]==null?'':x[4]),
-    created_at:adpCell(x,5),updated_at:adpCell(x,6)})));
+    created_at:adpCell(x,5),updated_at:adpCell(x,6),
+    steps:String(x[7]==null?'':x[7]),followup:parseInt(adpCell(x,8),10)||0})));
   const bd={};
   bu.forEach(x=>{ const o={id:adpCell(x,0),project_id:adpCell(x,1),capex:adpCell(x,2),
     nature:adpCell(x,3),month:adpCell(x,4),
@@ -5873,21 +5917,28 @@ async function loadAdp(){
     // une ligne remise a zero n'a plus rien a dire : on l'oublie
     if(o.id&&o.project_id&&o.amount)bd[o.id]=o; else if(o.id)delete bd[o.id]; });
   adpBudget=Object.values(bd);
-  ['adpProjects','adpContacts','adpMilestones','adpTemplates','adpBudget'].forEach((k,i)=>
-    cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates,adpBudget][i]));
+  adpRuns=dedupe(ru.map(x=>{
+    let st=[]; try{ st=JSON.parse(x[6]||'[]')||[]; }catch(e){}
+    return {id:adpCell(x,0),template_id:adpCell(x,1),project_id:adpCell(x,2),
+      title:adpCell(x,3)||'Suivi',start_date:adpCell(x,4),status:adpCell(x,5)||'actif',
+      steps:Array.isArray(st)?st:[],updated_at:adpCell(x,7)};
+  })).filter(r=>r.status!=='supprime');
+  ['adpProjects','adpContacts','adpMilestones','adpTemplates','adpBudget','adpRuns'].forEach((k,i)=>
+    cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates,adpBudget,adpRuns][i]));
   adpLoaded=true;
 }
 function adpRestoreCache(){
   adpProjects=cacheGet('adpProjects',[]); adpContacts=cacheGet('adpContacts',[]);
   adpMilestones=cacheGet('adpMilestones',[]); adpTemplates=cacheGet('adpTemplates',[]);
-  adpBudget=cacheGet('adpBudget',[]);
+  adpBudget=cacheGet('adpBudget',[]); adpRuns=cacheGet('adpRuns',[]);
 }
 const adpProjRow=p=>[p.id,p.name,p.client||'',p.status||'actif',p.start_date||'',p.deadline||'',
   p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td(),String(p.budget||0),p.domaine||''];
 const adpContRow=c=>[c.id,c.name,c.org||'',c.role||'',c.email||'',c.phone||'',c.project_id||'',
   String(c.cadence||0),c.last_contact||'',c.status||'actif',c.notes||'',td()];
 const adpMileRow=m=>[m.id,m.project_id||'',m.title,m.due_date||'',m.status||'todo',m.kind||'jalon',m.done_at||'',td()];
-const adpTplRow =t=>[t.id,t.kind||'mail',t.title,t.category||'',t.body||'',t.created_at||td(),td()];
+const adpTplRow =t=>[t.id,t.kind||'mail',t.title,t.category||'',t.body||'',t.created_at||td(),td(),
+  t.steps||'',String(t.followup||0)];
 
 // Écrit puis rend la main : chaque table a la même mécanique d'upsert par clé.
 async function adpSave(kind,obj){
@@ -5959,10 +6010,14 @@ async function renderAdp(){
   if(adpView==='budget')     return renderAdpBudget(el);
   if(adpView==='contacts')   return renderAdpContacts(el);
   if(adpView==='modeles')    return renderAdpTemplates(el,'mail');
-  if(adpView==='procedures') return renderAdpTemplates(el,'procedure');
+  if(adpView==='procedures'){
+    if(adpRunCur&&runById(adpRunCur))return renderRunPage(el);
+    adpRunCur=null;
+    return renderAdpTemplates(el,'procedure');
+  }
 }
 function setAdpView(v){
-  adpView=v; adpProjCur=null; adpTplCur=null; adpSearch='';
+  adpView=v; adpProjCur=null; adpTplCur=null; adpRunCur=null; adpSearch='';
   try{ localStorage.setItem(LS_ADP_VIEW,v); }catch(e){}
   renderAdp();
 }
@@ -6062,6 +6117,12 @@ function renderAdpProjectPage(el){
             <span class="adp-l-main">${adpEsc(c.name)}${c.role?`<span class="adp-l-sub">${adpEsc(c.role)}</span>`:''}</span>
             ${adpIsDue(c)?'<span class="adp-l-flag">à relancer</span>':''}
           </div>`).join(''):'<div class="sb-none">Aucun contact.</div>'}
+        ${(()=>{const rs=runActive().filter(r=>r.project_id===p.id);
+          return rs.length?`<div class="adp-sec">Procédures en cours</div>`+rs.map(r=>{
+            const g=runProgress(r), late=runLate(r).length;
+            return `<div class="adp-line${late?' late':''}" onclick="setAdpView('procedures');openRun('${r.id}')">
+              <span class="adp-l-main">${adpEsc(r.title)}<span class="adp-l-sub">${g.fait}/${g.n} étapes</span></span>
+              ${late?`<span class="adp-l-flag">${late} en retard</span>`:''}</div>`;}).join(''):'';})()}
         <div class="adp-sec">Tâches du board
           <button class="adp-mini" onclick="adpNewTask()" title="Créer une tâche pour ce projet">+</button></div>
         ${tks.length?tks.slice().sort(taskSort).slice(0,10).map(t=>`<div class="adp-line" onclick="switchPage('board');openModal(${t.id})">
@@ -6219,19 +6280,40 @@ function renderAdpTemplates(el,kind){
     .filter(t=>!q||voNorm(`${t.title} ${t.category} ${t.body}`).includes(q))
     .sort((a,b)=>(a.category||'~').localeCompare(b.category||'~','fr')||a.title.localeCompare(b.title,'fr'));
   const cats=[...new Set(list.map(t=>t.category||'Sans catégorie'))];
+  // Une procédure lancée est un engagement en cours : elle passe devant la
+  // bibliothèque, qui n'est qu'un catalogue.
+  const runs=kind==='procedure'?runActive().sort((a,b)=>{
+    const na=runNext(a),nb=runNext(b);
+    return (na&&na.due||'9999').localeCompare(nb&&nb.due||'9999');}):[];
   el.innerHTML=`
     <div class="adp-tools">
       <input type="search" class="gl-search" placeholder="${kind==='mail'?'Titre, catégorie, contenu…':'Titre, catégorie, contenu…'}" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
       <div style="flex:1"></div>
       <button class="gl-pill" onclick="openAdpTplModal(null,'${kind}')">+ ${kind==='mail'?'Modèle':'Procédure'}</button>
     </div>
+    ${runs.length?`<div class="adp-sec">En cours <span class="adp-badge quiet">${runs.length}</span></div>
+      <div class="adp-grid">${runs.map(r=>{
+        const {n,fait}=runProgress(r), suiv=runNext(r), late=runLate(r).length, p=adpProjById(r.project_id);
+        return `<div class="adp-card${late?' due':''}" onclick="openRun('${r.id}')">
+          <div class="adp-c-head"><span class="adp-c-name">${adpEsc(r.title)}</span>
+            ${late?`<span class="adp-l-flag">${late} en retard</span>`:''}</div>
+          <div class="run-bar"><div class="run-bar-in" style="width:${n?Math.round(fait/n*100):0}%"></div></div>
+          <div class="adp-c-meta">
+            <span class="adp-c-tag">${fait}/${n} étapes</span>
+            ${p?`<span class="adp-c-tag">${adpEsc(p.name)}</span>`:''}</div>
+          ${suiv?`<div class="adp-c-next">▸ ${adpEsc(suiv.label)}${suiv.due?` · ${suiv.due}`:''}</div>`:'<div class="adp-c-next">Toutes les étapes sont faites.</div>'}
+        </div>`;}).join('')}</div>
+      <div class="adp-sec">Bibliothèque</div>`:''}
     ${list.length?cats.map(cat=>`<div class="adp-sec">${adpEsc(cat)}</div><div class="adp-grid">`+
       list.filter(t=>(t.category||'Sans catégorie')===cat).map(t=>`
       <div class="adp-card" onclick="openAdpTpl('${t.id}')">
         <div class="adp-c-head"><span class="adp-c-name">${adpEsc(t.title)}</span>
           <button class="gl-edit" onclick="event.stopPropagation();openAdpTplModal('${t.id}','${kind}')" title="Renommer">✎</button></div>
-        <div class="adp-c-body">${adpEsc(String(t.body||'').replace(/\s+/g,' ').slice(0,140))}</div>
-        ${kind==='mail'?`<div class="adp-c-meta">${adpTplVars(t.body).map(v=>`<span class="adp-c-tag">{{${adpEsc(v)}}}</span>`).join('')||'<span class="adp-c-tag quiet">sans variable</span>'}</div>`:''}
+        <div class="adp-c-body">${adpEsc(adpPlain(t.body).replace(/\s+/g,' ').trim().slice(0,140))}</div>
+        ${kind==='mail'?`<div class="adp-c-meta">${adpTplVars(t.body).map(v=>`<span class="adp-c-tag">{{${adpEsc(v)}}}</span>`).join('')||'<span class="adp-c-tag quiet">sans variable</span>'}${t.followup?`<span class="adp-c-tag warn">relance J+${t.followup}</span>`:''}</div>`
+          :`<div class="adp-c-meta">
+            <span class="adp-c-tag${tplSteps(t).length?'':' quiet'}">${tplSteps(t).length||'aucune'} étape${tplSteps(t).length>1?'s':''}</span>
+            ${tplSteps(t).length?`<button class="adp-act" onclick="event.stopPropagation();openRunLaunch('${t.id}')">▶ Lancer</button>`:''}</div>`}
       </div>`).join('')+`</div>`).join('')
       :`<div class="gl-empty">Aucun${kind==='mail'?' modèle':'e procédure'}. Crée le premier avec le bouton ci-dessus.</div>`}`;
 }
@@ -6249,10 +6331,13 @@ function renderAdpTplPage(el,t){
       <button class="sb-btn${adpTplMode==='read'?' on':''}" onclick="setAdpTplMode('read')">Lecture</button>
       <button class="sb-btn${adpTplMode==='edit'?' on':''}" onclick="setAdpTplMode('edit')">Écrire</button>
       ${t.kind==='mail'?`<button class="gl-pill" onclick="openAdpCompose(null,'${t.id}')">✉ Utiliser</button>`:
-        `<button class="gl-pill" onclick="adpCopy(adpTplById('${t.id}').body)">Copier</button>`}
+        `<button class="gl-pill" onclick="openRunLaunch('${t.id}')">▶ Lancer sur un projet</button>
+         <button class="gl-pill" onclick="adpCopy(adpTplById('${t.id}').body)">Copier</button>`}
       <button class="gl-pill danger" onclick="adpDeleteTpl('${t.id}')">Supprimer</button>
     </div>
+    ${t.kind==='procedure'?'<div class="run-steps" id="tplSteps"></div>':''}
     <div class="adp-tpl" id="adpTplBody"></div>`;
+  if(t.kind==='procedure')renderTplSteps(t);
   renderAdpTplBody();
 }
 function setAdpTplMode(m){ adpTplMode=m; renderAdpTplBody(); }
@@ -6382,9 +6467,14 @@ function renderAdpCompose(){
     (manque.length?`<div class="cp-warn">Variables non remplies : ${manque.map(v=>`{{${adpEsc(v)}}}`).join(' ')}</div>`:'');
   const to=c&&c.email?c.email:'';
   document.getElementById('cpMail').style.display=to?'':'none';
+  const fu=t&&t.followup?t.followup:0;
+  const box=document.getElementById('cpFollow');
+  box.style.display=fu?'':'none';
+  box.innerHTML=fu?`<label class="cp-fu"><input type="checkbox" id="cpFuOn" checked>
+    Créer la tâche de relance dans ${fu} jours${c?` — ${adpEsc(c.name)}`:''}</label>`:'';
   document.getElementById('cpMail').onclick=()=>{
     location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    if(c)adpTouch(c.id);
+    adpAfterSend(c,p,t,subject);
   };
 }
 function adpComposeCopy(){
@@ -6392,6 +6482,23 @@ function adpComposeCopy(){
   const c=adpComposeCont?adpContById(adpComposeCont):null;
   const p=adpComposeProj?adpProjById(adpComposeProj):null;
   adpCopy(adpPlain(adpFill(t?t.body:'',c,p)));
+  adpAfterSend(c,p,t,adpSplitMail(adpFill(t?t.body:'',c,p)).subject);
+}
+// Un mail parti sans relance programmée est un mail qu'on oubliera. Le modèle
+// porte le délai ; la tâche se crée ici, étiquetée du projet, une seule fois.
+async function adpAfterSend(c,p,t,subject){
+  if(c)await adpTouch(c.id);
+  const fu=t&&t.followup?t.followup:0;
+  const on=document.getElementById('cpFuOn');
+  if(!fu||!on||!on.checked)return;
+  on.checked=false;
+  const due=plusDaysFrom(td(),fu);
+  const nt={id:Date.now(),title:`Relancer ${c?c.name:'le destinataire'}${subject?` — ${subject}`:''}`,
+    column:taskColumnFromDate(due),importance:3,due_date:due,created_at:td(),completed_at:'',
+    notes:`Sans réponse à « ${t.title} » envoyé le ${td()}.`,project:p?p.client||'':'',
+    recurrence:'',checklist:'',snoozes:0};
+  tasks.push(nt); allTasks.push(nt); refreshActive(); render(); await persist();
+  toast(`Relance créée pour le ${due}`,'ok');
 }
 async function adpCopy(txt){
   try{ await navigator.clipboard.writeText(txt); toast('Copié','ok'); }
@@ -6490,7 +6597,12 @@ function openAdpTplModal(id,kind){
       placeholder="${k==='mail'?'Relance sans réponse':'Ouverture de chantier'}"></div>
     <div class="field"><label>Catégorie</label><input type="text" id="atCat" value="${adpEsc(t?t.category:'')}" list="atCatList" placeholder="Relances">
       <datalist id="atCatList">${cats.map(c=>`<option value="${adpEsc(c)}">`).join('')}</datalist></div>
-    ${k==='mail'?`<div class="fld-hint">Variables disponibles : ${ADP_VARS.map(v=>`<code>{{${v}}}</code>`).join(' ')}. Une première ligne « Objet : … » devient le sujet du mail.</div>`:''}`;
+    ${k==='mail'?`<div class="field"><label>Relance automatique</label>
+      <select id="atFollow">
+        ${[[0,'Aucune'],[3,'Dans 3 jours'],[7,'Dans 7 jours'],[10,'Dans 10 jours'],[14,'Dans 14 jours'],[21,'Dans 21 jours']]
+          .map(([v2,l])=>`<option value="${v2}"${(t?t.followup:0)===v2?' selected':''}>${l}</option>`).join('')}</select>
+      <div class="fld-hint">À l'envoi, propose de créer la tâche de relance à cette échéance.</div></div>
+    <div class="fld-hint">Variables disponibles : ${ADP_VARS.map(v=>`<code>{{${v}}}</code>`).join(' ')}. Une première ligne « Objet : … » devient le sujet du mail.</div>`:''}`;
   document.getElementById('adpDel').style.display=t?'':'none';
   document.getElementById('adpModal').classList.add('open');
   setTimeout(()=>document.getElementById('atTitle').focus(),60);
@@ -6521,7 +6633,8 @@ async function saveAdpModal(){
     const title=v('atTitle'); if(!title){ toast('Le titre est obligatoire','err'); return; }
     const t=adpEditId?adpTplById(adpEditId):null;
     obj={id:adpEditId||adpId('t'),kind:v('atKind'),title,category:v('atCat'),
-      body:t?t.body:'',created_at:t?t.created_at:td()};
+      body:t?t.body:'',created_at:t?t.created_at:td(),
+      steps:t?t.steps||'':'',followup:parseInt(v('atFollow'),10)||0};
   }
   if(!obj)return;
   closeAdpModal();
@@ -6558,15 +6671,15 @@ async function adpToggleMile(id){
 // Quelques modèles pour que la page ne s'ouvre pas vide la première fois.
 const ADP_TPL_SEED=[
  ['tseed1','mail','Relance sans réponse','Relances',
-  "Objet : {{projet}} — relance\n\nBonjour {{prenom}},\n\nJe me permets de revenir vers vous concernant **{{projet}}**.\nSans retour de votre part, je ne peux pas engager l'étape suivante.\n\nPouvez-vous me dire où vous en êtes ? Je reste disponible pour en parler de vive voix.\n\nBien à vous,\n{{moi}}",'',''],
+  "Objet : {{projet}} — relance\n\nBonjour {{prenom}},\n\nJe me permets de revenir vers vous concernant **{{projet}}**.\nSans retour de votre part, je ne peux pas engager l'étape suivante.\n\nPouvez-vous me dire où vous en êtes ? Je reste disponible pour en parler de vive voix.\n\nBien à vous,\n{{moi}}",'','','',7],
  ['tseed2','mail','Compte rendu de réunion','Réunions',
-  "Objet : {{projet}} — compte rendu du {{date}}\n\nBonjour {{prenom}},\n\nVoici le compte rendu de notre échange :\n\n- **Décisions** : \n- **Points ouverts** : \n- **Prochaine étape** : \n\nSauf objection de votre part sous 48 h, je considère ce relevé comme validé.\n\nBien à vous,\n{{moi}}",'',''],
+  "Objet : {{projet}} — compte rendu du {{date}}\n\nBonjour {{prenom}},\n\nVoici le compte rendu de notre échange :\n\n- **Décisions** : \n- **Points ouverts** : \n- **Prochaine étape** : \n\nSauf objection de votre part sous 48 h, je considère ce relevé comme validé.\n\nBien à vous,\n{{moi}}",'','','',0],
  ['tseed3','mail','Alerte sur une échéance','Alertes',
-  "Objet : {{projet}} — point de vigilance sur l'échéance du {{echeance}}\n\nBonjour {{prenom}},\n\nL'échéance du **{{echeance}}** est menacée pour la raison suivante : \n\nJe vous propose l'arbitrage suivant : \n\nMerci de me confirmer votre position avant la fin de la semaine.\n\nBien à vous,\n{{moi}}",'',''],
+  "Objet : {{projet}} — point de vigilance sur l'échéance du {{echeance}}\n\nBonjour {{prenom}},\n\nL'échéance du **{{echeance}}** est menacée pour la raison suivante : \n\nJe vous propose l'arbitrage suivant : \n\nMerci de me confirmer votre position avant la fin de la semaine.\n\nBien à vous,\n{{moi}}",'','','',3],
  ['tseed4','procedure','Ouverture de chantier','Cadrage',
-  "# Ouverture de chantier\n\n## Avant le lancement\n\n- [ ] Périmètre écrit et validé par le client\n- [ ] Interlocuteur unique identifié côté client\n- [ ] Jalons posés dans ADP\n- [ ] Canal de communication décidé\n\n## Première semaine\n\n- [ ] Réunion de lancement, compte rendu envoyé sous 24 h\n- [ ] Risques identifiés et consignés dans le journal\n- [ ] Rythme de point fixé\n\n## À surveiller\n\n{orange:Un périmètre non écrit est un périmètre qui grandit.}",'',''],
+  "# Ouverture de chantier\n\n## Avant le lancement\n\n- [ ] Périmètre écrit et validé par le client\n- [ ] Interlocuteur unique identifié côté client\n- [ ] Jalons posés dans ADP\n- [ ] Canal de communication décidé\n\n## Première semaine\n\n- [ ] Réunion de lancement, compte rendu envoyé sous 24 h\n- [ ] Risques identifiés et consignés dans le journal\n- [ ] Rythme de point fixé\n\n## À surveiller\n\n{orange:Un périmètre non écrit est un périmètre qui grandit.}",'','',"tache~0~Écrire et faire valider le périmètre~\ntache~1~Identifier l'interlocuteur unique côté client~\njalon~7~Réunion de lancement~\nmail~8~Envoyer le compte rendu de lancement~tseed2\nnote~8~Consigner les risques identifiés~\njalon~14~Rythme de point fixé~\ncheck~14~Canal de communication décidé~",0],
  ['tseed5','procedure','Clôture de projet','Cadrage',
-  "# Clôture de projet\n\n- [ ] Livrables remis et accusés de réception obtenus\n- [ ] Réserves listées, datées, affectées\n- [ ] Réunion de clôture tenue\n- [ ] Retour d'expérience écrit dans le journal du projet\n- [ ] Contacts passés en « dormant » si plus de relance à prévoir\n- [ ] Statut du projet passé à « Terminé »",'','']
+  "# Clôture de projet\n\n- [ ] Livrables remis et accusés de réception obtenus\n- [ ] Réserves listées, datées, affectées\n- [ ] Réunion de clôture tenue\n- [ ] Retour d'expérience écrit dans le journal du projet\n- [ ] Contacts passés en « dormant » si plus de relance à prévoir\n- [ ] Statut du projet passé à « Terminé »",'','',"tache~0~Obtenir les accusés de réception des livrables~\ntache~3~Lister et dater les réserves~\njalon~7~Réunion de clôture~\nnote~8~Écrire le retour d'expérience~\ncheck~10~Contacts passés en dormant~\ncheck~10~Statut du projet passé à Terminé~",0]
 ];
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -6670,6 +6783,16 @@ function computeSignals(){
     `${c.name} n'a pas été relancé depuis le ${c.last_contact}`,
     `Cadence prévue : ${c.cadence} jours.`,
     ()=>{ switchPage('adp'); setAdpView('contacts'); openAdpCompose(c.id); }));
+  // Une procédure lancée dont une étape a passé son échéance : c'est
+  // l'engagement qu'on a pris qui dérape, pas seulement une tâche.
+  runActive().forEach(r=>{
+    const late=runLate(r);
+    if(!late.length)return;
+    push(`r.${r.id}`,'orange',
+      `${late.length} étape${late.length>1?'s':''} en retard sur « ${r.title} »`,
+      `La plus ancienne : « ${late[0].label} », échéance du ${late[0].due}.`,
+      ()=>{ switchPage('adp'); setAdpView('procedures'); openRun(r.id); });
+  });
   // Un projet actif dont le journal n'a pas bougé depuis trois semaines
   adpProjects.filter(p=>p.status==='actif'&&p.note_id).forEach(p=>{
     const n=noteById(p.note_id);
@@ -6753,6 +6876,303 @@ function renderSignals(){
     +sigHtml(shown,false)
     +(reste>0?`<button class="sig-more" onclick="sigToggleAll()">+ ${reste} autre${reste>1?'s':''}</button>`
       :sigExpanded&&sigCur.length>SIG_MAX?`<button class="sig-more" onclick="sigToggleAll()">Réduire</button>`:'');
+}
+
+// ── Procédures exécutables ────────────────────────────────────────────────
+// Une procédure lue est une procédure oubliée. Celle-ci porte des ÉTAPES
+// typées : on la lance sur un projet, elle crée réellement les tâches et les
+// jalons aux bonnes dates, et le suivi se fait ensuite tout seul — une étape
+// de type tâche se coche quand la tâche du board est terminée.
+//
+// Le corps markdown reste : il porte le pourquoi et le contexte. Les étapes
+// portent le quoi-faire. Les deux ne se remplacent pas.
+const RUN_TYPES=[
+  ['check',  'À cocher',        '☐', 'Rien n\'est créé : on constate.'],
+  ['tache',  'Tâche du board',  '✅', 'Crée une tâche, étiquetée du projet. Cochée quand la tâche est terminée.'],
+  ['jalon',  'Jalon du projet', '⛳', 'Crée un jalon ADP. Coché quand le jalon est fait.'],
+  ['mail',   'Envoi d\'un modèle','✉', 'Ouvre le modèle de mail choisi, pré-rempli.'],
+  ['note',   'Entrée au journal','📝', 'Ajoute une ligne datée au journal du projet.']];
+const runTypeMeta=t=>RUN_TYPES.find(x=>x[0]===t)||RUN_TYPES[0];
+
+let adpRuns=[], adpRunCur=null;
+
+// Étapes d'un modèle : une par ligne, « type~décalage~libellé~extra ».
+// Un format texte plutôt que du JSON : la feuille reste lisible et corrigeable
+// à la main, ce qui a déjà sauvé plus d'une donnée dans cette app.
+function parseSteps(raw){
+  return String(raw||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const p=l.split('~');
+    return {type:(p[0]||'check').trim(),off:parseInt(p[1],10)||0,
+            label:(p[2]||'').trim()||'Étape',extra:(p[3]||'').trim()};
+  }).filter(s=>s.label);
+}
+const stepsToText=arr=>arr.map(s=>[s.type,s.off,s.label,s.extra||''].join('~')).join('\n');
+const tplSteps=t=>parseSteps(t&&t.steps);
+
+const adpRunRow=r=>[r.id,r.template_id||'',r.project_id||'',r.title,r.start_date||'',
+  r.status||'actif',JSON.stringify(r.steps||[]),td()];
+async function runSave(r){
+  r.updated_at=td();
+  const i=adpRuns.findIndex(x=>x.id===r.id);
+  if(i>=0)adpRuns[i]=r; else adpRuns.push(r);
+  cacheSet('adpRuns',adpRuns);
+  return sheetUpsertByKey('adp_runs',r.id,adpRunRow(r));
+}
+async function runDelete(id){
+  adpRuns=adpRuns.filter(r=>r.id!==id);
+  cacheSet('adpRuns',adpRuns);
+  return sheetUpsertByKey('adp_runs',id,[id,'','','','','supprime','','']);
+}
+const runById=id=>adpRuns.find(r=>r.id===id)||null;
+const runActive=()=>adpRuns.filter(r=>r.status==='actif');
+
+// Une étape est faite si on l'a cochée, OU si l'objet qu'elle a créé est
+// terminé. C'est là qu'est l'automatisation du suivi : le board et les jalons
+// font avancer la procédure sans qu'on y revienne.
+function stepDone(s){
+  if(s.done)return true;
+  if(s.type==='tache'&&s.ref){
+    const t=allTasks.find(x=>String(x.id)===String(s.ref));
+    return !!(t&&t.completed_at);
+  }
+  if(s.type==='jalon'&&s.ref){
+    const m=adpMilestones.find(x=>x.id===s.ref);
+    return !!(m&&m.status==='done');
+  }
+  return false;
+}
+const runProgress=r=>{ const st=r.steps||[]; return {n:st.length,fait:st.filter(stepDone).length}; };
+const runNext=r=>(r.steps||[]).filter(s=>!stepDone(s)).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'))[0]||null;
+const runLate=r=>(r.steps||[]).filter(s=>!stepDone(s)&&s.due&&dayDiff(s.due)<0);
+
+// ── Lancement ─────────────────────────────────────────────────────────────
+let runLaunchTpl=null;
+function openRunLaunch(tplId){
+  const t=adpTplById(tplId);
+  if(!t){ return; }
+  const st=tplSteps(t);
+  if(!st.length){ toast('Cette procédure n\'a pas encore d\'étapes','info'); return; }
+  if(!adpProjects.length){ toast('Crée d\'abord un projet','info'); return; }
+  runLaunchTpl=tplId;
+  const actifs=adpProjects.filter(p=>p.status!=='archive');
+  document.getElementById('runLaunchFields').innerHTML=`
+    <div class="field"><label>Projet</label><select id="rlProj">
+      ${(actifs.length?actifs:adpProjects).map(p=>`<option value="${p.id}">${adpEsc(p.name)}${p.client?` — ${adpEsc(p.client)}`:''}</option>`).join('')}
+    </select></div>
+    <div class="field"><label>Date de départ</label><input type="date" id="rlStart" value="${td()}">
+      <div class="fld-hint">Les échéances des étapes en découlent.</div></div>
+    <div class="field"><label>Étapes qui seront créées</label>
+      <div class="run-prev">${st.map(s=>{const m=runTypeMeta(s.type);
+        return `<div class="run-pl"><span>${m[2]}</span><span class="run-pl-t">${adpEsc(s.label)}</span>
+          <span class="adp-l-sub">${m[1]} · J+${s.off}</span></div>`;}).join('')}</div></div>`;
+  document.getElementById('runLaunchModal').classList.add('open');
+}
+function closeRunLaunch(){ document.getElementById('runLaunchModal').classList.remove('open'); }
+
+async function launchRun(){
+  const t=adpTplById(runLaunchTpl); if(!t)return;
+  const pid=document.getElementById('rlProj').value;
+  const start=document.getElementById('rlStart').value||td();
+  const p=adpProjById(pid); if(!p)return;
+  closeRunLaunch();
+  showLoad(true);
+  const steps=tplSteps(t).map(s=>({...s,due:plusDaysFrom(start,s.off),done:'',ref:''}));
+  const run={id:adpId('r'),template_id:t.id,project_id:pid,
+    title:`${t.title} — ${p.name}`,start_date:start,status:'actif',steps};
+
+  // Création réelle des objets, dans l'ordre, avant d'écrire la procédure :
+  // une étape sans son objet serait un suivi qui ment.
+  const nouvelles=[];
+  for(const s of steps){
+    if(s.type==='tache'){
+      const nt={id:Date.now()+Math.floor(nouvelles.length),title:s.label,
+        column:taskColumnFromDate(s.due),importance:3,due_date:s.due,created_at:td(),
+        completed_at:'',notes:s.extra||`Étape de « ${t.title} » — ${p.name}`,
+        project:p.client||'',recurrence:'',checklist:'',snoozes:0};
+      tasks.push(nt); allTasks.push(nt); nouvelles.push(nt); s.ref=String(nt.id);
+    }else if(s.type==='jalon'){
+      const m={id:adpId('m'),project_id:pid,title:s.label,due_date:s.due,
+        status:'todo',kind:'jalon',done_at:''};
+      await adpSave('mile',m); s.ref=m.id;
+    }
+  }
+  if(nouvelles.length){ refreshActive(); render(); await persist(); }
+  const ok=await runSave(run);
+  showLoad(false);
+  if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
+  adpRunCur=run.id; adpTplCur=null;
+  renderAdp(); updateHStats();
+  const nT=steps.filter(s=>s.type==='tache').length, nJ=steps.filter(s=>s.type==='jalon').length;
+  toast(`Lancée · ${nT} tâche(s) et ${nJ} jalon(s) créés`,'ok');
+}
+// Décalage en jours à partir d'une date donnée, sans passer par l'heure locale
+function plusDaysFrom(date,n){
+  const p=String(date||td()).split('-');
+  const d=(p.length===3)?new Date(+p[0],+p[1]-1,+p[2]):new Date();
+  d.setHours(0,0,0,0); d.setDate(d.getDate()+(parseInt(n,10)||0));
+  return ymd(d);
+}
+
+// ── Exécution ─────────────────────────────────────────────────────────────
+function openRun(id){ adpRunCur=id; adpTplCur=null; renderAdp(); }
+function closeRun(){ adpRunCur=null; renderAdp(); }
+
+async function runToggleStep(i){
+  const r=runById(adpRunCur); if(!r)return;
+  const s=r.steps[i]; if(!s)return;
+  // Une étape adossée à un objet se coche en terminant l'objet, pas ici :
+  // sinon la procédure dirait « fait » sur une tâche encore ouverte.
+  if(s.type==='tache'&&s.ref){
+    const t=allTasks.find(x=>String(x.id)===String(s.ref));
+    if(t){ if(t.completed_at){ t.completed_at=''; refreshActive(); render(); await persist(); }
+           else { await completeTask(t.id); }
+           renderAdp(); return; }
+  }
+  if(s.type==='jalon'&&s.ref){
+    const m=adpMilestones.find(x=>x.id===s.ref);
+    if(m){ await adpToggleMile(m.id); renderAdp(); return; }
+  }
+  s.done=s.done?'':td();
+  const ok=await runSave(r);
+  if(!ok){ s.done=s.done?'':td(); toast("ÉCHEC de l'enregistrement",'err'); }
+  renderAdp(); updateHStats();
+}
+// Déclenche l'action d'une étape : ouvrir le modèle, écrire au journal.
+async function runStepAct(i){
+  const r=runById(adpRunCur); if(!r)return;
+  const s=r.steps[i]; if(!s)return;
+  const p=adpProjById(r.project_id);
+  if(s.type==='mail'){
+    const tpl=s.extra&&adpTplById(s.extra);
+    const contact=adpContacts.find(c=>c.project_id===r.project_id&&c.status==='actif');
+    openAdpCompose(contact?contact.id:null,tpl?tpl.id:null);
+    return;
+  }
+  if(s.type==='note'){
+    if(!p||!p.note_id){ toast('Ce projet n\'a pas encore de journal — ouvre-le une fois','info'); return; }
+    const n=noteById(p.note_id); if(!n)return;
+    const i2=n.content.indexOf('## Avancées');
+    const bloc=`\n\n### ${td()}\n\n- ${s.label}\n`;
+    n.content=i2>=0?n.content.slice(0,i2+'## Avancées'.length)+bloc+n.content.slice(i2+'## Avancées'.length)
+                   :n.content.replace(/\s*$/,'')+bloc;
+    noteIndexInvalidate(); noteCurId=n.id;
+    const ok=await noteUpsert(n);
+    if(!ok){ toast("ÉCHEC de l'écriture",'err'); return; }
+    s.done=td(); await runSave(r); renderAdp();
+    toast('Ajouté au journal du projet','ok');
+    return;
+  }
+  if(s.type==='tache'&&s.ref){ switchPage('board'); openModal(parseInt(s.ref,10)); return; }
+  if(s.type==='jalon'&&s.ref){ openAdpMileModal(s.ref); return; }
+}
+async function runArchive(){
+  const r=runById(adpRunCur); if(!r)return;
+  const prev=r.status;
+  r.status=r.status==='actif'?'clos':'actif';
+  const ok=await runSave(r);
+  if(!ok){ r.status=prev; toast("ÉCHEC",'err'); return; }
+  renderAdp(); toast(r.status==='clos'?'Procédure close':'Procédure rouverte','ok');
+}
+async function runRemove(){
+  const r=runById(adpRunCur); if(!r)return;
+  const snap={...r};
+  adpRunCur=null;
+  showLoad(true); await runDelete(r.id); showLoad(false);
+  renderAdp();
+  offerUndo(`Suivi supprimé · ${snap.title}`,async()=>{ await runSave(snap); renderAdp(); });
+}
+
+function renderRunPage(el){
+  const r=runById(adpRunCur);
+  if(!r){ adpRunCur=null; return renderAdp(); }
+  const p=adpProjById(r.project_id);
+  const {n,fait}=runProgress(r);
+  el.innerHTML=`
+    <div class="adp-tools">
+      <button class="gl-pill" onclick="closeRun()">← Procédures</button>
+      <span class="adp-title">${adpEsc(r.title)}</span>
+      <span class="adp-c-tag">${fait}/${n} étapes</span>
+      ${r.status==='clos'?'<span class="adp-c-tag">close</span>':''}
+      <div style="flex:1"></div>
+      ${p?`<button class="gl-pill" onclick="setAdpView('projets');openAdpProject('${p.id}')">Ouvrir le projet ↗</button>`:''}
+      <button class="gl-pill" onclick="runArchive()">${r.status==='actif'?'Clore':'Rouvrir'}</button>
+      <button class="gl-pill danger" onclick="runRemove()">Supprimer</button>
+    </div>
+    <div class="run-panel">
+      <div class="run-bar"><div class="run-bar-in" style="width:${n?Math.round(fait/n*100):0}%"></div></div>
+      <div class="adp-sec">Étapes · départ le ${r.start_date}</div>
+      ${(r.steps||[]).map((s,i)=>{
+        const m=runTypeMeta(s.type), d=stepDone(s);
+        const late=!d&&s.due&&dayDiff(s.due)<0;
+        return `<div class="adp-line${d?' done':''}${late?' late':''}">
+          <button class="adp-check${d?' on':''}" onclick="runToggleStep(${i})" title="${d?'Rouvrir':'Marquer fait'}"></button>
+          <span class="adp-l-main" onclick="runStepAct(${i})">
+            <span>${m[2]} ${adpEsc(s.label)}</span>
+            <span class="adp-l-sub">${m[1]}${s.due?` · ${s.due}`:''}${s.ref?' · lié':''}</span></span>
+          ${late?'<span class="adp-l-flag">en retard</span>':''}
+          ${s.type==='mail'||s.type==='note'||s.ref?`<button class="adp-act" onclick="runStepAct(${i})">Ouvrir</button>`:''}
+        </div>`;}).join('')}
+    </div>`;
+}
+
+// ── Éditeur d'étapes d'un modèle ──────────────────────────────────────────
+function renderTplSteps(t){
+  const host=document.getElementById('tplSteps'); if(!host)return;
+  const st=tplSteps(t);
+  const mails=adpTemplates.filter(x=>x.kind==='mail');
+  host.innerHTML=`<div class="adp-sec">Étapes
+      <button class="adp-mini" onclick="tplAddStep()" title="Ajouter une étape">+</button></div>`
+    +(st.length?st.map((s,i)=>`<div class="run-edit">
+        <span class="run-drag">${i+1}</span>
+        <select class="run-f" onchange="tplStepSet(${i},'type',this.value)">
+          ${RUN_TYPES.map(([v,l,ic])=>`<option value="${v}"${s.type===v?' selected':''}>${ic} ${l}</option>`).join('')}
+        </select>
+        <input class="run-f run-lbl" value="${adpEsc(s.label)}" placeholder="Intitulé"
+               onchange="tplStepSet(${i},'label',this.value)">
+        <label class="run-off">J+<input class="run-f" type="number" value="${s.off}"
+               onchange="tplStepSet(${i},'off',this.value)"></label>
+        ${s.type==='mail'?`<select class="run-f" onchange="tplStepSet(${i},'extra',this.value)">
+          <option value="">— modèle —</option>
+          ${mails.map(m=>`<option value="${m.id}"${s.extra===m.id?' selected':''}>${adpEsc(m.title)}</option>`).join('')}
+        </select>`:''}
+        <button class="adp-act" onclick="tplStepMove(${i},-1)" title="Monter">↑</button>
+        <button class="adp-act" onclick="tplStepMove(${i},1)" title="Descendre">↓</button>
+        <button class="adp-act" onclick="tplStepDel(${i})" title="Retirer">✕</button>
+      </div>`).join('')
+      :'<div class="sb-none">Aucune étape. Sans étapes, la procédure ne se lance pas — elle se lit seulement.</div>')
+    +`<div class="fld-hint">${RUN_TYPES.map(([,l,ic,d])=>`${ic} <b>${l}</b> — ${d}`).join('<br>')}</div>`;
+}
+let tplStepTimer=null;
+function tplStepsCommit(t){
+  clearTimeout(tplStepTimer);
+  tplStepTimer=setTimeout(async()=>{ if(!(await adpSave('tpl',t)))toast("ÉCHEC de l'enregistrement",'err'); },600);
+}
+function tplAddStep(){
+  const t=adpTplById(adpTplCur); if(!t)return;
+  const st=tplSteps(t);
+  st.push({type:'check',off:st.length?st[st.length-1].off:0,label:'Nouvelle étape',extra:''});
+  t.steps=stepsToText(st); renderTplSteps(t); tplStepsCommit(t);
+}
+function tplStepSet(i,champ,val){
+  const t=adpTplById(adpTplCur); if(!t)return;
+  const st=tplSteps(t); if(!st[i])return;
+  st[i][champ]=champ==='off'?(parseInt(val,10)||0):String(val).replace(/~|\n/g,' ').trim();
+  if(champ==='label'&&!st[i].label)st[i].label='Étape';
+  t.steps=stepsToText(st);
+  if(champ==='type')renderTplSteps(t);
+  tplStepsCommit(t);
+}
+function tplStepMove(i,d){
+  const t=adpTplById(adpTplCur); if(!t)return;
+  const st=tplSteps(t), j=i+d;
+  if(j<0||j>=st.length)return;
+  [st[i],st[j]]=[st[j],st[i]];
+  t.steps=stepsToText(st); renderTplSteps(t); tplStepsCommit(t);
+}
+function tplStepDel(i){
+  const t=adpTplById(adpTplCur); if(!t)return;
+  const st=tplSteps(t); st.splice(i,1);
+  t.steps=stepsToText(st); renderTplSteps(t); tplStepsCommit(t);
 }
 
 // ── Budget du portefeuille ────────────────────────────────────────────────
@@ -6956,7 +7376,7 @@ function renderAdpBudget(el){
       <button class="gl-pill" onclick="setBudYear(${adpBudYear+1})">▶</button>
       <input type="search" class="gl-search" placeholder="Projet, domaine, client…" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
       <div style="flex:1"></div>
-      <span class="bud-legend">Estimé saisi par CAPEX · réalisé saisi par nature · le reste est calculé</span>
+      <span class="bud-legend"><b></b> cases saisissables · le reste est calculé</span>
     </div>`
     +(list.length?`<div class="bud-wrap"><table class="bud">
       <thead><tr>
@@ -9915,7 +10335,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.33.0';
+const APP_VERSION='v1.34.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
