@@ -366,6 +366,12 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .td-sport-t{font-size:0.85rem;font-weight:700;margin:0.25rem 0 0.45rem}
 .td-sport-c{font-size:0.72rem;line-height:1.45;color:var(--text-mid)}
 .td-sport-b{font-size:0.7rem;color:var(--green);margin-top:0.45rem}
+.td-sp-act{display:flex;gap:0.35rem;margin-top:0.7rem}
+.td-sp-b{flex:1;min-height:2.4rem;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);font-family:var(--font-mono);font-size:0.55rem;border-radius:6px;cursor:pointer}
+.td-sp-b:hover{border-color:var(--text-mid);color:var(--text)}
+.td-sp-b.on.done{background:rgba(74,222,128,0.15);border-color:var(--green);color:var(--green)}
+.td-sp-b.on.partial{background:rgba(251,191,36,0.15);border-color:var(--warn);color:var(--warn)}
+.td-sp-b.on.skipped{background:rgba(248,113,113,0.15);border-color:var(--danger);color:var(--danger)}
 .td-go{margin-top:0.8rem;width:100%;background:rgba(124,106,255,0.08);border:1px solid rgba(124,106,255,0.28);color:var(--accent);font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:0.1em;padding:0.4rem;cursor:pointer;text-transform:uppercase}
 .td-go:hover{background:rgba(124,106,255,0.2)}
 @media (max-width:900px){.td-grid{grid-template-columns:1fr}.td-wrap{padding:0.9rem 0.7rem 4rem}}
@@ -2699,10 +2705,10 @@ async function toggleHabit(habitId, dateStr) {
     // Uncheck — remove from log and rewrite sheet
     const removed=habitsLog[existing];
     habitsLog.splice(existing, 1);
-    renderHabitsPage();if(curPage==='today')renderTodayPage();
+    renderHabitsPage();if(curPage==='today')renderTodayPage();updateHStats();
     offerUndo(`Décoché · ${h.title}`,async()=>{
       habitsLog.push(removed);
-      renderHabitsPage();if(curPage==='today')renderTodayPage();
+      renderHabitsPage();if(curPage==='today')renderTodayPage();updateHStats();
       await rewriteHabitsLog();
     });
     await rewriteHabitsLog();
@@ -2710,12 +2716,12 @@ async function toggleHabit(habitId, dateStr) {
     // Check — append to log
     const entry = { id: Date.now(), habit_id: habitId, date: day, reward_eur: h.reward_eur, category: h.category };
     habitsLog.push(entry);
-    renderHabitsPage();if(curPage==='today')renderTodayPage();
+    renderHabitsPage();if(curPage==='today')renderTodayPage();updateHStats();
     await appendHabitsLog(entry);
     offerUndo(`✓ +${h.reward_eur.toFixed(2)}€ · ${h.title}`,async()=>{
       const i=habitsLog.indexOf(entry);
       if(i>=0)habitsLog.splice(i,1);
-      renderHabitsPage();if(curPage==='today')renderTodayPage();
+      renderHabitsPage();if(curPage==='today')renderTodayPage();updateHStats();
       await rewriteHabitsLog();
     });
   }
@@ -3113,14 +3119,38 @@ async function renderTodayPage(){
   const plan=sportPlanFor(today),log=sportLogFor(today);
   const st=log?(log.status||''):'';
   document.getElementById('tdSport').innerHTML=
-    `<div class="td-t">Séance${st?` <span class="td-n">${tdEsc(st)}</span>`:''}</div>`+
+    `<div class="td-t">Séance${st?` <span class="td-n">${tdEsc(sportStatusLabel(st))}</span>`:''}</div>`+
     (plan?`<div class="td-sport">
         <div class="td-sport-h">${tdEsc(plan.type||'')}${plan.duration?` · ${plan.duration} min`:''}</div>
         <div class="td-sport-t">${tdEsc(plan.title||'')}</div>
         ${plan.content?`<div class="td-sport-c">${tdEsc(plan.content).replace(/\n/g,'<br>')}</div>`:''}
         ${plan.bonus?`<div class="td-sport-b">★ ${tdEsc(plan.bonus)}</div>`:''}
       </div>`:'<div class="td-empty">Aucune séance programmée.</div>')+
+    // Les taches et les habitudes se cochent ici ; la seance ne renvoyait qu'a
+    // un autre onglet. Elle se traite desormais sur place.
+    (plan&&!/repos/i.test(plan.type)?`<div class="td-sp-act">`+
+      [['done','✅ Fait'],['partial','◐ Partiel'],['skipped','✕ Pas fait']].map(([v,l])=>
+        `<button class="td-sp-b${st===v?' on '+v:''}" onclick="quickSportStatus('${v}')">${l}</button>`).join('')+
+      `</div>`:'')+
     `<button class="td-go" onclick="switchPage('sport')">Ouvrir SPORT →</button>`;
+}
+
+// Enregistre le statut du jour sans quitter la page, en preservant ce qui a
+// deja ete saisi (ressenti, poids, exercices).
+async function quickSportStatus(st){
+  const d=td();
+  const prev=sportLogFor(d);
+  const before=prev?prev.status:'';
+  if(before===st)return;
+  const log=Object.assign({date:d,status:'',exercises:'',feeling:0,weight:0,comment:'',bonusDone:false},prev||{},{status:st});
+  showLoad(true);const ok=await sportUpsertLog(log);showLoad(false);
+  if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
+  renderTodayPage();updateHStats();
+  offerUndo(`Séance · ${sportStatusLabel(st)}`,async()=>{
+    const back=Object.assign({},log,{status:before});
+    await sportUpsertLog(back);
+    renderTodayPage();updateHStats();
+  });
 }
 
 // Une ligne d'habitude, avec les mêmes repères que la page HABITUDES :
@@ -3545,6 +3575,23 @@ function renderSubTabs(){
 // ── Indicateurs du header ─────────────────────────────────────────────────
 // Ils etaient tous issus du board et restaient identiques partout. Ils suivent
 // desormais la page ouverte, et montrent ce qui s'y decide.
+// ── Pastille de l'icone ───────────────────────────────────────────────────
+// Ce qui reste a faire aujourd'hui, visible sur l'ecran d'accueil sans ouvrir
+// l'app. Sans effet hors PWA installee, ou l'API n'existe pas.
+function updateAppBadge(){
+  if(!('setAppBadge' in navigator))return;
+  try{
+    const day=td();
+    const t=tasks.filter(x=>taskColumnFromDate(x.due_date)==="Aujourd'hui").length;
+    const h=habits.filter(x=>x.active&&isHabitDueToday(x.frequency))
+      .filter(x=>!habitsLog.some(l=>String(l.habit_id)===String(x.id)&&l.date===day)).length;
+    const plan=sportPlanFor(day);
+    const s=(plan&&!/repos/i.test(plan.type)&&!((sportLogFor(day)||{}).status))?1:0;
+    const n=t+h+s;
+    if(n)navigator.setAppBadge(n); else navigator.clearAppBadge();
+  }catch(e){}
+}
+
 function updateHStats(){
   const el=document.getElementById('hStats');
   if(!el)return;
@@ -3592,6 +3639,7 @@ function updateHStats(){
   }
   const pr=document.querySelector('.proj-shortcuts');
   if(pr)pr.style.display=curPage==='board'?'flex':'none';
+  updateAppBadge();
 }
 
 // ── Rendu de la page ──────────────────────────────────────────────────────
@@ -7634,7 +7682,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.25.0';
+const APP_VERSION='v1.26.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
@@ -7678,7 +7726,7 @@ if('serviceWorker' in navigator){
     }).catch(()=>{});
     navigator.serviceWorker.addEventListener('controllerchange',swReload);
   });
-  document.addEventListener('visibilitychange',()=>{ if(!document.hidden)swCheck(); });
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden)updateAppBadge(); else swCheck(); });
   window.addEventListener('focus',()=>swCheck());
 }
 // Echappatoire manuelle : un appui sur le numero de version force la
