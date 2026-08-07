@@ -988,26 +988,39 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sig-more:hover{color:var(--text);border-color:var(--text-dim)}
 
 /* ── Budget du portefeuille ──────────────────────────────────────────────── */
+/* Les largeurs des colonnes figées sont des variables : les décalages sticky
+   sont calculés à partir d'elles, la mise en page reste juste sur mobile. */
+:root{--w1:300px;--w2:130px;--w3:130px;--wy:112px}
 .bud-wrap{overflow:auto;max-height:calc(100vh - 210px);border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .bud{border-collapse:separate;border-spacing:0;font-size:0.72rem;width:max-content;min-width:100%}
 .bud th{position:sticky;top:0;z-index:3;background:var(--surface2);font-family:var(--font-mono);font-size:0.5rem;
   letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);font-weight:400;
   padding:0.5rem 0.6rem;border-bottom:1px solid var(--border2);white-space:nowrap;text-align:right}
-.bud td{padding:0.28rem 0.6rem;border-bottom:1px solid var(--border);white-space:nowrap}
-.bud .bud-c1{text-align:left;position:sticky;left:0;z-index:2;background:var(--surface);min-width:250px;max-width:340px;
-  overflow:hidden;text-overflow:ellipsis}
+.bud td{padding:0.26rem 0.6rem;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:top}
+.bud .bud-c1{text-align:left;position:sticky;left:0;z-index:2;background:var(--surface);
+  width:var(--w1);min-width:var(--w1);max-width:var(--w1);overflow:hidden;text-overflow:ellipsis}
 .bud th.bud-c1{z-index:4;background:var(--surface2);text-align:left}
-.bud .bud-c2{text-align:right;position:sticky;left:250px;z-index:2;background:var(--surface);min-width:120px}
-.bud th.bud-c2{z-index:4;background:var(--surface2)}
-.bud .bud-c3{text-align:right;font-family:var(--font-mono);min-width:110px;border-right:2px solid var(--border2);color:var(--text)}
-.bud .bud-n{text-align:right;font-family:var(--font-mono);min-width:88px;color:var(--text-mid)}
-.bud-r:hover .bud-c1,.bud-r:hover .bud-c2{background:var(--surface2)}
+.bud .bud-c2{text-align:right;position:sticky;left:var(--w1);z-index:2;background:var(--surface);
+  min-width:var(--w2);width:var(--w2)}
+.bud .bud-c3{text-align:right;position:sticky;left:calc(var(--w1) + var(--w2));z-index:2;background:var(--surface);
+  font-family:var(--font-mono);min-width:var(--w3);width:var(--w3);color:var(--text)}
+.bud th.bud-c2,.bud th.bud-c3,.bud th.bud-y{z-index:4;background:var(--surface2)}
+/* rappel par année : figé lui aussi, c'est le résumé qu'on veut garder sous les yeux */
+.bud .bud-y{text-align:right;position:sticky;z-index:2;background:var(--surface);
+  min-width:var(--wy);width:var(--wy);font-family:var(--font-mono)}
+.bud .bud-y:last-of-type,.bud th.bud-y:last-of-type{border-right:2px solid var(--border2)}
+.bud tr td.bud-y:nth-last-of-type(13),.bud tr th.bud-y:nth-last-of-type(13){border-right:2px solid var(--border2)}
+.bud-y-r{color:var(--text-mid)}
+.bud-y-e{font-size:0.58rem}
+.bud-y-e.ro{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);letter-spacing:0.04em;margin-top:1px}
+.bud .bud-n{text-align:right;font-family:var(--font-mono);min-width:92px;color:var(--text-mid)}
+.bud-r:hover .bud-c1,.bud-r:hover .bud-c2,.bud-r:hover .bud-c3,.bud-r:hover .bud-y{background:var(--surface2)}
 .bud-p .bud-c1{cursor:pointer;font-weight:700;color:var(--text)}
-.bud-p .bud-c3{font-weight:700}
-.bud-p .bud-c3.over{color:var(--danger)}
+.bud-p .bud-c2,.bud-p .bud-c3{font-weight:700}
+.bud-c3.over{color:var(--danger)}
 .bud-cx .bud-c1{cursor:pointer;color:var(--text-mid);font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.06em}
 .bud-nat .bud-c1{color:var(--text-dim);font-size:0.68rem}
-.bud-nat .bud-c3{color:var(--text-dim)}
+.bud-nat .bud-c3,.bud-nat .bud-y-r{color:var(--text-dim)}
 .bud-car{display:inline-block;width:1rem;color:var(--text-dim);flex-shrink:0}
 .bud-car.lvl2{margin-left:0.9rem}
 .bud-car.lvl3{margin-left:1.9rem}
@@ -1015,18 +1028,31 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .bud-tot td{background:var(--surface2);font-weight:700;font-family:var(--font-mono);border-top:2px solid var(--border2);border-bottom:none;
   position:sticky;bottom:0;z-index:3}
 .bud-tot .bud-c1{z-index:5;letter-spacing:0.1em;font-size:0.55rem}
-.bud-tot .bud-c2{z-index:5;text-align:right}
+.bud-tot .bud-c2,.bud-tot .bud-c3,.bud-tot .bud-y{z-index:5;text-align:right}
 .bud-i{width:100%;background:none;border:1px solid transparent;border-radius:4px;color:var(--text);
-  font-family:var(--font-mono);font-size:0.7rem;padding:0.15rem 0.3rem;text-align:right;outline:none}
+  font-family:var(--font-mono);font-size:0.7rem;padding:0.12rem 0.3rem;text-align:right;outline:none}
 .bud-i:hover{border-color:var(--border2)}
 .bud-i:focus{border-color:var(--accent);background:var(--surface3)}
-.bud-edit{padding:0.1rem 0.25rem}
-.bud-est{color:var(--text-mid)}
+.bud-edit{padding:0.08rem 0.25rem}
+.bud-est{color:var(--text)}
+input.bud-y-e{font-size:0.58rem;padding:0;color:var(--text-dim);margin-top:1px}
+input.bud-y-e:focus{color:var(--text)}
 .bud-legend{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;color:var(--text-dim)}
 @media(max-width:900px){
-  .bud .bud-c1{min-width:170px}
-  .bud .bud-c2{left:170px;min-width:96px}
+  :root{--w1:150px;--w2:96px;--w3:96px;--wy:88px}
+  .bud .bud-n{min-width:84px}
 }
+
+/* Barres de défilement : celles du système sont trop fines pour être attrapées
+   à la souris, or le tableau de budget se parcourt surtout à l'horizontale. */
+*{scrollbar-width:auto;scrollbar-color:var(--border2) var(--surface2)}
+::-webkit-scrollbar{width:13px;height:13px}
+::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:8px;border:3px solid var(--surface2)}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
+::-webkit-scrollbar-corner{background:var(--surface2)}
+.bud-wrap::-webkit-scrollbar{height:18px;width:15px}
+.bud-wrap::-webkit-scrollbar-thumb{border-width:4px}
 
 /* ═══════════════════════════════
    THEME — ① BRUTALIST
@@ -5275,8 +5301,8 @@ function cmdSearch(q){
   habits.filter(h=>h.active&&(hit(h.title)||hit(h.category))).slice(0,20).forEach(h=>
     out.push({kind:'Habitude',label:h.title,meta:h.category,
               go:()=>{switchPage('habits');openHabitModal(h.id);}}));
-  adpProjects.filter(p=>hit(p.name)||hit(p.client)).slice(0,10).forEach(p=>
-    out.push({kind:'Projet',label:p.name,meta:p.client||'',
+  adpProjects.filter(p=>hit(p.name)||hit(p.client)||hit(p.domaine)).slice(0,10).forEach(p=>
+    out.push({kind:'Projet',label:p.name,meta:[p.domaine,p.client].filter(Boolean).join(' · '),
               go:()=>{switchPage('adp');setAdpView('projets');openAdpProject(p.id);}}));
   adpContacts.filter(c=>hit(c.name)||hit(c.org)||hit(c.role)||hit(c.email)).slice(0,10).forEach(c=>
     out.push({kind:'Contact',label:c.name,meta:[c.role,c.org].filter(Boolean).join(' · '),
@@ -5759,14 +5785,14 @@ const MES_SEED=[
 //     [[liens]], du graphe et de la recherche — sans une ligne de plus.
 //   · les MODÈLES et PROCÉDURES gardent leur corps dans la feuille : ce sont
 //     des documents de référence, courts, qu'on remplit plutôt qu'on écrit.
-const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at','budget'];
+const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at','budget','domaine'];
 const ADP_CONT_HEADER = ['id','name','org','role','email','phone','project_id','cadence','last_contact','status','notes','updated_at'];
 const ADP_MILE_HEADER = ['id','project_id','title','due_date','status','kind','done_at','updated_at'];
 const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at'];
 const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updated_at'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
-const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'L'],['adp_contacts',ADP_CONT_HEADER,'L'],
+const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'M'],['adp_contacts',ADP_CONT_HEADER,'L'],
                     ['adp_milestones',ADP_MILE_HEADER,'H'],['adp_templates',ADP_TPL_HEADER,'G'],
                     ['adp_budget',ADP_BUD_HEADER,'G']];
 
@@ -5820,7 +5846,7 @@ async function loadAdp(){
   if(!accessToken)return;
   await ensureAdpSheets();
   const [pr,co,mi,tp,bu]=await Promise.all([
-    adpFetch('adp_projects','A:L'), adpFetch('adp_contacts','A:L'),
+    adpFetch('adp_projects','A:M'), adpFetch('adp_contacts','A:L'),
     adpFetch('adp_milestones','A:H'), adpFetch('adp_templates','A:G'),
     adpFetch('adp_budget','A:G')]);
   const dedupe=arr=>{const m={};arr.forEach(o=>{m[o.id]=o;});return Object.values(m);};  // la dernière ligne gagne
@@ -5828,7 +5854,8 @@ async function loadAdp(){
     status:adpCell(x,3)||'actif',start_date:adpCell(x,4),deadline:adpCell(x,5),
     health:adpCell(x,6)||'vert',note_id:adpCell(x,7),color:adpCell(x,8),
     created_at:adpCell(x,9),updated_at:adpCell(x,10),
-    budget:parseFloat(String(adpCell(x,11)).replace(',','.'))||0})));
+    budget:parseFloat(String(adpCell(x,11)).replace(',','.'))||0,
+    domaine:adpCell(x,12)})));
   adpContacts=dedupe(co.map(x=>({id:adpCell(x,0),name:adpCell(x,1)||'Sans nom',org:adpCell(x,2),
     role:adpCell(x,3),email:adpCell(x,4),phone:adpCell(x,5),project_id:adpCell(x,6),
     cadence:parseInt(adpCell(x,7),10)||0,last_contact:adpCell(x,8),
@@ -5856,7 +5883,7 @@ function adpRestoreCache(){
   adpBudget=cacheGet('adpBudget',[]);
 }
 const adpProjRow=p=>[p.id,p.name,p.client||'',p.status||'actif',p.start_date||'',p.deadline||'',
-  p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td(),String(p.budget||0)];
+  p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td(),String(p.budget||0),p.domaine||''];
 const adpContRow=c=>[c.id,c.name,c.org||'',c.role||'',c.email||'',c.phone||'',c.project_id||'',
   String(c.cadence||0),c.last_contact||'',c.status||'actif',c.notes||'',td()];
 const adpMileRow=m=>[m.id,m.project_id||'',m.title,m.due_date||'',m.status||'todo',m.kind||'jalon',m.done_at||'',td()];
@@ -5946,7 +5973,7 @@ function toggleAdpArchived(){ adpShowArchived=!adpShowArchived; renderAdp(); }
 function renderAdpProjects(el){
   if(adpProjCur)return renderAdpProjectPage(el);
   const q=voNorm(adpSearch);
-  const list=adpActive().filter(p=>!q||voNorm(p.name+' '+p.client).includes(q))
+  const list=adpActive().filter(p=>!q||voNorm(`${p.name} ${p.client} ${p.domaine}`).includes(q))
     .sort((a,b)=>(a.deadline||'9999').localeCompare(b.deadline||'9999')||a.name.localeCompare(b.name,'fr'));
   el.innerHTML=`
     <div class="adp-tools">
@@ -5972,7 +5999,7 @@ function adpProjCard(p){
       <span class="adp-c-name">${adpEsc(p.name)}</span>
       <button class="gl-edit" onclick="event.stopPropagation();openAdpProjModal('${p.id}')" title="Éditer">✎</button>
     </div>
-    ${p.client?`<div class="adp-c-client" style="color:${col}">${adpEsc(p.client)}</div>`:''}
+    ${p.client||p.domaine?`<div class="adp-c-client" style="color:${col}">${adpEsc([p.client,p.domaine].filter(Boolean).join(' · '))}</div>`:''}
     <div class="adp-c-meta">
       ${p.deadline?`<span class="due-badge ${late?'overdue':d<=14?'warn':'normal'}">${late?'EN RETARD':'J-'+d}</span>`:''}
       <span class="adp-c-tag">${adpEsc((ADP_STATUS.find(x=>x[0]===p.status)||['','?'])[1])}</span>
@@ -6387,6 +6414,9 @@ function openAdpProjModal(id){
   document.getElementById('adpModalTitle').textContent=p?'ÉDITER LE PROJET':'NOUVEAU PROJET';
   document.getElementById('adpFields').innerHTML=`
     <div class="field"><label>Nom</label><input type="text" id="apName" value="${adpEsc(p?p.name:'')}" placeholder="Refonte du portail"></div>
+    <div class="field"><label>Domaine</label>
+      <input type="text" id="apDomaine" value="${adpEsc(p?p.domaine:'')}" list="apDomList" placeholder="Infrastructure, Applicatif, Sécurité…">
+      <datalist id="apDomList">${[...new Set(adpProjects.map(x=>x.domaine).filter(Boolean))].map(d=>`<option value="${adpEsc(d)}">`).join('')}</datalist></div>
     <div class="field"><label>Client / projet du board</label>
       <select id="apClient">
         <option value="">— Aucun —</option>
@@ -6476,7 +6506,7 @@ async function saveAdpModal(){
     obj={id:adpEditId||adpId('p'),name,client:v('apClient'),status:v('apStatus'),
       start_date:v('apStart'),deadline:v('apDeadline'),health:v('apHealth'),
       note_id:p?p.note_id:'',color:p?p.color:'',created_at:p?p.created_at:td(),
-      budget:p?p.budget||0:0};
+      budget:p?p.budget||0:0,domaine:v('apDomaine')};
   }else if(kind==='cont'){
     const name=v('acName'); if(!name){ toast('Le nom est obligatoire','err'); return; }
     obj={id:adpEditId||adpId('c'),name,org:v('acOrg'),role:v('acRole'),email:v('acEmail'),
@@ -6750,12 +6780,33 @@ try{ const y=parseInt(localStorage.getItem(LS_BUD_YEAR),10); if(y>=2000&&y<=2100
 const budKey=(p,c,n,m)=>`${p}~${c}~${n}~${m}`;
 const budMonths=y=>Array.from({length:12},(_,i)=>`${y}-${String(i+1).padStart(2,'0')}`);
 const budAmount=(p,c,n,m)=>{ const r=adpBudget.find(x=>x.id===budKey(p,c,n,m)); return r?r.amount:0; };
+// L'estimé vit dans la même feuille, sous une nature « est » que les sommes
+// ignorent : sa portée est soit 'G' (global, tous exercices), soit une année.
+// Pas de table de plus, pas d'index à tenir.
+const budEst=(p,c,scope)=>budAmount(p,c,'est',scope);
+const budProjEst=(p,scope)=>ADP_CAPEX.reduce((s,[c])=>s+budEst(p,c,scope),0);
+// Réalisé : par mois, par année, ou tout confondu
+const budRows=(p,c,n)=>adpBudget.filter(x=>x.project_id===p&&x.capex===c&&x.nature===n&&/^\d{4}-\d{2}$/.test(x.month));
+const budNatReel=(p,c,n)=>budRows(p,c,n).reduce((s,x)=>s+x.amount,0);
+const budNatReelYear=(p,c,n,y)=>budRows(p,c,n).filter(x=>x.month.startsWith(y+'-')).reduce((s,x)=>s+x.amount,0);
+const budCapexReel=(p,c)=>ADP_NATURE.reduce((s,[n])=>s+budNatReel(p,c,n),0);
+const budCapexReelYear=(p,c,y)=>ADP_NATURE.reduce((s,[n])=>s+budNatReelYear(p,c,n,y),0);
+const budProjReel=p=>ADP_CAPEX.reduce((s,[c])=>s+budCapexReel(p,c),0);
+const budProjReelYear=(p,y)=>ADP_CAPEX.reduce((s,[c])=>s+budCapexReelYear(p,c,y),0);
+// Années à rappeler dans la partie figée : celles où quelque chose est saisi,
+// plus celle qu'on regarde. Une colonne vide n'apprend rien.
+function budYears(){
+  const set=new Set([String(adpBudYear)]);
+  adpBudget.forEach(x=>{
+    if(!x.amount)return;
+    if(/^\d{4}-\d{2}$/.test(x.month))set.add(x.month.slice(0,4));
+    else if(/^\d{4}$/.test(x.month))set.add(x.month);
+  });
+  return [...set].sort();
+}
 // Somme d'une catégorie CAPEX sur un mois : les trois natures
 const budCapexMonth=(p,c,m)=>ADP_NATURE.reduce((s,[n])=>s+budAmount(p,c,n,m),0);
 const budProjMonth =(p,m)=>ADP_CAPEX.reduce((s,[c])=>s+budCapexMonth(p,c,m),0);
-const budProjTotal =(p,mois)=>mois.reduce((s,m)=>s+budProjMonth(p,m),0);
-const budCapexTotal=(p,c,mois)=>mois.reduce((s,m)=>s+budCapexMonth(p,c,m),0);
-const budNatTotal  =(p,c,n,mois)=>mois.reduce((s,m)=>s+budAmount(p,c,n,m),0);
 // Zéro ne s'affiche pas : une grille pleine de « 0 € » masque les vrais chiffres
 const budFmt=v=>!v?'':Math.round(v).toLocaleString('fr-FR')+' €';
 
@@ -6775,19 +6826,22 @@ const budCell=k=>document.querySelector(`[data-b="${k}"]`);
 // categorie, son projet, et le total du portefeuille. Le focus ne bouge pas,
 // on peut donc remplir la grille a la tabulation.
 function budRefresh(pid,capex,month){
-  const mois=budMonths(adpBudYear);
+  const y=month.slice(0,4), list=budVisibleProjects();
   const set=(k,v)=>{ const el=budCell(k); if(el)el.textContent=budFmt(v); };
-  ADP_NATURE.forEach(([n])=>set(`nt|${pid}|${capex}|${n}`,budNatTotal(pid,capex,n,mois)));
+  const setY=(sel,v)=>{ const el=document.querySelector(sel+' .bud-y-r'); if(el)el.textContent=budFmt(v); };
+  ADP_NATURE.forEach(([n])=>set(`nrt|${pid}|${capex}|${n}`,budNatReel(pid,capex,n)));
   set(`cm|${pid}|${capex}|${month}`,budCapexMonth(pid,capex,month));
-  set(`ct|${pid}|${capex}`,budCapexTotal(pid,capex,mois));
+  set(`crt|${pid}|${capex}`,budCapexReel(pid,capex));
   set(`pm|${pid}|${month}`,budProjMonth(pid,month));
-  const tot=budProjTotal(pid,mois);
-  set(`pt|${pid}`,tot);
-  const p=adpProjById(pid), pc=budCell(`pt|${pid}`);
-  if(pc&&p)pc.classList.toggle('over',(p.budget||0)>0&&tot>(p.budget||0));
-  const list=budVisibleProjects();
+  set(`prt|${pid}`,budProjReel(pid));
+  setY(`.y-${pid}-${y}`,budProjReelYear(pid,y));
+  setY(`.ty-${y}`,list.reduce((s,x)=>s+budProjReelYear(x.id,y),0));
+  const eg=budProjEst(pid,'G'), pc=budCell(`prt|${pid}`);
+  if(pc)pc.classList.toggle('over',eg>0&&budProjReel(pid)>eg);
+  const ec=budEst(pid,capex,'G'), cc=budCell(`crt|${pid}|${capex}`);
+  if(cc)cc.classList.toggle('over',ec>0&&budCapexReel(pid,capex)>ec);
   set(`tm|${month}`,list.reduce((s,x)=>s+budProjMonth(x.id,month),0));
-  set('tt',list.reduce((s,x)=>s+budProjTotal(x.id,mois),0));
+  set('tt',list.reduce((s,x)=>s+budProjReel(x.id),0));
 }
 async function budSet(pid,capex,nature,month,raw,el){
   const v=budNum(raw);
@@ -6799,19 +6853,32 @@ async function budSet(pid,capex,nature,month,raw,el){
   if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
   budRefresh(pid,capex,month);
 }
-async function budSetEstime(pid,raw,el){
-  const p=adpProjById(pid); if(!p)return;
-  const v=budNum(raw);
+// L'estimé change les totaux de gauche mais aucun mois : redessiner le tableau
+// entier ferait perdre le focus pour rien.
+async function budSetEst(pid,capex,scope,raw,el){
+  const v=budNum(raw), avant=budEst(pid,capex,scope);
   if(el){ el.dataset.raw=v?String(v):''; el.value=v?budFmt(v):''; }
-  if(v===(p.budget||0))return;
-  p.budget=v;
-  const ok=await adpSave('proj',p);
+  if(v===avant)return;
+  const ok=await budSave({id:budKey(pid,capex,'est',scope),project_id:pid,capex,nature:'est',month:scope,amount:v});
   if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
-  const mois=budMonths(adpBudYear);
-  const pc=budCell(`pt|${pid}`);
-  if(pc)pc.classList.toggle('over',v>0&&budProjTotal(pid,mois)>v);
-  const te=budCell('te');
-  if(te)te.textContent=budFmt(budVisibleProjects().reduce((s,x)=>s+(x.budget||0),0));
+  budRefreshEst(pid,capex,scope);
+}
+function budRefreshEst(pid,capex,scope){
+  const list=budVisibleProjects();
+  const set=(k,v)=>{ const el=budCell(k); if(el)el.textContent=budFmt(v); };
+  if(scope==='G'){
+    const eg=budProjEst(pid,'G'), rt=budProjReel(pid);
+    set(`peg|${pid}`,eg);
+    const pc=budCell(`prt|${pid}`); if(pc)pc.classList.toggle('over',eg>0&&rt>eg);
+    const cc=budCell(`crt|${pid}|${capex}`);
+    if(cc)cc.classList.toggle('over',budEst(pid,capex,'G')>0&&budCapexReel(pid,capex)>budEst(pid,capex,'G'));
+    set('te',list.reduce((s,x)=>s+budProjEst(x.id,'G'),0));
+    return;
+  }
+  // rappel de l'année : la ligne projet et le total portefeuille
+  const maj=(sel,v)=>{ const el=document.querySelector(sel+' .bud-y-e.ro'); if(el)el.textContent=v?'est. '+budFmt(v):''; };
+  maj(`.y-${pid}-${scope}`,budProjEst(pid,scope));
+  maj(`.ty-${scope}`,list.reduce((s,x)=>s+budProjEst(x.id,scope),0));
 }
 function setBudYear(y){
   adpBudYear=y;
@@ -6826,78 +6893,86 @@ function budToggleC(k){ adpBudOpenC.has(k)?adpBudOpenC.delete(k):adpBudOpenC.add
 function budVisibleProjects(){
   const q=voNorm(adpSearch);
   return adpProjects.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr'))
-    .filter(p=>!q||voNorm(p.name+' '+p.client).includes(q));
+    .filter(p=>!q||voNorm(`${p.name} ${p.client} ${p.domaine}`).includes(q));
 }
 function renderAdpBudget(el){
-  const mois=budMonths(adpBudYear);
-  const list=budVisibleProjects();
+  const mois=budMonths(adpBudYear), list=budVisibleProjects(), ans=budYears();
+  // Décalages des colonnes figées : les largeurs sont des variables CSS, le
+  // calcul reste donc juste quand la mise en page change de gabarit.
+  const leftY=i=>`calc(var(--w1) + var(--w2) + var(--w3) + ${i} * var(--wy))`;
 
-  const totMois=mois.map(m=>list.reduce((s,p)=>s+budProjMonth(p.id,m),0));
-  const totEstime=list.reduce((s,p)=>s+(p.budget||0),0);
-  const totReel=list.reduce((s,p)=>s+budProjTotal(p.id,mois),0);
-
-  const cellsMois=(vals,pref)=>vals.map((v,i)=>
-    `<td class="bud-n"${pref?` data-b="${pref}|${mois[i]}"`:''}>${budFmt(v)}</td>`).join('');
-  const champ=(v,attrs)=>`<input class="bud-i" inputmode="decimal" data-raw="${v?v:''}" value="${budFmt(v)}" ${attrs}
+  // ── cellules ──
+  const tdY=(i,inner,cls)=>`<td class="bud-y${cls?' '+cls:''}" style="left:${leftY(i)}">${inner}</td>`;
+  const reel=v=>`<div class="bud-y-r">${budFmt(v)}</div>`;
+  const estRo=v=>v?`<div class="bud-y-e ro">est. ${budFmt(v)}</div>`:'';
+  const champ=(v,attrs,cls)=>`<input class="bud-i${cls?' '+cls:''}" inputmode="decimal" data-raw="${v?v:''}" value="${budFmt(v)}" ${attrs}
       onfocus="this.value=this.dataset.raw;this.select()" onblur="this.value=budFmtInput(this.value)">`;
 
   let corps='';
   list.forEach(p=>{
     const ouvert=adpBudOpenP.has(p.id);
-    const total=budProjTotal(p.id,mois);
-    const est=p.budget||0;
-    // Le dépassement se voit sur la ligne, pas dans une colonne de plus
-    const depasse=est>0&&total>est;
+    const estG=budProjEst(p.id,'G'), reelT=budProjReel(p.id);
     corps+=`<tr class="bud-r bud-p${ouvert?' open':''}">
-      <td class="bud-c1" onclick="budToggleP('${p.id}')">
+      <td class="bud-c1" onclick="budToggleP('${p.id}')" title="${adpEsc([p.name,p.domaine,p.client].filter(Boolean).join(' · '))}">
         <span class="bud-car">${ouvert?'▾':'▸'}</span><span class="bud-t">${adpEsc(p.name)}</span>
-        ${p.client?`<span class="adp-c-tag">${adpEsc(p.client)}</span>`:''}</td>
-      <td class="bud-c2">${champ(est,`onchange="budSetEstime('${p.id}',this.value,this)" onclick="event.stopPropagation()"`)}</td>
-      <td class="bud-c3${depasse?' over':''}" data-b="pt|${p.id}" title="${depasse?`Dépassement de ${budFmt(total-est)}`:''}">${budFmt(total)}</td>
-      ${cellsMois(mois.map(m=>budProjMonth(p.id,m)),`pm|${p.id}`)}</tr>`;
+        ${p.domaine?`<span class="adp-c-tag">${adpEsc(p.domaine)}</span>`:''}</td>
+      <td class="bud-c2" data-b="peg|${p.id}">${budFmt(estG)}</td>
+      <td class="bud-c3${estG>0&&reelT>estG?' over':''}" data-b="prt|${p.id}"
+          title="${estG>0?`Estimé ${budFmt(estG)} · réalisé ${budFmt(reelT)}`:''}">${budFmt(reelT)}</td>
+      ${ans.map((y,i)=>tdY(i,reel(budProjReelYear(p.id,y))+estRo(budProjEst(p.id,y)),
+        `y-${p.id}-${y}`)).join('')}
+      ${mois.map(m=>`<td class="bud-n" data-b="pm|${p.id}|${m}">${budFmt(budProjMonth(p.id,m))}</td>`).join('')}</tr>`;
     if(!ouvert)return;
     ADP_CAPEX.forEach(([c,cl])=>{
       const k=p.id+'~'+c, oc=adpBudOpenC.has(k);
+      const eG=budEst(p.id,c,'G'), rT=budCapexReel(p.id,c);
       corps+=`<tr class="bud-r bud-cx${oc?' open':''}">
         <td class="bud-c1" onclick="budToggleC('${k}')">
           <span class="bud-car lvl2">${oc?'▾':'▸'}</span>${cl}</td>
-        <td class="bud-c2"></td>
-        <td class="bud-c3" data-b="ct|${p.id}|${c}">${budFmt(budCapexTotal(p.id,c,mois))}</td>
-        ${cellsMois(mois.map(m=>budCapexMonth(p.id,c,m)),`cm|${p.id}|${c}`)}</tr>`;
+        <td class="bud-c2">${champ(eG,`onchange="budSetEst('${p.id}','${c}','G',this.value,this)" onclick="event.stopPropagation()"`,'bud-est')}</td>
+        <td class="bud-c3${eG>0&&rT>eG?' over':''}" data-b="crt|${p.id}|${c}">${budFmt(rT)}</td>
+        ${ans.map((y,i)=>tdY(i,
+          reel(budCapexReelYear(p.id,c,y))+
+          champ(budEst(p.id,c,y),`onchange="budSetEst('${p.id}','${c}','${y}',this.value,this)" onclick="event.stopPropagation()" title="Estimé ${y}"`,'bud-y-e'))).join('')}
+        ${mois.map(m=>`<td class="bud-n" data-b="cm|${p.id}|${c}|${m}">${budFmt(budCapexMonth(p.id,c,m))}</td>`).join('')}</tr>`;
       if(!oc)return;
       ADP_NATURE.forEach(([n,nl])=>{
         corps+=`<tr class="bud-r bud-nat">
           <td class="bud-c1"><span class="bud-car lvl3"></span>${nl}</td>
           <td class="bud-c2"></td>
-          <td class="bud-c3" data-b="nt|${p.id}|${c}|${n}">${budFmt(budNatTotal(p.id,c,n,mois))}</td>
+          <td class="bud-c3" data-b="nrt|${p.id}|${c}|${n}">${budFmt(budNatReel(p.id,c,n))}</td>
+          ${ans.map((y,i)=>tdY(i,reel(budNatReelYear(p.id,c,n,y)))).join('')}
           ${mois.map(m=>`<td class="bud-n bud-edit">${champ(budAmount(p.id,c,n,m),
               `onchange="budSet('${p.id}','${c}','${n}','${m}',this.value,this)"`)}</td>`).join('')}</tr>`;
       });
     });
   });
 
+  const sum=f=>list.reduce((s,p)=>s+f(p),0);
   el.innerHTML=`
     <div class="adp-tools">
       <button class="gl-pill" onclick="setBudYear(${adpBudYear-1})">◀</button>
       <span class="adp-title">${adpBudYear}</span>
       <button class="gl-pill" onclick="setBudYear(${adpBudYear+1})">▶</button>
-      <input type="search" class="gl-search" placeholder="Filtrer les projets…" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
+      <input type="search" class="gl-search" placeholder="Projet, domaine, client…" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
       <div style="flex:1"></div>
-      <span class="bud-legend">Saisie au niveau des natures · le reste est calculé</span>
+      <span class="bud-legend">Estimé saisi par CAPEX · réalisé saisi par nature · le reste est calculé</span>
     </div>`
     +(list.length?`<div class="bud-wrap"><table class="bud">
       <thead><tr>
         <th class="bud-c1">Projet</th>
-        <th class="bud-c2">Budget estimé</th>
-        <th class="bud-c3">Total ${adpBudYear}</th>
-        ${BUD_MOIS.map(m=>`<th class="bud-n">${m}</th>`).join('')}
+        <th class="bud-c2">Estimé global</th>
+        <th class="bud-c3">Réalisé total</th>
+        ${ans.map((y,i)=>`<th class="bud-y" style="left:${leftY(i)}">${y}</th>`).join('')}
+        ${BUD_MOIS.map(m=>`<th class="bud-n">${m} ${String(adpBudYear).slice(2)}</th>`).join('')}
       </tr></thead>
       <tbody>${corps}</tbody>
       <tfoot><tr class="bud-r bud-tot">
         <td class="bud-c1">TOTAL PORTEFEUILLE</td>
-        <td class="bud-c2" data-b="te">${budFmt(totEstime)}</td>
-        <td class="bud-c3" data-b="tt">${budFmt(totReel)}</td>
-        ${cellsMois(totMois,'tm')}
+        <td class="bud-c2" data-b="te">${budFmt(sum(p=>budProjEst(p.id,'G')))}</td>
+        <td class="bud-c3" data-b="tt">${budFmt(sum(p=>budProjReel(p.id)))}</td>
+        ${ans.map((y,i)=>tdY(i,reel(sum(p=>budProjReelYear(p.id,y)))+estRo(sum(p=>budProjEst(p.id,y))),`ty-${y}`)).join('')}
+        ${mois.map(m=>`<td class="bud-n" data-b="tm|${m}">${budFmt(sum(p=>budProjMonth(p.id,m)))}</td>`).join('')}
       </tr></tfoot></table></div>`
       :`<div class="gl-empty">Aucun projet. Crée-en un dans « Projets » pour lui poser un budget.</div>`);
 }
@@ -9840,7 +9915,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.32.0';
+const APP_VERSION='v1.33.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
