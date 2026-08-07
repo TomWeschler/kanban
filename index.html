@@ -103,7 +103,14 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .idot-1{background:var(--imp1)}.idot-2{background:var(--imp2)}.idot-3{background:var(--imp3)}.idot-4{background:var(--imp4)}.idot-5{background:var(--imp5)}
 .due-badge{font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:0.05em;padding:2px 5px}
 .due-badge.normal{color:var(--text-dim);background:rgba(255,255,255,0.03)}.due-badge.warn{color:var(--warn);background:rgba(251,191,36,0.09)}.due-badge.danger{color:var(--danger);background:rgba(248,113,113,0.09)}.due-badge.overdue{color:#fff;background:var(--danger)}
-.card-notes{font-size:0.65rem;color:var(--text-dim);font-style:italic;padding:0.28rem 0 0 6px;margin-top:0.35rem;border-top:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Les notes de tache tenaient sur une seule ligne tronquee : impossible d'y
+   lire quoi que ce soit, encore moins de cliquer un lien. Trois lignes par
+   defaut, depliables d'un clic, et le markdown du Second Brain s'y applique. */
+.card-notes{font-size:0.65rem;color:var(--text-dim);padding:0.28rem 0 0 6px;margin-top:0.35rem;border-top:1px solid var(--border);line-height:1.5;cursor:pointer;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card-notes.open{display:block;-webkit-line-clamp:unset}
+.card-notes strong{color:var(--text-mid)}
+.card-notes .tg{font-size:0.85em;padding:0 4px}
+.card-notes .md-img{margin:0.35rem 0;max-height:150px;object-fit:contain}
 .card-cps{display:flex;align-items:center;gap:3px;margin-top:0.35rem;padding-left:6px;flex-wrap:wrap}
 .card-cp{width:9px;height:9px;border-radius:2px;border:1px solid var(--border2);cursor:pointer;transition:background 0.12s,border-color 0.12s}
 .card-cp:hover{border-color:var(--accent)}
@@ -144,6 +151,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .cmd-row{display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0.6rem;border-radius:5px;cursor:pointer}
 .cmd-row.sel{background:var(--accent-dim);outline:1px solid rgba(124,106,255,0.4)}
 .cmd-kind{font-family:var(--font-mono);font-size:0.46rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);background:var(--surface3);padding:2px 6px;border-radius:3px;flex-shrink:0;min-width:66px;text-align:center}
+.cmd-row .cmd-kind.k-action{color:var(--accent);background:rgba(124,106,255,0.13)}
 .cmd-lbl{flex:1;font-size:0.82rem;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cmd-meta{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);flex-shrink:0}
 .cmd-hint{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.1em;color:var(--text-dim);margin-top:0.6rem;text-align:right}
@@ -1339,6 +1347,7 @@ body,body *{font-family:var(--font-body)}
       <div class="rv-pills" id="rvPills"></div>
       <span class="rv-range" id="rvRange"></span>
       <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openReviewNote()" title="Rédiger cette revue dans le Second Brain, chiffres inclus">✍ Écrire la revue</button>
       <button class="gl-pill" onclick="exportBackup()" title="Exporter tout l'état en JSON">⬇ Sauvegarde</button>
     </div>
     <div class="rv-grid">
@@ -1521,7 +1530,7 @@ body,body *{font-family:var(--font-body)}
 
 <div class="modal-bg" id="cmdModal">
   <div class="modal cmd-modal">
-    <input type="search" id="cmdInput" class="cmd-input" placeholder="Chercher une tâche, un objectif, une habitude, ou une page…" autocomplete="off"
+    <input type="search" id="cmdInput" class="cmd-input" placeholder="Chercher une tâche, une note, un objectif… ou lancer une action" autocomplete="off"
            oninput="renderCmdResults()" onkeydown="cmdKey(event)">
     <div class="cmd-list" id="cmdList"></div>
     <div class="cmd-hint">↑ ↓ naviguer · ↵ ouvrir · Échap fermer</div>
@@ -1632,7 +1641,7 @@ body,body *{font-family:var(--font-body)}
     </div>
     <div class="field"><label>Sous-tâches <span style="color:var(--text-dim);text-transform:none;letter-spacing:0">— une par ligne, « [x] » si faite</span></label>
       <textarea id="fCheck" placeholder="[ ] Première étape&#10;[x] Étape déjà faite"></textarea></div>
-    <div class="field"><label>Notes</label><textarea id="fNotes" placeholder="Notes optionnelles..."></textarea></div>
+    <div class="field"><label>Notes <span style="color:var(--text-dim);text-transform:none;letter-spacing:0">— **gras**, *italique*, #tag et <span style="color:var(--accent)">[[lien vers une note]]</span> sont reconnus</span></label><textarea id="fNotes" placeholder="Notes optionnelles… &#10;Prépare [[Entretien Dupont]] · #urgent"></textarea></div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Annuler</button>
       <button class="btn-del" id="btnDel" style="display:none" onclick="deleteTask()">Supprimer</button>
@@ -2660,9 +2669,9 @@ function renderHabGrid() {
       body += `<tr class="hg-row${h.active?'':' paused'}">
       <td class="hg-name-cell" onclick="openHabitModal(${h.id})" title="Éditer">
         <div class="hg-name-inner">
-          <span class="hg-name-icon">${icon}</span>
+          <span class="hg-name-icon">${tdEsc(icon)}</span>
           <div class="hg-name-txt">
-            <div class="hg-name-title"><span class="hg-cat-dot" style="background:${color}"></span>${h.title}${h.active?'':' <span class="hg-paused-tag">pause</span>'}</div>
+            <div class="hg-name-title"><span class="hg-cat-dot" style="background:${color}"></span>${tdEsc(h.title)}${h.active?'':' <span class="hg-paused-tag">pause</span>'}</div>
             <div class="hg-name-meta"><span class="hg-name-reward">+${h.reward_eur.toFixed(2)}€</span>${streak>0?`<span class="hg-name-streak">🔥 ${streak}</span>`:''}<span>${freqLabel(h.frequency)}</span></div>
           </div>
         </div>
@@ -2868,7 +2877,7 @@ function mkCard(t, now) {
   const c = document.createElement('div');
   c.className='card'; c.dataset.id=t.id; c.dataset.imp=t.importance; c.draggable=true;
   const proj=t.project||'';
-  const tag=proj?`<div class="card-tag ${projClass(proj)}">${proj.toUpperCase()}</div>`:'';
+  const tag=proj?`<div class="card-tag ${projClass(proj)}">${tdEsc(proj).toUpperCase()}</div>`:'';
   let badge='',ac='';
   if(t.due_date){
     const due=new Date(t.due_date);due.setHours(0,0,0,0);
@@ -2882,14 +2891,14 @@ function mkCard(t, now) {
   }
   if(ac)c.classList.add(ac);
   let dots='';for(let i=1;i<=5;i++)dots+=`<div class="idot idot-${i}${i<=t.importance?' on':''}"></div>`;
-  const notes=t.notes?`<div class="card-notes">${t.notes}</div>`:'';
+  const notes=t.notes?`<div class="card-notes md" onclick="event.stopPropagation();this.classList.toggle('open')" title="Cliquer pour déplier">${mdTaskNote(t.notes)}</div>`:'';
   const cps=taskChecklist(t);
   const done=cps.filter(c=>c.d).length;
   const sub=cps.length?`<div class="card-cps">${cps.map((c,i)=>
-      `<span class="card-cp${c.d?' done':''}" title="${String(c.t).replace(/"/g,'&quot;')}" onclick="event.stopPropagation();toggleTaskCp(${t.id},${i})"></span>`).join('')
+      `<span class="card-cp${c.d?' done':''}" title="${tdEsc(c.t)}" onclick="event.stopPropagation();toggleTaskCp(${t.id},${i})"></span>`).join('')
     }<span class="card-cp-count">${done}/${cps.length}</span></div>`:'';
   const rec=t.recurrence?`<span class="card-rec" title="Récurrente : ${(RECURRENCES.find(r=>r[0]===t.recurrence)||['','?'])[1].toLowerCase()}">↻</span>`:'';
-  c.innerHTML=`${tag}<div class="card-title">${t.title}</div><div class="card-meta"><div class="imp-dots">${dots}</div>${rec}${badge}</div>${sub}${notes}<div class="card-actions"><button class="btn-done" onclick="completeTask(${t.id})">✓ TERMINER</button><button class="btn-edit" onclick="openModal(${t.id})">ÉDITER</button><button class="btn-snooze" onclick="snoozeTask(${t.id},1)" title="Reporter d'un jour">+1J</button><button class="btn-snooze" onclick="snoozeTask(${t.id},7)" title="Reporter d'une semaine">+1S</button></div>`;
+  c.innerHTML=`${tag}<div class="card-title">${tdEsc(t.title)}</div><div class="card-meta"><div class="imp-dots">${dots}</div>${rec}${badge}</div>${sub}${notes}<div class="card-actions"><button class="btn-done" onclick="completeTask(${t.id})">✓ TERMINER</button><button class="btn-edit" onclick="openModal(${t.id})">ÉDITER</button><button class="btn-snooze" onclick="snoozeTask(${t.id},1)" title="Reporter d'un jour">+1J</button><button class="btn-snooze" onclick="snoozeTask(${t.id},7)" title="Reporter d'une semaine">+1S</button></div>`;
   c.addEventListener('dragstart',()=>{dragSrcId=t.id;setTimeout(()=>c.classList.add('dragging'),0)});
   c.addEventListener('dragend',()=>{dragSrcId=null;c.classList.remove('dragging')});
   return c;
@@ -2941,26 +2950,48 @@ async function toggleTaskCp(id,idx){
 }
 
 // ── Récurrence ────────────────────────────────────────────────────────────
-function nextDueDate(due,rec){
+// Ajoute k périodes à l'échéance d'ancrage. Le calcul repart TOUJOURS de
+// l'ancrage : appliquer « +1 mois » six fois de suite ferait glisser le
+// 31 janvier vers le 28 de tous les mois suivants.
+function addRec(due,rec,k){
   const p=String(due||'').split('-');
   const base=(p.length===3)?new Date(+p[0],+p[1]-1,+p[2]):new Date();
   base.setHours(0,0,0,0);
-  if(rec==='daily')  base.setDate(base.getDate()+1);
-  else if(rec==='weekly') base.setDate(base.getDate()+7);
+  const d=base.getDate(),m=base.getMonth();
+  if(rec==='daily')  base.setDate(d+k);
+  else if(rec==='weekly') base.setDate(d+7*k);
   else if(rec==='monthly'){
-    const d=base.getDate();
-    base.setDate(1);base.setMonth(base.getMonth()+1);
+    base.setDate(1);base.setMonth(m+k);
     // 31 janvier + 1 mois → 28/29 février, pas le 3 mars
     base.setDate(Math.min(d,new Date(base.getFullYear(),base.getMonth()+1,0).getDate()));
   }
   else if(rec==='yearly'){
-    const d=base.getDate(),m=base.getMonth();
-    base.setDate(1);base.setFullYear(base.getFullYear()+1);
+    base.setDate(1);base.setFullYear(base.getFullYear()+k);
     // 29 février + 1 an → 28 février, pas le 1er mars
     base.setDate(Math.min(d,new Date(base.getFullYear(),m+1,0).getDate()));
   }
   else return '';
   return ymd(base);
+}
+
+// Une tâche récurrente terminée en retard renaissait le lendemain de son
+// ANCIENNE échéance, donc déjà en retard : il fallait la cocher autant de fois
+// qu'on avait de jours d'écart. On saute directement à la première occurrence
+// encore à venir, sans perdre l'ancrage (le jour du mois, le jour de semaine).
+function nextDueAfter(due,rec,minYmd){
+  const min=minYmd||td();
+  let k=1,nd=addRec(due,rec,1);
+  if(!nd||nd>min)return nd;
+  if(rec==='daily'||rec==='weekly'){
+    // arithmétique directe : un retard de plusieurs années ne doit pas boucler
+    const step=rec==='daily'?1:7;
+    const gap=Math.floor((new Date(min)-new Date(nd))/86400000);
+    k=2+Math.floor(gap/step);
+    nd=addRec(due,rec,k);
+  }
+  // garde-fou : 1200 pas couvrent un siècle en mensuel, un millénaire en annuel
+  while(nd&&nd<=min&&k<1200)nd=addRec(due,rec,++k);
+  return nd;
 }
 
 async function completeTask(id){
@@ -2970,7 +3001,7 @@ async function completeTask(id){
   // une tâche récurrente réapparaît immédiatement à sa prochaine échéance
   let spawned=null;
   if(t.recurrence){
-    const nd=nextDueDate(t.due_date||td(),t.recurrence);
+    const nd=nextDueAfter(t.due_date||td(),t.recurrence);
     if(nd){
       const cps=taskChecklist(t).map(c=>({t:c.t,d:false})); // la checklist repart vierge
       spawned={...t,id:Date.now(),created_at:td(),completed_at:'',due_date:nd,
@@ -3296,6 +3327,19 @@ function wlHtml(target,label){
   const n=noteByTitle(target);
   const t=String(target).replace(/'/g,"\\'");
   return `<span class="wl${n?'':' miss'}" onclick="openWikiLink('${t}')" title="${n?'Ouvrir':'Créer cette note'}">${label}</span>`;
+}
+
+// Notes d'une tache : meme moteur que le Second Brain, mais en ligne seulement.
+// Une carte n'est pas la place d'un tableau ni d'un titre, et surtout pas d'une
+// case a cocher — mdRender les cable sur toggleNoteCheck, qui modifierait la
+// note ouverte et non la tache. C'est ici que `[[Note]]` devient cliquable
+// depuis le board : le pont entre une tache et la connaissance qui va avec.
+function mdTaskNote(src){
+  return String(src||'').split('\n')
+    .map(l=>mdInline(MD_ESC(l
+      .replace(/^\s*[-*]\s+\[([ xX])\]\s*/,(m,c)=>c.toLowerCase()==='x'?'☑ ':'☐ ')
+      .replace(/^\s*[-*]\s+/,'• '))))
+    .join('<br>');
 }
 
 function mdRender(src){
@@ -4760,10 +4804,28 @@ function openCmd(){
 }
 function closeCmd(){ document.getElementById('cmdModal').classList.remove('open'); }
 
+// La palette ne savait que CHERCHER : taper « nouvelle tâche » ne donnait rien.
+// Les gestes les plus frequents n'avaient aucun equivalent clavier. Le second
+// champ liste les mots-cles supplementaires, sans accent — la normalisation
+// ci-dessous les rend atteignables quelle que soit la frappe.
+const CMD_ACTIONS=[
+  ['+ Nouvelle tâche',        'creer ajouter nouveau todo',      ()=>{switchPage('board');openModal(null);}],
+  ['+ Nouvelle note',         'creer ajouter nouveau brain',     ()=>{switchPage('brain');newNote(null);}],
+  ['Journal du jour',         'note quotidien capture aujourd',  ()=>openDailyNote()],
+  ['Dicter une tâche',        'micro voix vocal mains libres',   ()=>{hfTarget='task';startHandsFree();}],
+  ['Tâches terminées',        'historique archive fait done',    ()=>openDoneModal()],
+  ['Exporter la sauvegarde',  'backup export json donnees',      ()=>exportBackup()],
+  ['Forcer la mise à jour',   'version cache vider recharger',   ()=>hardReset()],
+];
+
 function cmdSearch(q){
-  const n=q.trim().toLowerCase();
-  const hit=t=>!n||String(t||'').toLowerCase().includes(n);
+  // sans accent ni casse des deux cotes : « reussite » trouve « Réussite ».
+  // voNorm sert deja a la dictee mains libres : meme normalisation partout.
+  const n=voNorm(q.trim());
+  const hit=t=>!n||voNorm(t).includes(n);
   const out=[];
+  CMD_ACTIONS.filter(([l,kw])=>hit(l)||hit(kw)).forEach(([l,,go])=>
+    out.push({kind:'Action',label:l,meta:'',go}));
   PAGES.filter(([,l])=>hit(l)).forEach(([id,l])=>out.push({kind:'Page',label:l,meta:'',go:()=>switchPage(id)}));
   tasks.filter(t=>hit(t.title)||hit(t.notes)||hit(t.project)).slice(0,20).forEach(t=>
     out.push({kind:'Tâche',label:t.title,meta:t.project||taskColumnFromDate(t.due_date),
@@ -4777,8 +4839,8 @@ function cmdSearch(q){
   habits.filter(h=>h.active&&(hit(h.title)||hit(h.category))).slice(0,20).forEach(h=>
     out.push({kind:'Habitude',label:h.title,meta:h.category,
               go:()=>{switchPage('habits');openHabitModal(h.id);}}));
-  // Sans recherche, on ne noie pas l'utilisateur : seules les pages
-  return n?out.slice(0,40):out.filter(o=>o.kind==='Page');
+  // Sans recherche, on ne noie pas l'utilisateur : les actions et les pages
+  return n?out.slice(0,40):out.filter(o=>o.kind==='Action'||o.kind==='Page');
 }
 function renderCmdResults(){
   cmdItems=cmdSearch(document.getElementById('cmdInput').value);
@@ -4787,7 +4849,7 @@ function renderCmdResults(){
   if(!cmdItems.length){ el.innerHTML='<div class="cmd-empty">Aucun résultat.</div>'; return; }
   el.innerHTML=cmdItems.map((it,i)=>
     `<div class="cmd-row${i===cmdSel?' sel':''}" onmouseenter="cmdSel=${i};renderCmdResults()" onclick="cmdRun(${i})">
-       <span class="cmd-kind">${it.kind}</span>
+       <span class="cmd-kind${it.kind==='Action'?' k-action':''}">${it.kind}</span>
        <span class="cmd-lbl">${tdEsc(it.label)}</span>
        ${it.meta?`<span class="cmd-meta">${tdEsc(it.meta)}</span>`:''}
      </div>`).join('');
@@ -5004,6 +5066,97 @@ async function renderReviewPage(){
     (!g.risky.length&&!g.stalled.length?'<div class="td-empty">Rien qui dérive. Tout avance.</div>':'');
 }
 function setRvPeriod(p){ rvPeriod=p; renderReviewPage(); }
+
+// ── La revue, écrite ──────────────────────────────────────────────────────
+// La page ne restituait que des chiffres, qui disparaissaient au changement de
+// période : un bilan qu'on ne rédige pas ne laisse rien. Ce bouton fige la
+// période dans une note du Second Brain — datée, cherchable, reliable au
+// graphe — pré-remplie avec les indicateurs, et laisse la place à ce
+// qu'aucune donnée ne dit.
+const RV_SEP='\n\n---\n';           // frontière entre le bloc généré et la prose
+
+// Numéro ISO de semaine du lundi de la période.
+function rvIsoWeek(s){
+  const d=new Date(Date.UTC(s.getFullYear(),s.getMonth(),s.getDate()));
+  d.setUTCDate(d.getUTCDate()+3-((d.getUTCDay()+6)%7));   // jeudi de la semaine
+  const jan4=new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  const w=1+Math.round(((d-jan4)/86400000-3+((jan4.getUTCDay()+6)%7))/7);
+  return {year:d.getUTCFullYear(),week:w};
+}
+function rvNoteTitle(r,kind){
+  if(kind==='week'||kind==='lastweek'){
+    const {year,week}=rvIsoWeek(r.start);
+    return `Revue ${year}-S${String(week).padStart(2,'0')}`;
+  }
+  return `Revue ${r.start.getFullYear()}-${String(r.start.getMonth()+1).padStart(2,'0')}`;
+}
+
+// Bloc d'indicateurs, régénéré à chaque ouverture : les chiffres restent justes
+// même si la note a été créée en début de période.
+function rvKpiBlock(r,kind){
+  const t=rvTaskStats(r),h=rvHabitStats(r),s=rvSportStats(r),g=rvGoalStats();
+  const cptes=(typeof parseComptes==='function')?parseComptes():[];
+  const patri=cptes.reduce((a,c)=>a+c.current,0);
+  const gain=patri-cptes.reduce((a,c)=>a+c.initial,0);
+  const L=[`> ${ymd(r.start)} → ${ymd(r.end)} · relevé du ${td()}`,'','## Chiffres',
+    `- Tâches terminées : **${t.done}** — créées : ${t.created}`,
+    `- Habitudes : **${Math.round(h.rate)}%** de régularité (${h.done}/${h.due}) · ${h.eur.toFixed(2)} € gagnés`,
+    `- Sport : **${s.done}/${s.planned}** séances · ${s.minutes} min`
+      +(s.feeling?` · ressenti ${s.feeling.toFixed(1)}/5`:'')
+      +(s.w1?` · poids ${s.w1.weight} kg`:''),
+    `- Objectifs atteints : **${g.reached}/${g.total}**`,
+    `- Cagnotte : **${eur(cagnotte())}**`];
+  if(cptes.length)L.push(`- Patrimoine : **${eur(patri)}** — ${gain>=0?'+':''}${eur(gain)} depuis janvier`);
+  const proj=Object.entries(t.byProj).sort((a,b)=>b[1]-a[1]);
+  if(proj.length)L.push('','### Par projet',...proj.map(([p,n])=>`- ${p} : ${n}`));
+  // titres en clair et non en [[wikilink]] : un objectif n'est pas une note,
+  // le lien s'afficherait en « à créer » et polluerait le graphe
+  if(g.risky.length)L.push('','### Objectifs qui dérivent',
+    ...g.risky.slice(0,5).map(x=>`- ${x.title} — ${goalProgress(x)}% à J-${dayDiff(x.target_date)}`));
+  return L.join('\n');
+}
+function rvProsePrompts(kind){
+  const suite=(kind==='month'||kind==='lastmonth')?'Le mois prochain':'La semaine prochaine';
+  return ['','## Ce qui a marché','- ','','## Ce qui a coincé','- ','',`## ${suite}`,'- ',''].join('\n');
+}
+
+async function openReviewNote(){
+  if(!accessToken){ toast('Connexion requise pour écrire la revue','err'); return; }
+  showLoad(true);
+  // le bouton existe avant que renderReviewPage n'ait fini ses chargements :
+  // on ne fige pas des chiffres a zero faute d'avoir lu les feuilles
+  try{
+    if(!notesLoaded)await loadNotes();
+    if(!sportLoaded)await loadSportData();
+    if(!goalsLoaded)await loadGoals();
+    if(!finLoaded&&navigator.onLine)await loadFinancesData();
+  }catch(e){}
+  showLoad(false);
+  const r=rvRange(rvPeriod), title=rvNoteTitle(r,rvPeriod);
+  let n=noteByTitle(title), created=false;
+  if(n){
+    // la note existe : on rafraîchit les chiffres SANS toucher à ce qui a été
+    // écrit dessous — le séparateur marque la frontière
+    const i=n.content.indexOf(RV_SEP);
+    n.content=(i>=0?rvKpiBlock(r,rvPeriod)+n.content.slice(i)
+                   :rvKpiBlock(r,rvPeriod)+RV_SEP+n.content);
+  }else{
+    created=true;
+    n={id:'n'+Date.now(),title,content:rvKpiBlock(r,rvPeriod)+RV_SEP+rvProsePrompts(rvPeriod),
+       tags:'revue',parent_id:'',icon:'🧭',pinned:false,status:'active',
+       created_at:td(),updated_at:td(),gx:null,gy:null};
+    notes.push(n);
+  }
+  noteIndexInvalidate(); cacheSet('notes',notes);
+  const ok=await noteUpsert(n);
+  if(!ok){ toast("ÉCHEC de l'enregistrement de la revue",'err'); return; }
+  switchPage('brain');
+  // openNote sort tot si la note est deja ouverte — or son contenu vient de
+  // changer : dans ce cas on redessine nous-memes
+  if(noteCurId===n.id){ noteTakeBase(n); renderNoteTree();renderNoteMain();renderNoteMeta(); }
+  else openNote(n.id);
+  toast(created?`Revue créée · ${title}`:`Chiffres mis à jour · ${title}`,'ok');
+}
 
 // ── Historique des tâches terminées ───────────────────────────────────────
 // Elles étaient stockées mais aucune interface ne les listait.
@@ -6642,11 +6795,11 @@ function renderFinAccounts(comptes) {
     return `
       <div class="fin-account">
         <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${col}"></div>
-        <div class="fin-account-name">${c.name}</div>
+        <div class="fin-account-name">${tdEsc(c.name)}</div>
         <div class="fin-account-val" style="color:${col}">${fmtEur(c.current)}</div>
         <div class="fin-account-delta" style="color:${dCol}">${sign}${fmtEur(delta)}${pct!=null?' ('+sign+pct+'%)':''}</div>
         ${c.initial ? `<div class="fin-account-meta">Réf. : ${fmtEur(c.initial)}</div>` : ''}
-        ${c.type    ? `<div class="fin-account-meta" style="margin-top:0.15rem">${c.type}</div>` : ''}
+        ${c.type    ? `<div class="fin-account-meta" style="margin-top:0.15rem">${tdEsc(c.type)}</div>` : ''}
       </div>`;
   }).join('');
   document.getElementById('finAccounts').innerHTML = `
@@ -6706,7 +6859,7 @@ function renderFinCharts(comptes, depenses) {
   const breakdownBar = sortedComptes.map((c, i) => {
     const pct = totalCurrent > 0 ? c.current / totalCurrent * 100 : 0;
     const col  = FIN_PALETTE[i % FIN_PALETTE.length];
-    return `<div title="${c.name}: ${c.current.toLocaleString('fr-FR',{maximumFractionDigits:0})} € (${pct.toFixed(1)}%)"
+    return `<div title="${tdEsc(c.name)}: ${c.current.toLocaleString('fr-FR',{maximumFractionDigits:0})} € (${pct.toFixed(1)}%)"
                  style="width:${pct}%;background:${col};transition:width 0.4s"></div>`;
   }).join('');
   const breakdownLegend = sortedComptes.map((c, i) => {
@@ -6715,7 +6868,7 @@ function renderFinCharts(comptes, depenses) {
     return `<div style="display:flex;align-items:center;gap:0.35rem;min-width:0">
       <div style="width:8px;height:8px;flex-shrink:0;background:${col};border-radius:2px"></div>
       <span style="font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
-            title="${c.name}">${c.name}</span>
+            title="${tdEsc(c.name)}">${tdEsc(c.name)}</span>
       <span style="font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--text);margin-left:auto;flex-shrink:0">${pct.toFixed(1)}%</span>
     </div>`;
   }).join('');
@@ -7132,7 +7285,9 @@ let sportWeekGoal=parseInt(localStorage.getItem(SPORT_GOAL_KEY)||'4')||4;
 const SPORT_TYPE_COLOR={Muscu:'#a855f7',Cardio:'#f87171',Marche:'#22c55e','Mobilité':'#38bdf8',Mixte:'#fbbf24',Repos:'#60607a',Autre:'#9898b8'};
 function sportTypeColor(t){const k=Object.keys(SPORT_TYPE_COLOR).find(x=>x.toLowerCase()===String(t||'').toLowerCase());return SPORT_TYPE_COLOR[k]||'var(--accent)';}
 function sportYmd(dt){return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;}
-function sportEsc(s){return String(s||'').replace(/"/g,'&quot;');}
+// N'echappait que le guillemet, ce qui suffit dans un attribut mais laisse
+// passer une balise en contenu (`<` dans un nom d'exercice cassait le bloc).
+function sportEsc(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function sportStatusLabel(s){return s==='done'?'Fait':s==='partial'?'Partiel':s==='skipped'?'Pas fait':s;}
 
 // ── Sheets I/O ──────────────────────────────────────
@@ -7376,10 +7531,10 @@ function renderSportToday(){
       <button class="fit-btn" style="font-size:0.46rem;padding:0.25rem 0.5rem" onclick="sportDeletePlan('${today}')" title="Supprimer le programme du jour">🗑</button>
     </div>
     <div class="sp-today-hdr">
-      <span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55">${p.type}</span>
+      <span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55">${tdEsc(p.type)}</span>
       ${p.duration?`<span class="sp-dur">⏱ ${p.duration} min</span>`:''}
     </div>
-    <div class="sp-today-title">${p.title||'Séance du jour'}</div>
+    <div class="sp-today-title">${tdEsc(p.title)||'Séance du jour'}</div>
     ${items.some(it=>it.type==='ex')?`<div class="sp-ex-hint">Coche le statut ✓ ~ ✗ et note le poids sur chaque ligne</div>`:''}
     <div class="sp-content">${body}</div>
   </div>`;
@@ -7481,7 +7636,7 @@ function renderSportTomorrow(){
     const col=sportTypeColor(p.type);
     el.innerHTML=`${hdr}
       <div class="sp-tom"><div class="sp-tom-info">
-        <div class="sp-tom-title"><span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55;margin-right:0.5rem">${p.type}</span>${p.title||''}</div>
+        <div class="sp-tom-title"><span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55;margin-right:0.5rem">${tdEsc(p.type)}</span>${tdEsc(p.title)}</div>
         <div class="sp-tom-meta">${p.duration?`⏱ ${p.duration} min · `:''}programme prêt ✓${p.bonus?` · ✨ ${sportEsc(p.bonus)}`:''}</div>
       </div><div style="display:flex;gap:0.4rem">
         <button class="fit-btn" onclick="openSportPlanModal('${tom}')">✎ éditer</button>
@@ -7682,7 +7837,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.26.0';
+const APP_VERSION='v1.27.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
