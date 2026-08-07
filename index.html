@@ -1198,6 +1198,43 @@ input.bud-y-e:focus{color:var(--text)}
   @page{size:A4 landscape;margin:0}
 }
 
+/* ── Suivi ───────────────────────────────────────────────────────────────── */
+.sv-list{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.sv-r{display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.8rem;border-bottom:1px solid var(--border);
+  border-left:3px solid transparent}
+.sv-r:last-child{border-bottom:none}
+.sv-r:hover{background:var(--surface2)}
+.sv-r.g-jaune{border-left-color:var(--warn);opacity:0.95}
+.sv-r.g-orange{border-left-color:var(--warn);background:rgba(251,191,36,0.05)}
+.sv-r.g-rouge{border-left-color:var(--danger);background:rgba(248,113,113,0.06)}
+.sv-ic{font-size:0.82rem;flex-shrink:0;width:1.1rem;text-align:center}
+.sv-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.sv-q{font-size:0.8rem;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-o{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.05em;color:var(--text-dim);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-age{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.05em;color:var(--text-dim);
+  flex-shrink:0;white-space:nowrap;min-width:7rem;text-align:right}
+.sv-r.g-rouge .sv-age{color:var(--danger)}
+.sv-r.g-orange .sv-age{color:var(--warn)}
+.sv-a{display:flex;gap:0.25rem;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:900px){
+  .sv-r{flex-wrap:wrap}
+  .sv-age{min-width:0;order:3}
+  .sv-a{order:4;width:100%;justify-content:flex-start;margin-top:0.25rem}
+}
+/* rapports : aperçu avant impression */
+.rap-prev{max-height:62vh;overflow:auto;border:1px solid var(--border);border-radius:8px;background:#fff}
+.rap-prev .rap-doc{padding:8mm;font-size:10px}
+.rap-brk{page-break-before:always;break-before:page}
+.rap-foot{margin-top:14px;padding-top:5px;border-top:1px solid #ccc;color:#777;font-size:8.5px}
+.rap-ok{color:#2a7;font-size:10px;margin:2px 0 8px}
+.rap-fig{margin:6px 0 10px}
+.rap-fig svg{width:100%;height:auto;color:#444}
+.tpl-arch{opacity:0.5}
+.tpl-use{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim)}
+.tpl-prev{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.7rem 0.9rem;margin-bottom:0.8rem}
+.tpl-prev pre{font-family:var(--font-body);font-size:0.78rem;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;color:var(--text-mid)}
+
 /* ═══════════════════════════════
    THEME — ① BRUTALIST
 ═══════════════════════════════ */
@@ -1960,7 +1997,20 @@ body,body *{font-family:var(--font-body)}
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeRapport()">Annuler</button>
       <button class="btn-secondary" onclick="rapXlsx()">⬇ Tableur .xlsx</button>
-      <button class="btn-primary" onclick="rapPDF()">🖨 PDF</button>
+      <button class="btn-primary" onclick="rapApercu()">👁 Aperçu et PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="rapPrevModal">
+  <div class="modal" style="width:min(1100px,96vw)">
+    <div class="modal-hdr">APERÇU DU RAPPORT</div>
+    <button class="modal-close" onclick="closeRapPrev()">✕</button>
+    <div class="rap-prev" id="rapPrevBody"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeRapPrev()">Fermer</button>
+      <button class="btn-secondary" onclick="closeRapPrev();openRapport()">← Réglages</button>
+      <button class="btn-primary" onclick="rapImprimer()">🖨 Imprimer / PDF</button>
     </div>
   </div>
 </div>
@@ -3710,7 +3760,7 @@ function renderTodayAdp(){
         <button class="td-check" onclick="adpTouch('${c.id}')" title="Marquer comme relancé aujourd'hui"></button>
         <span class="td-lbl"><span class="td-name">${tdEsc(c.name)}</span>
           <span class="td-meta">${p?tdEsc(p.name)+' · ':''}${c.last_contact?`vu le ${c.last_contact}`:'jamais contacté'}</span></span>
-        <button class="adp-act" onclick="switchPage('adp');setAdpView('contacts');openAdpCompose('${c.id}')">✉</button>
+        <button class="adp-act" onclick="switchPage('adp');setAdpView('suivi');openAdpCompose('${c.id}')">✉</button>
       </div>`;
     }).join(''):'')+
     (miles.length?`<div class="rv-sub">Jalons sous 7 jours</div>`+miles.slice(0,6).map(m=>{
@@ -5479,8 +5529,8 @@ const CMD_ACTIONS=[
   ['+ Nouvelle note',         'creer ajouter nouveau brain',     ()=>{switchPage('brain');newNote(null);}],
   ['Journal du jour',         'note quotidien capture aujourd',  ()=>openDailyNote()],
   ['+ Nouveau projet',        'adp creer chantier',              ()=>{switchPage('adp');setAdpView('projets');openAdpProjModal(null);}],
-  ['+ Nouveau contact',       'adp crm carnet annuaire',         ()=>{switchPage('adp');setAdpView('contacts');openAdpContModal(null);}],
-  ['Relances du jour',        'adp contacts relancer suivi',     ()=>{switchPage('adp');setAdpView('contacts');}],
+  ['+ Nouveau contact',       'adp crm carnet annuaire',         ()=>{switchPage('adp');setAdpView('suivi');openAdpContModal(null);}],
+  ['Relances du jour',        'adp contacts relancer suivi',     ()=>{switchPage('adp');setAdpView('suivi');}],
   ['Exporter un rapport',     'adp pdf excel xlsx projet bilan',  ()=>{switchPage('adp');openRapport();}],
   ['Dicter une tâche',        'micro voix vocal mains libres',   ()=>{hfTarget='task';startHandsFree();}],
   ['Tâches terminées',        'historique archive fait done',    ()=>openDoneModal()],
@@ -5514,7 +5564,7 @@ function cmdSearch(q){
               go:()=>{switchPage('adp');setAdpView('projets');openAdpProject(p.id);}}));
   adpContacts.filter(c=>hit(c.name)||hit(c.org)||hit(c.role)||hit(c.email)).slice(0,10).forEach(c=>
     out.push({kind:'Contact',label:c.name,meta:[c.role,c.org].filter(Boolean).join(' · '),
-              go:()=>{switchPage('adp');setAdpView('contacts');openAdpContModal(c.id);}}));
+              go:()=>{switchPage('adp');setAdpView('suivi');openAdpContModal(c.id);}}));
   adpMilestones.filter(m=>hit(m.title)).slice(0,10).forEach(m=>{
     const p=adpProjById(m.project_id);
     out.push({kind:'Jalon',label:m.title,meta:[p&&p.name,m.due_date].filter(Boolean).join(' · '),
@@ -6343,20 +6393,20 @@ const MES_SEED=[
 const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at','budget','domaine'];
 const ADP_CONT_HEADER = ['id','name','org','role','email','phone','project_id','cadence','last_contact','status','notes','updated_at'];
 const ADP_MILE_HEADER = ['id','project_id','title','due_date','status','kind','done_at','updated_at'];
-const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at','steps','followup'];
+const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at','steps','followup','status'];
 const ADP_RUN_HEADER=['id','template_id','project_id','title','start_date','status','steps','updated_at'];
 const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updated_at'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
 const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'M'],['adp_contacts',ADP_CONT_HEADER,'L'],
-                    ['adp_milestones',ADP_MILE_HEADER,'H'],['adp_templates',ADP_TPL_HEADER,'I'],
+                    ['adp_milestones',ADP_MILE_HEADER,'H'],['adp_templates',ADP_TPL_HEADER,'J'],
                     ['adp_budget',ADP_BUD_HEADER,'G'],['adp_runs',ADP_RUN_HEADER,'H']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
 const ADP_HEALTH  = [['vert','Sous contrôle'],['orange','Vigilance'],['rouge','En difficulté']];
 const ADP_HCOLOR  = {vert:'var(--green)',orange:'var(--warn)',rouge:'var(--danger)'};
 const ADP_KIND    = [['jalon','Jalon'],['livrable','Livrable'],['reunion','Réunion']];
-const ADP_VIEWS   = [['projets','Projets'],['budget','Budget'],['contacts','Contacts'],['modeles','Modèles'],['procedures','Procédures']];
+const ADP_VIEWS   = [['projets','Projets'],['budget','Budget'],['suivi','Suivi'],['modeles','Modèles'],['procedures','Procédures']];
 const ADP_PALETTE = ['#7c6aff','#38bdf8','#fcd34d','#6ee7b7','#f472b6','#fb923c','#a78bfa','#4ade80'];
 
 let adpProjects=[], adpContacts=[], adpMilestones=[], adpTemplates=[];
@@ -6403,7 +6453,7 @@ async function loadAdp(){
   await ensureAdpSheets();
   const [pr,co,mi,tp,bu,ru]=await Promise.all([
     adpFetch('adp_projects','A:M'), adpFetch('adp_contacts','A:L'),
-    adpFetch('adp_milestones','A:H'), adpFetch('adp_templates','A:I'),
+    adpFetch('adp_milestones','A:H'), adpFetch('adp_templates','A:J'),
     adpFetch('adp_budget','A:G'), adpFetch('adp_runs','A:H')]);
   // La dernière ligne gagne. Une ligne vidée est une pierre tombale : la
   // suppression garde la ligne pour ne jamais décaler la feuille sous les
@@ -6429,7 +6479,8 @@ async function loadAdp(){
   adpTemplates=dedupe(tp.map(x=>({id:adpCell(x,0),kind:adpCell(x,1)||'mail',title:adpCell(x,2),
     category:adpCell(x,3),body:String(x[4]==null?'':x[4]),
     created_at:adpCell(x,5),updated_at:adpCell(x,6),
-    steps:String(x[7]==null?'':x[7]),followup:parseInt(adpCell(x,8),10)||0})),'title');
+    steps:String(x[7]==null?'':x[7]),followup:parseInt(adpCell(x,8),10)||0,
+    status:adpCell(x,9)||'actif'})),'title');
   const bd={};
   bu.forEach(x=>{ const o={id:adpCell(x,0),project_id:adpCell(x,1),capex:adpCell(x,2),
     nature:adpCell(x,3),month:adpCell(x,4),
@@ -6462,7 +6513,7 @@ const adpContRow=c=>[c.id,c.name,c.org||'',c.role||'',c.email||'',c.phone||'',c.
   String(c.cadence||0),c.last_contact||'',c.status||'actif',c.notes||'',td()];
 const adpMileRow=m=>[m.id,m.project_id||'',m.title,m.due_date||'',m.status||'todo',m.kind||'jalon',m.done_at||'',td()];
 const adpTplRow =t=>[t.id,t.kind||'mail',t.title,t.category||'',t.body||'',t.created_at||td(),td(),
-  t.steps||'',String(t.followup||0)];
+  t.steps||'',String(t.followup||0),t.status||'actif'];
 
 // Écrit puis rend la main : chaque table a la même mécanique d'upsert par clé.
 async function adpSave(kind,obj){
@@ -6526,13 +6577,13 @@ async function renderAdp(){
   if(accessToken&&!adpLoaded){ showLoad(true); try{ await loadAdp(); }catch(e){} showLoad(false); }
   if(accessToken&&!notesLoaded&&navigator.onLine){ try{ await loadNotes(); }catch(e){} }
   document.getElementById('adpPills').innerHTML=ADP_VIEWS.map(([v,l])=>{
-    const n=v==='contacts'?adpDueContacts().length:0;
+    const n=v==='suivi'?suiviItems().filter(x=>x.depuis>0).length:0;
     return `<button class="gl-pill${adpView===v?' active':''}"${adpView===v?' style="background:var(--accent);border-color:var(--accent)"':''} onclick="setAdpView('${v}')">${l}${n?` <span class="adp-badge">${n}</span>`:''}</button>`;
   }).join('');
   const el=document.getElementById('adpBody');
   if(adpView==='projets')    return renderAdpProjects(el);
   if(adpView==='budget')     return renderAdpBudget(el);
-  if(adpView==='contacts')   return renderAdpContacts(el);
+  if(adpView==='suivi')      return renderAdpSuivi(el);
   if(adpView==='modeles')    return renderAdpTemplates(el,'mail');
   if(adpView==='procedures'){
     if(adpRunCur&&runById(adpRunCur))return renderRunPage(el);
@@ -6745,49 +6796,6 @@ function adpOpenJournalInNotes(){
 }
 
 // ── Vue Contacts ──────────────────────────────────────────────────────────
-function renderAdpContacts(el){
-  const q=voNorm(adpSearch);
-  const due=adpDueContacts();
-  const all=adpContacts.filter(c=>!q||voNorm(`${c.name} ${c.org} ${c.role} ${c.email}`).includes(q))
-    .sort((a,b)=>a.name.localeCompare(b.name,'fr'));
-  el.innerHTML=`
-    <div class="adp-tools">
-      <input type="search" class="gl-search" placeholder="Nom, société, rôle, e-mail…" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
-      <div style="flex:1"></div>
-      <button class="gl-pill" onclick="openAdpContModal(null)">+ Contact</button>
-    </div>
-    ${!q&&due.length?`<div class="adp-relance">
-      <div class="adp-sec">À relancer aujourd'hui <span class="adp-badge">${due.length}</span></div>
-      ${due.map(adpRelanceRow).join('')}
-    </div>`:''}
-    <div class="adp-sec">Tous les contacts <span class="adp-badge quiet">${all.length}</span></div>
-    ${all.length?`<div class="adp-grid">${all.map(adpContCard).join('')}</div>`
-      :'<div class="gl-empty">Aucun contact.</div>'}`;
-}
-function adpRelanceRow(c){
-  const p=c.project_id?adpProjById(c.project_id):null;
-  const d=adpDueDay(c), retard=d?-dayDiff(d):0;
-  return `<div class="adp-line due">
-    <span class="adp-l-main" onclick="openAdpContModal('${c.id}')">${adpEsc(c.name)}
-      <span class="adp-l-sub">${c.org?adpEsc(c.org)+' · ':''}${p?adpEsc(p.name)+' · ':''}${c.last_contact?`vu le ${c.last_contact}`:'jamais contacté'}${retard>0?` · +${retard} j`:''}</span></span>
-    <button class="adp-act" onclick="adpTouch('${c.id}')" title="Marquer comme relancé aujourd'hui">✓ Relancé</button>
-    <button class="adp-act" onclick="openAdpCompose('${c.id}')" title="Rédiger à partir d'un modèle">✉ Écrire</button>
-  </div>`;
-}
-function adpContCard(c){
-  const p=c.project_id?adpProjById(c.project_id):null;
-  const due=adpIsDue(c);
-  return `<div class="adp-card${due?' due':''}" style="--pcol:${p?adpProjColor(p):'var(--border2)'}" onclick="openAdpContModal('${c.id}')">
-    <div class="adp-c-head"><span class="adp-c-name">${adpEsc(c.name)}</span>
-      ${due?'<span class="adp-l-flag">à relancer</span>':''}</div>
-    ${c.role||c.org?`<div class="adp-c-client">${adpEsc([c.role,c.org].filter(Boolean).join(' · '))}</div>`:''}
-    <div class="adp-c-meta">
-      ${p?`<span class="adp-c-tag">${adpEsc(p.name)}</span>`:''}
-      ${c.cadence?`<span class="adp-c-tag">tous les ${c.cadence} j</span>`:''}
-      ${c.last_contact?`<span class="adp-c-tag">vu le ${c.last_contact}</span>`:'<span class="adp-c-tag">jamais vu</span>'}
-    </div>
-  </div>`;
-}
 async function adpTouch(id){
   const c=adpContById(id); if(!c)return;
   const prev=c.last_contact;
@@ -6806,7 +6814,8 @@ function renderAdpTemplates(el,kind){
     adpTplCur=null;
   }
   const q=voNorm(adpSearch);
-  const list=adpTemplates.filter(t=>t.kind===kind)
+  const arch=adpTemplates.filter(t=>t.kind===kind&&t.status==='archive');
+  const list=adpTemplates.filter(t=>t.kind===kind&&t.status!=='archive')
     .filter(t=>!q||voNorm(`${t.title} ${t.category} ${t.body}`).includes(q))
     .sort((a,b)=>(a.category||'~').localeCompare(b.category||'~','fr')||a.title.localeCompare(b.title,'fr'));
   const cats=[...new Set(list.map(t=>t.category||'Sans catégorie'))];
@@ -6843,9 +6852,40 @@ function renderAdpTemplates(el,kind){
         ${kind==='mail'?`<div class="adp-c-meta">${adpTplVars(t.body).map(v=>`<span class="adp-c-tag">{{${adpEsc(v)}}}</span>`).join('')||'<span class="adp-c-tag quiet">sans variable</span>'}${t.followup?`<span class="adp-c-tag warn">relance J+${t.followup}</span>`:''}</div>`
           :`<div class="adp-c-meta">
             <span class="adp-c-tag${tplSteps(t).length?'':' quiet'}">${tplSteps(t).length||'aucune'} étape${tplSteps(t).length>1?'s':''}</span>
+            ${tplUsage(t.id)?`<span class="adp-c-tag">lancée ${tplUsage(t.id)}×</span>`:'<span class="adp-c-tag quiet">jamais lancée</span>'}
             ${tplSteps(t).length?`<button class="adp-act" onclick="event.stopPropagation();openRunLaunch('${t.id}')">▶ Lancer</button>`:''}</div>`}
       </div>`).join('')+`</div>`).join('')
-      :`<div class="gl-empty">Aucun${kind==='mail'?' modèle':'e procédure'}. Crée le premier avec le bouton ci-dessus.</div>`}`;
+      :`<div class="gl-empty">Aucun${kind==='mail'?' modèle':'e procédure'}. Crée le premier avec le bouton ci-dessus.</div>`}
+    ${arch.length?`<div class="adp-sec">Archivés <span class="adp-badge quiet">${arch.length}</span></div>
+      <div class="adp-grid">${arch.map(t=>`<div class="adp-card tpl-arch" onclick="openAdpTpl('${t.id}')">
+        <div class="adp-c-head"><span class="adp-c-name">${adpEsc(t.title)}</span>
+          <button class="gl-edit" onclick="event.stopPropagation();adpTplArchive('${t.id}')" title="Réactiver">↺</button></div>
+        <div class="adp-c-meta"><span class="adp-c-tag">${adpEsc(t.category)||'sans catégorie'}</span></div></div>`).join('')}</div>`:''}`;
+}
+// Combien de fois une procédure a servi : c'est ce qui distingue celle qu'on
+// utilise vraiment de celle qu'on a écrite un jour et jamais relancée.
+const tplUsage=id=>adpRuns.filter(r=>r.template_id===id).length;
+const tplActifs=k=>adpTemplates.filter(t=>t.kind===k&&t.status!=='archive');
+// Dupliquer plutôt que repartir de zéro : une variante d'un modèle éprouvé
+// vaut mieux qu'un modèle neuf à moitié écrit.
+async function adpTplDuplicate(id){
+  const t=adpTplById(id); if(!t)return;
+  const base=t.title.replace(/\s*\(copie( \d+)?\)$/,'');
+  let nom=base+' (copie)', n=1;
+  while(adpTemplates.some(x=>x.title===nom))nom=`${base} (copie ${++n})`;
+  const c={...t,id:adpId('t'),title:nom,created_at:td(),status:'actif'};
+  showLoad(true); const ok=await adpSave('tpl',c); showLoad(false);
+  if(!ok){ toast("ÉCHEC de la copie",'err'); return; }
+  adpTplCur=c.id; adpTplMode='edit'; renderAdp();
+  toast(`Copié · ${nom}`,'ok');
+}
+async function adpTplArchive(id){
+  const t=adpTplById(id); if(!t)return;
+  t.status=t.status==='archive'?'actif':'archive';
+  const ok=await adpSave('tpl',t);
+  if(!ok){ t.status=t.status==='archive'?'actif':'archive'; toast('ÉCHEC','err'); return; }
+  renderAdp();
+  toast(t.status==='archive'?'Archivé — masqué des listes':'Réactivé','ok');
 }
 function openAdpTpl(id){ adpTplCur=id; renderAdp(); }
 function closeAdpTpl(){ adpTplCur=null; renderAdp(); }
@@ -6863,12 +6903,33 @@ function renderAdpTplPage(el,t){
       ${t.kind==='mail'?`<button class="gl-pill" onclick="openAdpCompose(null,'${t.id}')">✉ Utiliser</button>`:
         `<button class="gl-pill" onclick="openRunLaunch('${t.id}')">▶ Lancer sur un projet</button>
          <button class="gl-pill" onclick="adpCopy(adpTplById('${t.id}').body)">Copier</button>`}
+      <button class="gl-pill" onclick="adpTplDuplicate('${t.id}')" title="Créer une variante">⧉ Dupliquer</button>
+      <button class="gl-pill" onclick="adpTplArchive('${t.id}')">${t.status==='archive'?'↺ Réactiver':'⌫ Archiver'}</button>
       <button class="gl-pill danger" onclick="adpDeleteTpl('${t.id}')">Supprimer</button>
     </div>
-    ${t.kind==='procedure'?'<div class="run-steps" id="tplSteps"></div>':''}
+    ${t.kind==='procedure'?`<div class="adp-c-meta" style="margin-bottom:0.6rem">
+        <span class="adp-c-tag">${tplSteps(t).length} étape${tplSteps(t).length>1?'s':''}</span>
+        <span class="adp-c-tag">${tplUsage(t.id)?`lancée ${tplUsage(t.id)}×`:'jamais lancée'}</span>
+        ${t.status==='archive'?'<span class="adp-c-tag warn">archivée</span>':''}</div>
+      <div class="run-steps" id="tplSteps"></div>`
+      :`<div class="tpl-prev" id="tplPrev"></div>`}
     <div class="adp-tpl" id="adpTplBody"></div>`;
-  if(t.kind==='procedure')renderTplSteps(t);
+  if(t.kind==='procedure')renderTplSteps(t); else renderTplPreview(t);
   renderAdpTplBody();
+}
+// Un modèle de mail se juge rempli, pas en abstrait : l'aperçu prend le
+// premier projet et son contact pour montrer ce qui partira vraiment.
+function renderTplPreview(t){
+  const host=document.getElementById('tplPrev'); if(!host)return;
+  const p=adpProjects.find(x=>x.status==='actif')||adpProjects[0]||null;
+  const c=(p&&adpContacts.find(x=>x.project_id===p.id&&x.status==='actif'))||adpContacts[0]||null;
+  const {subject,body}=adpSplitMail(adpPlain(adpFill(t.body,c,p)));
+  const manque=adpTplVars(t.body).filter(v=>body.includes(`{{${v}}}`)||subject.includes(`{{${v}}}`));
+  host.innerHTML=`<div class="adp-sec">Aperçu rempli${p?` — ${adpEsc(p.name)}`:''}${c?` · ${adpEsc(c.name)}`:''}</div>`
+    +(subject?`<div class="cp-subj"><span>Objet</span>${adpEsc(subject)}</div>`:'')
+    +`<pre>${adpEsc(body)||'<span class="sb-none">Modèle vide.</span>'}</pre>`
+    +(t.followup?`<div class="tpl-use">Relance automatique proposée à J+${t.followup}.</div>`:'')
+    +(manque.length?`<div class="cp-warn">Variables sans valeur ici : ${manque.map(v=>`{{${adpEsc(v)}}}`).join(' ')}</div>`:'');
 }
 function setAdpTplMode(m){ adpTplMode=m; renderAdpTplBody(); }
 function renderAdpTplBody(){
@@ -6894,6 +6955,7 @@ function adpOnTpl(v){
     toast(`Limite atteinte : ${NOTE_CELL.toLocaleString('fr-FR')} caractères`,'err'); return;
   }
   t.body=v;
+  if(t.kind==='mail')renderTplPreview(t);
   clearTimeout(adpTplTimer);
   adpTplTimer=setTimeout(async()=>{ if(!(await adpSave('tpl',t)))toast("ÉCHEC de l'enregistrement",'err'); },800);
 }
@@ -6953,7 +7015,7 @@ function adpSplitMail(txt){
 
 let adpComposeCont=null, adpComposeTpl=null, adpComposeProj='';
 function openAdpCompose(contactId,tplId){
-  const mails=adpTemplates.filter(t=>t.kind==='mail');
+  const mails=tplActifs('mail');
   if(!mails.length){ toast('Aucun modèle de mail. Crée-en un dans « Modèles ».','info'); return; }
   adpComposeCont=contactId||null;
   adpComposeTpl=tplId||mails[0].id;
@@ -6970,7 +7032,7 @@ function setComposeField(k,v){
   renderAdpCompose();
 }
 function renderAdpCompose(){
-  const mails=adpTemplates.filter(t=>t.kind==='mail').sort((a,b)=>a.title.localeCompare(b.title,'fr'));
+  const mails=tplActifs('mail').sort((a,b)=>a.title.localeCompare(b.title,'fr'));
   const c=adpComposeCont?adpContById(adpComposeCont):null;
   const p=adpComposeProj?adpProjById(adpComposeProj):null;
   const t=adpTplById(adpComposeTpl);
@@ -7164,7 +7226,8 @@ async function saveAdpModal(){
     const t=adpEditId?adpTplById(adpEditId):null;
     obj={id:adpEditId||adpId('t'),kind:v('atKind'),title,category:v('atCat'),
       body:t?t.body:'',created_at:t?t.created_at:td(),
-      steps:t?t.steps||'':'',followup:parseInt(v('atFollow'),10)||0};
+      steps:t?t.steps||'':'',followup:parseInt(v('atFollow'),10)||0,
+      status:t?t.status||'actif':'actif'};
   }
   if(!obj)return;
   closeAdpModal();
@@ -7312,7 +7375,7 @@ function computeSignals(){
   }).slice(0,3).forEach(c=>push(`c.${c.id}`,'orange',
     `${c.name} n'a pas été relancé depuis le ${c.last_contact}`,
     `Cadence prévue : ${c.cadence} jours.`,
-    ()=>{ switchPage('adp'); setAdpView('contacts'); openAdpCompose(c.id); }));
+    ()=>{ switchPage('adp'); setAdpView('suivi'); openAdpCompose(c.id); }));
   // Une procédure lancée dont une étape a passé son échéance : c'est
   // l'engagement qu'on a pris qui dérape, pas seulement une tâche.
   runActive().forEach(r=>{
@@ -7795,7 +7858,7 @@ function renderRunPage(el){
 function renderTplSteps(t){
   const host=document.getElementById('tplSteps'); if(!host)return;
   const st=tplSteps(t);
-  const mails=adpTemplates.filter(x=>x.kind==='mail');
+  const mails=tplActifs('mail');
   const num={}; st.forEach((s,i)=>num[s.key]=i+1);
   host.innerHTML=`<div class="adp-sec">Étapes
       <button class="adp-mini" onclick="tplAddStep()" title="Ajouter une étape">+</button></div>`
@@ -8166,7 +8229,7 @@ function weekItems(jour){
     out.push({t:'Jalon',ic:'⛳',lbl:m.title,sub:p?p.name:'',
       go:()=>{switchPage('adp');setAdpView('projets');if(p)openAdpProject(p.id);}});});
   adpContacts.filter(c=>adpDueDay(c)===jour).forEach(c=>out.push({t:'Relance',ic:'✉',lbl:c.name,
-    sub:c.org||'',go:()=>{switchPage('adp');setAdpView('contacts');openAdpCompose(c.id);}}));
+    sub:c.org||'',go:()=>{switchPage('adp');setAdpView('suivi');openAdpCompose(c.id);}}));
   runActive().forEach(r=>{
     const {state}=runStates(r);
     (r.steps||[]).forEach((s,i)=>{ if(state[s.key]==='active'&&s.due===jour)
@@ -8227,13 +8290,107 @@ function rvAdpStats(r){
           risque:actifs.filter(p=>p.health!=='vert')};
 }
 
+// ── Suivi ─────────────────────────────────────────────────────────────────
+// Un annuaire de contacts répond à « qui est-ce ? ». La question d'un chef de
+// projet est « qu'est-ce qui traîne, depuis quand, et sur qui ? ». Cette vue
+// remplace donc l'annuaire : elle rassemble tout ce qui attend une action —
+// relances dues, jalons dépassés, étapes bloquées, tâches en retard ou fuies —
+// trié par ancienneté, avec le geste au bout de la ligne.
+// Les contacts n'ont pas disparu : ils se gèrent depuis la page du projet et
+// depuis les lignes de relance, là où on s'en sert.
+const SUIVI_FILTRES=[['tout','Tout'],['relance','Relances'],['jalon','Jalons'],
+                     ['etape','Étapes'],['tache','Tâches']];
+let suiviFiltre='tout';
+const LS_SUIVI='kanban_adp_suivi';
+try{ const v=localStorage.getItem(LS_SUIVI); if(SUIVI_FILTRES.some(([k])=>k===v))suiviFiltre=v; }catch(e){}
+function setSuiviFiltre(f){
+  suiviFiltre=f;
+  try{ localStorage.setItem(LS_SUIVI,f); }catch(e){}
+  renderAdp();
+}
+
+// Chaque entrée : {type, ic, quoi, ou, depuis (jours), date, actions:[[label,fn]]}
+// `depuis` positif = en retard de N jours ; 0 = dû aujourd'hui.
+function suiviItems(){
+  const out=[], jour=td();
+  adpDueContacts().forEach(c=>{
+    const p=c.project_id?adpProjById(c.project_id):null;
+    const d=adpDueDay(c);
+    out.push({type:'relance',ic:'✉',quoi:c.name,
+      ou:[c.org,p&&p.name].filter(Boolean).join(' · '),
+      depuis:Math.max(0,-dayDiff(d)),date:d,
+      det:c.last_contact?`vu le ${c.last_contact}`:'jamais contacté',
+      actions:[['✓ Relancé',()=>adpTouch(c.id)],['✉ Écrire',()=>openAdpCompose(c.id)],
+               ['Fiche',()=>openAdpContModal(c.id)]]});
+  });
+  adpMilestones.filter(m=>m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<=0).forEach(m=>{
+    const p=adpProjById(m.project_id);
+    out.push({type:'jalon',ic:'⛳',quoi:m.title,ou:p?p.name:'',
+      depuis:Math.max(0,-dayDiff(m.due_date)),date:m.due_date,
+      det:(ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1],
+      actions:[['✓ Fait',()=>adpToggleMile(m.id)],['Ouvrir',()=>openAdpMileModal(m.id)]]});
+  });
+  runActive().forEach(r=>{
+    const {state}=runStates(r), p=adpProjById(r.project_id);
+    (r.steps||[]).forEach((s,i)=>{
+      if(state[s.key]!=='active'||!s.due||dayDiff(s.due)>0)return;
+      out.push({type:'etape',ic:runTypeMeta(s.type)[2],quoi:s.label,
+        ou:[r.title.split(' — ')[0],p&&p.name].filter(Boolean).join(' · '),
+        depuis:Math.max(0,-dayDiff(s.due)),date:s.due,
+        det:runTypeMeta(s.type)[1],
+        actions:[['Ouvrir',()=>{setAdpView('procedures');openRun(r.id);}]]});
+    });
+  });
+  tasks.filter(t=>t.due_date&&t.due_date<=jour).forEach(t=>{
+    out.push({type:'tache',ic:'✅',quoi:t.title,ou:t.project||'',
+      depuis:Math.max(0,-dayDiff(t.due_date)),date:t.due_date,
+      det:(t.snoozes||0)>=2?`reportée ${t.snoozes} fois`:'',
+      actions:[['✓ Terminer',()=>completeTask(t.id)],['+1J',()=>snoozeTask(t.id,1)],
+               ['Ouvrir',()=>{switchPage('board');openModal(t.id);}]]});
+  });
+  return out.sort((a,b)=>b.depuis-a.depuis||String(a.quoi).localeCompare(String(b.quoi),'fr'));
+}
+let suiviActs=[];
+function suiviRun(i){ const f=suiviActs[i]; if(f)f(); }
+function renderAdpSuivi(el){
+  const tous=suiviItems();
+  const q=voNorm(adpSearch);
+  const list=tous.filter(x=>(suiviFiltre==='tout'||x.type===suiviFiltre))
+    .filter(x=>!q||voNorm(`${x.quoi} ${x.ou} ${x.det}`).includes(q));
+  const cnt=t=>tous.filter(x=>t==='tout'||x.type===t).length;
+  suiviActs=[];
+  const age=n=>n===0?'aujourd\'hui':n===1?'depuis hier':`depuis ${n} jours`;
+  el.innerHTML=`
+    <div class="adp-tools">
+      ${SUIVI_FILTRES.map(([k,l])=>{const n=cnt(k);
+        return `<button class="gl-pill${suiviFiltre===k?' active':''}"${suiviFiltre===k?' style="background:var(--accent);border-color:var(--accent)"':''} onclick="setSuiviFiltre('${k}')">${l}${n?` <span class="adp-badge${k==='tout'?' quiet':''}">${n}</span>`:''}</button>`;}).join('')}
+      <input type="search" class="gl-search" placeholder="Filtrer…" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openAdpContModal(null)">+ Contact</button>
+    </div>
+    ${list.length?`<div class="sv-list">${list.map(x=>{
+      const base=suiviActs.length;
+      x.actions.forEach(([,f])=>suiviActs.push(f));
+      const gr=x.depuis>=14?'rouge':x.depuis>=3?'orange':x.depuis>0?'jaune':'';
+      return `<div class="sv-r sv-${x.type}${gr?' g-'+gr:''}">
+        <span class="sv-ic">${x.ic}</span>
+        <span class="sv-b">
+          <span class="sv-q">${adpEsc(x.quoi)}</span>
+          <span class="sv-o">${adpEsc(x.ou)}${x.det?` · ${adpEsc(x.det)}`:''}</span></span>
+        <span class="sv-age" title="échéance ${adpEsc(x.date)}">${age(x.depuis)}</span>
+        <span class="sv-a">${x.actions.map(([l],k)=>
+          `<button class="adp-act" onclick="suiviRun(${base+k})">${l}</button>`).join('')}</span>
+      </div>`;}).join('')}</div>`
+      :`<div class="gl-empty">${q||suiviFiltre!=='tout'?'Rien ne correspond à ce filtre.':'Rien ne traîne. Tout est à jour.'}</div>`}`;
+}
+
 // ── Rapports ──────────────────────────────────────────────────────────────
 // Deux formats, aucune bibliotheque. Le PDF passe par l'impression du
 // navigateur — c'est la seule voie honnete sans embarquer un moteur de rendu.
 // Le tableur est un vrai .xlsx, fabrique avec le meme ecrivain ZIP que
 // l'export des notes : pas une seule dependance de plus.
-const RAP_SECTIONS=[['etat','État et jalons'],['budget','Budget'],
-                    ['contacts','Contacts et relances'],['procedures','Procédures'],
+const RAP_SECTIONS=[['etat','État et jalons'],['budget','Budget et trajectoire'],
+                    ['suivi','Suivi : ce qui traîne'],['procedures','Procédures'],
                     ['avancees','Avancées du journal']];
 let rapPortee='tout', rapSections=new Set(RAP_SECTIONS.map(s=>s[0]));
 
@@ -8294,7 +8451,7 @@ function rapHtml(an){
     <td class="r">${budFmt(tR)}</td><td></td><td></td></tr></tfoot></table>`;
 
   list.forEach(p=>{
-    if(list.length>1)h+=`<h2 class="rap-p">${E(p.name)}${p.client?` <small>${E(p.client)}</small>`:''}</h2>`;
+    if(list.length>1)h+=`<h2 class="rap-p rap-brk">${E(p.name)}${[p.domaine,p.client].filter(Boolean).length?` <small>${E([p.domaine,p.client].filter(Boolean).join(' · '))}</small>`:''}</h2>`;
     if(rapSections.has('etat')){
       const ml=adpProjMiles(p.id);
       h+=`<h3>État</h3><ul class="rap-l">
@@ -8321,13 +8478,19 @@ function rapHtml(an){
       h+=`</tbody><tfoot><tr><td>TOTAL</td><td class="r">${budFmt(budProjEst(p.id,'G'))}</td>
         <td class="r">${budFmt(budProjReel(p.id))}</td>`+
         mois.map(m=>`<td class="r">${budFmt(budProjMonth(p.id,m))}</td>`).join('')+`</tr></tfoot></table>`;
+      // la trajectoire cumulee dit QUAND ca decroche, ce que le tableau ne dit pas
+      h+=`<div class="rap-fig">${budChart(p.id,an,620,150)}</div>`;
     }
-    if(rapSections.has('contacts')){
-      const cs=adpContacts.filter(c=>c.project_id===p.id);
-      if(cs.length)h+=`<h3>Contacts</h3><table class="rap-t"><thead><tr><th>Nom</th><th>Rôle</th><th>Société</th><th>Dernier contact</th><th>Cadence</th></tr></thead><tbody>`+
-        cs.map(c=>`<tr><td>${E(c.name)}</td><td>${E(c.role)}</td><td>${E(c.org)}</td>
-          <td class="${adpIsDue(c)?'ko':''}">${E(c.last_contact)||'jamais'}</td>
-          <td>${c.cadence?c.cadence+' j':'—'}</td></tr>`).join('')+`</tbody></table>`;
+    if(rapSections.has('suivi')){
+      const sv=suiviItems().filter(x=>{
+        if(x.type==='relance')return adpContacts.some(c=>c.name===x.quoi&&c.project_id===p.id);
+        return (x.ou||'').includes(p.name)||(p.client&&x.ou===p.client);});
+      if(sv.length)h+=`<h3>Ce qui traîne</h3><table class="rap-t"><thead><tr>
+          <th>Type</th><th>Quoi</th><th>Détail</th><th>Échéance</th><th class="r">Retard</th></tr></thead><tbody>`+
+        sv.map(x=>`<tr><td>${E((SUIVI_FILTRES.find(f=>f[0]===x.type)||['','?'])[1].replace(/s$/,''))}</td>
+          <td>${E(x.quoi)}</td><td>${E(x.det)}</td><td>${E(x.date)}</td>
+          <td class="r${x.depuis>=3?' ko':''}">${x.depuis?x.depuis+' j':'—'}</td></tr>`).join('')+`</tbody></table>`;
+      else h+=`<h3>Ce qui traîne</h3><p class="rap-ok">Rien en attente sur ce projet.</p>`;
     }
     if(rapSections.has('procedures')){
       const rs=runActive().filter(r=>r.project_id===p.id);
@@ -8342,7 +8505,27 @@ function rapHtml(an){
       if(av.length)h+=`<h3>Avancées</h3><div class="rap-md md">${mdRender(av.join('\n'))}</div>`;
     }
   });
-  return h+`</div>`;
+  return h+`<div class="rap-foot">Généré le ${td()} par Kanban Ops ${APP_VERSION} · ${E(rapTitre())}</div></div>`;
+}
+// L'impression partait directement dans la boîte de dialogue : on ne voyait
+// ce qu'on imprimait qu'une fois le PDF produit. L'aperçu montre d'abord.
+let rapAn=null;
+function rapApercu(){
+  const {an}=rapLire(); rapAn=an;
+  closeRapport();
+  document.getElementById('rapPrevBody').innerHTML=rapHtml(an);
+  document.getElementById('rapPrevModal').classList.add('open');
+}
+function closeRapPrev(){ document.getElementById('rapPrevModal').classList.remove('open'); }
+function rapImprimer(){
+  closeRapPrev();
+  document.getElementById('rapport').innerHTML=document.getElementById('rapPrevBody').innerHTML;
+  document.body.classList.add('impression');
+  const fin=()=>{ document.body.classList.remove('impression');
+                  document.getElementById('rapport').innerHTML='';
+                  window.removeEventListener('afterprint',fin); };
+  window.addEventListener('afterprint',fin);
+  setTimeout(()=>{ window.print(); setTimeout(fin,1500); },60);
 }
 function rapPDF(){
   const {an}=rapLire();
@@ -8365,8 +8548,21 @@ function xlsxBlob(feuilles){
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');   // interdits en XML 1.0
   const col=i=>{ let s=''; i++; while(i){ const m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26);} return s; };
   const nom=(n,i)=>(String(n||'Feuille').replace(/[\[\]\*\?\/\\:]/g,' ').slice(0,28)||'F')+(i?' '+(i+1):'');
+  // largeur des colonnes deduite du contenu : sans elle, tout arrive en
+  // « ##### » et il faut elargir a la main a chaque ouverture
+  const cols=lignes=>{
+    if(!lignes.length)return '';
+    const n=Math.max(...lignes.map(l=>l.length));
+    const w=[];
+    for(let c=0;c<n;c++){
+      let m=8;
+      lignes.forEach(l=>{ const v=l[c]; if(v!=null)m=Math.max(m,String(v).length+2); });
+      w.push(`<col min="${c+1}" max="${c+1}" width="${Math.min(46,m)}" customWidth="1"/>`);
+    }
+    return `<cols>${w.join('')}</cols>`;
+  };
   const ws=lignes=>`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>`+
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`+cols(lignes)+`<sheetData>`+
   lignes.map((l,r)=>`<row r="${r+1}">`+l.map((v,c)=>{
     const ref=col(c)+(r+1);
     return (typeof v==='number'&&isFinite(v))
@@ -8432,7 +8628,13 @@ function rapFeuilles(an){
         return [p?p.name:'',m.title,(ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1],m.due_date||'',
           m.status==='done'?'fait':(m.due_date&&dayDiff(m.due_date)<0?'en retard':'à venir'),m.done_at||''];})]});
   }
-  if(rapSections.has('contacts')){
+  if(rapSections.has('suivi')){
+    const noms=new Set(list.map(p=>p.name));
+    const sv=suiviItems().filter(x=>!x.ou||[...noms].some(n2=>x.ou.includes(n2))||
+      list.some(p=>p.client&&x.ou===p.client));
+    f.push({nom:'Suivi',lignes:[['Type','Quoi','Où','Détail','Échéance','Retard (j)'],
+      ...sv.map(x=>[(SUIVI_FILTRES.find(y=>y[0]===x.type)||['','?'])[1].replace(/s$/,''),
+        x.quoi,x.ou,x.det,x.date,x.depuis])]});
     const ids=new Set(list.map(p=>p.id));
     f.push({nom:'Contacts',lignes:[['Projet','Nom','Rôle','Société','E-mail','Dernier contact','Cadence','À relancer'],
       ...adpContacts.filter(c=>ids.has(c.project_id)).map(c=>{
@@ -11437,7 +11639,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.38.0';
+const APP_VERSION='v1.39.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
