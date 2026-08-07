@@ -936,6 +936,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .cp-subj span{display:block;font-size:0.48rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.15rem}
 .cp-body{font-family:var(--font-body);font-size:0.76rem;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;color:var(--text-mid)}
 .cp-warn{margin-top:0.6rem;font-family:var(--font-mono);font-size:0.52rem;color:var(--warn);line-height:1.5}
+.cp-fu{display:flex;align-items:center;gap:0.45rem;margin-top:0.8rem;font-size:0.76rem;color:var(--text-mid);cursor:pointer}
 @media(max-width:900px){
   .adp-proj{grid-template-columns:1fr}
   .cp-grid{grid-template-columns:1fr}
@@ -2553,18 +2554,7 @@ function setTheme(name, silent) {
     const mark = b.querySelector('.theme-opt-mark');
     if (mark) mark.textContent = isActive ? '●' : '';
   });
-  if (!silent) document.getElementById('themeMenu')?.classList.remove('open');
 }
-function toggleThemePicker(e) {
-  if (e) e.stopPropagation();
-  document.getElementById('themeMenu')?.classList.toggle('open');
-}
-// Close dropdown when clicking outside
-document.addEventListener('click', e => {
-  const menu = document.getElementById('themeMenu');
-  if (!menu) return;
-  if (!menu.contains(e.target) && !e.target.closest('.btn-theme')) menu.classList.remove('open');
-});
 
 
 function buildHabitModalSelects() {
@@ -3539,7 +3529,7 @@ function renderTodayMes(){
   const suivies=mesActive();
   el.innerHTML=`<div class="td-t">Mesures${manque.length?` <span class="td-n">${manque.length}</span>`:''}</div>`+
     (manque.length?`<div class="mes-qrow">${manque.map(d=>`
-      <label class="mes-qf"><span>${d.icon} ${tdEsc(d.label)}${d.unit?` (${tdEsc(d.unit)})`:''}</span>
+      <label class="mes-qf"><span>${tdEsc(d.icon)} ${tdEsc(d.label)}${d.unit?` (${tdEsc(d.unit)})`:''}</span>
         <input type="number" step="any" inputmode="decimal" placeholder="—"
                onkeydown="if(event.key==='Enter'){mesQuick('${d.key}',this.value);this.value='';}"
                onblur="if(this.value){mesQuick('${d.key}',this.value);this.value='';}"></label>`).join('')}</div>`
@@ -3549,7 +3539,7 @@ function renderTodayMes(){
       const st=mesStats(d.key,30);
       const delta=(st.avg!=null&&st.prevAvg!=null)?st.avg-st.prevAvg:null;
       return `<div class="td-row" onclick="switchPage('metrics');openMetric('${d.key}')">
-        <span class="td-icon">${d.icon||'📈'}</span>
+        <span class="td-icon">${tdEsc(d.icon)||'📈'}</span>
         <span class="td-lbl"><span class="td-name">${tdEsc(d.label)}</span>
           <span class="td-meta">${st.last?st.last.date:'aucun point'}</span></span>
         <span class="rv-n">${st.last?mesFmt(st.last.value,d):'—'}</span>
@@ -5484,7 +5474,6 @@ function mesInRange(list,days){
   const cut=ymd(d);
   return list.filter(v=>v.date>=cut);
 }
-const mesLast=k=>{ const s=mesSeries(k); return s.length?s[s.length-1]:null; };
 const mesColor=d=>d.color||MES_PALETTE[Math.max(0,mesDefs.findIndex(x=>x.key===d.key))%MES_PALETTE.length];
 // Un point vaut pour une date et une série : ressaisir le même jour corrige,
 // il n'empile pas deux valeurs contradictoires.
@@ -5582,7 +5571,8 @@ function mesTrendClass(d,delta){
   const good=d.direction==='up'?delta>0:delta<0;
   return good?'up':'down';
 }
-const mesFmt=(v,d)=>v==null?'—':`${Math.round(v*100)/100}${d&&d.unit?' '+d.unit:''}`;
+// L'unité vient de la saisie : elle ne peut pas partir brute dans du HTML.
+const mesFmt=(v,d)=>v==null?'—':`${Math.round(v*100)/100}${d&&d.unit?' '+tdEsc(d.unit):''}`;
 
 // ── Courbe SVG ────────────────────────────────────────────────────────────
 // Dessinée à la main : Chart.js n'est qu'opportunément en cache, et une série
@@ -5633,7 +5623,7 @@ async function renderMetricsPage(){
     (manquantes.length?`<div class="mes-quick">
       <div class="adp-sec">À saisir aujourd'hui <span class="adp-badge">${manquantes.length}</span></div>
       <div class="mes-qrow">${manquantes.map(d=>`
-        <label class="mes-qf"><span>${d.icon} ${tdEsc(d.label)}</span>
+        <label class="mes-qf"><span>${tdEsc(d.icon)} ${tdEsc(d.label)}</span>
           <input type="number" step="any" inputmode="decimal" placeholder="${tdEsc(d.unit||'valeur')}"
                  onkeydown="if(event.key==='Enter'){mesQuick('${d.key}',this.value);this.value='';}"
                  onblur="if(this.value){mesQuick('${d.key}',this.value);this.value='';}"></label>`).join('')}</div>
@@ -5653,7 +5643,7 @@ function mesCard(d){
   const cls=mesTrendClass(d,delta);
   return `<div class="mes-card${d.active?'':' off'}" onclick="openMetric('${d.key}')">
     <div class="mes-c-head">
-      <span class="mes-ico">${d.icon||'📈'}</span>
+      <span class="mes-ico">${tdEsc(d.icon)||'📈'}</span>
       <span class="mes-c-name">${tdEsc(d.label)}</span>
       <button class="gl-edit" onclick="event.stopPropagation();openMesDefModal('${d.key}')" title="Éditer">✎</button>
     </div>
@@ -5673,7 +5663,7 @@ function renderMetricDetail(el){
   el.innerHTML=`
     <div class="adp-tools">
       <button class="gl-pill" onclick="closeMetric()">← Mesures</button>
-      <span class="adp-title">${d.icon} ${tdEsc(d.label)}</span>
+      <span class="adp-title">${tdEsc(d.icon)} ${tdEsc(d.label)}</span>
       <div style="flex:1"></div>
       <button class="gl-pill" onclick="openMesValModal('${d.key}',null)">+ Point</button>
       ${d.key==='poids'?`<button class="gl-pill" onclick="mesImportSportWeights()" title="Reprendre les poids déjà saisis dans Sport">↥ Importer du Sport</button>`:''}
@@ -5869,7 +5859,7 @@ const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updat
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
 const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'M'],['adp_contacts',ADP_CONT_HEADER,'L'],
-                    ['adp_milestones',ADP_MILE_HEADER,'H'],['adp_templates',ADP_TPL_HEADER,'G'],
+                    ['adp_milestones',ADP_MILE_HEADER,'H'],['adp_templates',ADP_TPL_HEADER,'I'],
                     ['adp_budget',ADP_BUD_HEADER,'G'],['adp_runs',ADP_RUN_HEADER,'H']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
@@ -5925,31 +5915,38 @@ async function loadAdp(){
     adpFetch('adp_projects','A:M'), adpFetch('adp_contacts','A:L'),
     adpFetch('adp_milestones','A:H'), adpFetch('adp_templates','A:I'),
     adpFetch('adp_budget','A:G'), adpFetch('adp_runs','A:H')]);
-  const dedupe=arr=>{const m={};arr.forEach(o=>{m[o.id]=o;});return Object.values(m);};  // la dernière ligne gagne
-  adpProjects=dedupe(pr.map(x=>({id:adpCell(x,0),name:adpCell(x,1)||'Sans nom',client:adpCell(x,2),
+  // La dernière ligne gagne. Une ligne vidée est une pierre tombale : la
+  // suppression garde la ligne pour ne jamais décaler la feuille sous les
+  // écritures en vol, mais l'objet ne doit pas ressusciter au rechargement.
+  const dedupe=(arr,champ)=>{
+    const m={};
+    arr.forEach(o=>{ if(o[champ])m[o.id]=o; else delete m[o.id]; });
+    return Object.values(m);
+  };
+  adpProjects=dedupe(pr.map(x=>({id:adpCell(x,0),name:adpCell(x,1),client:adpCell(x,2),
     status:adpCell(x,3)||'actif',start_date:adpCell(x,4),deadline:adpCell(x,5),
     health:adpCell(x,6)||'vert',note_id:adpCell(x,7),color:adpCell(x,8),
     created_at:adpCell(x,9),updated_at:adpCell(x,10),
     budget:parseFloat(String(adpCell(x,11)).replace(',','.'))||0,
-    domaine:adpCell(x,12)})));
-  adpContacts=dedupe(co.map(x=>({id:adpCell(x,0),name:adpCell(x,1)||'Sans nom',org:adpCell(x,2),
+    domaine:adpCell(x,12)})),'name');
+  adpContacts=dedupe(co.map(x=>({id:adpCell(x,0),name:adpCell(x,1),org:adpCell(x,2),
     role:adpCell(x,3),email:adpCell(x,4),phone:adpCell(x,5),project_id:adpCell(x,6),
     cadence:parseInt(adpCell(x,7),10)||0,last_contact:adpCell(x,8),
-    status:adpCell(x,9)||'actif',notes:adpCell(x,10),updated_at:adpCell(x,11)})));
-  adpMilestones=dedupe(mi.map(x=>({id:adpCell(x,0),project_id:adpCell(x,1),title:adpCell(x,2)||'Sans titre',
+    status:adpCell(x,9)||'actif',notes:adpCell(x,10),updated_at:adpCell(x,11)})),'name');
+  adpMilestones=dedupe(mi.map(x=>({id:adpCell(x,0),project_id:adpCell(x,1),title:adpCell(x,2),
     due_date:adpCell(x,3),status:adpCell(x,4)||'todo',kind:adpCell(x,5)||'jalon',
-    done_at:adpCell(x,6),updated_at:adpCell(x,7)})));
-  adpTemplates=dedupe(tp.map(x=>({id:adpCell(x,0),kind:adpCell(x,1)||'mail',title:adpCell(x,2)||'Sans titre',
+    done_at:adpCell(x,6),updated_at:adpCell(x,7)})),'title');
+  adpTemplates=dedupe(tp.map(x=>({id:adpCell(x,0),kind:adpCell(x,1)||'mail',title:adpCell(x,2),
     category:adpCell(x,3),body:String(x[4]==null?'':x[4]),
     created_at:adpCell(x,5),updated_at:adpCell(x,6),
-    steps:String(x[7]==null?'':x[7]),followup:parseInt(adpCell(x,8),10)||0})));
+    steps:String(x[7]==null?'':x[7]),followup:parseInt(adpCell(x,8),10)||0})),'title');
   const bd={};
   bu.forEach(x=>{ const o={id:adpCell(x,0),project_id:adpCell(x,1),capex:adpCell(x,2),
     nature:adpCell(x,3),month:adpCell(x,4),
     amount:parseFloat(String(adpCell(x,5)).replace(',','.'))||0};
     // une ligne remise a zero n'a plus rien a dire : on l'oublie
     if(o.id&&o.project_id&&o.amount)bd[o.id]=o; else if(o.id)delete bd[o.id]; });
-  adpBudget=Object.values(bd);
+  adpBudget=Object.values(bd); budIdxInvalidate();
   adpRuns=dedupe(ru.map(x=>{
     let st=[]; try{ st=JSON.parse(x[6]||'[]')||[]; }catch(e){}
     const steps=(Array.isArray(st)?st:[]).map((o,i)=>({
@@ -5959,7 +5956,7 @@ async function loadAdp(){
     return {id:adpCell(x,0),template_id:adpCell(x,1),project_id:adpCell(x,2),
       title:adpCell(x,3)||'Suivi',start_date:adpCell(x,4),status:adpCell(x,5)||'actif',
       steps,updated_at:adpCell(x,7)};
-  })).filter(r=>r.status!=='supprime');
+  }),'title').filter(r=>r.status!=='supprime');
   ['adpProjects','adpContacts','adpMilestones','adpTemplates','adpBudget','adpRuns'].forEach((k,i)=>
     cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates,adpBudget,adpRuns][i]));
   adpLoaded=true;
@@ -5967,7 +5964,7 @@ async function loadAdp(){
 function adpRestoreCache(){
   adpProjects=cacheGet('adpProjects',[]); adpContacts=cacheGet('adpContacts',[]);
   adpMilestones=cacheGet('adpMilestones',[]); adpTemplates=cacheGet('adpTemplates',[]);
-  adpBudget=cacheGet('adpBudget',[]); adpRuns=cacheGet('adpRuns',[]);
+  adpBudget=cacheGet('adpBudget',[]); budIdxInvalidate(); adpRuns=cacheGet('adpRuns',[]);
 }
 const adpProjRow=p=>[p.id,p.name,p.client||'',p.status||'actif',p.start_date||'',p.deadline||'',
   p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td(),String(p.budget||0),p.domaine||''];
@@ -7064,7 +7061,6 @@ function runStates(r){
   });
   return {state,avail};
 }
-const runVisible=r=>(r.steps||[]).filter(s=>runStates(r).state[s.key]!=='ignoree');
 function runProgress(r){
   const {state}=runStates(r);
   const vus=(r.steps||[]).filter(s=>state[s.key]!=='ignoree');
@@ -7431,16 +7427,34 @@ try{ const y=parseInt(localStorage.getItem(LS_BUD_YEAR),10); if(y>=2000&&y<=2100
 // existante au lieu d'en empiler une seconde, sans index à maintenir.
 const budKey=(p,c,n,m)=>`${p}~${c}~${n}~${m}`;
 const budMonths=y=>Array.from({length:12},(_,i)=>`${y}-${String(i+1).padStart(2,'0')}`);
-const budAmount=(p,c,n,m)=>{ const r=adpBudget.find(x=>x.id===budKey(p,c,n,m)); return r?r.amount:0; };
+let budIdx=null;
+const budIdxInvalidate=()=>{ budIdx=null; budMoisIdx=null; };
+function budIndex(){
+  if(budIdx)return budIdx;
+  budIdx=new Map();
+  adpBudget.forEach(x=>budIdx.set(x.id,x.amount));
+  return budIdx;
+}
+const budAmount=(p,c,n,m)=>budIndex().get(budKey(p,c,n,m))||0;
 // L'estimé vit dans la même feuille, sous une nature « est » que les sommes
 // ignorent : sa portée est soit 'G' (global, tous exercices), soit une année.
 // Pas de table de plus, pas d'index à tenir.
 const budEst=(p,c,scope)=>budAmount(p,c,'est',scope);
 const budProjEst=(p,scope)=>ADP_CAPEX.reduce((s,[c])=>s+budEst(p,c,scope),0);
 // Réalisé : par mois, par année, ou tout confondu
-const budRows=(p,c,n)=>adpBudget.filter(x=>x.project_id===p&&x.capex===c&&x.nature===n&&/^\d{4}-\d{2}$/.test(x.month));
-const budNatReel=(p,c,n)=>budRows(p,c,n).reduce((s,x)=>s+x.amount,0);
-const budNatReelYear=(p,c,n,y)=>budRows(p,c,n).filter(x=>x.month.startsWith(y+'-')).reduce((s,x)=>s+x.amount,0);
+// Les mois réellement saisis, une fois pour toutes : le total d'une nature ne
+// doit pas reparcourir la table entière à chaque ligne du tableau.
+let budMoisIdx=null;
+function budMoisConnus(){
+  if(budMoisIdx)return budMoisIdx;
+  const set=new Set();
+  adpBudget.forEach(x=>{ if(/^\d{4}-\d{2}$/.test(x.month))set.add(x.month); });
+  budMoisIdx=[...set].sort();
+  return budMoisIdx;
+}
+const budNatReel=(p,c,n)=>budMoisConnus().reduce((s,m)=>s+budAmount(p,c,n,m),0);
+const budNatReelYear=(p,c,n,y)=>budMoisConnus().filter(m=>m.startsWith(y+'-'))
+  .reduce((s,m)=>s+budAmount(p,c,n,m),0);
 const budCapexReel=(p,c)=>ADP_NATURE.reduce((s,[n])=>s+budNatReel(p,c,n),0);
 const budCapexReelYear=(p,c,y)=>ADP_NATURE.reduce((s,[n])=>s+budNatReelYear(p,c,n,y),0);
 const budProjReel=p=>ADP_CAPEX.reduce((s,[c])=>s+budCapexReel(p,c),0);
@@ -7466,6 +7480,7 @@ const adpBudRow=r=>[r.id,r.project_id,r.capex,r.nature,r.month,String(r.amount),
 async function budSave(r){
   const i=adpBudget.findIndex(x=>x.id===r.id);
   if(i>=0)adpBudget[i]=r; else adpBudget.push(r);
+  budIdxInvalidate();
   cacheSet('adpBudget',adpBudget);
   return sheetUpsertByKey('adp_budget',r.id,adpBudRow(r));
 }
@@ -7963,10 +7978,14 @@ function renderObjectifs(){ renderGoalsPage(); }
 let goals=[], goalsLoaded=false, goalCatFilter='all', goalSearch='';
 const LS_GOAL_FOLD='kanban_goals_collapsed';
 let goalCollapsed=new Set((()=>{try{return JSON.parse(localStorage.getItem(LS_GOAL_FOLD))||[]}catch(e){return []}})());
+// `horizon` (colonne C) est un MIROIR calcule depuis target_date : ecrit pour
+// que la feuille se lise seule, jamais relu. De meme `budget` sur les projets
+// ADP, remplace par les estimes par CAPEX en v1.33 : la colonne est conservee
+// intacte plutot que reaffectee, on ne repurpose pas une colonne qui porte
+// peut-etre encore des donnees.
 const GOAL_HEADER=['id','parent_id','horizon','category','title','description','progress','reward','status','target_date','icon','checkpoints','level','reward_eur'];
 const GOAL_DELETED='__deleted__';
 const GOAL_HORIZONS=[['life','Vie','🌟'],['5y','5 ans','🔭'],['annual','Année','📅'],['quarter','Trimestre','🎯'],['month','Mois','📌']];
-const GOAL_PALETTE=['#7c6aff','#4ade80','#fbbf24','#22d3ee','#f87171','#a855f7','#38bdf8','#fb923c','#e879f9','#a3e635'];
 const GOAL_SEED=[
  ['gx1','','life','Esprit','Vivre une vie alignée, libre et en bonne santé','Ma vision long terme','0','Sérénité & liberté totales','active','','🌟','','1','0'],
  ['gx2','gx1','5y','Finance','Atteindre l\'indépendance financière','Patrimoine qui couvre mes besoins','0','Quitter le salariat','active','2030-12-31','🔭','[{"t":"Portefeuille à 6 chiffres","d":false,"r":""},{"t":"Revenus passifs > dépenses","d":false,"r":""}]','2','0'],
@@ -8065,7 +8084,7 @@ async function loadGoals(){
   const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/goals!A:N`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
   const rows=r.values||[];
   const parsed=(rows.length<=1?[]:rows.slice(1)).filter(x=>x[0]).map(x=>({
-    id:String(x[0]||'').trim(),parent_id:String(x[1]||'').trim(),horizon:String(x[2]||'').trim()||'month',
+    id:String(x[0]||'').trim(),parent_id:String(x[1]||'').trim(),
     category:String(x[3]||'').trim()||'Autre',title:String(x[4]||'').trim(),description:String(x[5]||'').trim(),
     progress:parseInt(x[6])||0,reward:String(x[7]||'').trim(),status:String(x[8]||'').trim()||'active',
     target_date:String(x[9]||'').trim(),icon:String(x[10]||'').trim(),checkpoints:String(x[11]||''),
@@ -8080,7 +8099,7 @@ async function loadGoals(){
   cacheSet('goals',goals);
   await migrateGoalLevels();
 }
-function goalToRow(g){return [g.id,g.parent_id||'',g.horizon,g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||'',String(g.level||1),String(g.reward_eur||0)];}
+function goalToRow(g){return [g.id,g.parent_id||'',goalHorizonFromDate(g.target_date),g.category,g.title,g.description||'',String(g.progress||0),g.reward||'',g.status||'active',g.target_date||'',g.icon||'',g.checkpoints||'',String(g.level||1),String(g.reward_eur||0)];}
 // ── Couche d'écriture Sheets partagée ─────────────────────────────────────
 // Tout ce qui écrit dans le classeur passe par ici. Deux sémantiques seulement :
 //   • sheetBatchUpsert : N lignes repérées par leur clé (colonne A), 3 appels max
@@ -8167,7 +8186,6 @@ async function renderGoalsPage(){
   renderGoalsToolbar();
   renderGoalsTree();
 }
-async function reloadGoals(){goalsLoaded=false;goals=[];await renderGoalsPage();}
 
 // ── Cagnotte ──────────────────────────────────────────────────────────────
 // Les habitudes alimentent, les objectifs atteints débitent ou créditent selon
@@ -8450,7 +8468,6 @@ async function saveGoal(){
   const g={id,
     parent_id:parentId,
     level:(par?(par.level||1):0)+1,
-    horizon:goalHorizonFromDate(target),
     category:document.getElementById('gfCategory').value.trim()||'Autre',
     title,
     description:document.getElementById('gfDesc').value.trim(),
@@ -9262,8 +9279,8 @@ function renderCryptoTable() {
     const cls = t.net >= 0 ? 'crp-pos' : 'crp-neg';
     return `<tr>
       <td>${t.date ? dateLabel(t.date) : '—'}</td>
-      <td style="color:${cc?.hex||'var(--text)'};font-weight:700">${t.symbol}</td>
-      <td style="color:var(--text-dim)">${t.action||'—'}</td>
+      <td style="color:${cc?.hex||'var(--text)'};font-weight:700">${tdEsc(t.symbol)}</td>
+      <td style="color:var(--text-dim)">${tdEsc(t.action)||'—'}</td>
       <td>${t.invested > 0 ? t.invested.toFixed(2)+'$' : '—'}</td>
       <td class="${cls}">${crpFmt(t.net)}</td>
     </tr>`;
@@ -9901,9 +9918,9 @@ function renderFinTable(depenses) {
     const amtColor = d.amount >= 0 ? 'var(--green)' : 'var(--danger)'; // positive=gain(green), negative=dépense(red)
     return `<tr>
       <td style="white-space:nowrap">${d.date}</td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.desc||'—'}</td>
-      <td><span class="fin-cat-pill" style="color:${catCol};border-color:${catCol}44;background:${catCol}11">${d.cat||'—'}</span></td>
-      <td style="color:var(--text-dim);white-space:nowrap">${d.compte||'—'}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tdEsc(d.desc)||'—'}</td>
+      <td><span class="fin-cat-pill" style="color:${catCol};border-color:${catCol}44;background:${catCol}11">${tdEsc(d.cat)||'—'}</span></td>
+      <td style="color:var(--text-dim);white-space:nowrap">${tdEsc(d.compte)||'—'}</td>
       <td style="text-align:right;font-weight:700;color:${amtColor}">${fmtAmt(d.amount)}</td>
     </tr>`;
   }).join('');
@@ -10404,7 +10421,7 @@ function renderSportHistory(){
     if(!detail&&l&&l.comment) detail=`<span style="font-style:italic">${sportEsc(l.comment).slice(0,40)}</span>`;
     return `<tr>
       <td style="white-space:nowrap;color:var(--text-mid)">${dlabel}</td>
-      <td>${p?(p.title||p.type):'<span style="opacity:0.4">—</span>'}</td>
+      <td>${p?tdEsc(p.title||p.type):'<span style="opacity:0.4">—</span>'}</td>
       <td><span class="sp-hist-status ${status}">${l?sportStatusLabel(status):'non loggé'}</span></td>
       <td style="color:var(--text-mid);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${detail}</td>
       <td>${feel}</td>
@@ -10567,7 +10584,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.35.0';
+const APP_VERSION='v1.36.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
