@@ -355,7 +355,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 #pagetoday{overflow-y:auto;flex-direction:column}
 .td-wrap{position:relative;z-index:1;padding:1.25rem 1.5rem 3rem}
 .td-hdr{font-family:'Space Mono',monospace;font-size:0.7rem;letter-spacing:0.18em;color:var(--accent);margin-bottom:1rem}
-.td-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;align-items:start}
+.td-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;align-items:start}
 .td-col{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1rem}
 .td-t{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-mid);display:flex;align-items:center;gap:0.5rem;margin-bottom:0.7rem;padding-bottom:0.45rem;border-bottom:1px solid var(--border)}
 .td-n{color:var(--accent)}
@@ -874,6 +874,73 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .theme-opt-name{flex:1;font-weight:700}
 .theme-opt-mark{font-size:0.7rem;color:var(--accent);width:0.8rem;text-align:center}
 
+/* ── ADP ───────────────────────────────────────────────────────────────── */
+.adp-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:1rem 1.25rem;gap:0.7rem;position:relative;z-index:1}
+.adp-hdr{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;flex-shrink:0}
+.adp-body{flex:1;overflow-y:auto;padding-right:0.25rem;display:flex;flex-direction:column;min-height:0}
+.adp-journal,.adp-side,.adp-relance,.adp-tpl{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1rem}
+.adp-tools{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.8rem}
+.adp-title{font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text)}
+.adp-badge{display:inline-block;min-width:1rem;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font-family:var(--font-mono);font-size:0.5rem;text-align:center}
+.adp-badge.quiet{background:var(--surface3);color:var(--text-dim)}
+.adp-sec{font-family:var(--font-mono);font-size:0.53rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);margin:1rem 0 0.45rem;padding-bottom:0.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.4rem}
+.adp-sec:first-child{margin-top:0}
+.adp-mini{margin-left:auto;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);border-radius:4px;width:1.2rem;height:1.2rem;line-height:1;cursor:pointer;font-size:0.7rem}
+.adp-mini:hover{color:var(--accent);border-color:var(--accent)}
+
+.adp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0.7rem}
+.adp-card{position:relative;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--pcol,var(--border2));border-radius:7px;padding:0.7rem 0.8rem;cursor:pointer;transition:border-color 0.13s,transform 0.13s}
+.adp-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.adp-card.due{border-color:rgba(251,191,36,0.5)}
+.adp-c-head{display:flex;align-items:center;gap:0.4rem}
+.adp-c-name{flex:1;font-weight:700;font-size:0.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.adp-c-client{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.08em;text-transform:uppercase;margin-top:0.15rem}
+.adp-c-body{font-size:0.68rem;color:var(--text-dim);margin-top:0.35rem;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.adp-c-meta{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.5rem;align-items:center}
+.adp-c-tag{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-dim);background:var(--surface2);border-radius:3px;padding:2px 5px}
+.adp-c-tag.warn{color:var(--warn);background:rgba(251,191,36,0.12)}
+.adp-c-tag.quiet{opacity:0.55}
+.adp-c-next{font-size:0.66rem;color:var(--text-mid);margin-top:0.45rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.adp-line{display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0.5rem;border-bottom:1px solid var(--border);font-size:0.76rem;cursor:pointer}
+.adp-line:hover{background:var(--surface2)}
+.adp-line.done .adp-l-main{color:var(--text-dim);text-decoration:line-through}
+.adp-line.late{background:rgba(248,113,113,0.06)}
+.adp-line.due{background:rgba(251,191,36,0.06)}
+.adp-l-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;overflow:hidden}
+.adp-l-sub{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adp-l-flag{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--warn);background:rgba(251,191,36,0.12);padding:2px 5px;border-radius:3px;flex-shrink:0}
+.adp-act{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;text-transform:uppercase;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);border-radius:4px;padding:0.2rem 0.45rem;cursor:pointer;flex-shrink:0}
+.adp-act:hover{color:var(--accent);border-color:var(--accent)}
+.adp-check{width:14px;height:14px;border-radius:3px;border:1px solid var(--border2);background:none;cursor:pointer;flex-shrink:0}
+.adp-check.on{background:var(--green);border-color:var(--green)}
+.adp-relance{border-color:rgba(251,191,36,0.35)}
+
+.adp-proj{flex:1;display:grid;grid-template-columns:1fr 300px;gap:1rem;min-height:0}
+.adp-journal{display:flex;flex-direction:column;min-width:0;min-height:0}
+.adp-side{overflow-y:auto}
+.md-hold{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.adp-jbar{display:flex;gap:0.3rem;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap}
+#adpJBody{flex:1;display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+.adp-edit{flex:1;min-height:260px}
+.adp-tpl{display:flex;flex-direction:column;min-height:0;flex:1}
+.fld-hint{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.05em;color:var(--text-dim);margin-top:0.25rem;line-height:1.5;text-transform:none}
+.fld-hint code{background:var(--surface3);padding:0 3px;border-radius:2px}
+.gl-pill.danger{color:var(--danger);border-color:rgba(248,113,113,0.35)}
+
+/* composition d'un mail depuis un modèle */
+.cp-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.cp-prev{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.6rem 0.7rem;max-height:52vh;overflow-y:auto}
+.cp-subj{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.05em;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:0.4rem;margin-bottom:0.5rem}
+.cp-subj span{display:block;font-size:0.48rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.15rem}
+.cp-body{font-family:var(--font-body);font-size:0.76rem;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;color:var(--text-mid)}
+.cp-warn{margin-top:0.6rem;font-family:var(--font-mono);font-size:0.52rem;color:var(--warn);line-height:1.5}
+@media(max-width:900px){
+  .adp-proj{grid-template-columns:1fr}
+  .cp-grid{grid-template-columns:1fr}
+}
+
 /* ═══════════════════════════════
    THEME — ① BRUTALIST
 ═══════════════════════════════ */
@@ -1254,6 +1321,7 @@ body,body *{font-family:var(--font-body)}
     <button class="nav-tab active" data-page="today" onclick="switchPage('today')">AUJOURD'HUI</button>
     <button class="nav-tab" data-page="board" onclick="switchPage('board')">BOARD</button>
     <button class="nav-tab" data-page="brain" onclick="switchPage('brain')">NOTES</button>
+    <button class="nav-tab" data-page="adp" onclick="switchPage('adp')">ADP</button>
     <button class="nav-tab" data-page="omega" onclick="switchPage('omega')">OMEGA</button>
     <button class="nav-tab" data-page="review" onclick="switchPage('review')">REVUE</button>
   </nav>
@@ -1305,6 +1373,7 @@ body,body *{font-family:var(--font-body)}
       <section class="td-col" id="tdTasks"></section>
       <section class="td-col" id="tdHabits"></section>
       <section class="td-col" id="tdSport"></section>
+      <section class="td-col" id="tdAdp"></section>
     </div>
   </div>
 </div>
@@ -1329,12 +1398,13 @@ body,body *{font-family:var(--font-body)}
 
     <main class="sb-main" id="sbMain"></main>
     <input type="file" id="sbFile" multiple style="display:none" onchange="attachFiles(this.files);this.value=''">
-    <div id="sbAc" class="ac-box"></div>
-    <div id="sbMirror" class="ac-mirror"></div>
-
     <aside class="sb-meta" id="sbMeta"></aside>
   </div>
 </div>
+
+<!-- Auto-completion : hors des pages, sinon invisible des qu'on quitte les Notes -->
+<div id="sbAc" class="ac-box"></div>
+<div id="sbMirror" class="ac-mirror"></div>
 
 <!-- Graphe plein ecran : deplacable, zoomable, positions enregistrees -->
 <div id="graphOverlay">
@@ -1349,6 +1419,14 @@ body,body *{font-family:var(--font-body)}
     <button class="gr-b close" onclick="closeGraph()" title="Fermer">✕</button>
   </div>
   <div class="gr-info" id="grInfo"></div>
+</div>
+
+<div class="page" id="pageadp">
+  <div class="pg-bg" id="adpBg" style="opacity:0.22"></div>
+  <div class="adp-wrap">
+    <div class="adp-hdr"><div class="rv-pills" id="adpPills"></div></div>
+    <div class="adp-body" id="adpBody"></div>
+  </div>
 </div>
 
 <div class="page" id="pagereview">
@@ -1553,6 +1631,35 @@ body,body *{font-family:var(--font-body)}
     <div class="modal-hdr">RACCOURCIS CLAVIER</div>
     <button class="modal-close" onclick="closeShortcuts()">✕</button>
     <div class="mh-wrap" id="scList"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="adpModal">
+  <div class="modal">
+    <div class="modal-hdr" id="adpModalTitle">ADP</div>
+    <button class="modal-close" onclick="closeAdpModal()">✕</button>
+    <div id="adpFields"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeAdpModal()">Annuler</button>
+      <button class="btn-del" id="adpDel" style="display:none" onclick="deleteAdpModal()">Supprimer</button>
+      <button class="btn-primary" onclick="saveAdpModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="composeModal">
+  <div class="modal" style="width:min(860px,95vw)">
+    <div class="modal-hdr">RÉDIGER À PARTIR D'UN MODÈLE</div>
+    <button class="modal-close" onclick="closeAdpCompose()">✕</button>
+    <div class="cp-grid">
+      <div id="cpFields"></div>
+      <div class="cp-prev" id="cpPreview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeAdpCompose()">Fermer</button>
+      <button class="btn-secondary" id="cpMail">✉ Ouvrir dans le mail</button>
+      <button class="btn-primary" onclick="adpComposeCopy()">Copier</button>
+    </div>
   </div>
 </div>
 
@@ -2163,10 +2270,12 @@ function renderCurrentPage(){
   else if(curPage==='objectifs')renderObjectifs();
   else if(curPage==='review')renderReviewPage();
   else if(curPage==='brain')renderBrain();
+  else if(curPage==='adp')renderAdp();
 }
 
 function init() {
   applySavedTheme();
+  adpRestoreCache();
   try {
     const cached = JSON.parse(localStorage.getItem(LS_CACHE) || '[]');
     allTasks = cached; tasks = allTasks.filter(t => !t.completed_at);
@@ -2276,6 +2385,10 @@ function initTokenClient() {
       render();
       renderCurrentPage();
       applyStartIntent();
+      // ADP alimente la page AUJOURD'HUI et la pastille : il ne peut pas
+      // attendre qu'on ouvre son onglet. En arriere-plan, sans bloquer.
+      loadAdp().then(()=>{ if(curPage==='today')renderTodayPage(); if(curPage==='adp')renderAdp(); updateHStats(); })
+               .catch(()=>{});
     }
   });
 }
@@ -3175,6 +3288,44 @@ async function renderTodayPage(){
         `<button class="td-sp-b${st===v?' on '+v:''}" onclick="quickSportStatus('${v}')">${l}</button>`).join('')+
       `</div>`:'')+
     `<button class="td-go" onclick="switchPage('sport')">Ouvrir SPORT →</button>`;
+
+  renderTodayAdp();
+}
+
+// ── ce qui attend cote projets ──
+// Les relances et les jalons ne servent a rien s'il faut ouvrir ADP pour les
+// voir : ils remontent ici, actionnables sur place.
+function renderTodayAdp(){
+  const el=document.getElementById('tdAdp'); if(!el)return;
+  if(!adpLoaded&&!adpProjects.length&&!adpContacts.length){
+    el.innerHTML=`<div class="td-t">Projets</div>`+
+      `<div class="td-empty">Rien de chargé.</div>`+
+      `<button class="td-go" onclick="switchPage('adp')">Ouvrir ADP →</button>`;
+    return;
+  }
+  const due=adpDueContacts();
+  const miles=adpSoonMiles(7);
+  el.innerHTML=`<div class="td-t">Projets <span class="td-n">${due.length+miles.length}</span></div>`+
+    (due.length?`<div class="rv-sub">À relancer</div>`+due.slice(0,6).map(c=>{
+      const p=c.project_id?adpProjById(c.project_id):null;
+      return `<div class="td-row">
+        <button class="td-check" onclick="adpTouch('${c.id}')" title="Marquer comme relancé aujourd'hui"></button>
+        <span class="td-lbl"><span class="td-name">${tdEsc(c.name)}</span>
+          <span class="td-meta">${p?tdEsc(p.name)+' · ':''}${c.last_contact?`vu le ${c.last_contact}`:'jamais contacté'}</span></span>
+        <button class="adp-act" onclick="switchPage('adp');setAdpView('contacts');openAdpCompose('${c.id}')">✉</button>
+      </div>`;
+    }).join(''):'')+
+    (miles.length?`<div class="rv-sub">Jalons sous 7 jours</div>`+miles.slice(0,6).map(m=>{
+      const p=adpProjById(m.project_id), d=dayDiff(m.due_date);
+      return `<div class="td-row">
+        <button class="td-check" onclick="adpToggleMile('${m.id}')" title="Terminer"></button>
+        <span class="td-lbl"><span class="td-name">${tdEsc(m.title)}</span>
+          <span class="td-meta">${p?tdEsc(p.name)+' · ':''}${m.due_date}</span></span>
+        <span class="due-badge ${d<0?'overdue':d<=1?'danger':'warn'}">${d<0?'EN RETARD':'J-'+d}</span>
+      </div>`;
+    }).join(''):'')+
+    (due.length||miles.length?'':'<div class="td-empty">Rien à relancer, aucun jalon proche.</div>')+
+    `<button class="td-go" onclick="switchPage('adp')">Ouvrir ADP →</button>`;
 }
 
 // Enregistre le statut du jour sans quitter la page, en preservant ce qui a
@@ -3654,7 +3805,8 @@ function updateAppBadge(){
       .filter(x=>!habitsLog.some(l=>String(l.habit_id)===String(x.id)&&l.date===day)).length;
     const plan=sportPlanFor(day);
     const s=(plan&&!/repos/i.test(plan.type)&&!((sportLogFor(day)||{}).status))?1:0;
-    const n=t+h+s;
+    const a=adpDueContacts().length+adpSoonMiles(0).length;   // relances dues, jalons echus
+    const n=t+h+s+a;
     if(n)navigator.setAppBadge(n); else navigator.clearAppBadge();
   }catch(e){}
 }
@@ -3805,6 +3957,7 @@ function renderNoteBody(){
       oninput="onNoteContent(this.value);acOpen()" onkeydown="if(acKey(event))return;if(mdEditorKey(event))return;" onclick="acOpen()" onblur="setTimeout(acClose,120)"
       onpaste="onEditorPaste(event)" ondragover="event.preventDefault();this.classList.add('drop')"
       ondragleave="this.classList.remove('drop')" ondrop="onEditorDrop(event)"></textarea>`;
+    mdBind('sbEdit',onNoteContent);
     const ta=document.getElementById('sbEdit');
     ta.value=n.content||'';
     ta.focus();
@@ -3845,7 +3998,7 @@ function renderNoteMeta(){
 let acItems=[], acSel=0, acFrom=-1;
 function acClose(){ const el=document.getElementById('sbAc'); if(el)el.style.display='none'; acItems=[]; acFrom=-1; }
 function acOpen(){
-  const ta=document.getElementById('sbEdit'); if(!ta)return acClose();
+  const ta=mdEl(); if(!ta)return acClose();
   const pos=ta.selectionStart, before=ta.value.slice(0,pos);
   const m=/\[\[([^\[\]\n]*)$/.exec(before);      // des [[ ouverts, non refermes
   if(m){
@@ -3895,7 +4048,7 @@ function acRender(ta){
   el.style.top=Math.min(r.top+top+parseFloat(cs.lineHeight||18), window.innerHeight-200)+'px';
 }
 function acPick(i){
-  const it=acItems[i], ta=document.getElementById('sbEdit');
+  const it=acItems[i], ta=mdEl();
   if(!it||!ta)return;
   const v=ta.value, pos=ta.selectionStart;
   const ins=it.insert;
@@ -3904,13 +4057,13 @@ function acPick(i){
   ta.setSelectionRange(caret,caret);
   if(it.emoji)emRemember(it.emoji);
   acClose();
-  onNoteContent(ta.value);
+  mdSave(ta.value);
   ta.focus();
 }
 function acKey(e){
   if(!acItems.length)return false;
-  if(e.key==='ArrowDown'){e.preventDefault();acSel=Math.min(acSel+1,acItems.length-1);acRender(document.getElementById('sbEdit'));return true;}
-  if(e.key==='ArrowUp'){e.preventDefault();acSel=Math.max(acSel-1,0);acRender(document.getElementById('sbEdit'));return true;}
+  if(e.key==='ArrowDown'){e.preventDefault();acSel=Math.min(acSel+1,acItems.length-1);acRender(mdEl());return true;}
+  if(e.key==='ArrowUp'){e.preventDefault();acSel=Math.max(acSel-1,0);acRender(mdEl());return true;}
   if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();acPick(acSel);return true;}
   if(e.key==='Escape'){e.preventDefault();e.stopPropagation();acClose();return true;}
   return false;
@@ -4105,9 +4258,18 @@ async function exportNotesMarkdown(){
 }
 
 // ── Mise en forme depuis l'editeur ────────────────────────────────────────
+// La barre d'outils ne servait qu'aux notes. ADP reutilise le meme composant
+// d'edition : elle doit donc savoir sur quel champ agir et a qui rendre le
+// texte saisi. mdBind() est appele par chaque page au moment ou elle dessine
+// son textarea.
+let mdCtx={id:'sbEdit',save:v=>onNoteContent(v)};
+const mdEl=()=>document.getElementById(mdCtx.id);
+const mdSave=v=>mdCtx.save(v);
+function mdBind(id,save){ mdCtx={id,save}; }
+
 // Entoure la selection, ou insere les marqueurs et place le curseur au milieu.
 function mdWrap(pre,post,ph){
-  const ta=document.getElementById('sbEdit'); if(!ta)return;
+  const ta=mdEl(); if(!ta)return;
   const a=ta.selectionStart,z=ta.selectionEnd,sel=ta.value.slice(a,z)||ph||'';
   // deja entoure ? on retire, pour que le bouton fasse bascule
   const before=ta.value.slice(Math.max(0,a-pre.length),a), after=ta.value.slice(z,z+post.length);
@@ -4118,27 +4280,27 @@ function mdWrap(pre,post,ph){
     ta.value=ta.value.slice(0,a)+pre+sel+post+ta.value.slice(z);
     ta.setSelectionRange(a+pre.length,a+pre.length+sel.length);
   }
-  ta.focus(); onNoteContent(ta.value);
+  ta.focus(); mdSave(ta.value);
 }
 // Insere du texte a la position du curseur, sans rien remplacer alentour.
 function mdInsert(txt){
-  const ta=document.getElementById('sbEdit'); if(!ta)return;
+  const ta=mdEl(); if(!ta)return;
   const a=ta.selectionStart,z=ta.selectionEnd;
   ta.value=ta.value.slice(0,a)+txt+ta.value.slice(z);
   const p=a+txt.length; ta.setSelectionRange(p,p);
-  ta.focus(); onNoteContent(ta.value);
+  ta.focus(); mdSave(ta.value);
 }
 // Le modal prend le focus, donc la position du curseur : on la memorise et on
 // la restitue avant d'inserer.
 function mdEmoji(){
-  const ta=document.getElementById('sbEdit'); if(!ta)return;
+  const ta=mdEl(); if(!ta)return;
   const a=ta.selectionStart,z=ta.selectionEnd;
   openEmojiPicker('',e=>{ if(!e)return; ta.setSelectionRange(a,z); mdInsert(e); },
                   {title:'INSÉRER UN EMOJI',clear:''});
 }
 // Prefixe chaque ligne de la selection (titres, listes, citations)
 function mdPrefix(pre){
-  const ta=document.getElementById('sbEdit'); if(!ta)return;
+  const ta=mdEl(); if(!ta)return;
   const v=ta.value;
   let a=v.lastIndexOf('\n',ta.selectionStart-1)+1;
   let z=v.indexOf('\n',ta.selectionEnd); if(z<0)z=v.length;
@@ -4147,7 +4309,7 @@ function mdPrefix(pre){
   const out=lines.map(l=>all?l.slice(pre.length):pre+l).join('\n');
   ta.value=v.slice(0,a)+out+v.slice(z);
   ta.setSelectionRange(a,a+out.length);
-  ta.focus(); onNoteContent(ta.value);
+  ta.focus(); mdSave(ta.value);
 }
 function mdEditorKey(e){
   if(!(e.ctrlKey||e.metaKey)||e.altKey)return false;
@@ -4344,7 +4506,7 @@ async function attachFiles(list){
   }
   showLoad(false);
   if(!bits.length)return;
-  const ta=document.getElementById('sbEdit');
+  const ta=mdEl();
   const ins='\n'+bits.join('\n')+'\n';
   if(ta){
     const pos=ta.selectionStart;
@@ -4428,7 +4590,7 @@ function onNoteContent(v){
   const n=noteById(noteCurId); if(!n)return;
   if(v.length>NOTE_MAX){
     // on refuse plutot que de laisser l'API tronquer en silence
-    const ta=document.getElementById('sbEdit');
+    const ta=mdEl();
     if(ta){ ta.value=n.content; }
     toast(`Limite atteinte : ${NOTE_MAX.toLocaleString('fr-FR')} caractères par note`,'err');
     return;
@@ -4856,9 +5018,9 @@ document.addEventListener('click',e=>{
 
 // ── Aide-memoire des raccourcis ───────────────────────────────────────────
 const SHORTCUTS=[
-  ['Navigation',[['1 … 5','Aujourd\'hui · Board · Notes · Omega · Revue'],
+  ['Navigation',[['1 … 6','Aujourd\'hui · Board · Notes · ADP · Omega · Revue'],
                  ['[ et ]','Sous-onglet précédent / suivant dans Omega'],
-                 ['Ctrl + K','Palette : chercher une tâche, une note, un objectif, une page']]],
+                 ['Ctrl + K','Palette : chercher partout, ou lancer une action']]],
   ['Actions',[['N','Nouvel élément selon la page (tâche, note, objectif)'],
               ['/','Aller à la recherche de la page'],
               ['Ctrl + Z','Annuler la dernière action'],
@@ -4898,7 +5060,7 @@ document.addEventListener('keydown',e=>{
 // Il y avait trois recherches, chacune enfermee dans sa page : pour retrouver
 // quelque chose il fallait deja savoir ou c'etait.
 let cmdItems=[], cmdSel=0;
-const PAGES=[['today',"Aujourd'hui"],['board','Board'],['brain','Notes'],['omega','Omega'],['review','Revue'],
+const PAGES=[['today',"Aujourd'hui"],['board','Board'],['brain','Notes'],['adp','ADP'],['omega','Omega'],['review','Revue'],
              ['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],['finances','Finances'],['crypto','Cryptobot']];
 
 function openCmd(){
@@ -4918,6 +5080,9 @@ const CMD_ACTIONS=[
   ['+ Nouvelle tâche',        'creer ajouter nouveau todo',      ()=>{switchPage('board');openModal(null);}],
   ['+ Nouvelle note',         'creer ajouter nouveau brain',     ()=>{switchPage('brain');newNote(null);}],
   ['Journal du jour',         'note quotidien capture aujourd',  ()=>openDailyNote()],
+  ['+ Nouveau projet',        'adp creer chantier',              ()=>{switchPage('adp');setAdpView('projets');openAdpProjModal(null);}],
+  ['+ Nouveau contact',       'adp crm carnet annuaire',         ()=>{switchPage('adp');setAdpView('contacts');openAdpContModal(null);}],
+  ['Relances du jour',        'adp contacts relancer suivi',     ()=>{switchPage('adp');setAdpView('contacts');}],
   ['Dicter une tâche',        'micro voix vocal mains libres',   ()=>{hfTarget='task';startHandsFree();}],
   ['Tâches terminées',        'historique archive fait done',    ()=>openDoneModal()],
   ['Exporter la sauvegarde',  'backup export json donnees',      ()=>exportBackup()],
@@ -4945,6 +5110,15 @@ function cmdSearch(q){
   habits.filter(h=>h.active&&(hit(h.title)||hit(h.category))).slice(0,20).forEach(h=>
     out.push({kind:'Habitude',label:h.title,meta:h.category,
               go:()=>{switchPage('habits');openHabitModal(h.id);}}));
+  adpProjects.filter(p=>hit(p.name)||hit(p.client)).slice(0,10).forEach(p=>
+    out.push({kind:'Projet',label:p.name,meta:p.client||'',
+              go:()=>{switchPage('adp');setAdpView('projets');openAdpProject(p.id);}}));
+  adpContacts.filter(c=>hit(c.name)||hit(c.org)||hit(c.role)||hit(c.email)).slice(0,10).forEach(c=>
+    out.push({kind:'Contact',label:c.name,meta:[c.role,c.org].filter(Boolean).join(' · '),
+              go:()=>{switchPage('adp');setAdpView('contacts');openAdpContModal(c.id);}}));
+  adpTemplates.filter(t=>hit(t.title)||hit(t.category)||hit(t.body)).slice(0,10).forEach(t=>
+    out.push({kind:t.kind==='mail'?'Modèle':'Procédure',label:t.title,meta:t.category||'',
+              go:()=>{switchPage('adp');setAdpView(t.kind==='mail'?'modeles':'procedures');openAdpTpl(t.id);}}));
   // Sans recherche, on ne noie pas l'utilisateur : les actions et les pages
   return n?out.slice(0,40):out.filter(o=>o.kind==='Action'||o.kind==='Page');
 }
@@ -5014,6 +5188,767 @@ function scanGoalEuros(){
     renderGoalsBanner();renderGoalsTree();
   });
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// ADP — pilotage de projet : projets, contacts, relances, modèles, procédures
+// ══════════════════════════════════════════════════════════════════════════
+// Même principe technique que le reste : un onglet du classeur par table, une
+// ligne par objet, upsert par clé, cache local et file d'écritures hors ligne.
+//
+// Deux choix de conception qui expliquent tout le reste :
+//   · le JOURNAL d'un projet est une note du Second Brain, pas une colonne.
+//     Il hérite ainsi du markdown, de l'historique, des pièces jointes, des
+//     [[liens]], du graphe et de la recherche — sans une ligne de plus.
+//   · les MODÈLES et PROCÉDURES gardent leur corps dans la feuille : ce sont
+//     des documents de référence, courts, qu'on remplit plutôt qu'on écrit.
+const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at'];
+const ADP_CONT_HEADER = ['id','name','org','role','email','phone','project_id','cadence','last_contact','status','notes','updated_at'];
+const ADP_MILE_HEADER = ['id','project_id','title','due_date','status','kind','done_at','updated_at'];
+const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at'];
+const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'K'],['adp_contacts',ADP_CONT_HEADER,'L'],
+                    ['adp_milestones',ADP_MILE_HEADER,'H'],['adp_templates',ADP_TPL_HEADER,'G']];
+
+const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
+const ADP_HEALTH  = [['vert','Sous contrôle'],['orange','Vigilance'],['rouge','En difficulté']];
+const ADP_HCOLOR  = {vert:'var(--green)',orange:'var(--warn)',rouge:'var(--danger)'};
+const ADP_KIND    = [['jalon','Jalon'],['livrable','Livrable'],['reunion','Réunion']];
+const ADP_VIEWS   = [['projets','Projets'],['contacts','Contacts'],['modeles','Modèles'],['procedures','Procédures']];
+const ADP_PALETTE = ['#7c6aff','#38bdf8','#fcd34d','#6ee7b7','#f472b6','#fb923c','#a78bfa','#4ade80'];
+
+let adpProjects=[], adpContacts=[], adpMilestones=[], adpTemplates=[];
+let adpLoaded=false, adpView='projets', adpProjCur=null, adpTplCur=null;
+let adpSearch='', adpShowArchived=false;
+const LS_ADP_VIEW='kanban_adp_view';
+try{ const v=localStorage.getItem(LS_ADP_VIEW); if(ADP_VIEWS.some(([k])=>k===v))adpView=v; }catch(e){}
+
+const adpProjById = id=>adpProjects.find(p=>p.id===id)||null;
+const adpTplById  = id=>adpTemplates.find(t=>t.id===id)||null;
+const adpContById = id=>adpContacts.find(c=>c.id===id)||null;
+const adpId       = p=>p+Date.now().toString(36)+Math.floor(performance.now()*1000%1000).toString(36);
+
+// ── Feuilles ──────────────────────────────────────────────────────────────
+async function ensureAdpSheets(){
+  const sid=cfg.spreadsheetId;
+  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{}})
+    .then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const titles=(meta.sheets||[]).map(s=>s.properties.title);
+  const missing=ADP_SHEETS.filter(([t])=>!titles.includes(t));
+  if(!missing.length)return;
+  await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,
+    {method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({requests:missing.map(([t])=>({addSheet:{properties:{title:t}}}))})});
+  for(const [t,h] of missing)await sheetPut(`${t}!A1`,[h]);
+  // la première ouverture ne doit pas tomber sur quatre pages vides
+  if(missing.some(([t])=>t==='adp_templates'))await sheetPut('adp_templates!A2',ADP_TPL_SEED);
+}
+
+const adpCell=(x,i)=>String(x[i]==null?'':x[i]).trim();
+async function adpFetch(sheet,range){
+  const sid=cfg.spreadsheetId;
+  const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${sheet}!${range}`,{headers:{}})
+    .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
+  const rows=r.values||[];
+  return rows.length<=1?[]:rows.slice(1).filter(x=>x[0]);
+}
+async function loadAdp(){
+  if(!accessToken)return;
+  await ensureAdpSheets();
+  const [pr,co,mi,tp]=await Promise.all([
+    adpFetch('adp_projects','A:K'), adpFetch('adp_contacts','A:L'),
+    adpFetch('adp_milestones','A:H'), adpFetch('adp_templates','A:G')]);
+  const dedupe=arr=>{const m={};arr.forEach(o=>{m[o.id]=o;});return Object.values(m);};  // la dernière ligne gagne
+  adpProjects=dedupe(pr.map(x=>({id:adpCell(x,0),name:adpCell(x,1)||'Sans nom',client:adpCell(x,2),
+    status:adpCell(x,3)||'actif',start_date:adpCell(x,4),deadline:adpCell(x,5),
+    health:adpCell(x,6)||'vert',note_id:adpCell(x,7),color:adpCell(x,8),
+    created_at:adpCell(x,9),updated_at:adpCell(x,10)})));
+  adpContacts=dedupe(co.map(x=>({id:adpCell(x,0),name:adpCell(x,1)||'Sans nom',org:adpCell(x,2),
+    role:adpCell(x,3),email:adpCell(x,4),phone:adpCell(x,5),project_id:adpCell(x,6),
+    cadence:parseInt(adpCell(x,7),10)||0,last_contact:adpCell(x,8),
+    status:adpCell(x,9)||'actif',notes:adpCell(x,10),updated_at:adpCell(x,11)})));
+  adpMilestones=dedupe(mi.map(x=>({id:adpCell(x,0),project_id:adpCell(x,1),title:adpCell(x,2)||'Sans titre',
+    due_date:adpCell(x,3),status:adpCell(x,4)||'todo',kind:adpCell(x,5)||'jalon',
+    done_at:adpCell(x,6),updated_at:adpCell(x,7)})));
+  adpTemplates=dedupe(tp.map(x=>({id:adpCell(x,0),kind:adpCell(x,1)||'mail',title:adpCell(x,2)||'Sans titre',
+    category:adpCell(x,3),body:String(x[4]==null?'':x[4]),
+    created_at:adpCell(x,5),updated_at:adpCell(x,6)})));
+  ['adpProjects','adpContacts','adpMilestones','adpTemplates'].forEach((k,i)=>
+    cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates][i]));
+  adpLoaded=true;
+}
+function adpRestoreCache(){
+  adpProjects=cacheGet('adpProjects',[]); adpContacts=cacheGet('adpContacts',[]);
+  adpMilestones=cacheGet('adpMilestones',[]); adpTemplates=cacheGet('adpTemplates',[]);
+}
+const adpProjRow=p=>[p.id,p.name,p.client||'',p.status||'actif',p.start_date||'',p.deadline||'',
+  p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td()];
+const adpContRow=c=>[c.id,c.name,c.org||'',c.role||'',c.email||'',c.phone||'',c.project_id||'',
+  String(c.cadence||0),c.last_contact||'',c.status||'actif',c.notes||'',td()];
+const adpMileRow=m=>[m.id,m.project_id||'',m.title,m.due_date||'',m.status||'todo',m.kind||'jalon',m.done_at||'',td()];
+const adpTplRow =t=>[t.id,t.kind||'mail',t.title,t.category||'',t.body||'',t.created_at||td(),td()];
+
+// Écrit puis rend la main : chaque table a la même mécanique d'upsert par clé.
+async function adpSave(kind,obj){
+  const conf={proj:['adp_projects',adpProjects,adpProjRow,'adpProjects'],
+              cont:['adp_contacts',adpContacts,adpContRow,'adpContacts'],
+              mile:['adp_milestones',adpMilestones,adpMileRow,'adpMilestones'],
+              tpl :['adp_templates',adpTemplates,adpTplRow,'adpTemplates']}[kind];
+  const [sheet,arr,toRow,cacheKey]=conf;
+  obj.updated_at=td();
+  const i=arr.findIndex(x=>x.id===obj.id);
+  if(i>=0)arr[i]=obj; else arr.push(obj);
+  cacheSet(cacheKey,arr);
+  return sheetUpsertByKey(sheet,obj.id,toRow(obj));
+}
+// Suppression : la ligne est vidée mais gardée, comme partout ailleurs — on ne
+// décale jamais les lignes d'une feuille sous les autres écritures en vol.
+async function adpDelete(kind,id){
+  const conf={proj:['adp_projects',()=>adpProjects=adpProjects.filter(x=>x.id!==id),'adpProjects',ADP_PROJ_HEADER.length],
+              cont:['adp_contacts',()=>adpContacts=adpContacts.filter(x=>x.id!==id),'adpContacts',ADP_CONT_HEADER.length],
+              mile:['adp_milestones',()=>adpMilestones=adpMilestones.filter(x=>x.id!==id),'adpMilestones',ADP_MILE_HEADER.length],
+              tpl :['adp_templates',()=>adpTemplates=adpTemplates.filter(x=>x.id!==id),'adpTemplates',ADP_TPL_HEADER.length]}[kind];
+  const [sheet,drop,cacheKey,cols]=conf;
+  drop();
+  cacheSet(cacheKey,{proj:adpProjects,cont:adpContacts,mile:adpMilestones,tpl:adpTemplates}[kind]);
+  return sheetUpsertByKey(sheet,id,[id,...Array(cols-2).fill(''),'supprime']);
+}
+
+// ── Calculs métier ────────────────────────────────────────────────────────
+// Un contact est « à relancer » si sa cadence est dépassée. Sans dernier
+// contact connu, on considère qu'il l'est : c'est justement celui qu'on oublie.
+function adpDueDay(c){
+  if(!c.cadence||c.status!=='actif')return null;
+  if(!c.last_contact)return td();
+  const p=c.last_contact.split('-');
+  if(p.length!==3)return td();
+  const d=new Date(+p[0],+p[1]-1,+p[2]); d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+c.cadence);
+  return ymd(d);
+}
+const adpIsDue=c=>{ const d=adpDueDay(c); return !!d&&d<=td(); };
+const adpDueContacts=()=>adpContacts.filter(adpIsDue)
+  .sort((a,b)=>String(adpDueDay(a)).localeCompare(String(adpDueDay(b)))||a.name.localeCompare(b.name,'fr'));
+
+const adpProjMiles=id=>adpMilestones.filter(m=>m.project_id===id)
+  .sort((a,b)=>(a.due_date||'9999').localeCompare(b.due_date||'9999'));
+const adpNextMile=id=>adpProjMiles(id).find(m=>m.status!=='done')||null;
+// Jalons ouverts arrivant à échéance (ou déjà dépassés), tous projets confondus
+const adpSoonMiles=(days=7)=>adpMilestones.filter(m=>m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<=days)
+  .sort((a,b)=>a.due_date.localeCompare(b.due_date));
+const adpProjTasks=p=>tasks.filter(t=>t.project&&p.client&&t.project===p.client);
+const adpActive=()=>adpProjects.filter(p=>adpShowArchived||(p.status!=='archive'&&p.status!=='termine'));
+function adpProjColor(p){
+  if(p.color)return p.color;
+  const i=adpProjects.findIndex(x=>x.id===p.id);
+  return ADP_PALETTE[(i<0?0:i)%ADP_PALETTE.length];
+}
+const adpEsc=s=>tdEsc(s);
+
+// ── Rendu ─────────────────────────────────────────────────────────────────
+async function renderAdp(){
+  if(accessToken&&!adpLoaded){ showLoad(true); try{ await loadAdp(); }catch(e){} showLoad(false); }
+  if(accessToken&&!notesLoaded&&navigator.onLine){ try{ await loadNotes(); }catch(e){} }
+  document.getElementById('adpPills').innerHTML=ADP_VIEWS.map(([v,l])=>{
+    const n=v==='contacts'?adpDueContacts().length:0;
+    return `<button class="gl-pill${adpView===v?' active':''}"${adpView===v?' style="background:var(--accent);border-color:var(--accent)"':''} onclick="setAdpView('${v}')">${l}${n?` <span class="adp-badge">${n}</span>`:''}</button>`;
+  }).join('');
+  const el=document.getElementById('adpBody');
+  if(adpView==='projets')    return renderAdpProjects(el);
+  if(adpView==='contacts')   return renderAdpContacts(el);
+  if(adpView==='modeles')    return renderAdpTemplates(el,'mail');
+  if(adpView==='procedures') return renderAdpTemplates(el,'procedure');
+}
+function setAdpView(v){
+  adpView=v; adpProjCur=null; adpTplCur=null; adpSearch='';
+  try{ localStorage.setItem(LS_ADP_VIEW,v); }catch(e){}
+  renderAdp();
+}
+function setAdpSearch(v){ adpSearch=v; renderAdp(); }
+function toggleAdpArchived(){ adpShowArchived=!adpShowArchived; renderAdp(); }
+
+// ── Vue Projets ───────────────────────────────────────────────────────────
+function renderAdpProjects(el){
+  if(adpProjCur)return renderAdpProjectPage(el);
+  const q=voNorm(adpSearch);
+  const list=adpActive().filter(p=>!q||voNorm(p.name+' '+p.client).includes(q))
+    .sort((a,b)=>(a.deadline||'9999').localeCompare(b.deadline||'9999')||a.name.localeCompare(b.name,'fr'));
+  el.innerHTML=`
+    <div class="adp-tools">
+      <input type="search" class="gl-search" placeholder="Filtrer les projets…" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
+      <button class="gl-pill${adpShowArchived?' active':''}" onclick="toggleAdpArchived()">Terminés et archivés</button>
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openAdpProjModal(null)">+ Projet</button>
+    </div>`
+    +(list.length?`<div class="adp-grid">${list.map(adpProjCard).join('')}</div>`
+      :`<div class="gl-empty">Aucun projet. Crée le premier avec « + Projet ».</div>`);
+}
+function adpProjCard(p){
+  const col=adpProjColor(p);
+  const next=adpNextMile(p.id);
+  const d=p.deadline?dayDiff(p.deadline):null;
+  const late=d!==null&&d<0;
+  const conts=adpContacts.filter(c=>c.project_id===p.id);
+  const due=conts.filter(adpIsDue).length;
+  const miles=adpProjMiles(p.id), done=miles.filter(m=>m.status==='done').length;
+  return `<div class="adp-card" style="--pcol:${col}" onclick="openAdpProject('${p.id}')">
+    <div class="adp-c-head">
+      <span class="adp-dot" style="background:${ADP_HCOLOR[p.health]||'var(--text-mid)'}" title="${adpEsc((ADP_HEALTH.find(h=>h[0]===p.health)||['','?'])[1])}"></span>
+      <span class="adp-c-name">${adpEsc(p.name)}</span>
+      <button class="gl-edit" onclick="event.stopPropagation();openAdpProjModal('${p.id}')" title="Éditer">✎</button>
+    </div>
+    ${p.client?`<div class="adp-c-client" style="color:${col}">${adpEsc(p.client)}</div>`:''}
+    <div class="adp-c-meta">
+      ${p.deadline?`<span class="due-badge ${late?'overdue':d<=14?'warn':'normal'}">${late?'EN RETARD':'J-'+d}</span>`:''}
+      <span class="adp-c-tag">${adpEsc((ADP_STATUS.find(x=>x[0]===p.status)||['','?'])[1])}</span>
+      ${miles.length?`<span class="adp-c-tag">${done}/${miles.length} jalons</span>`:''}
+      ${due?`<span class="adp-c-tag warn">${due} relance${due>1?'s':''}</span>`:''}
+    </div>
+    ${next?`<div class="adp-c-next">▸ ${adpEsc(next.title)}${next.due_date?` · ${next.due_date}`:''}</div>`:''}
+  </div>`;
+}
+
+async function openAdpProject(id){
+  adpProjCur=id;
+  const p=adpProjById(id);
+  // le journal est une note : on la crée à la première ouverture, pas avant
+  if(p&&!p.note_id&&accessToken){
+    if(!notesLoaded)await loadNotes();
+    const n={id:'n'+Date.now(),title:`Projet — ${p.name}`,
+      content:`# ${p.name}\n\n${p.client?`Client : **${p.client}**\n\n`:''}## Avancées\n\n`,
+      tags:'projet',parent_id:'',icon:'📁',pinned:false,status:'active',
+      created_at:td(),updated_at:td(),gx:null,gy:null};
+    notes.push(n); noteIndexInvalidate(); cacheSet('notes',notes);
+    await noteUpsert(n);
+    p.note_id=n.id; await adpSave('proj',p);
+  }
+  renderAdp();
+}
+function closeAdpProject(){ adpProjCur=null; renderAdp(); }
+
+function renderAdpProjectPage(el){
+  const p=adpProjById(adpProjCur);
+  if(!p){ adpProjCur=null; return renderAdp(); }
+  const col=adpProjColor(p), n=p.note_id?noteById(p.note_id):null;
+  const miles=adpProjMiles(p.id);
+  const conts=adpContacts.filter(c=>c.project_id===p.id).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const tks=adpProjTasks(p);
+  el.innerHTML=`
+    <div class="adp-tools">
+      <button class="gl-pill" onclick="closeAdpProject()">← Projets</button>
+      <span class="adp-title" style="color:${col}">${adpEsc(p.name)}</span>
+      ${p.client?`<span class="adp-c-tag">${adpEsc(p.client)}</span>`:''}
+      ${p.deadline?`<span class="adp-c-tag">échéance ${p.deadline}</span>`:''}
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openAdpProjModal('${p.id}')">✎ Éditer</button>
+      ${n?`<button class="gl-pill" onclick="adpOpenJournalInNotes()">Ouvrir dans Notes ↗</button>`:''}
+    </div>
+    <div class="adp-proj">
+      <div class="adp-journal">
+        <div class="adp-sec">Journal du projet</div>
+        ${n?`<div class="md-hold" id="adpJournal"></div>`
+           :`<div class="gl-empty">Journal indisponible hors connexion.</div>`}
+      </div>
+      <aside class="adp-side">
+        <div class="adp-sec">Jalons et échéances
+          <button class="adp-mini" onclick="openAdpMileModal(null,'${p.id}')">+</button></div>
+        ${miles.length?miles.map(m=>adpMileRow2(m)).join(''):'<div class="sb-none">Aucun jalon.</div>'}
+        <div class="adp-sec">Contacts
+          <button class="adp-mini" onclick="openAdpContModal(null,'${p.id}')">+</button></div>
+        ${conts.length?conts.map(c=>`<div class="adp-line${adpIsDue(c)?' due':''}" onclick="openAdpContModal('${c.id}')">
+            <span class="adp-l-main">${adpEsc(c.name)}${c.role?`<span class="adp-l-sub">${adpEsc(c.role)}</span>`:''}</span>
+            ${adpIsDue(c)?'<span class="adp-l-flag">à relancer</span>':''}
+          </div>`).join(''):'<div class="sb-none">Aucun contact.</div>'}
+        <div class="adp-sec">Tâches du board</div>
+        ${tks.length?tks.slice().sort(taskSort).slice(0,10).map(t=>`<div class="adp-line" onclick="switchPage('board');openModal(${t.id})">
+            <span class="adp-l-main">${adpEsc(t.title)}<span class="adp-l-sub">${adpEsc(taskColumnFromDate(t.due_date))}</span></span>
+          </div>`).join(''):`<div class="sb-none">Aucune tâche portant le projet « ${adpEsc(p.client||p.name)} ».</div>`}
+      </aside>
+    </div>`;
+  if(n)adpRenderJournal();
+}
+function adpMileRow2(m){
+  const d=m.due_date?dayDiff(m.due_date):null;
+  const late=m.status!=='done'&&d!==null&&d<0;
+  return `<div class="adp-line${m.status==='done'?' done':''}${late?' late':''}">
+    <button class="adp-check${m.status==='done'?' on':''}" onclick="event.stopPropagation();adpToggleMile('${m.id}')" title="${m.status==='done'?'Rouvrir':'Terminer'}"></button>
+    <span class="adp-l-main" onclick="openAdpMileModal('${m.id}')">${adpEsc(m.title)}
+      <span class="adp-l-sub">${adpEsc((ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1])}${m.due_date?` · ${m.due_date}`:''}</span></span>
+    ${late?'<span class="adp-l-flag">en retard</span>':''}
+  </div>`;
+}
+
+// Le journal réutilise l'éditeur des notes : même barre, mêmes raccourcis,
+// même auto-complétion des [[liens]], et l'écriture repart dans la feuille
+// notes avec son historique.
+let adpJournalMode='read';
+function adpRenderJournal(){
+  const p=adpProjById(adpProjCur); if(!p)return;
+  const n=noteById(p.note_id); if(!n)return;
+  const host=document.getElementById('adpJournal'); if(!host)return;
+  host.innerHTML=`<div class="adp-jbar">
+      <button class="sb-btn${adpJournalMode==='read'?' on':''}" onclick="setAdpJournalMode('read')">Lecture</button>
+      <button class="sb-btn${adpJournalMode==='edit'?' on':''}" onclick="setAdpJournalMode('edit')">Écrire</button>
+      <button class="sb-btn" onclick="adpStampToday()" title="Ajouter une entrée datée en tête du journal">+ Entrée du jour</button>
+    </div><div id="adpJBody"></div>`;
+  const body=document.getElementById('adpJBody');
+  if(adpJournalMode==='edit'){
+    body.innerHTML=mdToolbar()+`<textarea class="sb-edit adp-edit" id="adpEdit" spellcheck="true"
+      placeholder="Avancées, décisions, points de vigilance. [[Double crochets]] pour relier une note."
+      oninput="adpOnJournal(this.value);acOpen()" onkeydown="if(acKey(event))return;if(mdEditorKey(event))return;"
+      onclick="acOpen()" onblur="setTimeout(acClose,120)"></textarea>`;
+    mdBind('adpEdit',adpOnJournal);
+    const ta=document.getElementById('adpEdit');
+    ta.value=n.content||''; ta.focus();
+  }else{
+    body.innerHTML=`<div class="md" id="adpRead">${mdRender(n.content)}</div>`;
+    if(typeof resolveDriveMedia==='function')resolveDriveMedia(document.getElementById('adpRead'));
+  }
+}
+function setAdpJournalMode(m){ adpJournalMode=m; adpRenderJournal(); }
+function adpOnJournal(v){
+  const p=adpProjById(adpProjCur); if(!p)return;
+  const n=noteById(p.note_id); if(!n)return;
+  if(v.length>NOTE_MAX){
+    const ta=document.getElementById('adpEdit'); if(ta)ta.value=n.content;
+    toast(`Limite atteinte : ${NOTE_MAX.toLocaleString('fr-FR')} caractères`,'err'); return;
+  }
+  noteSnapshot(n.title,n.content,n.id);
+  n.content=v; noteIndexInvalidate();
+  noteCurId=n.id;                       // noteQueueSave écrit la note courante
+  noteQueueSave();
+}
+// Une entrée datée en tête, sous le premier titre : c'est le geste qu'on répète
+// chaque semaine et qu'on ne veut pas fabriquer à la main.
+async function adpStampToday(){
+  const p=adpProjById(adpProjCur); if(!p)return;
+  const n=noteById(p.note_id); if(!n)return;
+  // ligne vide avant le titre : sans elle, le markdown colle l'entree au
+  // titre precedent et le journal devient illisible en mode lecture
+  const head=`\n\n### ${td()}\n\n- `;
+  const i=n.content.indexOf('## Avancées');
+  n.content=i>=0
+    ? n.content.slice(0,i+'## Avancées'.length)+head+n.content.slice(i+'## Avancées'.length)
+    : n.content.replace(/\s*$/,'')+head;
+  noteIndexInvalidate(); noteCurId=n.id;
+  const ok=await noteUpsert(n);
+  if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
+  adpJournalMode='edit'; adpRenderJournal();
+}
+function adpOpenJournalInNotes(){
+  const p=adpProjById(adpProjCur); if(!p||!p.note_id)return;
+  switchPage('brain'); openNote(p.note_id);
+}
+
+// ── Vue Contacts ──────────────────────────────────────────────────────────
+function renderAdpContacts(el){
+  const q=voNorm(adpSearch);
+  const due=adpDueContacts();
+  const all=adpContacts.filter(c=>!q||voNorm(`${c.name} ${c.org} ${c.role} ${c.email}`).includes(q))
+    .sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  el.innerHTML=`
+    <div class="adp-tools">
+      <input type="search" class="gl-search" placeholder="Nom, société, rôle, e-mail…" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openAdpContModal(null)">+ Contact</button>
+    </div>
+    ${!q&&due.length?`<div class="adp-relance">
+      <div class="adp-sec">À relancer aujourd'hui <span class="adp-badge">${due.length}</span></div>
+      ${due.map(adpRelanceRow).join('')}
+    </div>`:''}
+    <div class="adp-sec">Tous les contacts <span class="adp-badge quiet">${all.length}</span></div>
+    ${all.length?`<div class="adp-grid">${all.map(adpContCard).join('')}</div>`
+      :'<div class="gl-empty">Aucun contact.</div>'}`;
+}
+function adpRelanceRow(c){
+  const p=c.project_id?adpProjById(c.project_id):null;
+  const d=adpDueDay(c), retard=d?-dayDiff(d):0;
+  return `<div class="adp-line due">
+    <span class="adp-l-main" onclick="openAdpContModal('${c.id}')">${adpEsc(c.name)}
+      <span class="adp-l-sub">${c.org?adpEsc(c.org)+' · ':''}${p?adpEsc(p.name)+' · ':''}${c.last_contact?`vu le ${c.last_contact}`:'jamais contacté'}${retard>0?` · +${retard} j`:''}</span></span>
+    <button class="adp-act" onclick="adpTouch('${c.id}')" title="Marquer comme relancé aujourd'hui">✓ Relancé</button>
+    <button class="adp-act" onclick="openAdpCompose('${c.id}')" title="Rédiger à partir d'un modèle">✉ Écrire</button>
+  </div>`;
+}
+function adpContCard(c){
+  const p=c.project_id?adpProjById(c.project_id):null;
+  const due=adpIsDue(c);
+  return `<div class="adp-card${due?' due':''}" style="--pcol:${p?adpProjColor(p):'var(--border2)'}" onclick="openAdpContModal('${c.id}')">
+    <div class="adp-c-head"><span class="adp-c-name">${adpEsc(c.name)}</span>
+      ${due?'<span class="adp-l-flag">à relancer</span>':''}</div>
+    ${c.role||c.org?`<div class="adp-c-client">${adpEsc([c.role,c.org].filter(Boolean).join(' · '))}</div>`:''}
+    <div class="adp-c-meta">
+      ${p?`<span class="adp-c-tag">${adpEsc(p.name)}</span>`:''}
+      ${c.cadence?`<span class="adp-c-tag">tous les ${c.cadence} j</span>`:''}
+      ${c.last_contact?`<span class="adp-c-tag">vu le ${c.last_contact}</span>`:'<span class="adp-c-tag">jamais vu</span>'}
+    </div>
+  </div>`;
+}
+async function adpTouch(id){
+  const c=adpContById(id); if(!c)return;
+  const prev=c.last_contact;
+  c.last_contact=td();
+  showLoad(true); const ok=await adpSave('cont',c); showLoad(false);
+  if(!ok){ c.last_contact=prev; toast("ÉCHEC de l'enregistrement",'err'); renderAdp(); return; }
+  renderAdp(); if(curPage==='today')renderTodayPage(); updateHStats();
+  offerUndo(`Relancé · ${c.name}`,async()=>{ c.last_contact=prev||''; await adpSave('cont',c); renderAdp(); });
+}
+
+// ── Vue Modèles et Procédures ─────────────────────────────────────────────
+function renderAdpTemplates(el,kind){
+  if(adpTplCur){
+    const t=adpTplById(adpTplCur);
+    if(t&&t.kind===kind)return renderAdpTplPage(el,t);
+    adpTplCur=null;
+  }
+  const q=voNorm(adpSearch);
+  const list=adpTemplates.filter(t=>t.kind===kind)
+    .filter(t=>!q||voNorm(`${t.title} ${t.category} ${t.body}`).includes(q))
+    .sort((a,b)=>(a.category||'~').localeCompare(b.category||'~','fr')||a.title.localeCompare(b.title,'fr'));
+  const cats=[...new Set(list.map(t=>t.category||'Sans catégorie'))];
+  el.innerHTML=`
+    <div class="adp-tools">
+      <input type="search" class="gl-search" placeholder="${kind==='mail'?'Titre, catégorie, contenu…':'Titre, catégorie, contenu…'}" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openAdpTplModal(null,'${kind}')">+ ${kind==='mail'?'Modèle':'Procédure'}</button>
+    </div>
+    ${list.length?cats.map(cat=>`<div class="adp-sec">${adpEsc(cat)}</div><div class="adp-grid">`+
+      list.filter(t=>(t.category||'Sans catégorie')===cat).map(t=>`
+      <div class="adp-card" onclick="openAdpTpl('${t.id}')">
+        <div class="adp-c-head"><span class="adp-c-name">${adpEsc(t.title)}</span>
+          <button class="gl-edit" onclick="event.stopPropagation();openAdpTplModal('${t.id}','${kind}')" title="Renommer">✎</button></div>
+        <div class="adp-c-body">${adpEsc(String(t.body||'').replace(/\s+/g,' ').slice(0,140))}</div>
+        ${kind==='mail'?`<div class="adp-c-meta">${adpTplVars(t.body).map(v=>`<span class="adp-c-tag">{{${adpEsc(v)}}}</span>`).join('')||'<span class="adp-c-tag quiet">sans variable</span>'}</div>`:''}
+      </div>`).join('')+`</div>`).join('')
+      :`<div class="gl-empty">Aucun${kind==='mail'?' modèle':'e procédure'}. Crée le premier avec le bouton ci-dessus.</div>`}`;
+}
+function openAdpTpl(id){ adpTplCur=id; renderAdp(); }
+function closeAdpTpl(){ adpTplCur=null; renderAdp(); }
+
+let adpTplMode='read';
+function renderAdpTplPage(el,t){
+  el.innerHTML=`
+    <div class="adp-tools">
+      <button class="gl-pill" onclick="closeAdpTpl()">← ${t.kind==='mail'?'Modèles':'Procédures'}</button>
+      <span class="adp-title">${adpEsc(t.title)}</span>
+      ${t.category?`<span class="adp-c-tag">${adpEsc(t.category)}</span>`:''}
+      <div style="flex:1"></div>
+      <button class="sb-btn${adpTplMode==='read'?' on':''}" onclick="setAdpTplMode('read')">Lecture</button>
+      <button class="sb-btn${adpTplMode==='edit'?' on':''}" onclick="setAdpTplMode('edit')">Écrire</button>
+      ${t.kind==='mail'?`<button class="gl-pill" onclick="openAdpCompose(null,'${t.id}')">✉ Utiliser</button>`:
+        `<button class="gl-pill" onclick="adpCopy(adpTplById('${t.id}').body)">Copier</button>`}
+      <button class="gl-pill danger" onclick="adpDeleteTpl('${t.id}')">Supprimer</button>
+    </div>
+    <div class="adp-tpl" id="adpTplBody"></div>`;
+  renderAdpTplBody();
+}
+function setAdpTplMode(m){ adpTplMode=m; renderAdpTplBody(); }
+function renderAdpTplBody(){
+  const t=adpTplById(adpTplCur); if(!t)return;
+  const host=document.getElementById('adpTplBody'); if(!host)return;
+  if(adpTplMode==='edit'){
+    host.innerHTML=mdToolbar()+`<textarea class="sb-edit adp-edit" id="adpTplEdit" spellcheck="true"
+      placeholder="${t.kind==='mail'?'Objet : …\nBonjour {{prenom}}, …':'Étapes de la procédure, en markdown.'}"
+      oninput="adpOnTpl(this.value);acOpen()" onkeydown="if(acKey(event))return;if(mdEditorKey(event))return;"
+      onclick="acOpen()" onblur="setTimeout(acClose,120)"></textarea>`;
+    mdBind('adpTplEdit',adpOnTpl);
+    const ta=document.getElementById('adpTplEdit');
+    ta.value=t.body||''; ta.focus();
+  }else{
+    host.innerHTML=`<div class="md">${mdRender(t.body)}</div>`;
+  }
+}
+let adpTplTimer=null;
+function adpOnTpl(v){
+  const t=adpTplById(adpTplCur); if(!t)return;
+  if(v.length>NOTE_CELL){
+    const ta=document.getElementById('adpTplEdit'); if(ta)ta.value=t.body;
+    toast(`Limite atteinte : ${NOTE_CELL.toLocaleString('fr-FR')} caractères`,'err'); return;
+  }
+  t.body=v;
+  clearTimeout(adpTplTimer);
+  adpTplTimer=setTimeout(async()=>{ if(!(await adpSave('tpl',t)))toast("ÉCHEC de l'enregistrement",'err'); },800);
+}
+async function adpDeleteTpl(id){
+  const t=adpTplById(id); if(!t)return;
+  const snap={...t};
+  adpTplCur=null;
+  showLoad(true); await adpDelete('tpl',id); showLoad(false);
+  renderAdp();
+  offerUndo(`Supprimé · ${snap.title}`,async()=>{ await adpSave('tpl',snap); renderAdp(); });
+}
+
+// ── Modèles de mail : variables et composition ────────────────────────────
+// Un modèle sans variables se recopie à la main à chaque fois. Celles-ci sont
+// remplies depuis le contact et le projet choisis, le reste est laissé tel quel
+// pour qu'un trou visible vaille mieux qu'un remplacement silencieux.
+const ADP_VARS=['prenom','nom','contact','societe','role','email','projet','client','echeance','date','moi'];
+function adpTplVars(body){
+  const out=new Set();
+  String(body||'').replace(/\{\{\s*([a-zA-Zéèêà_]+)\s*\}\}/g,(m,v)=>{ out.add(v.toLowerCase()); return m; });
+  return [...out];
+}
+function adpFill(body,c,p){
+  const first=(c&&c.name||'').trim().split(/\s+/)[0]||'';
+  const map={prenom:first,nom:(c&&c.name)||'',contact:(c&&c.name)||'',societe:(c&&c.org)||'',
+    role:(c&&c.role)||'',email:(c&&c.email)||'',projet:(p&&p.name)||'',client:(p&&p.client)||'',
+    echeance:(p&&p.deadline)||'',date:td(),moi:(cfg.account||'').split('@')[0]};
+  return String(body||'').replace(/\{\{\s*([a-zA-Zéèêà_]+)\s*\}\}/g,(m,v)=>{
+    const k=v.toLowerCase();
+    return map[k]!==undefined&&map[k]!==''?map[k]:m;    // vide : on laisse le trou visible
+  });
+}
+// Un mail n'est pas du markdown : les marqueurs de mise en forme partiraient
+// tels quels chez le destinataire. On les retire au moment de composer, pas
+// dans le modèle — qui reste lisible et éditable en markdown.
+function adpPlain(txt){
+  return String(txt||'')
+    .replace(MD_COLOR_RE,'$2')
+    .replace(/\*\*([^*]+)\*\*/g,'$1')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1$2')
+    .replace(/__([^_\n]+)__/g,'$1')
+    .replace(/==([^=\n]+)==/g,'$1')
+    .replace(/~~([^~]+)~~/g,'$1')
+    .replace(/`([^`\n]+)`/g,'$1')
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g,'$2')
+    .replace(/\[\[([^\]]+)\]\]/g,'$1')
+    .replace(/^#{1,6}\s+/gm,'');
+}
+
+// « Objet : … » en première ligne devient le sujet du mail, le reste le corps.
+function adpSplitMail(txt){
+  const lines=String(txt||'').split('\n');
+  const m=/^\s*objet\s*:\s*(.*)$/i.exec(lines[0]||'');
+  return m?{subject:m[1].trim(),body:lines.slice(1).join('\n').replace(/^\n+/,'')}
+          :{subject:'',body:String(txt||'')};
+}
+
+let adpComposeCont=null, adpComposeTpl=null, adpComposeProj='';
+function openAdpCompose(contactId,tplId){
+  const mails=adpTemplates.filter(t=>t.kind==='mail');
+  if(!mails.length){ toast('Aucun modèle de mail. Crée-en un dans « Modèles ».','info'); return; }
+  adpComposeCont=contactId||null;
+  adpComposeTpl=tplId||mails[0].id;
+  const c=contactId?adpContById(contactId):null;
+  adpComposeProj=(c&&c.project_id)||'';
+  document.getElementById('composeModal').classList.add('open');
+  renderAdpCompose();
+}
+function closeAdpCompose(){ document.getElementById('composeModal').classList.remove('open'); }
+function setComposeField(k,v){
+  if(k==='cont'){ adpComposeCont=v||null; const c=adpContById(v); if(c&&c.project_id)adpComposeProj=c.project_id; }
+  if(k==='tpl')adpComposeTpl=v;
+  if(k==='proj')adpComposeProj=v;
+  renderAdpCompose();
+}
+function renderAdpCompose(){
+  const mails=adpTemplates.filter(t=>t.kind==='mail').sort((a,b)=>a.title.localeCompare(b.title,'fr'));
+  const c=adpComposeCont?adpContById(adpComposeCont):null;
+  const p=adpComposeProj?adpProjById(adpComposeProj):null;
+  const t=adpTplById(adpComposeTpl);
+  const filled=adpPlain(adpFill(t?t.body:'',c,p));
+  const {subject,body}=adpSplitMail(filled);
+  const manque=adpTplVars(t?t.body:'').filter(v=>filled.includes(`{{${v}}}`));
+  document.getElementById('cpFields').innerHTML=`
+    <div class="field"><label>Modèle</label><select onchange="setComposeField('tpl',this.value)">
+      ${mails.map(m=>`<option value="${m.id}"${m.id===adpComposeTpl?' selected':''}>${adpEsc(m.title)}</option>`).join('')}
+    </select></div>
+    <div class="field"><label>Contact</label><select onchange="setComposeField('cont',this.value)">
+      <option value="">— Aucun —</option>
+      ${adpContacts.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(x=>
+        `<option value="${x.id}"${x.id===adpComposeCont?' selected':''}>${adpEsc(x.name)}${x.org?` — ${adpEsc(x.org)}`:''}</option>`).join('')}
+    </select></div>
+    <div class="field"><label>Projet</label><select onchange="setComposeField('proj',this.value)">
+      <option value="">— Aucun —</option>
+      ${adpProjects.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(x=>
+        `<option value="${x.id}"${x.id===adpComposeProj?' selected':''}>${adpEsc(x.name)}</option>`).join('')}
+    </select></div>`;
+  document.getElementById('cpPreview').innerHTML=
+    (subject?`<div class="cp-subj"><span>Objet</span>${adpEsc(subject)}</div>`:'')+
+    `<pre class="cp-body" id="cpBody">${adpEsc(body)}</pre>`+
+    (manque.length?`<div class="cp-warn">Variables non remplies : ${manque.map(v=>`{{${adpEsc(v)}}}`).join(' ')}</div>`:'');
+  const to=c&&c.email?c.email:'';
+  document.getElementById('cpMail').style.display=to?'':'none';
+  document.getElementById('cpMail').onclick=()=>{
+    location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    if(c)adpTouch(c.id);
+  };
+}
+function adpComposeCopy(){
+  const t=adpTplById(adpComposeTpl);
+  const c=adpComposeCont?adpContById(adpComposeCont):null;
+  const p=adpComposeProj?adpProjById(adpComposeProj):null;
+  adpCopy(adpPlain(adpFill(t?t.body:'',c,p)));
+}
+async function adpCopy(txt){
+  try{ await navigator.clipboard.writeText(txt); toast('Copié','ok'); }
+  catch(e){
+    // clipboard refusé (contexte non sécurisé, permission) : repli sur la sélection
+    const ta=document.createElement('textarea');
+    ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand('copy'); }catch(_){}
+    ta.remove();
+    toast(ok?'Copié':'Copie impossible — sélectionne le texte',ok?'ok':'err');
+  }
+}
+
+// ── Formulaires ───────────────────────────────────────────────────────────
+let adpEditKind='', adpEditId=null;
+function openAdpProjModal(id){
+  adpEditKind='proj'; adpEditId=id;
+  const p=id?adpProjById(id):null;
+  document.getElementById('adpModalTitle').textContent=p?'ÉDITER LE PROJET':'NOUVEAU PROJET';
+  document.getElementById('adpFields').innerHTML=`
+    <div class="field"><label>Nom</label><input type="text" id="apName" value="${adpEsc(p?p.name:'')}" placeholder="Refonte du portail"></div>
+    <div class="field"><label>Client / projet du board</label>
+      <select id="apClient">
+        <option value="">— Aucun —</option>
+        ${['DCB','GLD','Airside','Perso'].map(x=>`<option value="${x}"${p&&p.client===x?' selected':''}>${x}</option>`).join('')}
+      </select>
+      <div class="fld-hint">Relie ce projet aux tâches du board portant la même étiquette.</div></div>
+    <div class="field"><label>Statut</label><select id="apStatus">
+      ${ADP_STATUS.map(([v,l])=>`<option value="${v}"${p&&p.status===v?' selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="field"><label>Santé</label><select id="apHealth">
+      ${ADP_HEALTH.map(([v,l])=>`<option value="${v}"${p&&p.health===v?' selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="field"><label>Début</label><input type="date" id="apStart" value="${p?p.start_date:''}"></div>
+    <div class="field"><label>Échéance</label><input type="date" id="apDeadline" value="${p?p.deadline:''}"></div>`;
+  document.getElementById('adpDel').style.display=p?'':'none';
+  document.getElementById('adpModal').classList.add('open');
+  setTimeout(()=>document.getElementById('apName').focus(),60);
+}
+function openAdpContModal(id,projectId){
+  adpEditKind='cont'; adpEditId=id;
+  const c=id?adpContById(id):null;
+  const pid=c?c.project_id:(projectId||'');
+  document.getElementById('adpModalTitle').textContent=c?'ÉDITER LE CONTACT':'NOUVEAU CONTACT';
+  document.getElementById('adpFields').innerHTML=`
+    <div class="field"><label>Nom</label><input type="text" id="acName" value="${adpEsc(c?c.name:'')}" placeholder="Marie Dupont"></div>
+    <div class="field"><label>Société</label><input type="text" id="acOrg" value="${adpEsc(c?c.org:'')}"></div>
+    <div class="field"><label>Rôle</label><input type="text" id="acRole" value="${adpEsc(c?c.role:'')}" placeholder="Directrice technique"></div>
+    <div class="field"><label>E-mail</label><input type="email" id="acEmail" value="${adpEsc(c?c.email:'')}"></div>
+    <div class="field"><label>Téléphone</label><input type="tel" id="acPhone" value="${adpEsc(c?c.phone:'')}"></div>
+    <div class="field"><label>Projet</label><select id="acProj">
+      <option value="">— Aucun —</option>
+      ${adpProjects.map(x=>`<option value="${x.id}"${pid===x.id?' selected':''}>${adpEsc(x.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>Relancer tous les</label>
+      <select id="acCadence">
+        ${[[0,'Jamais'],[7,'7 jours'],[14,'14 jours'],[21,'21 jours'],[30,'30 jours'],[60,'60 jours'],[90,'90 jours']]
+          .map(([v,l])=>`<option value="${v}"${c&&c.cadence===v?' selected':''}>${l}</option>`).join('')}</select>
+      <div class="fld-hint">Sans dernier contact renseigné, la relance est due immédiatement.</div></div>
+    <div class="field"><label>Dernier contact</label><input type="date" id="acLast" value="${c?c.last_contact:''}"></div>
+    <div class="field"><label>Statut</label><select id="acStatus">
+      <option value="actif"${!c||c.status==='actif'?' selected':''}>Actif</option>
+      <option value="dormant"${c&&c.status==='dormant'?' selected':''}>Dormant — pas de relance</option></select></div>
+    <div class="field"><label>Notes</label><textarea id="acNotes" placeholder="Contexte, préférences, historique…">${adpEsc(c?c.notes:'')}</textarea></div>`;
+  document.getElementById('adpDel').style.display=c?'':'none';
+  document.getElementById('adpModal').classList.add('open');
+  setTimeout(()=>document.getElementById('acName').focus(),60);
+}
+function openAdpMileModal(id,projectId){
+  adpEditKind='mile'; adpEditId=id;
+  const m=id?adpMilestones.find(x=>x.id===id):null;
+  const pid=m?m.project_id:(projectId||adpProjCur||'');
+  document.getElementById('adpModalTitle').textContent=m?'ÉDITER LE JALON':'NOUVEAU JALON';
+  document.getElementById('adpFields').innerHTML=`
+    <div class="field"><label>Intitulé</label><input type="text" id="amTitle" value="${adpEsc(m?m.title:'')}" placeholder="Recette utilisateur"></div>
+    <div class="field"><label>Projet</label><select id="amProj">
+      ${adpProjects.map(x=>`<option value="${x.id}"${pid===x.id?' selected':''}>${adpEsc(x.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>Type</label><select id="amKind">
+      ${ADP_KIND.map(([v,l])=>`<option value="${v}"${m&&m.kind===v?' selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="field"><label>Échéance</label><input type="date" id="amDue" value="${m?m.due_date:''}"></div>`;
+  document.getElementById('adpDel').style.display=m?'':'none';
+  document.getElementById('adpModal').classList.add('open');
+  setTimeout(()=>document.getElementById('amTitle').focus(),60);
+}
+function openAdpTplModal(id,kind){
+  adpEditKind='tpl'; adpEditId=id;
+  const t=id?adpTplById(id):null;
+  const k=t?t.kind:(kind||'mail');
+  document.getElementById('adpModalTitle').textContent=
+    (t?'ÉDITER ':'NOUVEAU ')+(k==='mail'?'MODÈLE':'PROCÉDURE').toUpperCase();
+  const cats=[...new Set(adpTemplates.filter(x=>x.kind===k).map(x=>x.category).filter(Boolean))];
+  document.getElementById('adpFields').innerHTML=`
+    <input type="hidden" id="atKind" value="${k}">
+    <div class="field"><label>Titre</label><input type="text" id="atTitle" value="${adpEsc(t?t.title:'')}"
+      placeholder="${k==='mail'?'Relance sans réponse':'Ouverture de chantier'}"></div>
+    <div class="field"><label>Catégorie</label><input type="text" id="atCat" value="${adpEsc(t?t.category:'')}" list="atCatList" placeholder="Relances">
+      <datalist id="atCatList">${cats.map(c=>`<option value="${adpEsc(c)}">`).join('')}</datalist></div>
+    ${k==='mail'?`<div class="fld-hint">Variables disponibles : ${ADP_VARS.map(v=>`<code>{{${v}}}</code>`).join(' ')}. Une première ligne « Objet : … » devient le sujet du mail.</div>`:''}`;
+  document.getElementById('adpDel').style.display=t?'':'none';
+  document.getElementById('adpModal').classList.add('open');
+  setTimeout(()=>document.getElementById('atTitle').focus(),60);
+}
+function closeAdpModal(){ document.getElementById('adpModal').classList.remove('open'); }
+
+async function saveAdpModal(){
+  const v=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+  let obj=null,kind=adpEditKind;
+  if(kind==='proj'){
+    const name=v('apName'); if(!name){ toast('Le nom est obligatoire','err'); return; }
+    const p=adpEditId?adpProjById(adpEditId):null;
+    obj={id:adpEditId||adpId('p'),name,client:v('apClient'),status:v('apStatus'),
+      start_date:v('apStart'),deadline:v('apDeadline'),health:v('apHealth'),
+      note_id:p?p.note_id:'',color:p?p.color:'',created_at:p?p.created_at:td()};
+  }else if(kind==='cont'){
+    const name=v('acName'); if(!name){ toast('Le nom est obligatoire','err'); return; }
+    obj={id:adpEditId||adpId('c'),name,org:v('acOrg'),role:v('acRole'),email:v('acEmail'),
+      phone:v('acPhone'),project_id:v('acProj'),cadence:parseInt(v('acCadence'),10)||0,
+      last_contact:v('acLast'),status:v('acStatus'),notes:v('acNotes')};
+  }else if(kind==='mile'){
+    const title=v('amTitle'); if(!title){ toast("L'intitulé est obligatoire",'err'); return; }
+    const m=adpEditId?adpMilestones.find(x=>x.id===adpEditId):null;
+    obj={id:adpEditId||adpId('m'),project_id:v('amProj'),title,due_date:v('amDue'),
+      status:m?m.status:'todo',kind:v('amKind'),done_at:m?m.done_at:''};
+  }else if(kind==='tpl'){
+    const title=v('atTitle'); if(!title){ toast('Le titre est obligatoire','err'); return; }
+    const t=adpEditId?adpTplById(adpEditId):null;
+    obj={id:adpEditId||adpId('t'),kind:v('atKind'),title,category:v('atCat'),
+      body:t?t.body:'',created_at:t?t.created_at:td()};
+  }
+  if(!obj)return;
+  closeAdpModal();
+  showLoad(true); const ok=await adpSave(kind,obj); showLoad(false);
+  if(!ok)toast("ÉCHEC de l'enregistrement",'err');
+  if(kind==='tpl'&&!adpEditId){ adpTplCur=obj.id; adpTplMode='edit'; }
+  renderAdp(); updateHStats();
+}
+async function deleteAdpModal(){
+  if(!adpEditId)return;
+  const kind=adpEditKind;
+  const src={proj:adpProjects,cont:adpContacts,mile:adpMilestones,tpl:adpTemplates}[kind];
+  const snap={...src.find(x=>x.id===adpEditId)};
+  closeAdpModal();
+  if(kind==='proj'&&adpProjCur===adpEditId)adpProjCur=null;
+  if(kind==='tpl'&&adpTplCur===adpEditId)adpTplCur=null;
+  showLoad(true); await adpDelete(kind,adpEditId); showLoad(false);
+  renderAdp(); updateHStats();
+  offerUndo(`Supprimé · ${snap.name||snap.title}`,async()=>{ await adpSave(kind,snap); renderAdp(); });
+}
+async function adpToggleMile(id){
+  const m=adpMilestones.find(x=>x.id===id); if(!m)return;
+  const prev={status:m.status,done_at:m.done_at};
+  m.status=m.status==='done'?'todo':'done';
+  m.done_at=m.status==='done'?td():'';
+  renderAdp();
+  const ok=await adpSave('mile',m);
+  if(!ok){ Object.assign(m,prev); renderAdp(); toast("ÉCHEC de l'enregistrement",'err'); return; }
+  updateHStats(); if(curPage==='today')renderTodayPage();
+  offerUndo(m.status==='done'?`✓ ${m.title}`:`Rouvert · ${m.title}`,
+    async()=>{ Object.assign(m,prev); await adpSave('mile',m); renderAdp(); });
+}
+
+// Quelques modèles pour que la page ne s'ouvre pas vide la première fois.
+const ADP_TPL_SEED=[
+ ['tseed1','mail','Relance sans réponse','Relances',
+  "Objet : {{projet}} — relance\n\nBonjour {{prenom}},\n\nJe me permets de revenir vers vous concernant **{{projet}}**.\nSans retour de votre part, je ne peux pas engager l'étape suivante.\n\nPouvez-vous me dire où vous en êtes ? Je reste disponible pour en parler de vive voix.\n\nBien à vous,\n{{moi}}",'',''],
+ ['tseed2','mail','Compte rendu de réunion','Réunions',
+  "Objet : {{projet}} — compte rendu du {{date}}\n\nBonjour {{prenom}},\n\nVoici le compte rendu de notre échange :\n\n- **Décisions** : \n- **Points ouverts** : \n- **Prochaine étape** : \n\nSauf objection de votre part sous 48 h, je considère ce relevé comme validé.\n\nBien à vous,\n{{moi}}",'',''],
+ ['tseed3','mail','Alerte sur une échéance','Alertes',
+  "Objet : {{projet}} — point de vigilance sur l'échéance du {{echeance}}\n\nBonjour {{prenom}},\n\nL'échéance du **{{echeance}}** est menacée pour la raison suivante : \n\nJe vous propose l'arbitrage suivant : \n\nMerci de me confirmer votre position avant la fin de la semaine.\n\nBien à vous,\n{{moi}}",'',''],
+ ['tseed4','procedure','Ouverture de chantier','Cadrage',
+  "# Ouverture de chantier\n\n## Avant le lancement\n\n- [ ] Périmètre écrit et validé par le client\n- [ ] Interlocuteur unique identifié côté client\n- [ ] Jalons posés dans ADP\n- [ ] Canal de communication décidé\n\n## Première semaine\n\n- [ ] Réunion de lancement, compte rendu envoyé sous 24 h\n- [ ] Risques identifiés et consignés dans le journal\n- [ ] Rythme de point fixé\n\n## À surveiller\n\n{orange:Un périmètre non écrit est un périmètre qui grandit.}",'',''],
+ ['tseed5','procedure','Clôture de projet','Cadrage',
+  "# Clôture de projet\n\n- [ ] Livrables remis et accusés de réception obtenus\n- [ ] Réserves listées, datées, affectées\n- [ ] Réunion de clôture tenue\n- [ ] Retour d'expérience écrit dans le journal du projet\n- [ ] Contacts passés en « dormant » si plus de relance à prévoir\n- [ ] Statut du projet passé à « Terminé »",'','']
+];
 
 // ── Revue périodique ──────────────────────────────────────────────────────
 // L'app collectait tout sans jamais rien restituer. Cette page ne saisit rien :
@@ -5954,6 +6889,7 @@ function switchPage(name){
   if(name==='crypto')renderCryptoBot();
   if(name==='finances')renderFinancesPage();
   if(name==='sport')renderSportPage();
+  if(name==='adp'){applyPageWallpaper('adpBg',randomWallpaper());renderAdp();}
 }
 
 // ════════════════════════════════════════════════════
@@ -7904,10 +8840,10 @@ document.addEventListener('keydown',e=>{
     else openModal();
     return;
   }
-  // 1-5 : navigation entre les cinq entrees, partout dans l'app
-  if(/^[1-5]$/.test(e.key)){
+  // 1-6 : navigation entre les six entrees, partout dans l'app
+  if(/^[1-6]$/.test(e.key)){
     e.preventDefault();
-    switchPage(['today','board','brain','omega','review'][parseInt(e.key,10)-1]);
+    switchPage(['today','board','brain','adp','omega','review'][parseInt(e.key,10)-1]);
     return;
   }
   // [ et ] : circuler dans les sous-onglets d'Omega
@@ -7943,7 +8879,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.28.0';
+const APP_VERSION='v1.29.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
