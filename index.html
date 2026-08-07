@@ -997,12 +997,45 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .run-f{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);
   font-family:var(--font-body);font-size:0.72rem;padding:0.22rem 0.4rem;outline:none}
 .run-f:focus{border-color:var(--accent)}
-.run-lbl{flex:1;min-width:150px}
+.run-lbl{flex:1;min-width:220px}
 .run-off{display:flex;align-items:center;gap:0.2rem;font-family:var(--font-mono);font-size:0.55rem;color:var(--text-dim);flex-shrink:0}
 .run-off .run-f{width:3.6rem;text-align:right}
 .run-prev{max-height:38vh;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.5rem}
 .run-pl{display:flex;align-items:baseline;gap:0.45rem;padding:0.16rem 0;font-size:0.74rem}
 .run-pl-t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.run-step{display:flex;align-items:flex-start;gap:0.5rem;padding:0.42rem 0.5rem;border-bottom:1px solid var(--border);
+  position:relative;padding-left:calc(0.5rem + var(--lvl,0) * 1.15rem)}
+.run-step .run-rail{position:absolute;left:calc(0.15rem + var(--lvl,0) * 1.15rem);top:0;bottom:0;width:2px;
+  background:var(--border2);opacity:calc(var(--lvl,0) * 0.45)}
+.run-step .adp-check{margin-top:0.22rem}
+.run-step .adp-check[disabled]{opacity:0.3;cursor:not-allowed}
+.run-mark{width:14px;text-align:center;flex-shrink:0;margin-top:0.1rem;font-size:0.75rem}
+.run-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.run-lab{font-size:0.79rem;line-height:1.3}
+.run-step.fai .run-lab{color:var(--text-dim);text-decoration:line-through}
+.run-step.ign{opacity:0.42}
+.run-step.ign .run-lab{text-decoration:line-through}
+.run-step.blo .run-lab{color:var(--text-mid)}
+.run-step.act{background:rgba(124,106,255,0.06)}
+.run-step.act .run-lab{font-weight:700}
+.run-step.late{background:rgba(248,113,113,0.07)}
+.run-opts{display:flex;gap:0.3rem;flex-wrap:wrap;margin-top:0.25rem}
+.run-opt{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.06em;text-transform:uppercase;
+  background:var(--surface2);border:1px solid var(--border2);color:var(--text-mid);border-radius:99px;
+  padding:0.18rem 0.55rem;cursor:pointer}
+.run-opt:hover{border-color:var(--accent);color:var(--accent)}
+.run-opt.on{background:var(--accent);border-color:var(--accent);color:#09090e;font-weight:700}
+.run-e1,.run-e2{display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap}
+.run-e2{padding:0.15rem 0 0.1rem 1.45rem;gap:0.5rem}
+.run-dep{font-family:var(--font-mono);font-size:0.52rem;color:var(--text-dim)}
+.run-dep summary{cursor:pointer;padding:0.12rem 0.4rem;border:1px dashed var(--border2);border-radius:4px;display:inline-block}
+.run-dep summary:hover{border-color:var(--accent);color:var(--text)}
+.run-dep-box{display:flex;flex-direction:column;gap:0.15rem;margin-top:0.25rem;padding:0.35rem 0.5rem;
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;max-height:11rem;overflow-y:auto}
+.run-dep-box label{display:flex;align-items:center;gap:0.35rem;font-size:0.68rem;color:var(--text-mid);cursor:pointer;font-family:var(--font-body)}
+.run-cond{font-size:0.62rem;padding:0.12rem 0.3rem}
+.run-opt-in{width:11rem}
+
 
 /* ── Budget du portefeuille ──────────────────────────────────────────────── */
 /* Les largeurs des colonnes figées sont des variables : les décalages sticky
@@ -5919,9 +5952,13 @@ async function loadAdp(){
   adpBudget=Object.values(bd);
   adpRuns=dedupe(ru.map(x=>{
     let st=[]; try{ st=JSON.parse(x[6]||'[]')||[]; }catch(e){}
+    const steps=(Array.isArray(st)?st:[]).map((o,i)=>({
+      type:o.type||'check',off:parseInt(o.off,10)||0,label:o.label||'Étape',extra:o.extra||'',
+      key:o.key||('e'+(i+1)),after:Array.isArray(o.after)?o.after:[],cond:o.cond||'',
+      due:o.due||'',done:o.done||'',ref:o.ref||'',ans:o.ans||'',skipped:o.skipped||''}));
     return {id:adpCell(x,0),template_id:adpCell(x,1),project_id:adpCell(x,2),
       title:adpCell(x,3)||'Suivi',start_date:adpCell(x,4),status:adpCell(x,5)||'actif',
-      steps:Array.isArray(st)?st:[],updated_at:adpCell(x,7)};
+      steps,updated_at:adpCell(x,7)};
   })).filter(r=>r.status!=='supprime');
   ['adpProjects','adpContacts','adpMilestones','adpTemplates','adpBudget','adpRuns'].forEach((k,i)=>
     cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates,adpBudget,adpRuns][i]));
@@ -6677,9 +6714,9 @@ const ADP_TPL_SEED=[
  ['tseed3','mail','Alerte sur une échéance','Alertes',
   "Objet : {{projet}} — point de vigilance sur l'échéance du {{echeance}}\n\nBonjour {{prenom}},\n\nL'échéance du **{{echeance}}** est menacée pour la raison suivante : \n\nJe vous propose l'arbitrage suivant : \n\nMerci de me confirmer votre position avant la fin de la semaine.\n\nBien à vous,\n{{moi}}",'','','',3],
  ['tseed4','procedure','Ouverture de chantier','Cadrage',
-  "# Ouverture de chantier\n\n## Avant le lancement\n\n- [ ] Périmètre écrit et validé par le client\n- [ ] Interlocuteur unique identifié côté client\n- [ ] Jalons posés dans ADP\n- [ ] Canal de communication décidé\n\n## Première semaine\n\n- [ ] Réunion de lancement, compte rendu envoyé sous 24 h\n- [ ] Risques identifiés et consignés dans le journal\n- [ ] Rythme de point fixé\n\n## À surveiller\n\n{orange:Un périmètre non écrit est un périmètre qui grandit.}",'','',"tache~0~Écrire et faire valider le périmètre~\ntache~1~Identifier l'interlocuteur unique côté client~\njalon~7~Réunion de lancement~\nmail~8~Envoyer le compte rendu de lancement~tseed2\nnote~8~Consigner les risques identifiés~\njalon~14~Rythme de point fixé~\ncheck~14~Canal de communication décidé~",0],
+  "# Ouverture de chantier\n\n## Avant le lancement\n\n- [ ] Périmètre écrit et validé par le client\n- [ ] Interlocuteur unique identifié côté client\n- [ ] Jalons posés dans ADP\n- [ ] Canal de communication décidé\n\n## Première semaine\n\n- [ ] Réunion de lancement, compte rendu envoyé sous 24 h\n- [ ] Risques identifiés et consignés dans le journal\n- [ ] Rythme de point fixé\n\n## À surveiller\n\n{orange:Un périmètre non écrit est un périmètre qui grandit.}",'','',"tache~0~Écrire et faire valider le périmètre~~e1~~\ntache~0~Identifier l'interlocuteur unique côté client~~e2~~\njalon~5~Réunion de lancement~~e3~e1+e2~\nmail~1~Envoyer le compte rendu de lancement~tseed2~e4~e3~\nnote~1~Consigner les risques identifiés~~e5~e3~\nchoix~2~Le périmètre a-t-il bougé depuis le cadrage ?~Oui|Non~e6~e4+e5~\ntache~0~Réviser le chiffrage et le faire revalider~~e7~e6~e6=Oui\nmail~0~Confirmer le périmètre inchangé~tseed2~e8~e6~e6=Non\ncheck~7~Rythme de point fixé~~e9~e6~",0],
  ['tseed5','procedure','Clôture de projet','Cadrage',
-  "# Clôture de projet\n\n- [ ] Livrables remis et accusés de réception obtenus\n- [ ] Réserves listées, datées, affectées\n- [ ] Réunion de clôture tenue\n- [ ] Retour d'expérience écrit dans le journal du projet\n- [ ] Contacts passés en « dormant » si plus de relance à prévoir\n- [ ] Statut du projet passé à « Terminé »",'','',"tache~0~Obtenir les accusés de réception des livrables~\ntache~3~Lister et dater les réserves~\njalon~7~Réunion de clôture~\nnote~8~Écrire le retour d'expérience~\ncheck~10~Contacts passés en dormant~\ncheck~10~Statut du projet passé à Terminé~",0]
+  "# Clôture de projet\n\n- [ ] Livrables remis et accusés de réception obtenus\n- [ ] Réserves listées, datées, affectées\n- [ ] Réunion de clôture tenue\n- [ ] Retour d'expérience écrit dans le journal du projet\n- [ ] Contacts passés en « dormant » si plus de relance à prévoir\n- [ ] Statut du projet passé à « Terminé »",'','',"tache~0~Obtenir les accusés de réception des livrables~~e1~~\ntache~0~Lister et dater les réserves~~e2~~\nchoix~1~Des réserves bloquantes subsistent-elles ?~Oui|Non~e3~e1+e2~\ntache~0~Plan de levée des réserves~~e4~e3~e3=Oui\njalon~14~Revue de levée des réserves~~e5~e4~\njalon~3~Réunion de clôture~~e6~e3~e3=Non\nnote~1~Écrire le retour d'expérience~~e7~e6~\ncheck~1~Contacts passés en dormant~~e8~e6~\ncheck~1~Statut du projet passé à Terminé~~e9~e6~",0]
 ];
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -6880,34 +6917,73 @@ function renderSignals(){
 
 // ── Procédures exécutables ────────────────────────────────────────────────
 // Une procédure lue est une procédure oubliée. Celle-ci porte des ÉTAPES
-// typées : on la lance sur un projet, elle crée réellement les tâches et les
-// jalons aux bonnes dates, et le suivi se fait ensuite tout seul — une étape
-// de type tâche se coche quand la tâche du board est terminée.
+// typées, reliées entre elles, et se lance sur un projet.
 //
-// Le corps markdown reste : il porte le pourquoi et le contexte. Les étapes
-// portent le quoi-faire. Les deux ne se remplacent pas.
+// Le moteur tient sur trois idées :
+//
+//   1. DÉPENDANCES — une étape déclare ce qu'elle attend (`after`). Sans
+//      prérequis, elle démarre au lancement. Plusieurs étapes sur le même
+//      prérequis partent EN PARALLÈLE ; une étape qui en attend plusieurs est
+//      un point de convergence.
+//
+//   2. DATES RÉELLES — le décalage `off` court à partir du DÉBLOCAGE, pas du
+//      départ. Un jalon qui glisse décale donc tout ce qui en dépend, sans
+//      qu'on ait rien à ressaisir. C'est aussi pourquoi les tâches et les
+//      jalons sont créés au fil de l'eau : les créer tous au lancement, ce
+//      serait figer des échéances qu'on sait déjà fausses.
+//
+//   3. CONDITIONS — une étape de type « choix » pose une question à options.
+//      Les étapes suivantes déclarent `cond` (« e3=Oui », « e3≠Oui ») ; la
+//      branche non retenue est ignorée, et l'abandon se propage à sa suite.
+//
+// L'ordre de la liste garantit l'absence de cycle : une étape ne peut dépendre
+// que d'une étape qui la précède. C'est une contrainte, mais elle évite un
+// détecteur de cycles et une classe entière de blocages incompréhensibles.
 const RUN_TYPES=[
-  ['check',  'À cocher',        '☐', 'Rien n\'est créé : on constate.'],
-  ['tache',  'Tâche du board',  '✅', 'Crée une tâche, étiquetée du projet. Cochée quand la tâche est terminée.'],
-  ['jalon',  'Jalon du projet', '⛳', 'Crée un jalon ADP. Coché quand le jalon est fait.'],
+  ['check',  'À cocher',          '☐', 'Rien n\'est créé : on constate.'],
+  ['tache',  'Tâche du board',    '✅', 'Crée une tâche à son déblocage. Cochée quand la tâche est terminée.'],
+  ['jalon',  'Jalon du projet',   '⛳', 'Crée un jalon ADP. Coché quand le jalon est fait.'],
   ['mail',   'Envoi d\'un modèle','✉', 'Ouvre le modèle de mail choisi, pré-rempli.'],
-  ['note',   'Entrée au journal','📝', 'Ajoute une ligne datée au journal du projet.']];
+  ['note',   'Entrée au journal', '📝', 'Ajoute une ligne datée au journal du projet.'],
+  ['choix',  'Choix (aiguillage)','❓', 'Pose une question ; les options ouvrent des branches différentes.']];
 const runTypeMeta=t=>RUN_TYPES.find(x=>x[0]===t)||RUN_TYPES[0];
+const RUN_STATES={active:['À faire','act'],bloquee:['En attente','blo'],
+                  faite:['Faite','fai'],ignoree:['Branche écartée','ign']};
 
 let adpRuns=[], adpRunCur=null;
 
-// Étapes d'un modèle : une par ligne, « type~décalage~libellé~extra ».
+// ── Format des étapes ─────────────────────────────────────────────────────
+// Une ligne par étape : type~off~libellé~extra~clé~après~condition
 // Un format texte plutôt que du JSON : la feuille reste lisible et corrigeable
-// à la main, ce qui a déjà sauvé plus d'une donnée dans cette app.
+// à la main, ce qui a déjà sauvé plus d'une donnée dans cette app. Les trois
+// derniers champs sont facultatifs — les procédures écrites avant les
+// dépendances se relisent sans rien changer, toutes leurs étapes démarrant
+// alors au lancement, ce qui était déjà leur comportement.
 function parseSteps(raw){
-  return String(raw||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+  const out=String(raw||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
     const p=l.split('~');
     return {type:(p[0]||'check').trim(),off:parseInt(p[1],10)||0,
-            label:(p[2]||'').trim()||'Étape',extra:(p[3]||'').trim()};
+            label:(p[2]||'').trim()||'Étape',extra:(p[3]||'').trim(),
+            key:(p[4]||'').trim(),
+            after:(p[5]||'').split('+').map(x=>x.trim()).filter(Boolean),
+            cond:(p[6]||'').trim()};
   }).filter(s=>s.label);
+  // clés manquantes : on en attribue, sans écraser celles qui existent
+  const pris=new Set(out.map(s=>s.key).filter(Boolean));
+  let n=0;
+  out.forEach(s=>{ if(s.key)return; do{ n++; }while(pris.has('e'+n)); s.key='e'+n; pris.add(s.key); });
+  const connues=new Set(out.map(s=>s.key));
+  out.forEach((s,i)=>{
+    const avant=new Set(out.slice(0,i).map(x=>x.key));
+    s.after=s.after.filter(k=>avant.has(k));          // jamais de cycle
+    if(s.cond){ const m=/^(.+?)!?=/.exec(s.cond); if(!m||!connues.has(m[1]))s.cond=''; }
+  });
+  return out;
 }
-const stepsToText=arr=>arr.map(s=>[s.type,s.off,s.label,s.extra||''].join('~')).join('\n');
+const stepsToText=arr=>arr.map(s=>[s.type,s.off,s.label,s.extra||'',s.key||'',
+  (s.after||[]).join('+'),s.cond||''].join('~')).join('\n');
 const tplSteps=t=>parseSteps(t&&t.steps);
+const runOptions=s=>String(s.extra||'').split('|').map(x=>x.trim()).filter(Boolean);
 
 const adpRunRow=r=>[r.id,r.template_id||'',r.project_id||'',r.title,r.start_date||'',
   r.status||'actif',JSON.stringify(r.steps||[]),td()];
@@ -6941,31 +7017,130 @@ function stepDone(s){
   }
   return false;
 }
-const runProgress=r=>{ const st=r.steps||[]; return {n:st.length,fait:st.filter(stepDone).length}; };
-const runNext=r=>(r.steps||[]).filter(s=>!stepDone(s)).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'))[0]||null;
-const runLate=r=>(r.steps||[]).filter(s=>!stepDone(s)&&s.due&&dayDiff(s.due)<0);
+// Date à laquelle une étape a été réellement close, pour dater ce qui suit
+function stepDoneOn(s){
+  if(s.done)return s.done;
+  if(s.type==='tache'&&s.ref){
+    const t=allTasks.find(x=>String(x.id)===String(s.ref));
+    if(t&&t.completed_at)return t.completed_at;
+  }
+  if(s.type==='jalon'&&s.ref){
+    const m=adpMilestones.find(x=>x.id===s.ref);
+    if(m&&m.done_at)return m.done_at;
+  }
+  return td();
+}
+
+// ── Moteur ────────────────────────────────────────────────────────────────
+// Pur : ne touche à rien, sert au rendu, aux compteurs et aux signaux.
+// Rend {state, avail} indexés par clé d'étape.
+function runStates(r){
+  const steps=r.steps||[], byKey={};
+  steps.forEach(s=>{ byKey[s.key]=s; });
+  const state={}, avail={};
+  steps.forEach(s=>{
+    // 1. la condition d'abord : une branche écartée n'attend plus rien
+    let cond='ok';
+    if(s.cond){
+      const m=/^(.+?)(!=|=)(.*)$/.exec(s.cond);
+      const src=m&&byKey[m[1]];
+      if(!m||!src)cond='ok';                       // condition orpheline : on n'en tient pas compte
+      else if(!src.ans)cond='attente';             // le choix n'a pas encore été fait
+      else cond=((m[2]==='=')===(src.ans===m[3]))?'ok':'ko';
+    }
+    if(cond==='ko'){ state[s.key]='ignoree'; return; }
+    const prereqs=(s.after||[]).map(k=>byKey[k]).filter(Boolean);
+    const vivants=prereqs.filter(x=>state[x.key]!=='ignoree');
+    // tous les prérequis écartés : la branche l'est aussi, l'abandon se propage
+    if(prereqs.length&&!vivants.length){ state[s.key]='ignoree'; return; }
+    if(stepDone(s)){ state[s.key]='faite'; avail[s.key]=r.start_date; return; }
+    const bloque=cond==='attente'||!vivants.every(x=>state[x.key]==='faite');
+    if(bloque){ state[s.key]='bloquee'; return; }
+    state[s.key]='active';
+    // débloquée le jour où le dernier prérequis a été clos
+    avail[s.key]=vivants.length
+      ? vivants.map(stepDoneOn).sort().pop()
+      : (r.start_date||td());
+  });
+  return {state,avail};
+}
+const runVisible=r=>(r.steps||[]).filter(s=>runStates(r).state[s.key]!=='ignoree');
+function runProgress(r){
+  const {state}=runStates(r);
+  const vus=(r.steps||[]).filter(s=>state[s.key]!=='ignoree');
+  return {n:vus.length,fait:vus.filter(s=>state[s.key]==='faite').length,
+          ecarte:(r.steps||[]).length-vus.length};
+}
+const runNext=r=>{ const {state}=runStates(r);
+  return (r.steps||[]).filter(s=>state[s.key]==='active')
+    .sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'))[0]||null; };
+const runLate=r=>{ const {state}=runStates(r);
+  return (r.steps||[]).filter(s=>state[s.key]==='active'&&s.due&&dayDiff(s.due)<0); };
+// Profondeur dans le graphe : deux étapes de même profondeur sont parallèles
+function runDepth(r){
+  const byKey={}; (r.steps||[]).forEach(s=>byKey[s.key]=s);
+  const d={};
+  (r.steps||[]).forEach(s=>{
+    const p=(s.after||[]).map(k=>d[k]).filter(x=>x!=null);
+    d[s.key]=p.length?Math.max(...p)+1:0;
+  });
+  return d;
+}
+
+// Effectif : donne leur date aux étapes qui viennent de se débloquer et crée
+// les objets correspondants. Appelé au lancement et après chaque avancement.
+async function runAdvance(r){
+  if(!r||r.status!=='actif')return false;
+  const {state,avail}=runStates(r);
+  const p=adpProjById(r.project_id);
+  let bouge=false, nouvelles=[];
+  for(const s of r.steps||[]){
+    if(state[s.key]==='ignoree'){ if(!s.skipped){ s.skipped=td(); bouge=true; } continue; }
+    if(state[s.key]!=='active')continue;
+    if(!s.due){ s.due=plusDaysFrom(avail[s.key]||r.start_date,s.off); bouge=true; }
+    if(s.type==='tache'&&!s.ref){
+      const nt={id:Date.now()+nouvelles.length,title:s.label,column:taskColumnFromDate(s.due),
+        importance:3,due_date:s.due,created_at:td(),completed_at:'',
+        notes:`Étape de « ${r.title} »`,project:p?p.client||'':'',
+        recurrence:'',checklist:'',snoozes:0};
+      tasks.push(nt); allTasks.push(nt); nouvelles.push(nt); s.ref=String(nt.id); bouge=true;
+    }else if(s.type==='jalon'&&!s.ref){
+      const m={id:adpId('m'),project_id:r.project_id,title:s.label,due_date:s.due,
+        status:'todo',kind:'jalon',done_at:''};
+      await adpSave('mile',m); s.ref=m.id; bouge=true;
+    }
+  }
+  if(nouvelles.length){ refreshActive(); render(); await persist(); }
+  if(bouge)await runSave(r);
+  return bouge;
+}
 
 // ── Lancement ─────────────────────────────────────────────────────────────
 let runLaunchTpl=null;
 function openRunLaunch(tplId){
-  const t=adpTplById(tplId);
-  if(!t){ return; }
+  const t=adpTplById(tplId); if(!t)return;
   const st=tplSteps(t);
   if(!st.length){ toast('Cette procédure n\'a pas encore d\'étapes','info'); return; }
   if(!adpProjects.length){ toast('Crée d\'abord un projet','info'); return; }
   runLaunchTpl=tplId;
   const actifs=adpProjects.filter(p=>p.status!=='archive');
+  const num={}; st.forEach((s,i)=>num[s.key]=i+1);
   document.getElementById('runLaunchFields').innerHTML=`
     <div class="field"><label>Projet</label><select id="rlProj">
       ${(actifs.length?actifs:adpProjects).map(p=>`<option value="${p.id}">${adpEsc(p.name)}${p.client?` — ${adpEsc(p.client)}`:''}</option>`).join('')}
     </select></div>
     <div class="field"><label>Date de départ</label><input type="date" id="rlStart" value="${td()}">
-      <div class="fld-hint">Les échéances des étapes en découlent.</div></div>
-    <div class="field"><label>Étapes qui seront créées</label>
-      <div class="run-prev">${st.map(s=>{const m=runTypeMeta(s.type);
-        return `<div class="run-pl"><span>${m[2]}</span><span class="run-pl-t">${adpEsc(s.label)}</span>
-          <span class="adp-l-sub">${m[1]} · J+${s.off}</span></div>`;}).join('')}</div></div>`;
+      <div class="fld-hint">Seules les étapes sans prérequis démarrent tout de suite. Les autres seront datées à leur déblocage.</div></div>
+    <div class="field"><label>Enchaînement</label>
+      <div class="run-prev">${st.map((s,i)=>{const m=runTypeMeta(s.type);
+        return `<div class="run-pl"><span>${m[2]}</span><span class="run-pl-t">${i+1}. ${adpEsc(s.label)}</span>
+          <span class="adp-l-sub">${s.after.length?`après ${s.after.map(k=>num[k]).join(', ')}`:'au lancement'} · J+${s.off}${s.cond?` · si ${adpEsc(runCondLabel(s.cond,num))}`:''}</span></div>`;}).join('')}</div></div>`;
   document.getElementById('runLaunchModal').classList.add('open');
+}
+function runCondLabel(cond,num){
+  const m=/^(.+?)(!=|=)(.*)$/.exec(cond||'');
+  if(!m)return cond||'';
+  return `${num&&num[m[1]]?num[m[1]]:m[1]} ${m[2]==='='?'=':'≠'} ${m[3]}`;
 }
 function closeRunLaunch(){ document.getElementById('runLaunchModal').classList.remove('open'); }
 
@@ -6976,36 +7151,20 @@ async function launchRun(){
   const p=adpProjById(pid); if(!p)return;
   closeRunLaunch();
   showLoad(true);
-  const steps=tplSteps(t).map(s=>({...s,due:plusDaysFrom(start,s.off),done:'',ref:''}));
   const run={id:adpId('r'),template_id:t.id,project_id:pid,
-    title:`${t.title} — ${p.name}`,start_date:start,status:'actif',steps};
-
-  // Création réelle des objets, dans l'ordre, avant d'écrire la procédure :
-  // une étape sans son objet serait un suivi qui ment.
-  const nouvelles=[];
-  for(const s of steps){
-    if(s.type==='tache'){
-      const nt={id:Date.now()+Math.floor(nouvelles.length),title:s.label,
-        column:taskColumnFromDate(s.due),importance:3,due_date:s.due,created_at:td(),
-        completed_at:'',notes:s.extra||`Étape de « ${t.title} » — ${p.name}`,
-        project:p.client||'',recurrence:'',checklist:'',snoozes:0};
-      tasks.push(nt); allTasks.push(nt); nouvelles.push(nt); s.ref=String(nt.id);
-    }else if(s.type==='jalon'){
-      const m={id:adpId('m'),project_id:pid,title:s.label,due_date:s.due,
-        status:'todo',kind:'jalon',done_at:''};
-      await adpSave('mile',m); s.ref=m.id;
-    }
-  }
-  if(nouvelles.length){ refreshActive(); render(); await persist(); }
+    title:`${t.title} — ${p.name}`,start_date:start,status:'actif',
+    steps:tplSteps(t).map(s=>({...s,due:'',done:'',ref:'',ans:'',skipped:''}))};
+  adpRuns.push(run);
+  await runAdvance(run);
   const ok=await runSave(run);
   showLoad(false);
   if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
   adpRunCur=run.id; adpTplCur=null;
   renderAdp(); updateHStats();
-  const nT=steps.filter(s=>s.type==='tache').length, nJ=steps.filter(s=>s.type==='jalon').length;
-  toast(`Lancée · ${nT} tâche(s) et ${nJ} jalon(s) créés`,'ok');
+  const {state}=runStates(run);
+  const n=run.steps.filter(s=>state[s.key]==='active').length;
+  toast(`Lancée · ${n} étape(s) démarrent maintenant`,'ok');
 }
-// Décalage en jours à partir d'une date donnée, sans passer par l'heure locale
 function plusDaysFrom(date,n){
   const p=String(date||td()).split('-');
   const d=(p.length===3)?new Date(+p[0],+p[1]-1,+p[2]):new Date();
@@ -7014,7 +7173,7 @@ function plusDaysFrom(date,n){
 }
 
 // ── Exécution ─────────────────────────────────────────────────────────────
-function openRun(id){ adpRunCur=id; adpTplCur=null; renderAdp(); }
+function openRun(id){ adpRunCur=id; adpTplCur=null; const r=runById(id); if(r)runAdvance(r); renderAdp(); }
 function closeRun(){ adpRunCur=null; renderAdp(); }
 
 async function runToggleStep(i){
@@ -7025,19 +7184,31 @@ async function runToggleStep(i){
   if(s.type==='tache'&&s.ref){
     const t=allTasks.find(x=>String(x.id)===String(s.ref));
     if(t){ if(t.completed_at){ t.completed_at=''; refreshActive(); render(); await persist(); }
-           else { await completeTask(t.id); }
-           renderAdp(); return; }
+           else await completeTask(t.id);
+           await runAdvance(r); renderAdp(); return; }
   }
   if(s.type==='jalon'&&s.ref){
     const m=adpMilestones.find(x=>x.id===s.ref);
-    if(m){ await adpToggleMile(m.id); renderAdp(); return; }
+    if(m){ await adpToggleMile(m.id); await runAdvance(r); renderAdp(); return; }
   }
   s.done=s.done?'':td();
-  const ok=await runSave(r);
-  if(!ok){ s.done=s.done?'':td(); toast("ÉCHEC de l'enregistrement",'err'); }
+  await runSave(r); await runAdvance(r);
   renderAdp(); updateHStats();
 }
-// Déclenche l'action d'une étape : ouvrir le modèle, écrire au journal.
+// Répondre à un aiguillage : c'est ce qui ouvre une branche et en ferme d'autres
+async function runAnswer(i,opt){
+  const r=runById(adpRunCur); if(!r)return;
+  const s=r.steps[i]; if(!s)return;
+  s.ans=(s.ans===opt)?'':opt;
+  s.done=s.ans?td():'';
+  await runSave(r); await runAdvance(r);
+  renderAdp(); updateHStats();
+  if(s.ans){
+    const {state}=runStates(r);
+    const ecartees=r.steps.filter(x=>state[x.key]==='ignoree').length;
+    toast(`${opt}${ecartees?` · ${ecartees} étape(s) écartée(s)`:''}`,'ok');
+  }
+}
 async function runStepAct(i){
   const r=runById(adpRunCur); if(!r)return;
   const s=r.steps[i]; if(!s)return;
@@ -7058,7 +7229,7 @@ async function runStepAct(i){
     noteIndexInvalidate(); noteCurId=n.id;
     const ok=await noteUpsert(n);
     if(!ok){ toast("ÉCHEC de l'écriture",'err'); return; }
-    s.done=td(); await runSave(r); renderAdp();
+    s.done=td(); await runSave(r); await runAdvance(r); renderAdp();
     toast('Ajouté au journal du projet','ok');
     return;
   }
@@ -7075,7 +7246,7 @@ async function runArchive(){
 }
 async function runRemove(){
   const r=runById(adpRunCur); if(!r)return;
-  const snap={...r};
+  const snap=JSON.parse(JSON.stringify(r));
   adpRunCur=null;
   showLoad(true); await runDelete(r.id); showLoad(false);
   renderAdp();
@@ -7086,12 +7257,14 @@ function renderRunPage(el){
   const r=runById(adpRunCur);
   if(!r){ adpRunCur=null; return renderAdp(); }
   const p=adpProjById(r.project_id);
-  const {n,fait}=runProgress(r);
+  const {state}=runStates(r), prof=runDepth(r), {n,fait,ecarte}=runProgress(r);
+  const num={}; r.steps.forEach((s,i)=>num[s.key]=i+1);
   el.innerHTML=`
     <div class="adp-tools">
       <button class="gl-pill" onclick="closeRun()">← Procédures</button>
       <span class="adp-title">${adpEsc(r.title)}</span>
       <span class="adp-c-tag">${fait}/${n} étapes</span>
+      ${ecarte?`<span class="adp-c-tag quiet">${ecarte} écartée(s)</span>`:''}
       ${r.status==='clos'?'<span class="adp-c-tag">close</span>':''}
       <div style="flex:1"></div>
       ${p?`<button class="gl-pill" onclick="setAdpView('projets');openAdpProject('${p.id}')">Ouvrir le projet ↗</button>`:''}
@@ -7100,17 +7273,28 @@ function renderRunPage(el){
     </div>
     <div class="run-panel">
       <div class="run-bar"><div class="run-bar-in" style="width:${n?Math.round(fait/n*100):0}%"></div></div>
-      <div class="adp-sec">Étapes · départ le ${r.start_date}</div>
+      <div class="adp-sec">Enchaînement · départ le ${r.start_date}</div>
       ${(r.steps||[]).map((s,i)=>{
-        const m=runTypeMeta(s.type), d=stepDone(s);
-        const late=!d&&s.due&&dayDiff(s.due)<0;
-        return `<div class="adp-line${d?' done':''}${late?' late':''}">
-          <button class="adp-check${d?' on':''}" onclick="runToggleStep(${i})" title="${d?'Rouvrir':'Marquer fait'}"></button>
-          <span class="adp-l-main" onclick="runStepAct(${i})">
-            <span>${m[2]} ${adpEsc(s.label)}</span>
-            <span class="adp-l-sub">${m[1]}${s.due?` · ${s.due}`:''}${s.ref?' · lié':''}</span></span>
+        const m=runTypeMeta(s.type), et=state[s.key], meta=RUN_STATES[et];
+        const late=et==='active'&&s.due&&dayDiff(s.due)<0;
+        const attend=(s.after||[]).map(k=>num[k]).filter(Boolean);
+        return `<div class="run-step ${meta[1]}${late?' late':''}" style="--lvl:${prof[s.key]||0}">
+          <span class="run-rail"></span>
+          ${et==='ignoree'||s.type==='choix'
+            ?`<span class="run-mark">${s.type==='choix'?'❓':'⊘'}</span>`
+            :`<button class="adp-check${et==='faite'?' on':''}" ${et==='bloquee'?'disabled':''}
+                 onclick="runToggleStep(${i})" title="${et==='faite'?'Rouvrir':'Marquer fait'}"></button>`}
+          <span class="run-body">
+            <span class="run-lab">${i+1}. ${m[2]} ${adpEsc(s.label)}</span>
+            <span class="adp-l-sub">${meta[0]}${s.due&&et!=='ignoree'?` · ${s.due}`:''}
+              ${attend.length?` · après ${attend.join(', ')}`:''}
+              ${s.cond?` · si ${adpEsc(runCondLabel(s.cond,num))}`:''}
+              ${s.ans?` · réponse : ${adpEsc(s.ans)}`:''}</span>
+            ${s.type==='choix'&&et!=='ignoree'?`<span class="run-opts">${runOptions(s).map(o=>
+              `<button class="run-opt${s.ans===o?' on':''}" onclick="runAnswer(${i},'${adpEsc(o).replace(/'/g,"\\'")}')">${adpEsc(o)}</button>`).join('')}</span>`:''}
+          </span>
           ${late?'<span class="adp-l-flag">en retard</span>':''}
-          ${s.type==='mail'||s.type==='note'||s.ref?`<button class="adp-act" onclick="runStepAct(${i})">Ouvrir</button>`:''}
+          ${et!=='ignoree'&&(s.type==='mail'||s.type==='note'||s.ref)?`<button class="adp-act" onclick="runStepAct(${i})">Ouvrir</button>`:''}
         </div>`;}).join('')}
     </div>`;
 }
@@ -7120,27 +7304,52 @@ function renderTplSteps(t){
   const host=document.getElementById('tplSteps'); if(!host)return;
   const st=tplSteps(t);
   const mails=adpTemplates.filter(x=>x.kind==='mail');
+  const num={}; st.forEach((s,i)=>num[s.key]=i+1);
   host.innerHTML=`<div class="adp-sec">Étapes
       <button class="adp-mini" onclick="tplAddStep()" title="Ajouter une étape">+</button></div>`
-    +(st.length?st.map((s,i)=>`<div class="run-edit">
-        <span class="run-drag">${i+1}</span>
-        <select class="run-f" onchange="tplStepSet(${i},'type',this.value)">
-          ${RUN_TYPES.map(([v,l,ic])=>`<option value="${v}"${s.type===v?' selected':''}>${ic} ${l}</option>`).join('')}
-        </select>
-        <input class="run-f run-lbl" value="${adpEsc(s.label)}" placeholder="Intitulé"
-               onchange="tplStepSet(${i},'label',this.value)">
-        <label class="run-off">J+<input class="run-f" type="number" value="${s.off}"
-               onchange="tplStepSet(${i},'off',this.value)"></label>
-        ${s.type==='mail'?`<select class="run-f" onchange="tplStepSet(${i},'extra',this.value)">
-          <option value="">— modèle —</option>
-          ${mails.map(m=>`<option value="${m.id}"${s.extra===m.id?' selected':''}>${adpEsc(m.title)}</option>`).join('')}
-        </select>`:''}
-        <button class="adp-act" onclick="tplStepMove(${i},-1)" title="Monter">↑</button>
-        <button class="adp-act" onclick="tplStepMove(${i},1)" title="Descendre">↓</button>
-        <button class="adp-act" onclick="tplStepDel(${i})" title="Retirer">✕</button>
-      </div>`).join('')
+    +(st.length?st.map((s,i)=>{
+      const avant=st.slice(0,i);
+      const choix=avant.filter(x=>x.type==='choix'&&runOptions(x).length);
+      return `<div class="run-edit">
+        <div class="run-e1">
+          <span class="run-drag">${i+1}</span>
+          <select class="run-f" onchange="tplStepSet(${i},'type',this.value)">
+            ${RUN_TYPES.map(([v,l,ic])=>`<option value="${v}"${s.type===v?' selected':''}>${ic} ${l}</option>`).join('')}
+          </select>
+          <input class="run-f run-lbl" value="${adpEsc(s.label)}" placeholder="Intitulé"
+                 onchange="tplStepSet(${i},'label',this.value)">
+          <label class="run-off">J+<input class="run-f" type="number" value="${s.off}"
+                 onchange="tplStepSet(${i},'off',this.value)" title="Jours après le déblocage de l'étape"></label>
+          ${s.type==='mail'?`<select class="run-f" onchange="tplStepSet(${i},'extra',this.value)">
+            <option value="">— modèle —</option>
+            ${mails.map(m=>`<option value="${m.id}"${s.extra===m.id?' selected':''}>${adpEsc(m.title)}</option>`).join('')}
+          </select>`:''}
+          ${s.type==='choix'?`<input class="run-f run-opt-in" value="${adpEsc(s.extra)}" placeholder="Oui|Non|Reporté"
+             onchange="tplStepSet(${i},'extra',this.value)" title="Options séparées par une barre verticale">`:''}
+          <button class="adp-act" onclick="tplStepMove(${i},-1)" title="Monter">↑</button>
+          <button class="adp-act" onclick="tplStepMove(${i},1)" title="Descendre">↓</button>
+          <button class="adp-act" onclick="tplStepDel(${i})" title="Retirer">✕</button>
+        </div>
+        <div class="run-e2">
+          <details class="run-dep"${avant.length?'':' style="opacity:.4;pointer-events:none"'}>
+            <summary>${s.after.length?`après ${s.after.map(k=>num[k]).filter(Boolean).join(', ')}`:'au lancement'}</summary>
+            <div class="run-dep-box">${avant.length?avant.map((x,j)=>
+              `<label><input type="checkbox"${s.after.includes(x.key)?' checked':''}
+                 onchange="tplStepDep(${i},'${x.key}',this.checked)"> ${j+1}. ${adpEsc(x.label)}</label>`).join('')
+              :'<span class="sb-none">Première étape.</span>'}</div>
+          </details>
+          ${choix.length?`<select class="run-f run-cond" onchange="tplStepSet(${i},'cond',this.value)">
+            <option value="">— toujours —</option>
+            ${choix.map(c=>runOptions(c).map(o=>
+              `<option value="${adpEsc(c.key)}=${adpEsc(o)}"${s.cond===`${c.key}=${o}`?' selected':''}>si ${num[c.key]} = ${adpEsc(o)}</option>`+
+              `<option value="${adpEsc(c.key)}!=${adpEsc(o)}"${s.cond===`${c.key}!=${o}`?' selected':''}>si ${num[c.key]} ≠ ${adpEsc(o)}</option>`).join('')).join('')}
+          </select>`:''}
+        </div>
+      </div>`;}).join('')
       :'<div class="sb-none">Aucune étape. Sans étapes, la procédure ne se lance pas — elle se lit seulement.</div>')
-    +`<div class="fld-hint">${RUN_TYPES.map(([,l,ic,d])=>`${ic} <b>${l}</b> — ${d}`).join('<br>')}</div>`;
+    +`<div class="fld-hint">${RUN_TYPES.map(([,l,ic,d])=>`${ic} <b>${l}</b> — ${d}`).join('<br>')}
+      <br><br>Le <b>J+</b> court à partir du déblocage de l'étape, pas du départ : ce qui glisse décale la suite.
+      Plusieurs étapes sur le même prérequis avancent <b>en parallèle</b>.</div>`;
 }
 let tplStepTimer=null;
 function tplStepsCommit(t){
@@ -7150,7 +7359,10 @@ function tplStepsCommit(t){
 function tplAddStep(){
   const t=adpTplById(adpTplCur); if(!t)return;
   const st=tplSteps(t);
-  st.push({type:'check',off:st.length?st[st.length-1].off:0,label:'Nouvelle étape',extra:''});
+  const pris=new Set(st.map(s=>s.key)); let n=st.length;
+  let key; do{ n++; key='e'+n; }while(pris.has(key));
+  st.push({type:'check',off:0,label:'Nouvelle étape',extra:'',key,
+           after:st.length?[st[st.length-1].key]:[],cond:''});
   t.steps=stepsToText(st); renderTplSteps(t); tplStepsCommit(t);
 }
 function tplStepSet(i,champ,val){
@@ -7158,20 +7370,40 @@ function tplStepSet(i,champ,val){
   const st=tplSteps(t); if(!st[i])return;
   st[i][champ]=champ==='off'?(parseInt(val,10)||0):String(val).replace(/~|\n/g,' ').trim();
   if(champ==='label'&&!st[i].label)st[i].label='Étape';
+  if(champ==='type'&&val!=='choix'){
+    // l'étape cesse d'être un aiguillage : les conditions qui s'y référaient
+    // n'ont plus de sens, on les retire plutôt que de les laisser mentir
+    st.forEach(x=>{ if(x.cond&&x.cond.startsWith(st[i].key))x.cond=''; });
+  }
   t.steps=stepsToText(st);
-  if(champ==='type')renderTplSteps(t);
+  if(champ==='type'||champ==='extra')renderTplSteps(t);
   tplStepsCommit(t);
+}
+function tplStepDep(i,key,on){
+  const t=adpTplById(adpTplCur); if(!t)return;
+  const st=tplSteps(t); if(!st[i])return;
+  const set=new Set(st[i].after);
+  on?set.add(key):set.delete(key);
+  st[i].after=[...set];
+  t.steps=stepsToText(st); renderTplSteps(t); tplStepsCommit(t);
 }
 function tplStepMove(i,d){
   const t=adpTplById(adpTplCur); if(!t)return;
   const st=tplSteps(t), j=i+d;
   if(j<0||j>=st.length)return;
   [st[i],st[j]]=[st[j],st[i]];
-  t.steps=stepsToText(st); renderTplSteps(t); tplStepsCommit(t);
+  // parseSteps élague ce qui devient invalide : une étape ne peut dépendre que
+  // de ce qui la précède, c'est ce qui garantit l'absence de cycle
+  t.steps=stepsToText(parseSteps(stepsToText(st)));
+  renderTplSteps(t); tplStepsCommit(t);
 }
 function tplStepDel(i){
   const t=adpTplById(adpTplCur); if(!t)return;
-  const st=tplSteps(t); st.splice(i,1);
+  const st=tplSteps(t), mort=st[i]&&st[i].key;
+  st.splice(i,1);
+  st.forEach(x=>{ x.after=(x.after||[]).filter(k=>k!==mort);
+                  if(x.cond&&x.cond.startsWith(mort+'='))x.cond='';
+                  if(x.cond&&x.cond.startsWith(mort+'!='))x.cond=''; });
   t.steps=stepsToText(st); renderTplSteps(t); tplStepsCommit(t);
 }
 
@@ -10335,7 +10567,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.34.0';
+const APP_VERSION='v1.35.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
