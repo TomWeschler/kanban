@@ -341,7 +341,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .rv-hdr{display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-bottom:1rem}
 .rv-pills{display:flex;gap:0.35rem;flex-wrap:wrap}
 .rv-range{font-family:'Space Mono',var(--sys-mono);font-size:0.55rem;color:var(--text-dim);letter-spacing:0.1em}
-.rv-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;align-items:start}
+.rv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;align-items:start}
 .rv-kpi{display:flex;align-items:baseline;justify-content:space-between;gap:0.5rem;padding:0.3rem 0}
 .rv-kpi-l{font-family:'Space Mono',var(--sys-mono);font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim)}
 .rv-kpi-v{font-family:'Space Mono',var(--sys-mono);font-size:1rem;font-weight:700}
@@ -1148,6 +1148,56 @@ input.bud-y-e:focus{color:var(--text)}
 .bud.pj .bud-n.over{color:var(--danger)}
 .adp-graph{margin-top:0.9rem}
 
+/* ── Semaine ─────────────────────────────────────────────────────────────── */
+.wk-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0.5rem;align-items:start}
+.wk-col{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:0.5rem 0.45rem;min-height:6rem}
+.wk-col.today{border-color:var(--accent);background:var(--accent-dim)}
+.wk-col.we{opacity:0.82}
+.wk-h{display:flex;align-items:baseline;gap:0.3rem;padding-bottom:0.35rem;margin-bottom:0.4rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.wk-d{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-mid)}
+.wk-n{font-family:var(--font-mono);font-size:0.48rem;color:var(--text-dim)}
+.wk-c{margin-left:auto;font-family:var(--font-mono);font-size:0.46rem;background:var(--surface3);color:var(--text-dim);border-radius:99px;padding:0 5px}
+.wk-late{font-family:var(--font-mono);font-size:0.46rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--danger);background:rgba(248,113,113,0.12);border-radius:4px;padding:2px 5px;margin-bottom:0.35rem;cursor:pointer;text-align:center}
+.wk-i{display:flex;gap:0.3rem;padding:0.24rem 0.15rem;border-radius:5px;cursor:pointer;align-items:flex-start}
+.wk-i:hover{background:var(--surface2)}
+.wk-ic{font-size:0.66rem;flex-shrink:0;line-height:1.4}
+.wk-l{min-width:0;display:flex;flex-direction:column}
+.wk-t{font-size:0.68rem;line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.wk-s{font-family:var(--font-mono);font-size:0.44rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk-vide{text-align:center;color:var(--text-dim);opacity:0.4;font-size:0.7rem;padding:0.6rem 0}
+.td-pills{display:flex;gap:0.3rem;margin-bottom:0.8rem}
+@media(max-width:900px){.wk-grid{grid-template-columns:1fr;gap:0.4rem}.wk-col{min-height:0}}
+
+/* ── Rapports ────────────────────────────────────────────────────────────── */
+.rap-secs{display:flex;flex-direction:column;gap:0.25rem}
+.rap-secs label{display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:var(--text-mid);cursor:pointer}
+#rapport{display:none}
+.rap-doc{color:#111;background:#fff;font-family:var(--sys-sans);font-size:11px;line-height:1.45;padding:14mm}
+.rap-doc h1{font-size:19px;margin:0 0 2px}
+.rap-doc h2{font-size:14px;margin:16px 0 6px;border-bottom:1px solid #999;padding-bottom:2px}
+.rap-doc h2.rap-p{margin-top:22px;border-bottom:2px solid #333}
+.rap-doc h3{font-size:12px;margin:12px 0 4px;color:#333}
+.rap-doc small{font-weight:400;color:#666;font-size:11px}
+.rap-meta{color:#666;font-size:10px;margin-bottom:10px}
+.rap-t{width:100%;border-collapse:collapse;font-size:9.5px;margin:4px 0 8px}
+.rap-t th{background:#eee;border:1px solid #bbb;padding:3px 5px;text-align:left;font-weight:600}
+.rap-t td{border:1px solid #ccc;padding:2px 5px}
+.rap-t .r{text-align:right;font-variant-numeric:tabular-nums}
+.rap-t .ko{color:#b00;font-weight:600}
+.rap-t tfoot td{background:#f2f2f2;font-weight:700}
+.rap-t tr.sub td{color:#555;padding-left:14px}
+.rap-l{margin:2px 0 8px 16px}
+.rap-l li.ok{color:#666;text-decoration:line-through}
+.rap-run{margin:8px 0 2px}
+.rap-md{font-size:10px}
+.rap-md h1,.rap-md h2,.rap-md h3{font-size:11px;margin:6px 0 2px;border:none}
+@media print{
+  body.impression>*{display:none !important}
+  body.impression #rapport{display:block !important;position:static}
+  body.impression::after{display:none}
+  @page{size:A4 landscape;margin:0}
+}
+
 /* ═══════════════════════════════
    THEME — ① BRUTALIST
 ═══════════════════════════════ */
@@ -1579,12 +1629,15 @@ body,body *{font-family:var(--font-body)}
   <div class="td-wrap">
     <div class="td-hdr" id="tdDate"></div>
     <div id="sigBox"></div>
+    <div class="td-pills" id="tdPills"></div>
+    <div id="tdGrid">
     <div class="td-grid">
       <section class="td-col" id="tdTasks"></section>
       <section class="td-col" id="tdHabits"></section>
       <section class="td-col" id="tdSport"></section>
       <section class="td-col" id="tdAdp"></section>
       <section class="td-col" id="tdMes"></section>
+    </div>
     </div>
   </div>
 </div>
@@ -1669,6 +1722,7 @@ body,body *{font-family:var(--font-body)}
       <section class="td-col" id="rvSport"></section>
       <section class="td-col" id="rvGoals"></section>
       <section class="td-col" id="rvMoney"></section>
+      <section class="td-col" id="rvAdp"></section>
     </div>
   </div>
 </div>
@@ -1892,6 +1946,21 @@ body,body *{font-family:var(--font-body)}
       <button class="btn-secondary" onclick="closeAdpModal()">Annuler</button>
       <button class="btn-del" id="adpDel" style="display:none" onclick="deleteAdpModal()">Supprimer</button>
       <button class="btn-primary" onclick="saveAdpModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div id="rapport"></div>
+
+<div class="modal-bg" id="rapModal">
+  <div class="modal" style="width:min(520px,94vw)">
+    <div class="modal-hdr">EXPORTER UN RAPPORT</div>
+    <button class="modal-close" onclick="closeRapport()">✕</button>
+    <div id="rapBody"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeRapport()">Annuler</button>
+      <button class="btn-secondary" onclick="rapXlsx()">⬇ Tableur .xlsx</button>
+      <button class="btn-primary" onclick="rapPDF()">🖨 PDF</button>
     </div>
   </div>
 </div>
@@ -3508,6 +3577,20 @@ const tdEsc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'
 async function renderTodayPage(){
   if(accessToken&&!sportLoaded){showLoad(true);await loadSportData();showLoad(false);}
   const today=td();
+  const pills=document.getElementById('tdPills');
+  if(pills)pills.innerHTML=[['jour',"Aujourd'hui"],['semaine','7 prochains jours']].map(([v,l])=>
+    `<button class="gl-pill${todayView===v?' active':''}"${todayView===v?' style="background:var(--accent);border-color:var(--accent)"':''} onclick="setTodayView('${v}')">${l}</button>`).join('');
+  if(todayView==='semaine'){ renderSignals(); return renderWeekPage(); }
+  // La semaine remplace le contenu de la grille : revenir au jour doit donc
+  // reconstruire les cartes, elles n'existent plus dans le DOM.
+  if(!document.getElementById('tdTasks')){
+    document.getElementById('tdGrid').innerHTML=`<div class="td-grid">
+      <section class="td-col" id="tdTasks"></section>
+      <section class="td-col" id="tdHabits"></section>
+      <section class="td-col" id="tdSport"></section>
+      <section class="td-col" id="tdAdp"></section>
+      <section class="td-col" id="tdMes"></section></div>`;
+  }
   const d=new Date();
   document.getElementById('tdDate').textContent=
     d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}).toUpperCase();
@@ -5398,6 +5481,7 @@ const CMD_ACTIONS=[
   ['+ Nouveau projet',        'adp creer chantier',              ()=>{switchPage('adp');setAdpView('projets');openAdpProjModal(null);}],
   ['+ Nouveau contact',       'adp crm carnet annuaire',         ()=>{switchPage('adp');setAdpView('contacts');openAdpContModal(null);}],
   ['Relances du jour',        'adp contacts relancer suivi',     ()=>{switchPage('adp');setAdpView('contacts');}],
+  ['Exporter un rapport',     'adp pdf excel xlsx projet bilan',  ()=>{switchPage('adp');openRapport();}],
   ['Dicter une tâche',        'micro voix vocal mains libres',   ()=>{hfTarget='task';startHandsFree();}],
   ['Tâches terminées',        'historique archive fait done',    ()=>openDoneModal()],
   ['Exporter la sauvegarde',  'backup export json donnees',      ()=>exportBackup()],
@@ -5431,6 +5515,18 @@ function cmdSearch(q){
   adpContacts.filter(c=>hit(c.name)||hit(c.org)||hit(c.role)||hit(c.email)).slice(0,10).forEach(c=>
     out.push({kind:'Contact',label:c.name,meta:[c.role,c.org].filter(Boolean).join(' · '),
               go:()=>{switchPage('adp');setAdpView('contacts');openAdpContModal(c.id);}}));
+  adpMilestones.filter(m=>hit(m.title)).slice(0,10).forEach(m=>{
+    const p=adpProjById(m.project_id);
+    out.push({kind:'Jalon',label:m.title,meta:[p&&p.name,m.due_date].filter(Boolean).join(' · '),
+              go:()=>{switchPage('adp');setAdpView('projets');if(p)openAdpProject(p.id);}});});
+  adpRuns.filter(r=>r.status==='actif'&&(hit(r.title)||(r.steps||[]).some(s=>hit(s.label)))).slice(0,10).forEach(r=>{
+    const g=runProgress(r);
+    out.push({kind:'Suivi',label:r.title,meta:`${g.fait}/${g.n} étapes`,
+              go:()=>{switchPage('adp');setAdpView('procedures');openRun(r.id);}});});
+  mesDefs.filter(d=>hit(d.label)||hit(d.unit)).slice(0,10).forEach(d=>{
+    const l=mesSeries(d.key).slice(-1)[0];
+    out.push({kind:'Mesure',label:d.label,meta:l?mesFmt(l.value,d)+' · '+l.date:'aucun point',
+              go:()=>{switchPage('metrics');openMetric(d.key);}});});
   adpTemplates.filter(t=>hit(t.title)||hit(t.category)||hit(t.body)).slice(0,10).forEach(t=>
     out.push({kind:t.kind==='mail'?'Modèle':'Procédure',label:t.title,meta:t.category||'',
               go:()=>{switchPage('adp');setAdpView(t.kind==='mail'?'modeles':'procedures');openAdpTpl(t.id);}}));
@@ -6464,6 +6560,7 @@ function renderAdpProjects(el){
       <button class="gl-pill${adpShowArchived?' active':''}" onclick="toggleAdpArchived()">Terminés et archivés</button>
       <button class="gl-pill${adpProjTable?' active':''}" onclick="toggleProjTable()" title="Basculer cartes / tableau">${adpProjTable?'▤ Tableau':'▦ Cartes'}</button>
       <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openRapport()" title="Rapport PDF ou tableur">⬇ Rapport</button>
       <button class="gl-pill" onclick="openAdpProjModal(null)">+ Projet</button>
     </div>`
     +(list.length?(adpProjTable?'':`<div class="adp-grid">${list.map(adpProjCard).join('')}</div>`)
@@ -8043,6 +8140,329 @@ function renderAdpBudget(el){
       :`<div class="gl-empty">Aucun projet. Crée-en un dans « Projets » pour lui poser un budget.</div>`);
 }
 
+// ── Semaine : ce qui arrive ───────────────────────────────────────────────
+// AUJOURD'HUI montre le jour, la Revue regarde en arrière : rien ne montrait
+// ce qui vient. Or tout est déjà daté dans l'app — échéances, jalons,
+// relances, séances, étapes débloquées. On ne réinvente aucune donnée, on la
+// range par jour. Pas d'estimation ni de capacité : seulement ce qui est
+// déjà engagé.
+let todayView='jour';
+const LS_TD_VIEW='kanban_today_view';
+try{ if(localStorage.getItem(LS_TD_VIEW)==='semaine')todayView='semaine'; }catch(e){}
+function setTodayView(v){
+  todayView=v;
+  try{ localStorage.setItem(LS_TD_VIEW,v); }catch(e){}
+  renderTodayPage();
+}
+const JOURS=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+
+// Tout ce qui tombe un jour donné, toutes sources confondues
+function weekItems(jour){
+  const out=[];
+  tasks.filter(t=>t.due_date===jour).forEach(t=>out.push({t:'Tâche',ic:'✅',lbl:t.title,
+    sub:t.project||'',imp:t.importance,go:()=>{switchPage('board');openModal(t.id);}}));
+  adpMilestones.filter(m=>m.status!=='done'&&m.due_date===jour).forEach(m=>{
+    const p=adpProjById(m.project_id);
+    out.push({t:'Jalon',ic:'⛳',lbl:m.title,sub:p?p.name:'',
+      go:()=>{switchPage('adp');setAdpView('projets');if(p)openAdpProject(p.id);}});});
+  adpContacts.filter(c=>adpDueDay(c)===jour).forEach(c=>out.push({t:'Relance',ic:'✉',lbl:c.name,
+    sub:c.org||'',go:()=>{switchPage('adp');setAdpView('contacts');openAdpCompose(c.id);}}));
+  runActive().forEach(r=>{
+    const {state}=runStates(r);
+    (r.steps||[]).forEach((s,i)=>{ if(state[s.key]==='active'&&s.due===jour)
+      out.push({t:'Étape',ic:runTypeMeta(s.type)[2],lbl:s.label,sub:r.title.split(' — ')[0],
+        go:()=>{switchPage('adp');setAdpView('procedures');openRun(r.id);}}); });});
+  const pl=sportPlanFor(jour);
+  if(pl&&!/repos/i.test(pl.type))out.push({t:'Séance',ic:'💪',lbl:pl.title||pl.type,
+    sub:pl.duration?pl.duration+' min':'',go:()=>switchPage('sport')});
+  goals.filter(g=>g.status!=='done'&&g.target_date===jour).forEach(g=>out.push({t:'Objectif',ic:'🎯',
+    lbl:g.title,sub:g.category||'',go:()=>{switchPage('objectifs');openGoalModal(g.id);}}));
+  return out.sort((a,b)=>(b.imp||0)-(a.imp||0));
+}
+let weekActs=[];
+function weekRun(i){ const f=weekActs[i]; if(f)f(); }
+function renderWeekPage(){
+  const el=document.getElementById('tdGrid'); if(!el)return;
+  weekActs=[];
+  const jours=Array.from({length:7},(_,i)=>plusDays(i));
+  el.innerHTML=`<div class="wk-grid">${jours.map((j,k)=>{
+    const d=new Date(j+'T00:00:00');
+    const items=weekItems(j);
+    const retard=k===0?tasks.filter(t=>t.due_date&&t.due_date<td()).length:0;
+    return `<section class="wk-col${k===0?' today':''}${d.getDay()===0||d.getDay()===6?' we':''}">
+      <div class="wk-h"><span class="wk-d">${k===0?"aujourd'hui":k===1?'demain':JOURS[d.getDay()]}</span>
+        <span class="wk-n">${d.getDate()}/${String(d.getMonth()+1).padStart(2,'0')}</span>
+        ${items.length?`<span class="wk-c">${items.length}</span>`:''}</div>
+      ${retard?`<div class="wk-late" onclick="showLate()">${retard} en retard</div>`:''}
+      ${items.length?items.map(it=>{
+        weekActs.push(it.go);
+        return `<div class="wk-i" onclick="weekRun(${weekActs.length-1})" title="${tdEsc(it.t)}">
+          <span class="wk-ic">${it.ic}</span>
+          <span class="wk-l"><span class="wk-t">${tdEsc(it.lbl)}</span>
+            ${it.sub?`<span class="wk-s">${tdEsc(it.sub)}</span>`:''}</span></div>`;}).join('')
+        :'<div class="wk-vide">—</div>'}
+    </section>`;}).join('')}</div>`;
+}
+
+// ── Revue : la section qui manquait ───────────────────────────────────────
+// ADP est devenu le plus gros module de l'app et n'apparaissait nulle part
+// dans le bilan periodique : la partie metier etait absente de la revue.
+function rvAdpStats(r){
+  const dansP=d=>rvIn(d,r);
+  const jalons=adpMilestones.filter(m=>m.due_date&&dansP(m.due_date));
+  const tenus=jalons.filter(m=>m.status==='done'&&m.done_at&&m.done_at<=m.due_date);
+  const glisses=jalons.filter(m=>m.status!=='done'||(m.done_at&&m.done_at>m.due_date));
+  // Enumeration reelle des mois couverts : la borner a 40 jours suffisait aux
+  // periodes de la revue, et devenait fausse des qu'on elargissait la fenetre.
+  const mois=[];
+  for(let d=new Date(r.start.getFullYear(),r.start.getMonth(),1);d<=r.end;d.setMonth(d.getMonth()+1))
+    mois.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  const conso=adpProjects.reduce((s,p)=>s+mois.reduce((x,m)=>x+budProjMonth(p.id,m),0),0);
+  const relFaites=adpContacts.filter(c=>c.last_contact&&dansP(c.last_contact)).length;
+  const etapes=runActive().reduce((s,run)=>s+(run.steps||[])
+    .filter(x=>x.done&&dansP(x.done)).length,0);
+  const actifs=adpProjects.filter(p=>p.status==='actif');
+  return {jalons:jalons.length,tenus:tenus.length,glisses,conso,relFaites,
+          relDues:adpDueContacts().length,etapes,actifs:actifs.length,
+          risque:actifs.filter(p=>p.health!=='vert')};
+}
+
+// ── Rapports ──────────────────────────────────────────────────────────────
+// Deux formats, aucune bibliotheque. Le PDF passe par l'impression du
+// navigateur — c'est la seule voie honnete sans embarquer un moteur de rendu.
+// Le tableur est un vrai .xlsx, fabrique avec le meme ecrivain ZIP que
+// l'export des notes : pas une seule dependance de plus.
+const RAP_SECTIONS=[['etat','État et jalons'],['budget','Budget'],
+                    ['contacts','Contacts et relances'],['procedures','Procédures'],
+                    ['avancees','Avancées du journal']];
+let rapPortee='tout', rapSections=new Set(RAP_SECTIONS.map(s=>s[0]));
+
+function openRapport(){
+  const doms=[...new Set(adpProjects.map(p=>p.domaine).filter(Boolean))].sort();
+  document.getElementById('rapBody').innerHTML=`
+    <div class="field"><label>Portée</label><select id="rapScope">
+      <option value="tout">Tout le portefeuille</option>
+      ${doms.length?`<optgroup label="Par domaine">${doms.map(d=>`<option value="dom:${adpEsc(d)}">${adpEsc(d)}</option>`).join('')}</optgroup>`:''}
+      <optgroup label="Par projet">${adpProjects.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr'))
+        .map(p=>`<option value="prj:${p.id}">${adpEsc(p.name)}</option>`).join('')}</optgroup>
+    </select></div>
+    <div class="field"><label>Exercice</label><select id="rapYear">
+      ${budYears().concat(budYears().includes(String(adpBudYear))?[]:[String(adpBudYear)])
+        .map(y=>`<option value="${y}"${+y===adpBudYear?' selected':''}>${y}</option>`).join('')}
+    </select></div>
+    <div class="field"><label>Contenu</label>
+      <div class="rap-secs">${RAP_SECTIONS.map(([k,l])=>
+        `<label><input type="checkbox" id="rs_${k}" ${rapSections.has(k)?'checked':''}> ${l}</label>`).join('')}</div>
+      <div class="fld-hint">Le PDF passe par l'impression du navigateur : choisis « Enregistrer au format PDF » dans la boîte de dialogue.</div></div>`;
+  document.getElementById('rapModal').classList.add('open');
+}
+function closeRapport(){ document.getElementById('rapModal').classList.remove('open'); }
+function rapLire(){
+  rapPortee=document.getElementById('rapScope').value;
+  rapSections=new Set(RAP_SECTIONS.filter(([k])=>document.getElementById('rs_'+k).checked).map(([k])=>k));
+  return {an:parseInt(document.getElementById('rapYear').value,10)||adpBudYear};
+}
+function rapProjets(){
+  if(rapPortee.startsWith('prj:'))return adpProjects.filter(p=>p.id===rapPortee.slice(4));
+  if(rapPortee.startsWith('dom:'))return adpProjects.filter(p=>p.domaine===rapPortee.slice(4));
+  return adpProjects.slice();
+}
+const rapTitre=()=>rapPortee.startsWith('prj:')?(adpProjById(rapPortee.slice(4))||{}).name||'Projet'
+  :rapPortee.startsWith('dom:')?'Domaine '+rapPortee.slice(4):'Portefeuille';
+
+function rapHtml(an){
+  const E=tdEsc, list=rapProjets().sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const mois=budMonths(an);
+  let h=`<div class="rap-doc"><h1>${E(rapTitre())}</h1>
+    <div class="rap-meta">Rapport du ${td()} · exercice ${an} · ${list.length} projet(s)</div>`;
+  // synthèse toujours présente : c'est le tableau qu'on regarde en premier
+  h+=`<h2>Synthèse</h2><table class="rap-t"><thead><tr>
+    <th>Projet</th><th>Domaine</th><th>Santé</th><th>Échéance</th>
+    <th class="r">Estimé</th><th class="r">Réalisé</th><th class="r">Jalons</th><th class="r">Relances</th></tr></thead><tbody>`;
+  list.forEach(p=>{
+    const ml=adpProjMiles(p.id), ouv=ml.filter(m=>m.status!=='done');
+    const est=budProjEst(p.id,'G'), reel=budProjReel(p.id);
+    h+=`<tr><td>${E(p.name)}</td><td>${E(p.domaine)}</td>
+      <td>${E((ADP_HEALTH.find(x=>x[0]===p.health)||['','?'])[1])}</td>
+      <td>${E(p.deadline)||'—'}</td>
+      <td class="r">${budFmt(est)||'—'}</td>
+      <td class="r${est&&reel>est?' ko':''}">${budFmt(reel)||'—'}</td>
+      <td class="r">${ml.length?`${ml.length-ouv.length}/${ml.length}`:'—'}</td>
+      <td class="r">${adpContacts.filter(c=>c.project_id===p.id&&adpIsDue(c)).length||'—'}</td></tr>`;});
+  const tE=list.reduce((s,p)=>s+budProjEst(p.id,'G'),0), tR=list.reduce((s,p)=>s+budProjReel(p.id),0);
+  h+=`</tbody><tfoot><tr><td colspan="4">TOTAL</td><td class="r">${budFmt(tE)}</td>
+    <td class="r">${budFmt(tR)}</td><td></td><td></td></tr></tfoot></table>`;
+
+  list.forEach(p=>{
+    if(list.length>1)h+=`<h2 class="rap-p">${E(p.name)}${p.client?` <small>${E(p.client)}</small>`:''}</h2>`;
+    if(rapSections.has('etat')){
+      const ml=adpProjMiles(p.id);
+      h+=`<h3>État</h3><ul class="rap-l">
+        <li>Santé : <b>${E((ADP_HEALTH.find(x=>x[0]===p.health)||['','?'])[1])}</b>${p.deadline?` · échéance <b>${E(p.deadline)}</b>`:''}</li>
+        <li>Tâches ouvertes sur le board : <b>${adpProjTasks(p).length}</b></li></ul>`;
+      if(ml.length)h+=`<table class="rap-t"><thead><tr><th>Jalon</th><th>Type</th><th>Échéance</th><th>État</th></tr></thead><tbody>`+
+        ml.map(m=>`<tr><td>${E(m.title)}</td><td>${E((ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1])}</td>
+          <td>${E(m.due_date)||'—'}</td>
+          <td class="${m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<0?'ko':''}">${m.status==='done'?'fait le '+E(m.done_at||'—'):(m.due_date&&dayDiff(m.due_date)<0?'en retard':'à venir')}</td></tr>`).join('')+
+        `</tbody></table>`;
+    }
+    if(rapSections.has('budget')){
+      h+=`<h3>Budget ${an}</h3><table class="rap-t"><thead><tr><th>Ligne</th><th class="r">Estimé</th><th class="r">Réalisé</th>`+
+        BUD_MOIS.map(m=>`<th class="r">${m}</th>`).join('')+`</tr></thead><tbody>`;
+      ADP_CAPEX.forEach(([c,cl])=>{
+        h+=`<tr><td><b>${cl}</b></td><td class="r">${budFmt(budEst(p.id,c,'G'))||'—'}</td>
+          <td class="r">${budFmt(budCapexReel(p.id,c))||'—'}</td>`+
+          mois.map(m=>`<td class="r">${budFmt(budCapexMonth(p.id,c,m))}</td>`).join('')+`</tr>`;
+        ADP_NATURE.forEach(([n,nl])=>{
+          const t=budNatReel(p.id,c,n); if(!t)return;
+          h+=`<tr class="sub"><td>${nl}</td><td></td><td class="r">${budFmt(t)}</td>`+
+            mois.map(m=>`<td class="r">${budFmt(budAmount(p.id,c,n,m))}</td>`).join('')+`</tr>`;});
+      });
+      h+=`</tbody><tfoot><tr><td>TOTAL</td><td class="r">${budFmt(budProjEst(p.id,'G'))}</td>
+        <td class="r">${budFmt(budProjReel(p.id))}</td>`+
+        mois.map(m=>`<td class="r">${budFmt(budProjMonth(p.id,m))}</td>`).join('')+`</tr></tfoot></table>`;
+    }
+    if(rapSections.has('contacts')){
+      const cs=adpContacts.filter(c=>c.project_id===p.id);
+      if(cs.length)h+=`<h3>Contacts</h3><table class="rap-t"><thead><tr><th>Nom</th><th>Rôle</th><th>Société</th><th>Dernier contact</th><th>Cadence</th></tr></thead><tbody>`+
+        cs.map(c=>`<tr><td>${E(c.name)}</td><td>${E(c.role)}</td><td>${E(c.org)}</td>
+          <td class="${adpIsDue(c)?'ko':''}">${E(c.last_contact)||'jamais'}</td>
+          <td>${c.cadence?c.cadence+' j':'—'}</td></tr>`).join('')+`</tbody></table>`;
+    }
+    if(rapSections.has('procedures')){
+      const rs=runActive().filter(r=>r.project_id===p.id);
+      if(rs.length)h+=`<h3>Procédures en cours</h3>`+rs.map(r=>{
+        const g=runProgress(r), {state}=runStates(r);
+        return `<p class="rap-run"><b>${E(r.title.split(' — ')[0])}</b> — ${g.fait}/${g.n} étapes</p>
+          <ul class="rap-l">`+(r.steps||[]).filter(s=>state[s.key]!=='ignoree')
+            .map(s=>`<li class="${state[s.key]==='faite'?'ok':''}">${E(s.label)} — ${E(RUN_STATES[state[s.key]][0])}${s.due?` (${E(s.due)})`:''}</li>`).join('')+`</ul>`;}).join('');
+    }
+    if(rapSections.has('avancees')&&p.note_id){
+      const av=ptAvancees(noteById(p.note_id),'');
+      if(av.length)h+=`<h3>Avancées</h3><div class="rap-md md">${mdRender(av.join('\n'))}</div>`;
+    }
+  });
+  return h+`</div>`;
+}
+function rapPDF(){
+  const {an}=rapLire();
+  closeRapport();
+  document.getElementById('rapport').innerHTML=rapHtml(an);
+  document.body.classList.add('impression');
+  const fin=()=>{ document.body.classList.remove('impression');
+                  document.getElementById('rapport').innerHTML='';
+                  window.removeEventListener('afterprint',fin); };
+  window.addEventListener('afterprint',fin);
+  setTimeout(()=>{ window.print(); setTimeout(fin,1500); },60);
+}
+
+// ── Tableur ───────────────────────────────────────────────────────────────
+// Un .xlsx est un ZIP de XML. On le fabrique avec zipStore, deja ecrit pour
+// l'export des notes : les chaines passent en « inlineStr », ce qui evite la
+// table de chaines partagees et sa comptabilite d'index.
+function xlsxBlob(feuilles){
+  const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');   // interdits en XML 1.0
+  const col=i=>{ let s=''; i++; while(i){ const m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26);} return s; };
+  const nom=(n,i)=>(String(n||'Feuille').replace(/[\[\]\*\?\/\\:]/g,' ').slice(0,28)||'F')+(i?' '+(i+1):'');
+  const ws=lignes=>`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>`+
+  lignes.map((l,r)=>`<row r="${r+1}">`+l.map((v,c)=>{
+    const ref=col(c)+(r+1);
+    return (typeof v==='number'&&isFinite(v))
+      ? `<c r="${ref}"><v>${v}</v></c>`
+      : `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${E(v)}</t></is></c>`;
+  }).join('')+`</row>`).join('')+`</sheetData></worksheet>`;
+  const files=[
+    {name:'[Content_Types].xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`+
+feuilles.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')+
+`</Types>`},
+    {name:'_rels/.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+    {name:'xl/workbook.xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>`+
+feuilles.map((f,i)=>`<sheet name="${E(nom(f.nom,0))}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')+
+`</sheets></workbook>`},
+    {name:'xl/_rels/workbook.xml.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+
+feuilles.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')+
+`</Relationships>`}];
+  feuilles.forEach((f,i)=>files.push({name:`xl/worksheets/sheet${i+1}.xml`,data:ws(f.lignes)}));
+  return new Blob([zipStore(files)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function rapFeuilles(an){
+  const list=rapProjets().sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const mois=budMonths(an);
+  const f=[];
+  f.push({nom:'Synthèse',lignes:[
+    ['Projet','Domaine','Client','Santé','Statut','Échéance','Estimé global','Réalisé total',
+     'Réalisé '+an,'Jalons faits','Jalons total','Jalons en retard','Relances dues','Dernière avancée'],
+    ...list.map(p=>{
+      const ml=adpProjMiles(p.id), ouv=ml.filter(m=>m.status!=='done');
+      const n=p.note_id?noteById(p.note_id):null;
+      return [p.name,p.domaine||'',p.client||'',
+        (ADP_HEALTH.find(x=>x[0]===p.health)||['','?'])[1],
+        (ADP_STATUS.find(x=>x[0]===p.status)||['','?'])[1],
+        p.deadline||'',budProjEst(p.id,'G'),budProjReel(p.id),
+        mois.reduce((s,m)=>s+budProjMonth(p.id,m),0),
+        ml.length-ouv.length,ml.length,
+        ouv.filter(m=>m.due_date&&dayDiff(m.due_date)<0).length,
+        adpContacts.filter(c=>c.project_id===p.id&&adpIsDue(c)).length,
+        n&&n.updated_at?n.updated_at:''];})]});
+  if(rapSections.has('budget')){
+    const l=[['Projet','CAPEX','Nature','Estimé global','Réalisé total',...BUD_MOIS.map(m=>m+' '+an)]];
+    list.forEach(p=>ADP_CAPEX.forEach(([c,cl])=>{
+      l.push([p.name,cl,'— total —',budEst(p.id,c,'G'),budCapexReel(p.id,c),
+        ...mois.map(m=>budCapexMonth(p.id,c,m))]);
+      ADP_NATURE.forEach(([n,nl])=>l.push([p.name,cl,nl,'',budNatReel(p.id,c,n),
+        ...mois.map(m=>budAmount(p.id,c,n,m))]));}));
+    f.push({nom:'Budget',lignes:l});
+  }
+  if(rapSections.has('etat')){
+    const ids=new Set(list.map(p=>p.id));
+    f.push({nom:'Jalons',lignes:[['Projet','Jalon','Type','Échéance','État','Fait le'],
+      ...adpMilestones.filter(m=>ids.has(m.project_id)).map(m=>{
+        const p=adpProjById(m.project_id);
+        return [p?p.name:'',m.title,(ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1],m.due_date||'',
+          m.status==='done'?'fait':(m.due_date&&dayDiff(m.due_date)<0?'en retard':'à venir'),m.done_at||''];})]});
+  }
+  if(rapSections.has('contacts')){
+    const ids=new Set(list.map(p=>p.id));
+    f.push({nom:'Contacts',lignes:[['Projet','Nom','Rôle','Société','E-mail','Dernier contact','Cadence','À relancer'],
+      ...adpContacts.filter(c=>ids.has(c.project_id)).map(c=>{
+        const p=adpProjById(c.project_id);
+        return [p?p.name:'',c.name,c.role||'',c.org||'',c.email||'',c.last_contact||'',
+          c.cadence||0,adpIsDue(c)?'oui':'non'];})]});
+  }
+  if(rapSections.has('procedures')){
+    const ids=new Set(list.map(p=>p.id));
+    const l=[['Projet','Procédure','Étape','Type','État','Échéance']];
+    runActive().filter(r=>ids.has(r.project_id)).forEach(r=>{
+      const p=adpProjById(r.project_id), {state}=runStates(r);
+      (r.steps||[]).forEach(s=>l.push([p?p.name:'',r.title.split(' — ')[0],s.label,
+        runTypeMeta(s.type)[1],RUN_STATES[state[s.key]][0],s.due||'']));});
+    if(l.length>1)f.push({nom:'Procédures',lignes:l});
+  }
+  return f;
+}
+function rapXlsx(){
+  const {an}=rapLire();
+  closeRapport();
+  const f=rapFeuilles(an);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(xlsxBlob(f));
+  a.download=`rapport-${mdSafeName(rapTitre())}-${td()}.xlsx`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),6000);
+  toast(`Tableur exporté · ${f.length} feuille(s)`,'ok');
+}
+
 // ── Revue périodique ──────────────────────────────────────────────────────
 // L'app collectait tout sans jamais rien restituer. Cette page ne saisit rien :
 // elle relit les données existantes et les compare à la période précédente.
@@ -8196,6 +8616,24 @@ async function renderReviewPage(){
       : '<div class="td-empty">Finances non chargées — ouvre l\'onglet une fois.</div>')+
     rvKpi('Cagnotte',`<span style="color:${cash<0?'var(--danger)':'var(--green)'}">${eur(cash)}</span>`,'')+
     (crypto?rvKpi('Opérations crypto',crypto,''):'');
+
+  // ADP est le plus gros module de l'app : son absence de la revue laissait
+  // la partie metier hors du bilan.
+  const ap=rvAdpStats(r);
+  document.getElementById('rvAdp').innerHTML=
+    `<div class="td-t">Projets</div>`+
+    (adpProjects.length
+      ? rvKpi('Jalons tenus',`${ap.tenus}/${ap.jalons}`,'')
+        +rvKpi('Consommé',eur(ap.conso),'')
+        +rvKpi('Relances faites',String(ap.relFaites),ap.relDues?`<span class="rv-d down">${ap.relDues} dues</span>`:'')
+        +rvKpi('Étapes closes',String(ap.etapes),'')
+        +rvKpi('Projets actifs',String(ap.actifs),'')
+        +(ap.glisses.length?`<div class="rv-sub">Jalons glissés</div>`+ap.glisses.slice(0,5).map(m=>{
+            const p=adpProjById(m.project_id);
+            return `<div class="td-row"><span class="td-lbl"><span class="td-name">${tdEsc(m.title)}</span><span class="td-meta">${p?tdEsc(p.name)+' · ':''}${m.due_date}</span></span><span class="rv-n warn">!</span></div>`;}).join(''):'')
+        +(ap.risque.length?`<div class="rv-sub">Sous vigilance</div>`+ap.risque.slice(0,5).map(p=>
+            `<div class="td-row"><span class="td-lbl"><span class="td-name">${tdEsc(p.name)}</span><span class="td-meta">${tdEsc((ADP_HEALTH.find(h=>h[0]===p.health)||['','?'])[1])}</span></span></div>`).join(''):'')
+      : '<div class="td-empty">Aucun projet.</div>');
 
   const g=rvGoalStats();
   document.getElementById('rvGoals').innerHTML=
@@ -10999,7 +11437,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.37.0';
+const APP_VERSION='v1.38.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
