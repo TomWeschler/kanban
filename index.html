@@ -941,6 +941,52 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
   .cp-grid{grid-template-columns:1fr}
 }
 
+/* ── Mesures ─────────────────────────────────────────────────────────────── */
+.mes-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:1rem 1.25rem;gap:0.7rem;position:relative;z-index:1}
+.mes-body{flex:1;overflow-y:auto;padding-right:0.25rem}
+.mes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0.8rem}
+.mes-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.8rem 0.9rem;cursor:pointer;transition:border-color 0.13s,transform 0.13s}
+.mes-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.mes-card.off{opacity:0.55}
+.mes-c-head{display:flex;align-items:center;gap:0.45rem}
+.mes-ico{font-size:0.95rem;flex-shrink:0}
+.mes-c-name{flex:1;font-weight:700;font-size:0.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mes-val{font-family:var(--font-mono);font-size:1.35rem;font-weight:700;margin-top:0.35rem;display:flex;align-items:baseline;gap:0.5rem}
+.mes-sub{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;color:var(--text-dim);margin-bottom:0.4rem}
+.mes-svg{width:100%;height:auto;display:block;color:var(--text)}
+.mes-ax{font-family:var(--font-mono);font-size:7px;fill:var(--text-dim)}
+.mes-nochart{font-family:var(--font-mono);font-size:0.52rem;color:var(--text-dim);padding:1.2rem 0;text-align:center}
+.mes-quick{background:var(--surface);border:1px solid rgba(124,106,255,0.3);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.9rem}
+.mes-qrow{display:flex;flex-wrap:wrap;gap:0.6rem}
+.mes-qf{display:flex;flex-direction:column;gap:0.2rem;font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.06em;color:var(--text-mid)}
+.mes-qf input{width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:0.72rem;padding:0.3rem 0.45rem;outline:none}
+.mes-qf input:focus{border-color:var(--accent)}
+.mes-detail{flex:1;display:grid;grid-template-columns:1fr 280px;gap:1rem;min-height:0}
+.mes-panel,.mes-side{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1rem}
+.mes-side{overflow-y:auto}
+.mes-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0.5rem;margin-bottom:0.9rem}
+@media(max-width:900px){.mes-detail{grid-template-columns:1fr}}
+
+/* ── Signaux ─────────────────────────────────────────────────────────────── */
+#sigBox{display:none;margin-bottom:1rem}
+.sig-hdr{font-family:var(--font-mono);font-size:0.53rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem}
+.sig{display:flex;align-items:flex-start;gap:0.55rem;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--border2);border-radius:8px;padding:0.5rem 0.7rem;margin-bottom:0.35rem}
+.sig-rouge{border-left-color:var(--danger)}
+.sig-orange{border-left-color:var(--warn)}
+.sig-bleu{border-left-color:var(--accent)}
+.sig-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:0.32rem;background:var(--border2)}
+.sig-rouge .sig-dot{background:var(--danger)}
+.sig-orange .sig-dot{background:var(--warn)}
+.sig-bleu .sig-dot{background:var(--accent)}
+.sig-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sig-main{font-size:0.78rem;line-height:1.35}
+.sig-hint{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.04em;color:var(--text-dim);line-height:1.5}
+.sig-x{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.6rem;padding:0 0.2rem;flex-shrink:0;line-height:1.6}
+.sig-x:hover{color:var(--text)}
+.sig-none{font-family:var(--font-mono);font-size:0.52rem;color:var(--text-dim);display:flex;align-items:center;gap:0.6rem}
+.sig-more{width:100%;background:none;border:1px dashed var(--border2);color:var(--text-dim);border-radius:6px;padding:0.3rem;cursor:pointer;font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase}
+.sig-more:hover{color:var(--text);border-color:var(--text-dim)}
+
 /* ═══════════════════════════════
    THEME — ① BRUTALIST
 ═══════════════════════════════ */
@@ -1369,11 +1415,13 @@ body,body *{font-family:var(--font-body)}
   <div class="pg-bg" id="todayBg"></div>
   <div class="td-wrap">
     <div class="td-hdr" id="tdDate"></div>
+    <div id="sigBox"></div>
     <div class="td-grid">
       <section class="td-col" id="tdTasks"></section>
       <section class="td-col" id="tdHabits"></section>
       <section class="td-col" id="tdSport"></section>
       <section class="td-col" id="tdAdp"></section>
+      <section class="td-col" id="tdMes"></section>
     </div>
   </div>
 </div>
@@ -1421,6 +1469,18 @@ body,body *{font-family:var(--font-body)}
   <div class="gr-info" id="grInfo"></div>
 </div>
 
+<div class="page" id="pagemetrics">
+  <div class="pg-bg" id="mesBg" style="opacity:0.22"></div>
+  <div class="mes-wrap">
+    <div class="adp-hdr">
+      <div class="rv-pills" id="mesRanges"></div>
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openMesDefModal(null)">+ Mesure</button>
+    </div>
+    <div class="mes-body" id="mesBody"></div>
+  </div>
+</div>
+
 <div class="page" id="pageadp">
   <div class="pg-bg" id="adpBg" style="opacity:0.22"></div>
   <div class="adp-wrap">
@@ -1439,6 +1499,7 @@ body,body *{font-family:var(--font-body)}
       <button class="gl-pill" onclick="openReviewNote()" title="Rédiger cette revue dans le Second Brain, chiffres inclus">✍ Écrire la revue</button>
       <button class="gl-pill" onclick="exportBackup()" title="Exporter tout l'état en JSON">⬇ Sauvegarde</button>
     </div>
+    <div id="rvSignals" style="display:none;margin-bottom:1rem"></div>
     <div class="rv-grid">
       <section class="td-col" id="rvTasks"></section>
       <section class="td-col" id="rvHabits"></section>
@@ -1631,6 +1692,31 @@ body,body *{font-family:var(--font-body)}
     <div class="modal-hdr">RACCOURCIS CLAVIER</div>
     <button class="modal-close" onclick="closeShortcuts()">✕</button>
     <div class="mh-wrap" id="scList"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="mesDefModal">
+  <div class="modal">
+    <div class="modal-hdr" id="mesDefTitle">MESURE</div>
+    <button class="modal-close" onclick="closeMesDefModal()">✕</button>
+    <div id="mesDefFields"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeMesDefModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveMesDef()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="mesValModal">
+  <div class="modal" style="width:min(420px,94vw)">
+    <div class="modal-hdr" id="mesValTitle">POINT</div>
+    <button class="modal-close" onclick="closeMesValModal()">✕</button>
+    <div id="mesValFields"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeMesValModal()">Annuler</button>
+      <button class="btn-del" id="mesValDel" style="display:none" onclick="deleteMesVal()">Supprimer</button>
+      <button class="btn-primary" onclick="saveMesVal()">Enregistrer</button>
+    </div>
   </div>
 </div>
 
@@ -1926,8 +2012,8 @@ const cfg = {
   account:       'weschler.tom@gmail.com'
 };
 
-const SHEET_HEADER      = ['id','title','column','importance','due_date','created_at','completed_at','notes','project','recurrence','checklist'];
-const TASK_LAST_COL     = 'K';
+const SHEET_HEADER      = ['id','title','column','importance','due_date','created_at','completed_at','notes','project','recurrence','checklist','snoozes'];
+const TASK_LAST_COL     = 'L';
 // Récurrence : cocher une tâche récurrente en recrée aussitôt la suivante.
 const RECURRENCES = [['','Aucune'],['daily','Tous les jours'],['weekly','Toutes les semaines'],
                      ['monthly','Tous les mois'],['yearly','Tous les ans']];
@@ -2227,7 +2313,7 @@ async function quickAddTask(o){
   const due=intentDue(o.due);
   const nt={id:Date.now(),title:o.title,column:taskColumnFromDate(due),importance:o.imp||3,
             due_date:due,created_at:td(),completed_at:'',notes:'',project:o.proj||'',
-            recurrence:'',checklist:''};
+            recurrence:'',checklist:'',snoozes:0};
   allTasks.push(nt);refreshActive();
   render();renderCurrentPage();
   offerUndo(`Tâche ajoutée · ${nt.title}`,async()=>{
@@ -2271,11 +2357,13 @@ function renderCurrentPage(){
   else if(curPage==='review')renderReviewPage();
   else if(curPage==='brain')renderBrain();
   else if(curPage==='adp')renderAdp();
+  else if(curPage==='metrics')renderMetricsPage();
 }
 
 function init() {
   applySavedTheme();
   adpRestoreCache();
+  mesRestoreCache();
   try {
     const cached = JSON.parse(localStorage.getItem(LS_CACHE) || '[]');
     allTasks = cached; tasks = allTasks.filter(t => !t.completed_at);
@@ -2389,6 +2477,8 @@ function initTokenClient() {
       // attendre qu'on ouvre son onglet. En arriere-plan, sans bloquer.
       loadAdp().then(()=>{ if(curPage==='today')renderTodayPage(); if(curPage==='adp')renderAdp(); updateHStats(); })
                .catch(()=>{});
+      loadMetrics().then(()=>{ if(curPage==='today')renderTodayPage(); if(curPage==='metrics')renderMetricsPage(); })
+                   .catch(()=>{});
     }
   });
 }
@@ -2423,7 +2513,7 @@ async function loadFromSheets() {
       id: parseInt(p[0])||Date.now(), title:p[1]||'', column:p[2]||'BackLog',
       importance:parseInt(p[3])||3, due_date:p[4]||'', created_at:p[5]||td(),
       completed_at:p[6]||'', notes:p[7]||'', project:(p[8]||'').trim(),
-      recurrence:(p[9]||'').trim(), checklist:p[10]||''
+      recurrence:(p[9]||'').trim(), checklist:p[10]||'', snoozes:parseInt(p[11],10)||0
     }));
     // Migration : le projet vivait dans le titre (« DCB : … »). On le remonte dans
     // sa colonne et on retire le préfixe, devenu redondant avec le tag de la carte.
@@ -2462,7 +2552,8 @@ async function fetchRemoteRows(){
 
 function taskToRow(t){
   return [String(t.id),t.title,taskColumnFromDate(t.due_date),String(t.importance),
-          t.due_date||'',t.created_at||'',t.completed_at||'',t.notes||'',t.project||'',t.recurrence||'',t.checklist||''];
+          t.due_date||'',t.created_at||'',t.completed_at||'',t.notes||'',t.project||'',t.recurrence||'',t.checklist||'',
+          String(t.snoozes||0)];
 }
 let conflictPending=false;
 async function saveToSheets(force) {
@@ -3128,7 +3219,7 @@ async function completeTask(id){
     const nd=nextDueAfter(t.due_date||td(),t.recurrence);
     if(nd){
       const cps=taskChecklist(t).map(c=>({t:c.t,d:false})); // la checklist repart vierge
-      spawned={...t,id:Date.now(),created_at:td(),completed_at:'',due_date:nd,
+      spawned={...t,id:Date.now(),created_at:td(),completed_at:'',due_date:nd,snoozes:0,
                column:taskColumnFromDate(nd),checklist:cps.length?JSON.stringify(cps):''};
       allTasks.push(spawned);
     }
@@ -3161,9 +3252,12 @@ async function snoozeTask(id,days){
   }
   const nd=new Date(base);nd.setDate(nd.getDate()+days);
   t.due_date=ymd(nd);t.column=taskColumnFromDate(t.due_date);
+  // on compte : repousser une fois est normal, dix fois est un signal
+  const prevN=t.snoozes||0;
+  t.snoozes=prevN+1;
   render();
-  offerUndo(`Reporté au ${t.due_date}`,async()=>{
-    t.due_date=prev||'';t.column=taskColumnFromDate(t.due_date);
+  offerUndo(`Reporté au ${t.due_date}${t.snoozes>=3?` · ${t.snoozes}ᵉ report`:''}`,async()=>{
+    t.due_date=prev||'';t.column=taskColumnFromDate(t.due_date);t.snoozes=prevN;
     render();await persist();
   });
   await persist();
@@ -3290,6 +3384,36 @@ async function renderTodayPage(){
     `<button class="td-go" onclick="switchPage('sport')">Ouvrir SPORT →</button>`;
 
   renderTodayAdp();
+  renderTodayMes();
+  renderSignals();
+}
+
+// ── ce qui reste a mesurer ──
+// Une serie ne vaut que si elle est alimentee : la saisie doit tenir sur la
+// page qu'on ouvre le matin, pas dans un onglet qu'on oublie.
+function renderTodayMes(){
+  const el=document.getElementById('tdMes'); if(!el)return;
+  const manque=mesMissingToday();
+  const suivies=mesActive();
+  el.innerHTML=`<div class="td-t">Mesures${manque.length?` <span class="td-n">${manque.length}</span>`:''}</div>`+
+    (manque.length?`<div class="mes-qrow">${manque.map(d=>`
+      <label class="mes-qf"><span>${d.icon} ${tdEsc(d.label)}${d.unit?` (${tdEsc(d.unit)})`:''}</span>
+        <input type="number" step="any" inputmode="decimal" placeholder="—"
+               onkeydown="if(event.key==='Enter'){mesQuick('${d.key}',this.value);this.value='';}"
+               onblur="if(this.value){mesQuick('${d.key}',this.value);this.value='';}"></label>`).join('')}</div>`
+     :suivies.length?`<div class="td-empty">Tout est saisi.</div>`
+     :`<div class="td-empty">Aucune mesure suivie.</div>`)+
+    (suivies.length?suivies.filter(d=>!manque.some(m=>m.key===d.key)).slice(0,5).map(d=>{
+      const st=mesStats(d.key,30);
+      const delta=(st.avg!=null&&st.prevAvg!=null)?st.avg-st.prevAvg:null;
+      return `<div class="td-row" onclick="switchPage('metrics');openMetric('${d.key}')">
+        <span class="td-icon">${d.icon||'📈'}</span>
+        <span class="td-lbl"><span class="td-name">${tdEsc(d.label)}</span>
+          <span class="td-meta">${st.last?st.last.date:'aucun point'}</span></span>
+        <span class="rv-n">${st.last?mesFmt(st.last.value,d):'—'}</span>
+        ${delta!==null?`<span class="rv-d ${mesTrendClass(d,delta)}">${delta>0?'+':''}${Math.round(delta*100)/100}</span>`:''}
+      </div>`;}).join(''):'')+
+    `<button class="td-go" onclick="switchPage('metrics')">Ouvrir MESURES →</button>`;
 }
 
 // ── ce qui attend cote projets ──
@@ -3777,7 +3901,7 @@ function setNoteOrder(o){
 // Neuf onglets ne tenaient plus. Les cinq pages de pilotage passent en
 // sous-onglets d'une seule entree ; les pages elles-memes sont inchangees.
 const OMEGA=[['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],
-             ['finances','Finances'],['crypto','Cryptobot']];
+             ['metrics','Mesures'],['finances','Finances'],['crypto','Cryptobot']];
 const LS_OMEGA='kanban_omega_last';
 let omegaLast=localStorage.getItem(LS_OMEGA)||'objectifs';
 const inOmega=n=>OMEGA.some(([v])=>v===n);
@@ -5060,7 +5184,7 @@ document.addEventListener('keydown',e=>{
 // Il y avait trois recherches, chacune enfermee dans sa page : pour retrouver
 // quelque chose il fallait deja savoir ou c'etait.
 let cmdItems=[], cmdSel=0;
-const PAGES=[['today',"Aujourd'hui"],['board','Board'],['brain','Notes'],['adp','ADP'],['omega','Omega'],['review','Revue'],
+const PAGES=[['today',"Aujourd'hui"],['board','Board'],['brain','Notes'],['adp','ADP'],['omega','Omega'],['review','Revue'],['metrics','Mesures'],
              ['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],['finances','Finances'],['crypto','Cryptobot']];
 
 function openCmd(){
@@ -5188,6 +5312,399 @@ function scanGoalEuros(){
     renderGoalsBanner();renderGoalsTree();
   });
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// MESURES — n'importe quelle série chiffrée, datée, tracée
+// ══════════════════════════════════════════════════════════════════════════
+// Le poids et le ressenti vivaient dans les logs de sport : impossible de
+// suivre le sommeil, l'humeur ou quoi que ce soit d'autre sans écrire un
+// module entier. Deux feuilles suffisent : une pour ce qu'on suit, une pour
+// les points. Le graphe est dessiné en SVG à la main — l'app doit rester
+// consultable hors ligne, sans dépendre d'un CDN.
+const MES_DEF_HEADER=['key','label','unit','color','target','direction','cadence','icon','active','updated_at'];
+const MES_VAL_HEADER=['id','date','key','value','note','updated_at'];
+const MES_DIR=[['down','Plus bas est mieux'],['up','Plus haut est mieux'],['flat','Sans objectif']];
+const MES_CAD=[['daily','Chaque jour'],['weekly','Chaque semaine'],['free','Quand je veux']];
+const MES_RANGES=[[30,'30 j'],[90,'3 mois'],[365,'1 an'],[0,'Tout']];
+const MES_PALETTE=['#7c6aff','#38bdf8','#4ade80','#fbbf24','#f472b6','#fb923c','#a78bfa','#6ee7b7'];
+
+let mesDefs=[], mesVals=[], mesLoaded=false, mesRange=90, mesCur=null;
+const LS_MES_RANGE='kanban_mes_range';
+try{ const r=parseInt(localStorage.getItem(LS_MES_RANGE),10); if(MES_RANGES.some(([d])=>d===r))mesRange=r; }catch(e){}
+
+const mesDefByKey=k=>mesDefs.find(d=>d.key===k)||null;
+const mesActive=()=>mesDefs.filter(d=>d.active);
+// Les points d'une série, du plus ancien au plus récent
+const mesSeries=k=>mesVals.filter(v=>v.key===k&&v.date).sort((a,b)=>a.date.localeCompare(b.date));
+function mesInRange(list,days){
+  if(!days)return list;
+  const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-days);
+  const cut=ymd(d);
+  return list.filter(v=>v.date>=cut);
+}
+const mesLast=k=>{ const s=mesSeries(k); return s.length?s[s.length-1]:null; };
+const mesColor=d=>d.color||MES_PALETTE[Math.max(0,mesDefs.findIndex(x=>x.key===d.key))%MES_PALETTE.length];
+// Un point vaut pour une date et une série : ressaisir le même jour corrige,
+// il n'empile pas deux valeurs contradictoires.
+const mesValOn=(k,date)=>mesVals.find(v=>v.key===k&&v.date===date)||null;
+
+// ── Feuilles ──────────────────────────────────────────────────────────────
+async function ensureMesSheets(){
+  const sid=cfg.spreadsheetId;
+  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{}})
+    .then(r=>r.ok?r.json():{}).catch(()=>({}));
+  const titles=(meta.sheets||[]).map(s=>s.properties.title);
+  const want=[['metric_defs',MES_DEF_HEADER],['metrics',MES_VAL_HEADER]];
+  const missing=want.filter(([t])=>!titles.includes(t));
+  if(!missing.length)return;
+  await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,
+    {method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({requests:missing.map(([t])=>({addSheet:{properties:{title:t}}}))})});
+  for(const [t,h] of missing)await sheetPut(`${t}!A1`,[h]);
+  if(missing.some(([t])=>t==='metric_defs'))await sheetPut('metric_defs!A2',MES_SEED);
+}
+async function loadMetrics(){
+  if(!accessToken)return;
+  await ensureMesSheets();
+  const sid=cfg.spreadsheetId;
+  const get=async(sheet,range)=>{
+    const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${sheet}!${range}`,{headers:{}})
+      .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
+    const rows=r.values||[];
+    return rows.length<=1?[]:rows.slice(1).filter(x=>x[0]);
+  };
+  const [de,va]=await Promise.all([get('metric_defs','A:J'),get('metrics','A:F')]);
+  const cell=(x,i)=>String(x[i]==null?'':x[i]).trim();
+  const dd={};
+  de.forEach(x=>{ dd[cell(x,0)]={key:cell(x,0),label:cell(x,1)||cell(x,0),unit:cell(x,2),
+    color:cell(x,3),target:cell(x,4)===''?null:parseFloat(cell(x,4)),
+    direction:cell(x,5)||'flat',cadence:cell(x,6)||'free',icon:cell(x,7)||'📈',
+    active:cell(x,8).toUpperCase()!=='FALSE',updated_at:cell(x,9)}; });
+  mesDefs=Object.values(dd).filter(d=>d.key);
+  const vv={};
+  va.forEach(x=>{ const o={id:cell(x,0),date:cell(x,1),key:cell(x,2),
+    value:parseFloat(String(x[3]).replace(',','.')),note:cell(x,4),updated_at:cell(x,5)};
+    if(o.id&&o.key&&o.date&&!isNaN(o.value))vv[o.id]=o; else if(o.id)delete vv[o.id]; });
+  mesVals=Object.values(vv);
+  cacheSet('mesDefs',mesDefs); cacheSet('mesVals',mesVals);
+  mesLoaded=true;
+}
+function mesRestoreCache(){ mesDefs=cacheGet('mesDefs',[]); mesVals=cacheGet('mesVals',[]); }
+const mesDefRow=d=>[d.key,d.label,d.unit||'',d.color||'',d.target==null?'':String(d.target),
+  d.direction||'flat',d.cadence||'free',d.icon||'📈',d.active?'TRUE':'FALSE',td()];
+const mesValRow=v=>[v.id,v.date,v.key,String(v.value),v.note||'',td()];
+
+async function mesSaveDef(d){
+  const i=mesDefs.findIndex(x=>x.key===d.key);
+  if(i>=0)mesDefs[i]=d; else mesDefs.push(d);
+  cacheSet('mesDefs',mesDefs);
+  return sheetUpsertByKey('metric_defs',d.key,mesDefRow(d));
+}
+async function mesSaveVal(v){
+  const i=mesVals.findIndex(x=>x.id===v.id);
+  if(i>=0)mesVals[i]=v; else mesVals.push(v);
+  cacheSet('mesVals',mesVals);
+  return sheetUpsertByKey('metrics',v.id,mesValRow(v));
+}
+async function mesDeleteVal(id){
+  mesVals=mesVals.filter(v=>v.id!==id);
+  cacheSet('mesVals',mesVals);
+  return sheetUpsertByKey('metrics',id,[id,'','','','','supprime']);
+}
+
+// ── Statistiques d'une série ──────────────────────────────────────────────
+// La comparaison se fait avec la période précédente de même longueur : sans
+// point de comparaison, une valeur ne dit rien.
+function mesStats(k,days){
+  const all=mesSeries(k);
+  const cur=mesInRange(all,days);
+  let prev=[];
+  if(days){
+    const a=new Date();a.setHours(0,0,0,0);a.setDate(a.getDate()-days*2);
+    const bDate=new Date();bDate.setHours(0,0,0,0);bDate.setDate(bDate.getDate()-days);
+    prev=all.filter(v=>v.date>=ymd(a)&&v.date<ymd(bDate));
+  }
+  const avg=l=>l.length?l.reduce((s,v)=>s+v.value,0)/l.length:null;
+  const vals=cur.map(v=>v.value);
+  return {points:cur,n:cur.length,
+    last:cur.length?cur[cur.length-1]:null,
+    first:cur.length?cur[0]:null,
+    avg:avg(cur), prevAvg:avg(prev),
+    min:vals.length?Math.min(...vals):null, max:vals.length?Math.max(...vals):null};
+}
+// Un écart n'est « bon » que rapporté au sens de la mesure : perdre du poids
+// est un progrès, perdre des heures de sommeil non.
+function mesTrendClass(d,delta){
+  if(delta===null||Math.abs(delta)<1e-9)return 'flat';
+  if(d.direction==='flat')return 'flat';
+  const good=d.direction==='up'?delta>0:delta<0;
+  return good?'up':'down';
+}
+const mesFmt=(v,d)=>v==null?'—':`${Math.round(v*100)/100}${d&&d.unit?' '+d.unit:''}`;
+
+// ── Courbe SVG ────────────────────────────────────────────────────────────
+// Dessinée à la main : Chart.js n'est qu'opportunément en cache, et une série
+// illisible hors ligne serait une donnée perdue.
+function mesChart(d,points,w,h){
+  w=w||520; h=h||150;
+  if(points.length<1)return `<div class="mes-nochart">Aucun point sur la période.</div>`;
+  const pad={l:34,r:8,t:10,b:18};
+  const xs=points.map(p=>new Date(p.date).getTime());
+  const ys=points.map(p=>p.value);
+  let lo=Math.min(...ys), hi=Math.max(...ys);
+  if(d.target!=null){ lo=Math.min(lo,d.target); hi=Math.max(hi,d.target); }
+  if(hi-lo<1e-9){ hi=lo+1; lo=lo-1; }
+  const marge=(hi-lo)*0.12; lo-=marge; hi+=marge;
+  const x0=Math.min(...xs), x1=Math.max(...xs);
+  const px=t=>pad.l+((x1===x0?0.5:(t-x0)/(x1-x0)))*(w-pad.l-pad.r);
+  const py=v=>pad.t+(1-(v-lo)/(hi-lo))*(h-pad.t-pad.b);
+  const col=mesColor(d);
+  const line=points.map((p,i)=>`${i?'L':'M'}${px(xs[i]).toFixed(1)},${py(p.value).toFixed(1)}`).join(' ');
+  const aire=points.length>1
+    ? `<path d="${line} L${px(x1).toFixed(1)},${(h-pad.b).toFixed(1)} L${px(x0).toFixed(1)},${(h-pad.b).toFixed(1)} Z" fill="${col}" opacity="0.10"/>` : '';
+  const grid=[lo,(lo+hi)/2,hi].map(v=>
+    `<line x1="${pad.l}" y1="${py(v).toFixed(1)}" x2="${w-pad.r}" y2="${py(v).toFixed(1)}" stroke="currentColor" opacity="0.10"/>`+
+    `<text x="2" y="${(py(v)+3).toFixed(1)}" class="mes-ax">${Math.round(v*10)/10}</text>`).join('');
+  const cible=d.target!=null
+    ? `<line x1="${pad.l}" y1="${py(d.target).toFixed(1)}" x2="${w-pad.r}" y2="${py(d.target).toFixed(1)}" stroke="${col}" stroke-dasharray="4 3" opacity="0.55"/>` : '';
+  const pts=points.map((p,i)=>
+    `<circle cx="${px(xs[i]).toFixed(1)}" cy="${py(p.value).toFixed(1)}" r="${points.length>60?1.6:2.6}" fill="${col}"><title>${tdEsc(p.date)} · ${mesFmt(p.value,d)}${p.note?' · '+tdEsc(p.note):''}</title></circle>`).join('');
+  return `<svg class="mes-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Courbe ${tdEsc(d.label)}">
+    ${grid}${aire}${cible}
+    ${points.length>1?`<path d="${line}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`:''}
+    ${pts}
+    <text x="${pad.l}" y="${h-4}" class="mes-ax">${tdEsc(points[0].date)}</text>
+    <text x="${w-pad.r}" y="${h-4}" class="mes-ax" text-anchor="end">${tdEsc(points[points.length-1].date)}</text>
+  </svg>`;
+}
+
+// ── Rendu ─────────────────────────────────────────────────────────────────
+async function renderMetricsPage(){
+  if(accessToken&&!mesLoaded){ showLoad(true); try{ await loadMetrics(); }catch(e){} showLoad(false); }
+  document.getElementById('mesRanges').innerHTML=MES_RANGES.map(([d,l])=>
+    `<button class="gl-pill${mesRange===d?' active':''}"${mesRange===d?' style="background:var(--accent);border-color:var(--accent)"':''} onclick="setMesRange(${d})">${l}</button>`).join('');
+  const el=document.getElementById('mesBody');
+  if(mesCur)return renderMetricDetail(el);
+  const list=mesActive();
+  const manquantes=mesMissingToday();
+  el.innerHTML=
+    (manquantes.length?`<div class="mes-quick">
+      <div class="adp-sec">À saisir aujourd'hui <span class="adp-badge">${manquantes.length}</span></div>
+      <div class="mes-qrow">${manquantes.map(d=>`
+        <label class="mes-qf"><span>${d.icon} ${tdEsc(d.label)}</span>
+          <input type="number" step="any" inputmode="decimal" placeholder="${tdEsc(d.unit||'valeur')}"
+                 onkeydown="if(event.key==='Enter'){mesQuick('${d.key}',this.value);this.value='';}"
+                 onblur="if(this.value){mesQuick('${d.key}',this.value);this.value='';}"></label>`).join('')}</div>
+    </div>`:'')+
+    (list.length?`<div class="mes-grid">${list.map(mesCard).join('')}</div>`
+      :`<div class="gl-empty">Aucune mesure suivie. Ajoute la première avec « + Mesure ».</div>`)+
+    (mesDefs.some(d=>!d.active)?`<div class="adp-sec">En sommeil</div>
+      <div class="mes-grid">${mesDefs.filter(d=>!d.active).map(mesCard).join('')}</div>`:'');
+}
+function setMesRange(d){ mesRange=d; try{localStorage.setItem(LS_MES_RANGE,String(d));}catch(e){} renderMetricsPage(); }
+function openMetric(k){ mesCur=k; renderMetricsPage(); }
+function closeMetric(){ mesCur=null; renderMetricsPage(); }
+
+function mesCard(d){
+  const st=mesStats(d.key,mesRange);
+  const delta=(st.avg!=null&&st.prevAvg!=null)?st.avg-st.prevAvg:null;
+  const cls=mesTrendClass(d,delta);
+  return `<div class="mes-card${d.active?'':' off'}" onclick="openMetric('${d.key}')">
+    <div class="mes-c-head">
+      <span class="mes-ico">${d.icon||'📈'}</span>
+      <span class="mes-c-name">${tdEsc(d.label)}</span>
+      <button class="gl-edit" onclick="event.stopPropagation();openMesDefModal('${d.key}')" title="Éditer">✎</button>
+    </div>
+    <div class="mes-val">${st.last?mesFmt(st.last.value,d):'—'}
+      ${delta!==null?`<span class="rv-d ${cls}">${delta>0?'+':''}${Math.round(delta*100)/100}</span>`:''}</div>
+    <div class="mes-sub">${st.last?`dernier point le ${st.last.date}`:'aucun point'}${st.n>1?` · ${st.n} mesures`:''}${d.target!=null?` · cible ${mesFmt(d.target,d)}`:''}</div>
+    ${mesChart(d,st.points,320,84)}
+  </div>`;
+}
+
+function renderMetricDetail(el){
+  const d=mesDefByKey(mesCur);
+  if(!d){ mesCur=null; return renderMetricsPage(); }
+  const st=mesStats(d.key,mesRange);
+  const delta=(st.avg!=null&&st.prevAvg!=null)?st.avg-st.prevAvg:null;
+  const recent=st.points.slice().reverse().slice(0,60);
+  el.innerHTML=`
+    <div class="adp-tools">
+      <button class="gl-pill" onclick="closeMetric()">← Mesures</button>
+      <span class="adp-title">${d.icon} ${tdEsc(d.label)}</span>
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openMesValModal('${d.key}',null)">+ Point</button>
+      ${d.key==='poids'?`<button class="gl-pill" onclick="mesImportSportWeights()" title="Reprendre les poids déjà saisis dans Sport">↥ Importer du Sport</button>`:''}
+      <button class="gl-pill" onclick="openMesDefModal('${d.key}')">✎ Éditer</button>
+    </div>
+    <div class="mes-detail">
+      <div class="mes-panel">
+        <div class="mes-kpis">
+          ${rvKpi('Dernier',st.last?mesFmt(st.last.value,d):'—',delta!==null?`<span class="rv-d ${mesTrendClass(d,delta)}">${delta>0?'+':''}${Math.round(delta*100)/100}</span>`:'')}
+          ${rvKpi('Moyenne',mesFmt(st.avg,d))}
+          ${rvKpi('Minimum',mesFmt(st.min,d))}
+          ${rvKpi('Maximum',mesFmt(st.max,d))}
+          ${d.target!=null?rvKpi('Cible',mesFmt(d.target,d)):''}
+          ${rvKpi('Points',String(st.n))}
+        </div>
+        ${mesChart(d,st.points,760,260)}
+      </div>
+      <aside class="mes-side">
+        <div class="adp-sec">Derniers points</div>
+        ${recent.length?recent.map(v=>`<div class="adp-line">
+          <span class="adp-l-main" onclick="openMesValModal('${d.key}','${v.id}')">
+            <span>${mesFmt(v.value,d)}</span><span class="adp-l-sub">${v.date}${v.note?' · '+tdEsc(v.note):''}</span></span>
+          <button class="adp-act" onclick="mesRemove('${v.id}')" title="Supprimer">✕</button>
+        </div>`).join(''):'<div class="sb-none">Aucun point sur la période.</div>'}
+      </aside>
+    </div>`;
+}
+
+// Ce qui devrait être saisi aujourd'hui et ne l'est pas
+function mesMissingToday(){
+  const day=td();
+  return mesActive().filter(d=>{
+    if(d.cadence==='daily')return !mesValOn(d.key,day);
+    if(d.cadence==='weekly'){
+      const a=new Date();a.setHours(0,0,0,0);a.setDate(a.getDate()-6);
+      return !mesVals.some(v=>v.key===d.key&&v.date>=ymd(a));
+    }
+    return false;
+  });
+}
+async function mesQuick(key,raw){
+  const val=parseFloat(String(raw).replace(',','.'));
+  if(isNaN(val))return;
+  const d=mesDefByKey(key); if(!d)return;
+  const day=td();
+  const ex=mesValOn(key,day);
+  const v=ex?{...ex,value:val}
+            :{id:'v'+Date.now().toString(36)+key.slice(0,3),date:day,key,value:val,note:''};
+  const ok=await mesSaveVal(v);
+  if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
+  toast(`${d.label} · ${mesFmt(val,d)}`,'ok');
+  if(curPage==='metrics')renderMetricsPage();
+  if(curPage==='today')renderTodayPage();
+  updateHStats();
+}
+async function mesRemove(id){
+  const v=mesVals.find(x=>x.id===id); if(!v)return;
+  const snap={...v};
+  await mesDeleteVal(id);
+  renderMetricsPage();
+  offerUndo('Point supprimé',async()=>{ await mesSaveVal(snap); renderMetricsPage(); });
+}
+// Le poids était déjà saisi dans Sport : on le reprend plutôt que de le
+// ressaisir. Import explicite, jamais automatique — on ne devine pas.
+async function mesImportSportWeights(){
+  if(!sportLoaded&&accessToken){ showLoad(true); try{ await loadSportData(); }catch(e){} showLoad(false); }
+  const src=(sportLogs||[]).filter(l=>l.date&&l.weight>0);
+  const nouveaux=src.filter(l=>!mesValOn('poids',l.date))
+    .map(l=>({id:'vsp'+l.date,date:l.date,key:'poids',value:l.weight,note:'importé du Sport'}));
+  if(!nouveaux.length){ toast('Rien de nouveau à importer','info'); return; }
+  showLoad(true);
+  nouveaux.forEach(v=>{ mesVals.push(v); });
+  cacheSet('mesVals',mesVals);
+  const ok=await sheetBatchUpsert('metrics',nouveaux.map(mesValRow));
+  showLoad(false);
+  toast(ok?`${nouveaux.length} poids importés`:"ÉCHEC de l'import",ok?'ok':'err');
+  renderMetricsPage();
+}
+
+// ── Formulaires ───────────────────────────────────────────────────────────
+let mesEditKey=null, mesEditVal=null;
+function openMesDefModal(key){
+  mesEditKey=key||null;
+  const d=key?mesDefByKey(key):null;
+  document.getElementById('mesDefTitle').textContent=d?'ÉDITER LA MESURE':'NOUVELLE MESURE';
+  document.getElementById('mesDefFields').innerHTML=`
+    <div class="field"><label>Nom</label><input type="text" id="mdLabel" value="${tdEsc(d?d.label:'')}" placeholder="Sommeil"></div>
+    <div class="field"><label>Unité</label><input type="text" id="mdUnit" value="${tdEsc(d?d.unit:'')}" placeholder="h, kg, /10, pas…"></div>
+    <div class="field"><label>Icône</label>
+      <button type="button" class="sb-btn" id="mdIcon" onclick="pickMesIcon()" style="font-size:1rem;padding:0.2rem 0.5rem">${d?d.icon:'📈'}</button></div>
+    <div class="field"><label>Sens</label><select id="mdDir">
+      ${MES_DIR.map(([v,l])=>`<option value="${v}"${d&&d.direction===v?' selected':''}>${l}</option>`).join('')}</select>
+      <div class="fld-hint">Décide si une hausse s'affiche en vert ou en rouge.</div></div>
+    <div class="field"><label>Cible</label><input type="number" step="any" id="mdTarget" value="${d&&d.target!=null?d.target:''}" placeholder="facultatif">
+      <div class="fld-hint">Tracée en pointillés sur la courbe.</div></div>
+    <div class="field"><label>Rythme</label><select id="mdCad">
+      ${MES_CAD.map(([v,l])=>`<option value="${v}"${d&&d.cadence===v?' selected':''}>${l}</option>`).join('')}</select>
+      <div class="fld-hint">« Chaque jour » ou « chaque semaine » fait apparaître la saisie rapide et le signal d'oubli.</div></div>
+    ${d?`<div class="field"><label>État</label><select id="mdActive">
+      <option value="1"${d.active?' selected':''}>Suivie</option>
+      <option value="0"${d.active?'':' selected'}>En sommeil</option></select></div>`:''}`;
+  document.getElementById('mesDefModal').classList.add('open');
+  setTimeout(()=>document.getElementById('mdLabel').focus(),60);
+}
+function closeMesDefModal(){ document.getElementById('mesDefModal').classList.remove('open'); }
+function pickMesIcon(){
+  const b=document.getElementById('mdIcon');
+  openEmojiPicker(b.textContent,e=>{ if(e)b.textContent=e; },{clear:''});
+}
+// La clé est dérivée du nom : stable, lisible dans la feuille, et jamais
+// modifiée ensuite — les points y sont rattachés.
+const mesSlug=s=>voNorm(s).replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,32)||'mesure';
+async function saveMesDef(){
+  const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+  const label=g('mdLabel'); if(!label){ toast('Le nom est obligatoire','err'); return; }
+  const old=mesEditKey?mesDefByKey(mesEditKey):null;
+  let key=old?old.key:mesSlug(label);
+  if(!old){ let n=1,base=key; while(mesDefByKey(key))key=base+'_'+(++n); }
+  const t=g('mdTarget');
+  const d={key,label,unit:g('mdUnit'),color:old?old.color:'',
+    target:t===''?null:parseFloat(t.replace(',','.')),
+    direction:g('mdDir'),cadence:g('mdCad'),
+    icon:document.getElementById('mdIcon').textContent.trim()||'📈',
+    active:old?g('mdActive')==='1':true};
+  closeMesDefModal();
+  showLoad(true); const ok=await mesSaveDef(d); showLoad(false);
+  if(!ok)toast("ÉCHEC de l'enregistrement",'err');
+  renderMetricsPage(); updateHStats();
+}
+function openMesValModal(key,id){
+  mesEditKey=key; mesEditVal=id||null;
+  const v=id?mesVals.find(x=>x.id===id):null;
+  const d=mesDefByKey(key);
+  document.getElementById('mesValTitle').textContent=v?'MODIFIER LE POINT':`NOUVEAU POINT · ${(d?d.label:'').toUpperCase()}`;
+  document.getElementById('mesValFields').innerHTML=`
+    <div class="field"><label>Date</label><input type="date" id="mvDate" value="${v?v.date:td()}"></div>
+    <div class="field"><label>Valeur${d&&d.unit?` (${tdEsc(d.unit)})`:''}</label>
+      <input type="number" step="any" inputmode="decimal" id="mvValue" value="${v?v.value:''}"></div>
+    <div class="field"><label>Note</label><input type="text" id="mvNote" value="${tdEsc(v?v.note:'')}" placeholder="Contexte, facultatif"></div>`;
+  document.getElementById('mesValDel').style.display=v?'':'none';
+  document.getElementById('mesValModal').classList.add('open');
+  setTimeout(()=>document.getElementById('mvValue').focus(),60);
+}
+function closeMesValModal(){ document.getElementById('mesValModal').classList.remove('open'); }
+async function saveMesVal(){
+  const date=document.getElementById('mvDate').value;
+  const raw=document.getElementById('mvValue').value;
+  const val=parseFloat(String(raw).replace(',','.'));
+  if(!date||isNaN(val)){ toast('Date et valeur sont obligatoires','err'); return; }
+  // une seule valeur par jour et par série : ressaisir corrige
+  const ex=mesEditVal?mesVals.find(x=>x.id===mesEditVal):mesValOn(mesEditKey,date);
+  const v=ex?{...ex,date,value:val,note:document.getElementById('mvNote').value.trim()}
+            :{id:'v'+Date.now().toString(36)+mesEditKey.slice(0,3),date,key:mesEditKey,value:val,
+              note:document.getElementById('mvNote').value.trim()};
+  closeMesValModal();
+  showLoad(true); const ok=await mesSaveVal(v); showLoad(false);
+  if(!ok)toast("ÉCHEC de l'enregistrement",'err');
+  renderMetricsPage(); if(curPage==='today')renderTodayPage(); updateHStats();
+}
+async function deleteMesVal(){
+  if(!mesEditVal)return;
+  const id=mesEditVal;
+  closeMesValModal();
+  await mesRemove(id);
+}
+
+const MES_SEED=[
+ ['poids','Poids','kg','','','down','weekly','⚖️','TRUE',''],
+ ['sommeil','Sommeil','h','','7.5','up','daily','😴','TRUE',''],
+ ['humeur','Humeur','/10','','','up','daily','🙂','TRUE',''],
+ ['energie','Énergie','/10','','','up','daily','⚡','FALSE',''],
+ ['eau','Eau','L','','2','up','daily','💧','FALSE','']
+];
 
 // ══════════════════════════════════════════════════════════════════════════
 // ADP — pilotage de projet : projets, contacts, relances, modèles, procédures
@@ -5438,6 +5955,7 @@ function renderAdpProjectPage(el){
       ${p.client?`<span class="adp-c-tag">${adpEsc(p.client)}</span>`:''}
       ${p.deadline?`<span class="adp-c-tag">échéance ${p.deadline}</span>`:''}
       <div style="flex:1"></div>
+      <button class="gl-pill" onclick="adpNewTask()">+ Tâche</button>
       <button class="gl-pill" onclick="openAdpProjModal('${p.id}')">✎ Éditer</button>
       ${n?`<button class="gl-pill" onclick="adpOpenJournalInNotes()">Ouvrir dans Notes ↗</button>`:''}
     </div>
@@ -5457,7 +5975,8 @@ function renderAdpProjectPage(el){
             <span class="adp-l-main">${adpEsc(c.name)}${c.role?`<span class="adp-l-sub">${adpEsc(c.role)}</span>`:''}</span>
             ${adpIsDue(c)?'<span class="adp-l-flag">à relancer</span>':''}
           </div>`).join(''):'<div class="sb-none">Aucun contact.</div>'}
-        <div class="adp-sec">Tâches du board</div>
+        <div class="adp-sec">Tâches du board
+          <button class="adp-mini" onclick="adpNewTask()" title="Créer une tâche pour ce projet">+</button></div>
         ${tks.length?tks.slice().sort(taskSort).slice(0,10).map(t=>`<div class="adp-line" onclick="switchPage('board');openModal(${t.id})">
             <span class="adp-l-main">${adpEsc(t.title)}<span class="adp-l-sub">${adpEsc(taskColumnFromDate(t.due_date))}</span></span>
           </div>`).join(''):`<div class="sb-none">Aucune tâche portant le projet « ${adpEsc(p.client||p.name)} ».</div>`}
@@ -5465,6 +5984,15 @@ function renderAdpProjectPage(el){
     </div>`;
   if(n)adpRenderJournal();
 }
+// Le board et ADP se parlent par l'etiquette projet : creer la tache d'ici la
+// pre-remplit, elle remonte donc toute seule dans la colonne « Taches du board ».
+function adpNewTask(){
+  const p=adpProjById(adpProjCur); if(!p)return;
+  if(!p.client){ toast('Ce projet n\'a pas d\'étiquette : édite-le pour en choisir une','info'); openAdpProjModal(p.id); return; }
+  switchPage('board');
+  openModal(null,null,p.client);
+}
+
 function adpMileRow2(m){
   const d=m.due_date?dayDiff(m.due_date):null;
   const late=m.status!=='done'&&d!==null&&d<0;
@@ -5950,6 +6478,192 @@ const ADP_TPL_SEED=[
   "# Clôture de projet\n\n- [ ] Livrables remis et accusés de réception obtenus\n- [ ] Réserves listées, datées, affectées\n- [ ] Réunion de clôture tenue\n- [ ] Retour d'expérience écrit dans le journal du projet\n- [ ] Contacts passés en « dormant » si plus de relance à prévoir\n- [ ] Statut du projet passé à « Terminé »",'','']
 ];
 
+// ══════════════════════════════════════════════════════════════════════════
+// SIGNAUX — ce qui mérite ton attention, sans que tu ailles le chercher
+// ══════════════════════════════════════════════════════════════════════════
+// L'app enregistrait tout et ne prévenait de rien : la Revue signalait bien
+// les objectifs qui dérivent, mais seulement si on ouvrait la Revue. Ici, une
+// poignée de règles traversent les silos et remontent en tête d'AUJOURD'HUI.
+//
+// Trois principes :
+//   · un signal est ACTIONNABLE — il emmène là où on peut le traiter ;
+//   · un signal se TAIT quand on l'a vu (masqué pour la journée, pas pour
+//     toujours : si la cause persiste, il revient demain) ;
+//   · aucune règle ne se déclenche sur une donnée absente. Pas de données,
+//     pas de signal — un tableau vide ne crie pas.
+const SIG_LEVELS={rouge:0,orange:1,bleu:2};
+const LS_SIG_MUTE='kanban_signals_muted';
+let sigMuted=(()=>{ try{
+  const o=JSON.parse(localStorage.getItem(LS_SIG_MUTE)||'{}');
+  return (o&&o.day===td()&&Array.isArray(o.ids))?new Set(o.ids):new Set();
+}catch(e){ return new Set(); } })();
+function sigMute(id){
+  sigMuted.add(id);
+  try{ localStorage.setItem(LS_SIG_MUTE,JSON.stringify({day:td(),ids:[...sigMuted]})); }catch(e){}
+  renderSignals(); if(curPage==='review')renderReviewPage();
+}
+function sigUnmuteAll(){
+  sigMuted=new Set();
+  try{ localStorage.removeItem(LS_SIG_MUTE); }catch(e){}
+  renderSignals(); if(curPage==='review')renderReviewPage();
+}
+
+// Chaque règle rend zéro, un ou plusieurs signaux
+// {id, level, text, hint, go}
+function computeSignals(){
+  const out=[], day=td();
+  const push=(id,level,text,hint,go)=>out.push({id,level,text,hint,go});
+
+  // ── Tâches ──
+  const retard=tasks.filter(t=>t.due_date&&dayDiff(t.due_date)<=-14);
+  if(retard.length)push('t.retard','orange',
+    `${retard.length} tâche${retard.length>1?'s':''} en retard de plus de deux semaines`,
+    retard.slice(0,3).map(t=>t.title).join(' · '),
+    ()=>showLate());
+  // Repousser une fois est normal ; cinq fois dit qu'on ne la fera pas ainsi.
+  const fuies=tasks.filter(t=>(t.snoozes||0)>=5).sort((a,b)=>(b.snoozes||0)-(a.snoozes||0));
+  fuies.slice(0,3).forEach(t=>push(`t.snooze.${t.id}`,'orange',
+    `« ${t.title} » a été reportée ${t.snoozes} fois`,
+    'Découpe-la, délègue-la, ou renonce.',
+    ()=>{ switchPage('board'); openModal(t.id); }));
+
+  // ── Habitudes ──
+  // Une habitude due sept jours de suite et jamais cochée a décroché.
+  habits.filter(h=>h.active).forEach(h=>{
+    let due=0,fait=0;
+    for(let i=1;i<=14;i++){
+      const dt=new Date(); dt.setHours(0,0,0,0); dt.setDate(dt.getDate()-i);
+      if(!isHabitDueOnDate(h.frequency,dt))continue;
+      due++;
+      if(habitsLog.some(l=>String(l.habit_id)===String(h.id)&&l.date===ymd(dt)))fait++;
+    }
+    if(due>=4&&fait===0)push(`h.${h.id}`,'orange',
+      `« ${h.title} » n'a pas été faite une seule fois en deux semaines`,
+      `${due} occasions manquées. La mettre en pause vaut mieux qu'un échec quotidien.`,
+      ()=>{ switchPage('habits'); openHabitModal(h.id); });
+  });
+
+  // ── Sport ──
+  const planifiees=(sportPlans||[]).filter(p=>p.date&&p.date<day&&dayDiff(p.date)>=-14&&!/repos/i.test(p.type));
+  const honorees=planifiees.filter(p=>{const l=sportLogFor(p.date);return l&&(l.status==='done'||l.status==='partial');});
+  if(planifiees.length>=3&&honorees.length===0)push('sp.zero','orange',
+    `${planifiees.length} séances programmées et aucune faite en deux semaines`,
+    'Le programme ne colle plus à la réalité : revois-le plutôt que de le subir.',
+    ()=>switchPage('sport'));
+
+  // ── Objectifs ──
+  if(goalsLoaded){
+    const risky=(typeof rvGoalStats==='function'?rvGoalStats().risky:[])
+      .filter(g=>dayDiff(g.target_date)<=30);
+    risky.slice(0,3).forEach(g=>push(`g.${g.id}`,'rouge',
+      `« ${g.title} » : ${goalProgress(g)} % à J-${dayDiff(g.target_date)}`,
+      'Échéance proche, avancement faible.',
+      ()=>{ switchPage('objectifs'); openGoalModal(g.id); }));
+  }
+
+  // ── ADP ──
+  const jalonsLate=adpMilestones.filter(m=>m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<0);
+  jalonsLate.slice(0,3).forEach(m=>{
+    const p=adpProjById(m.project_id);
+    push(`m.${m.id}`,'rouge',
+      `Jalon dépassé : « ${m.title} »${p?` — ${p.name}`:''}`,
+      `Échéance du ${m.due_date}, il y a ${-dayDiff(m.due_date)} jours.`,
+      ()=>{ switchPage('adp'); setAdpView('projets'); if(p)openAdpProject(p.id); });
+  });
+  // Relance très en retard : au-delà du double de la cadence, ce n'est plus un
+  // oubli, c'est un contact qu'on est en train de perdre.
+  adpContacts.filter(c=>{
+    const d=adpDueDay(c);
+    return d&&c.cadence&&c.last_contact&&-dayDiff(d)>=c.cadence;
+  }).slice(0,3).forEach(c=>push(`c.${c.id}`,'orange',
+    `${c.name} n'a pas été relancé depuis le ${c.last_contact}`,
+    `Cadence prévue : ${c.cadence} jours.`,
+    ()=>{ switchPage('adp'); setAdpView('contacts'); openAdpCompose(c.id); }));
+  // Un projet actif dont le journal n'a pas bougé depuis trois semaines
+  adpProjects.filter(p=>p.status==='actif'&&p.note_id).forEach(p=>{
+    const n=noteById(p.note_id);
+    if(!n||!n.updated_at)return;
+    const j=-dayDiff(n.updated_at);
+    if(j>=21)push(`p.${p.id}`,'bleu',
+      `Aucune avancée écrite sur « ${p.name} » depuis ${j} jours`,
+      'Un projet sans trace est un projet dont personne ne pourra rendre compte.',
+      ()=>{ switchPage('adp'); setAdpView('projets'); openAdpProject(p.id); });
+  });
+
+  // ── Mesures ──
+  mesActive().forEach(d=>{
+    const s=mesSeries(d.key);
+    if(!s.length)return;
+    const j=-dayDiff(s[s.length-1].date);
+    const seuil=d.cadence==='daily'?5:d.cadence==='weekly'?21:0;
+    if(seuil&&j>=seuil)push(`me.gap.${d.key}`,'bleu',
+      `${d.label} : aucune saisie depuis ${j} jours`,'',
+      ()=>{ switchPage('metrics'); openMetric(d.key); });
+    // Tendance défavorable franche sur 30 jours, comparée aux 30 précédents
+    if(d.direction==='flat')return;
+    const st=mesStats(d.key,30);
+    if(st.avg==null||st.prevAvg==null||st.n<3)return;
+    const delta=st.avg-st.prevAvg;
+    if(Math.abs(delta)<Math.abs(st.prevAvg)*0.05)return;      // sous 5 %, c'est du bruit
+    if(mesTrendClass(d,delta)!=='down')return;
+    push(`me.trend.${d.key}`,'orange',
+      `${d.label} se dégrade : ${delta>0?'+':''}${Math.round(delta*100)/100} ${d.unit||''} sur 30 jours`.trim(),
+      `Moyenne ${Math.round(st.avg*100)/100} contre ${Math.round(st.prevAvg*100)/100} le mois précédent.`,
+      ()=>{ switchPage('metrics'); openMetric(d.key); });
+  });
+
+  // ── Données ──
+  if(writeQueue.length)push('sys.queue','rouge',
+    `${writeQueue.length} modification${writeQueue.length>1?'s':''} en attente d'envoi`,
+    'Elles partiront au retour du réseau. Ne vide pas le cache du navigateur avant.',
+    null);
+
+  out.sort((a,b)=>SIG_LEVELS[a.level]-SIG_LEVELS[b.level]);
+  return out;
+}
+const sigVisible=()=>computeSignals().filter(s=>!sigMuted.has(s.id));
+
+// Les fonctions d'action ne survivent pas au innerHTML : on les garde ici et
+// les boutons n'y renvoient que par leur index.
+let sigCur=[];
+function sigRun(i){ const s=sigCur[i]; if(s&&s.go)s.go(); }
+function sigHide(i){ const s=sigCur[i]; if(s)sigMute(s.id); }
+
+function sigHtml(list,compact){
+  return list.map((s,i)=>`<div class="sig sig-${s.level}">
+    <span class="sig-dot"></span>
+    <span class="sig-txt"${s.go?` onclick="sigRun(${i})" style="cursor:pointer"`:''}>
+      <span class="sig-main">${tdEsc(s.text)}</span>
+      ${s.hint&&!compact?`<span class="sig-hint">${tdEsc(s.hint)}</span>`:''}</span>
+    ${s.go?`<button class="adp-act" onclick="sigRun(${i})">Traiter</button>`:''}
+    <button class="sig-x" onclick="sigHide(${i})" title="Masquer jusqu'à demain">✕</button>
+  </div>`).join('');
+}
+// Au-dela de quatre, le bandeau mange la page qu'il est cense introduire :
+// on montre les plus graves et on deplie a la demande.
+const SIG_MAX=4;
+let sigExpanded=false;
+function sigToggleAll(){ sigExpanded=!sigExpanded; renderSignals(); }
+function renderSignals(){
+  const el=document.getElementById('sigBox'); if(!el)return;
+  sigCur=sigVisible();
+  const total=computeSignals().length;
+  if(!sigCur.length){
+    el.innerHTML=total?`<div class="sig-none">Tous les signaux ont été vus.
+      <button class="adp-act" onclick="sigUnmuteAll()">Les réafficher</button></div>`:'';
+    el.style.display=total?'block':'none';
+    return;
+  }
+  el.style.display='block';
+  const shown=sigExpanded?sigCur:sigCur.slice(0,SIG_MAX);
+  const reste=sigCur.length-shown.length;
+  el.innerHTML=`<div class="sig-hdr">Signaux <span class="adp-badge">${sigCur.length}</span>
+      ${total>sigCur.length?`<button class="adp-act" onclick="sigUnmuteAll()">Tout réafficher</button>`:''}</div>`
+    +sigHtml(shown,false)
+    +(reste>0?`<button class="sig-more" onclick="sigToggleAll()">+ ${reste} autre${reste>1?'s':''}</button>`
+      :sigExpanded&&sigCur.length>SIG_MAX?`<button class="sig-more" onclick="sigToggleAll()">Réduire</button>`:'');
+}
+
 // ── Revue périodique ──────────────────────────────────────────────────────
 // L'app collectait tout sans jamais rien restituer. Cette page ne saisit rien :
 // elle relit les données existantes et les compare à la période précédente.
@@ -6040,6 +6754,14 @@ async function renderReviewPage(){
     // comme dans la barre des objectifs, sinon la pilule active est illisible
     `<button class="gl-pill${rvPeriod===v?' active':''}"${rvPeriod===v?' style="background:var(--accent);border-color:var(--accent)"':''} onclick="setRvPeriod('${v}')">${l}</button>`).join('');
   document.getElementById('rvRange').textContent=`${ymd(r.start)} → ${ymd(r.end)}`;
+
+  const sigs=sigVisible();
+  sigCur=sigs;
+  const rvSig=document.getElementById('rvSignals');
+  if(rvSig){
+    rvSig.innerHTML=sigs.length?`<div class="sig-hdr">Signaux <span class="adp-badge">${sigs.length}</span></div>`+sigHtml(sigs,true):'';
+    rvSig.style.display=sigs.length?'block':'none';
+  }
 
   const t=rvTaskStats(r),tp=rvTaskStats(pr);
   const projRows=Object.entries(t.byProj).sort((a,b)=>b[1]-a[1]);
@@ -6254,7 +6976,7 @@ async function saveTask(){
     const t=tasks.find(t=>t.id===parseInt(editId));if(t)Object.assign(t,data);
     const at=allTasks.find(t=>t.id===parseInt(editId));if(at)Object.assign(at,data);
   } else {
-    const nt={id:Date.now(),created_at:td(),completed_at:'',...data};tasks.push(nt);allTasks.push(nt);
+    const nt={id:Date.now(),created_at:td(),completed_at:'',snoozes:0,...data};tasks.push(nt);allTasks.push(nt);
   }
   closeModal();render();if(curPage==='objectifs')renderObjectifs();await persist();
 }
@@ -6890,6 +7612,7 @@ function switchPage(name){
   if(name==='finances')renderFinancesPage();
   if(name==='sport')renderSportPage();
   if(name==='adp'){applyPageWallpaper('adpBg',randomWallpaper());renderAdp();}
+  if(name==='metrics'){applyPageWallpaper('mesBg',randomWallpaper());renderMetricsPage();}
 }
 
 // ════════════════════════════════════════════════════
@@ -8879,7 +9602,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.29.0';
+const APP_VERSION='v1.31.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
