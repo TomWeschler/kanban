@@ -175,6 +175,17 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
   font-family:var(--font-mono);font-size:0.65rem;border-radius:4px;cursor:pointer}
 .md-t:hover{color:var(--accent);border-color:var(--accent)}
 .md-sep{width:1px;height:1.2rem;background:var(--border2);margin:0 0.25rem}
+/* Couleurs de texte. Les huit tons sont fixes et calibres pour rester
+   lisibles sur les huit themes, tous sombres ; ce sont des variables pour
+   qu'un theme clair n'ait qu'a les redefinir. */
+:root{--c-rouge:#f87171;--c-orange:#fb923c;--c-jaune:#fbbf24;--c-vert:#4ade80;
+      --c-bleu:#60a5fa;--c-violet:#a78bfa;--c-rose:#f472b6;--c-gris:#9ca3af}
+.mc-rouge{color:var(--c-rouge)}.mc-orange{color:var(--c-orange)}
+.mc-jaune{color:var(--c-jaune)}.mc-vert{color:var(--c-vert)}
+.mc-bleu{color:var(--c-bleu)}.mc-violet{color:var(--c-violet)}
+.mc-rose{color:var(--c-rose)}.mc-gris{color:var(--c-gris)}
+.md-c{width:1.15rem;height:1.15rem;padding:0;border-radius:50%;border:1px solid var(--border2);cursor:pointer;flex-shrink:0}
+.md-c:hover{border-color:var(--text);transform:scale(1.15)}
 .mh-wrap{max-height:60vh;overflow-y:auto}
 .mh-tbl{width:100%;border-collapse:collapse;font-size:0.78rem}
 .mh-tbl td{padding:0.3rem 0.5rem;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:top}
@@ -1549,18 +1560,18 @@ body,body *{font-family:var(--font-body)}
   <div class="modal" style="width:min(660px,94vw)">
     <div class="modal-hdr">AIDE-MÉMOIRE DU FORMAT</div>
     <button class="modal-close" onclick="closeMdHelp()">✕</button>
-    <div class="mh-wrap"><table class="mh-tbl"><tbody><tr><td><code>**gras**</code></td><td>gras</td><td class="mh-k">Ctrl+B</td></tr><tr><td><code>*italique*</code></td><td>italique</td><td class="mh-k">Ctrl+I</td></tr><tr><td><code>__souligné__</code></td><td>souligné</td><td class="mh-k">Ctrl+U</td></tr><tr><td><code>~~barré~~</code></td><td>barré</td><td class="mh-k"></td></tr><tr><td><code>==surligné==</code></td><td>surligné</td><td class="mh-k"></td></tr><tr><td><code>`code`</code></td><td>code</td><td class="mh-k">Ctrl+E</td></tr><tr><td><code># Titre 1</code></td><td>le plus grand</td><td class="mh-k"></td></tr><tr><td><code>## Titre 2</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>### Titre 3</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>###### Titre 6</code></td><td>le plus petit</td><td class="mh-k"></td></tr><tr><td><code>- puce</code></td><td>liste à puces</td><td class="mh-k"></td></tr><tr><td><code>&nbsp;&nbsp;- sous-puce</code></td><td>indenter de 2 espaces</td><td class="mh-k"></td></tr><tr><td><code>1. élément</code></td><td>liste numérotée</td><td class="mh-k"></td></tr><tr><td><code>- [ ] à faire</code></td><td>case à cocher, cliquable en lecture</td><td class="mh-k"></td></tr><tr><td><code>&gt; citation</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>---</code></td><td>trait de séparation</td><td class="mh-k"></td></tr><tr><td><code>[[Autre note]]</code></td><td>lien interne — suggestions dès la frappe</td><td class="mh-k"></td></tr><tr><td><code>[[Autre note|nom affiché]]</code></td><td>lien avec un autre libellé</td><td class="mh-k"></td></tr><tr><td><code>#montag</code></td><td>tag, cliquable</td><td class="mh-k"></td></tr><tr><td><code>[texte](https://…)</code></td><td>lien externe</td><td class="mh-k"></td></tr><tr><td><code>![légende](https://…)</code></td><td>image distante</td><td class="mh-k"></td></tr><tr><td><code>| a | b |</code></td><td>tableau (une ligne |---|---| sous l'en-tête)</td><td class="mh-k"></td></tr><tr><td><code>```</code></td><td>bloc de code (ouvrir et fermer)</td><td class="mh-k"></td></tr></tbody></table></div>
-    <div class="mh-note">Le texte s'écrit en markdown. La barre au-dessus de l'éditeur applique ces marqueurs à la sélection ; appuyer une seconde fois les retire.</div>
+    <div class="mh-wrap"><table class="mh-tbl"><tbody><tr><td><code>**gras**</code></td><td>gras</td><td class="mh-k">Ctrl+B</td></tr><tr><td><code>*italique*</code></td><td>italique</td><td class="mh-k">Ctrl+I</td></tr><tr><td><code>__souligné__</code></td><td>souligné</td><td class="mh-k">Ctrl+U</td></tr><tr><td><code>~~barré~~</code></td><td>barré</td><td class="mh-k"></td></tr><tr><td><code>==surligné==</code></td><td>surligné</td><td class="mh-k"></td></tr><tr><td><code>{rouge:texte}</code></td><td>texte en couleur — <span class="mc-rouge">rouge</span>, <span class="mc-orange">orange</span>, <span class="mc-jaune">jaune</span>, <span class="mc-vert">vert</span>, <span class="mc-bleu">bleu</span>, <span class="mc-violet">violet</span>, <span class="mc-rose">rose</span>, <span class="mc-gris">gris</span></td><td class="mh-k"></td></tr><tr><td><code>`code`</code></td><td>code</td><td class="mh-k">Ctrl+E</td></tr><tr><td><code># Titre 1</code></td><td>le plus grand</td><td class="mh-k"></td></tr><tr><td><code>## Titre 2</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>### Titre 3</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>###### Titre 6</code></td><td>le plus petit</td><td class="mh-k"></td></tr><tr><td><code>- puce</code></td><td>liste à puces</td><td class="mh-k"></td></tr><tr><td><code>&nbsp;&nbsp;- sous-puce</code></td><td>indenter de 2 espaces</td><td class="mh-k"></td></tr><tr><td><code>1. élément</code></td><td>liste numérotée</td><td class="mh-k"></td></tr><tr><td><code>- [ ] à faire</code></td><td>case à cocher, cliquable en lecture</td><td class="mh-k"></td></tr><tr><td><code>&gt; citation</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>---</code></td><td>trait de séparation</td><td class="mh-k"></td></tr><tr><td><code>[[Autre note]]</code></td><td>lien interne — suggestions dès la frappe</td><td class="mh-k"></td></tr><tr><td><code>[[Autre note|nom affiché]]</code></td><td>lien avec un autre libellé</td><td class="mh-k"></td></tr><tr><td><code>#montag</code></td><td>tag, cliquable</td><td class="mh-k"></td></tr><tr><td><code>:cafe</code></td><td>emoji — suggestions dès la 2ᵉ lettre (☕). Ou le bouton 😀 de la barre</td><td class="mh-k"></td></tr><tr><td><code>[texte](https://…)</code></td><td>lien externe</td><td class="mh-k"></td></tr><tr><td><code>![légende](https://…)</code></td><td>image distante</td><td class="mh-k"></td></tr><tr><td><code>| a | b |</code></td><td>tableau (une ligne |---|---| sous l'en-tête)</td><td class="mh-k"></td></tr><tr><td><code>```</code></td><td>bloc de code (ouvrir et fermer)</td><td class="mh-k"></td></tr></tbody></table></div>
+    <div class="mh-note">La couleur s'écrit <code>{couleur:texte}</code> et s'applique aussi au gras : <code>{bleu:**important**}</code>. À l'export, elle devient du HTML standard, lisible par Obsidian. Le texte s'écrit en markdown. La barre au-dessus de l'éditeur applique ces marqueurs à la sélection ; appuyer une seconde fois les retire.</div>
   </div>
 </div>
 
 <div class="modal-bg" id="emojiModal">
   <div class="modal" style="width:min(560px,94vw)">
-    <div class="modal-hdr">CHOISIR UNE ICÔNE</div>
+    <div class="modal-hdr" id="emTitle">CHOISIR UNE ICÔNE</div>
     <button class="modal-close" onclick="closeEmojiPicker()">✕</button>
-    <div class="field"><input type="search" id="emSearch" placeholder="Filtrer par catégorie : notes, idées, santé…" autocomplete="off" oninput="renderEmoji()"></div>
+    <div class="field"><input type="search" id="emSearch" placeholder="Chercher : coeur, attention, idée, café…" autocomplete="off" oninput="renderEmoji()"></div>
     <div class="em-grid" id="emGrid"></div>
-    <div class="modal-btns"><button class="btn-nav out" onclick="clearEmoji()">Aucune icône</button></div>
+    <div class="modal-btns"><button class="btn-nav out" id="emClear" onclick="clearEmoji()">Aucune icône</button></div>
   </div>
 </div>
 
@@ -3300,6 +3311,16 @@ const noteByTitle=t=>noteIndex().byTitle[String(t||'').trim().toLowerCase()]||nu
 // s'executer ; les balises sont ensuite reintroduites par les regles ci-dessous.
 const MD_ESC=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
+// ── Couleur de texte ──────────────────────────────────────────────────────
+// Le markdown n'a pas de syntaxe de couleur, et laisser passer du HTML brut
+// rouvrirait exactement la porte qu'on vient de fermer. D'ou une syntaxe a
+// nous, dans l'esprit du ==surligne== deja present : {rouge:texte}. Seuls les
+// huit noms ci-dessous declenchent la regle, un « {a:b} » quelconque reste
+// donc du texte. A l'export, elle redevient du HTML lisible par Obsidian.
+const MD_COLORS=[['rouge','#f87171'],['orange','#fb923c'],['jaune','#fbbf24'],['vert','#4ade80'],
+                 ['bleu','#60a5fa'],['violet','#a78bfa'],['rose','#f472b6'],['gris','#9ca3af']];
+const MD_COLOR_RE=new RegExp('\\{('+MD_COLORS.map(c=>c[0]).join('|')+'):([^}\\n]+)\\}','g');
+
 function mdInline(t){
   // Le code en ligne est mis de cote en premier : ce qu'il contient ne doit
   // etre interprete ni comme gras, ni comme lien, ni comme tag.
@@ -3315,6 +3336,8 @@ function mdInline(t){
       /^drive:/.test(u)?`<a class="md-att" data-drive="${u.slice(6)}" download href="#">${txt}</a>`
       :/^(https?:|mailto:)/.test(u)?`<a href="${u}" target="_blank" rel="noopener">${txt}</a>`:txt)
     .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,'$1<a href="$2" target="_blank" rel="noopener">$2</a>')
+    // avant le gras, pour que {rouge:**important**} donne du gras rouge
+    .replace(MD_COLOR_RE,(m,c,txt)=>`<span class="mc-${c}">${txt}</span>`)
     .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
     .replace(/__([^_\n]+)__/g,'<u>$1</u>')
@@ -3815,26 +3838,41 @@ function renderNoteMeta(){
 }
 
 
-// ── Auto-completion des [[liens]] ─────────────────────────────────────────
+// ── Auto-completion des [[liens]] et des :emoji ───────────────────────────
 // Le geste central d'Obsidian : sans lui, relier suppose de connaitre le titre
-// exact, et un titre approximatif cree un doublon.
+// exact, et un titre approximatif cree un doublon. Le meme calque sert a
+// l'emoji : ouvrir un modal pour une frimousse casse le fil de l'ecriture.
 let acItems=[], acSel=0, acFrom=-1;
 function acClose(){ const el=document.getElementById('sbAc'); if(el)el.style.display='none'; acItems=[]; acFrom=-1; }
 function acOpen(){
   const ta=document.getElementById('sbEdit'); if(!ta)return acClose();
   const pos=ta.selectionStart, before=ta.value.slice(0,pos);
   const m=/\[\[([^\[\]\n]*)$/.exec(before);      // des [[ ouverts, non refermes
-  if(!m)return acClose();
-  acFrom=pos-m[1].length;
-  const q=m[1].toLowerCase();
-  const cur=noteById(noteCurId);
-  acItems=notes.filter(n=>(!cur||n.id!==cur.id)&&n.title.toLowerCase().includes(q))
-    .sort((a,b)=>{
-      const ai=a.title.toLowerCase().startsWith(q)?0:1, bi=b.title.toLowerCase().startsWith(q)?0:1;
-      return ai-bi||a.title.localeCompare(b.title,'fr');
-    }).slice(0,8).map(n=>({label:n.title,sub:noteTags(n).slice(0,2).map(t=>'#'+t).join(' '),create:false}));
-  if(m[1].trim()&&!notes.some(n=>n.title.toLowerCase()===q))
-    acItems.push({label:m[1].trim(),sub:'créer cette note',create:true});
+  if(m){
+    acFrom=pos-m[1].length;
+    const q=m[1].toLowerCase();
+    const cur=noteById(noteCurId);
+    acItems=notes.filter(n=>(!cur||n.id!==cur.id)&&n.title.toLowerCase().includes(q))
+      .sort((a,b)=>{
+        const ai=a.title.toLowerCase().startsWith(q)?0:1, bi=b.title.toLowerCase().startsWith(q)?0:1;
+        return ai-bi||a.title.localeCompare(b.title,'fr');
+      }).slice(0,8).map(n=>({label:n.title,sub:noteTags(n).slice(0,2).map(t=>'#'+t).join(' '),insert:n.title+']] '}));
+    if(m[1].trim()&&!notes.some(n=>n.title.toLowerCase()===q))
+      acItems.push({label:m[1].trim(),sub:'créer cette note',insert:m[1].trim()+']] '});
+  }else{
+    // « :caf » propose ☕ — deux lettres minimum, et seulement en debut de mot,
+    // pour ne pas se declencher au milieu d'une URL ou d'un « 10:30 »
+    const em=/(^|[\s(]):([\p{L}]{2,})$/u.exec(before);
+    if(!em)return acClose();
+    const q=voNorm(em[2]);
+    acFrom=pos-em[2].length-1;
+    acItems=EMOJI_ALL
+      .map(x=>({x,i:voNorm(x.k+' '+x.c).indexOf(q)}))
+      .filter(o=>o.i>=0)
+      .sort((a,b)=>a.i-b.i)                       // ce qui commence par la saisie d'abord
+      .slice(0,8)
+      .map(o=>({label:`${o.x.e}  ${o.x.k.split(' ')[0]||o.x.c}`,sub:o.x.c,insert:o.x.e+' ',emoji:o.x.e}));
+  }
   if(!acItems.length)return acClose();
   if(acSel>=acItems.length)acSel=0;
   acRender(ta);
@@ -3860,10 +3898,11 @@ function acPick(i){
   const it=acItems[i], ta=document.getElementById('sbEdit');
   if(!it||!ta)return;
   const v=ta.value, pos=ta.selectionStart;
-  const ins=it.label+']] ';
+  const ins=it.insert;
   ta.value=v.slice(0,acFrom)+ins+v.slice(pos);
   const caret=acFrom+ins.length;
   ta.setSelectionRange(caret,caret);
+  if(it.emoji)emRemember(it.emoji);
   acClose();
   onNoteContent(ta.value);
   ta.focus();
@@ -4047,6 +4086,12 @@ async function exportNotesMarkdown(){
     const body=String(n.content||'').replace(/\[([^\]]*)\]\(drive:([A-Za-z0-9_\-]+)\)/g,(m,label,id)=>{
       const f=resolved.get(id);
       return f?`[${label}](${ATT}/${encodeURIComponent(f)})`:m;   // non recuperee : on garde le lien d'origine
+    })
+    // {rouge:texte} est une syntaxe a nous : dehors, elle ne veut rien dire.
+    // Obsidian rend le HTML en ligne, la couleur survit donc a l'export.
+    .replace(MD_COLOR_RE,(m,c,txt)=>{
+      const hex=(MD_COLORS.find(x=>x[0]===c)||[])[1];
+      return hex?`<span style="color:${hex}">${txt}</span>`:m;
     });
     files.push({name:name+'.md',data:fm+body+'\n'});
   });
@@ -4074,6 +4119,22 @@ function mdWrap(pre,post,ph){
     ta.setSelectionRange(a+pre.length,a+pre.length+sel.length);
   }
   ta.focus(); onNoteContent(ta.value);
+}
+// Insere du texte a la position du curseur, sans rien remplacer alentour.
+function mdInsert(txt){
+  const ta=document.getElementById('sbEdit'); if(!ta)return;
+  const a=ta.selectionStart,z=ta.selectionEnd;
+  ta.value=ta.value.slice(0,a)+txt+ta.value.slice(z);
+  const p=a+txt.length; ta.setSelectionRange(p,p);
+  ta.focus(); onNoteContent(ta.value);
+}
+// Le modal prend le focus, donc la position du curseur : on la memorise et on
+// la restitue avant d'inserer.
+function mdEmoji(){
+  const ta=document.getElementById('sbEdit'); if(!ta)return;
+  const a=ta.selectionStart,z=ta.selectionEnd;
+  openEmojiPicker('',e=>{ if(!e)return; ta.setSelectionRange(a,z); mdInsert(e); },
+                  {title:'INSÉRER UN EMOJI',clear:''});
 }
 // Prefixe chaque ligne de la selection (titres, listes, citations)
 function mdPrefix(pre){
@@ -4118,6 +4179,10 @@ function mdToolbar(){
     `<button class="md-t" title="Case à cocher" onclick="mdPrefix('- [ ] ')">☐</button>`+
     `<button class="md-t" title="Citation" onclick="mdPrefix('&gt; ')">❝</button>`+
     `<span class="md-sep"></span>`+
+    MD_COLORS.map(([nom,hex])=>
+      `<button class="md-c" style="background:${hex}" title="Texte en ${nom}" onclick="mdWrap('{${nom}:','}','texte')"></button>`).join('')+
+    `<span class="md-sep"></span>`+
+    `<button class="md-t" title="Insérer un emoji" onclick="mdEmoji()">😀</button>`+
     `<button class="md-t" title="Lien vers une note" onclick="mdWrap('[[',']]','Note')">[[ ]]</button>`+
     `<button class="md-t" title="Aide-mémoire du format" onclick="openMdHelp()">?</button>`+
     `</div>`;
@@ -4126,41 +4191,82 @@ function openMdHelp(){ document.getElementById('mdHelpModal').classList.add('ope
 function closeMdHelp(){ document.getElementById('mdHelpModal').classList.remove('open'); }
 
 // ── Selecteur d'emoji ─────────────────────────────────────────────────────
-// Reutilisable : rendait un prompt() ou il fallait coller un emoji soi-meme.
+// Reutilisable : sert d'icone de note, d'icone d'objectif, et d'insertion dans
+// le texte. Chaque emoji porte ses mots-cles : la recherche ne portait que sur
+// le nom de categorie, donc taper « coeur » ou « attention » ne donnait rien.
 const EMOJI_SET=[
- ['Notes & écriture','📄 📝 📋 📑 📚 📖 📕 📗 📘 📙 🗒️ 🗂️ 📔 📓 ✏️ 🖊️ 🖋️ ✒️ 📎 🔖 🏷️ 📌 📍 🗓️ 📅'],
- ['Idées & savoir','🧠 💡 🔍 🔬 🔭 🧩 🗝️ 🎓 🧾 📊 📈 📉 🗺️ 🧭 ⚗️ 🧪 🔮 ♟️ 🎲 🧮'],
- ['Projets & travail','💼 🏗️ 🛠️ ⚙️ 🔧 🔩 🧰 🖥️ 💻 ⌨️ 🖱️ 📱 🗄️ 🏢 📦 🚀 🎯 ✅ ⏱️ ⏳'],
- ['Vie & santé','💪 🏃 🚴 🧘 🏋️ ⚽ 🏀 🎾 🥗 🍎 💊 🩺 😴 🚿 ☀️ 🌙 🌱 🌳 🐾 ❤️'],
- ['Argent','💰 💶 💵 🏦 💳 📊 🧾 🪙 💎 🏷️'],
- ['Création & loisirs','🎨 🎬 🎵 🎸 🎹 📷 🕹️ 🎮 ✈️ 🗼 🏖️ 🍽️ ☕ 🍷 🎁 🎉 🏆 ⭐ 🌟 🔥'],
- ['Repères','⚡ ❗ ❓ ⚠️ 🚧 🔒 🔓 ♻️ 🔗 ⛳ 🧵 🪄 👁️ 🗣️ 🤝 🌐 🧭 ⏰ 🔔 🚩']
-].map(([c,e])=>[c,e.split(' ')]);
-const EMOJI_ALL=EMOJI_SET.flatMap(([c,e])=>e.map(x=>({e:x,c})));
+ ['Visages & émotions','😀 sourire content joie|😄 rire joie heureux|😁 sourire dents|😆 rire fort|😅 rire sueur gene|🤣 mort de rire|😂 pleure de rire|🙂 sourire leger|😉 clin oeil|😊 timide content|😍 amoureux coeur yeux|🤩 admiration etoiles wow|😘 bisou baiser|🤗 calin accueil|🤔 reflechir doute question|🤨 sceptique sourcil|😐 neutre plat|😑 blase|🙄 agace yeux au ciel|😏 malicieux|😴 dort sommeil fatigue|🥱 baille fatigue|🤯 explose cerveau choc|😳 gene surpris|🥵 chaud canicule|🥶 froid gele|😱 peur cri|😨 peur inquiet|😰 angoisse stress|😢 triste larme|😭 pleure chagrin|😤 enerve vapeur|😠 colere fache|😡 furieux rage|🤬 jure insulte|🤒 malade fievre|🤢 degout nausee|🤕 blesse bandage|🥳 fete anniversaire|😎 cool lunettes|🤓 intello nerd|🥺 supplie|😬 grimace malaise|🤐 silence secret|🫡 salut respect|🙃 renverse ironie|😶 sans voix|🤫 chut silence'],
+ ['Gestes & personnes','👍 pouce bien ok valide|👎 pouce bas non refuse|👌 parfait ok|👏 applaudir bravo|🙌 hourra celebration|🙏 merci priere svp|🤝 accord poignee main deal|✊ poing force|✋ stop main|👋 salut bonjour au revoir|👉 pointe droite|👈 pointe gauche|👆 pointe haut|👇 pointe bas|💪 muscle force|🧠 cerveau reflexion|👤 personne profil|👥 groupe equipe|👨‍💻 developpeur code|👩‍💼 bureau pro|🧑‍🏫 prof formation|🕵️ enquete recherche|🦸 heros exploit'],
+ ['Notes & écriture','📄 page document fichier|📝 note ecrire memo|📋 presse papier liste|📑 onglets sections|📚 livres bibliotheque|📖 livre ouvert lecture|📕 livre rouge|📗 livre vert|📘 livre bleu|📙 livre orange|🗒️ bloc notes|🗂️ classeur dossiers|📔 carnet|📓 cahier|📃 feuille|🗞️ journal presse|✏️ crayon ecrire|🖊️ stylo|🖋️ plume|✒️ plume encre|🖌️ pinceau|📎 trombone piece jointe|🖇️ trombones|🔖 marque page signet|🏷️ etiquette tag|📌 punaise epingle|📍 position marqueur|✂️ ciseaux couper|🗃️ boite fiches|📁 dossier|📂 dossier ouvert'],
+ ['Idées & savoir','🧠 cerveau idee reflexion|💡 idee ampoule eureka|🔍 loupe recherche chercher|🔎 loupe droite|🔬 microscope science|🔭 telescope vision long terme|🧩 puzzle piece morceau|🗝️ cle solution|🔑 cle acces|🎓 diplome formation etude|🧾 recu note|📊 graphique barres donnees|📈 hausse croissance progres|📉 baisse chute recul|🗺️ carte plan|🧭 boussole direction cap|⚗️ alambic experience|🧪 eprouvette test essai|🔮 boule cristal prediction|♟️ echecs strategie|🎲 des hasard|🧮 boulier calcul|❔ question interrogation|💭 pensee bulle'],
+ ['Projets & travail','💼 mallette travail business|🏗️ chantier construction|🛠️ outils bricolage|⚙️ engrenage reglage config|🔧 cle a molette reparer|🔩 boulon vis|🧰 boite a outils|🖥️ ordinateur bureau|💻 portable laptop|⌨️ clavier|🖱️ souris|📱 telephone mobile|🗄️ armoire archives|🏢 immeuble entreprise bureau|🏭 usine production|📦 colis paquet livraison|🚀 fusee lancement demarrage|🎯 cible objectif but|✅ fait valide coche|☑️ coche case|❎ annule croix|⏱️ chrono duree|⏳ sablier attente|📅 calendrier date|🔄 boucle repeter cycle|🗓️ agenda planning|🧑‍🤝‍🧑 equipe collectif'],
+ ['Repères & statuts','⚡ eclair urgent energie|❗ important exclamation|❓ question|⚠️ attention danger avertissement|🚧 travaux en cours|🛑 stop arret bloquant|🔒 verrouille prive ferme|🔓 deverrouille ouvert|♻️ recyclage reprise|🔗 lien url|⛳ jalon etape|🧵 fil discussion suite|🪄 magie automatique|👁️ oeil surveiller revoir|🗣️ parler communication|🤝 accord deal|🌐 web internet monde|⏰ reveil rappel alarme|🔔 notification cloche|🔕 silencieux muet|🚩 drapeau signal|🏁 arrivee fin termine|⭐ favori important|🌟 remarquable|🔥 chaud tendance urgent|❄️ gele en pause|💤 dort inactif|🆕 nouveau|🆗 ok|🔺 hausse priorite|🔻 baisse priorite|➕ ajouter plus|➖ retirer moins'],
+ ['Temps & agenda','⏰ reveil alarme|⌛ sablier fini|⏳ sablier en cours|🕐 heure horloge|📅 date calendrier|🗓️ agenda semaine|🌅 matin lever soleil|🌇 soir coucher soleil|🌙 nuit lune|☀️ jour soleil|🎂 anniversaire|🎊 celebration|📆 echeance deadline|🔁 recurrent repetition|⏭️ suivant reporter|⏮️ precedent'],
+ ['Santé & bien-être','💪 muscle force sport|🧘 meditation calme yoga|😴 sommeil dormir repos|🛌 lit repos|💊 medicament pilule|💉 vaccin piqure|🩺 sante medecin|🫀 coeur organe|🦷 dent dentiste|🧴 soin creme|🚿 douche hygiene|🪥 brosse a dents|🥗 salade sain manger|🥦 legume brocoli|💧 eau hydratation boire|🌡️ temperature fievre|🧘‍♂️ respiration calme|❤️ coeur amour sante|🩹 pansement soin|🧠 mental psy'],
+ ['Sport','🏃 course courir running|🚴 velo cyclisme|🏊 nage natation|🏋️ musculation halteres|🤸 gym souplesse|⚽ football|🏀 basket|🎾 tennis|🏐 volley|🏈 rugby|🥊 boxe combat|🥋 arts martiaux judo|⛰️ randonnee montagne|🧗 escalade grimpe|⛷️ ski|🏄 surf|🚶 marche pas|🏆 trophee victoire|🥇 or premier|🎽 dossard course'],
+ ['Nourriture','🍎 pomme fruit|🍌 banane|🍓 fraise|🍇 raisin|🥑 avocat|🥕 carotte legume|🥦 brocoli|🍅 tomate|🍞 pain|🧀 fromage|🥚 oeuf|🍗 poulet viande|🥩 steak viande|🐟 poisson|🍚 riz|🍝 pates|🍕 pizza|🍔 burger|🥗 salade|🍲 plat soupe|☕ cafe|🍵 the|🍷 vin|🍺 biere|🥤 boisson soda|🍫 chocolat|🍰 gateau dessert|🧊 glacon froid'],
+ ['Nature & météo','☀️ soleil beau temps|🌤️ eclaircie|⛅ nuageux|☁️ nuage|🌧️ pluie|⛈️ orage|❄️ neige froid|🌫️ brouillard|🌈 arc en ciel|🌊 vague mer ocean|🔥 feu flamme|💧 goutte eau|🌱 pousse debut germe|🌿 herbe plante|🍀 trefle chance|🌳 arbre foret|🌲 sapin|🌵 cactus|🌻 tournesol fleur|🌸 fleur printemps|🍂 automne feuille|🌍 terre monde planete|🌙 lune nuit|⭐ etoile|🏔️ montagne sommet|🌋 volcan'],
+ ['Animaux','🐶 chien|🐱 chat|🐭 souris|🐰 lapin|🦊 renard|🐻 ours|🐼 panda|🦁 lion|🐯 tigre|🐮 vache|🐷 cochon|🐸 grenouille|🐵 singe|🐔 poule|🦅 aigle|🦉 hibou chouette|🐝 abeille|🦋 papillon|🐜 fourmi travail|🐢 tortue lent|🐍 serpent|🐬 dauphin|🐳 baleine|🐾 patte trace animal'],
+ ['Argent','💰 argent sac gains|💶 euro|💵 dollar billet|💴 yen|🪙 piece monnaie|💳 carte bancaire paiement|🏦 banque|🧾 facture recu note|📊 budget graphique|📈 rendement hausse|📉 perte baisse|💎 diamant precieux epargne|🏷️ prix etiquette|🤑 riche gains|🛒 achat panier courses|🎁 cadeau recompense|💸 depense argent qui part|🏠 immobilier maison'],
+ ['Loisirs & création','🎨 art peinture creation|🖼️ tableau image|🎬 cinema film|🎥 camera video|🎵 musique note|🎶 musique melodie|🎸 guitare|🎹 piano clavier|🥁 batterie|🎤 micro chant|🎧 casque ecoute|📷 photo appareil|📸 photo flash|🕹️ jeu retro|🎮 jeu video manette|♟️ echecs jeu|🎲 des jeu|🎭 theatre|📺 television|🎪 spectacle cirque|✍️ ecriture creation|🧶 tricot laine|🪴 plante jardinage'],
+ ['Voyage & lieux','✈️ avion vol voyage|🚗 voiture|🚕 taxi|🚌 bus|🚆 train|🚲 velo|🛵 scooter|🚢 bateau|🏠 maison domicile|🏡 maison jardin|🏢 bureau immeuble|🏥 hopital|🏫 ecole|🏝️ ile vacances|🏖️ plage vacances|🗼 tour monument|🗽 statue liberte|⛺ camping tente|🧳 valise bagage|🗺️ carte itineraire|📍 lieu position|🌇 ville'],
+ ['Flèches & symboles','➡️ droite suivant|⬅️ gauche precedent|⬆️ haut monter|⬇️ bas descendre|↗️ hausse tendance|↘️ baisse tendance|🔀 melange aleatoire|🔁 repeter boucle|🔂 repeter une fois|▶️ lecture demarrer|⏸️ pause|⏹️ arret stop|⏩ avance rapide|✔️ coche valide|✖️ croix annule|➗ division|✳️ asterisque|🔸 losange petit|🔹 losange bleu|▪️ carre point|• point puce|©️ copyright|™️ marque|🔤 texte lettres']
+].map(([c,s])=>[c,s.split('|').map(x=>{const p=x.trim().split(/\s+/);return {e:p[0],k:p.slice(1).join(' ')};})]);
+// Un meme emoji tient dans plusieurs categories (💪 est du sport ET de la
+// sante) : les listes le gardent aux deux endroits, mais l'index de recherche
+// le fusionne, sinon il ressortirait deux fois. La categorie affichee reste la
+// premiere ; les suivantes rejoignent les mots-cles, donc restent trouvables.
+const EMOJI_ALL=(()=>{
+  const map=new Map();
+  EMOJI_SET.forEach(([c,l])=>l.forEach(x=>{
+    const hit=map.get(x.e);
+    if(hit)hit.k+=' '+x.k+' '+c;
+    else map.set(x.e,{e:x.e,k:x.k,c});
+  }));
+  return [...map.values()];
+})();
+
+// Les derniers choisis remontent en tete : sur 300 emoji, c'est ce qui rend la
+// palette utilisable au quotidien.
+const LS_EMOJI_REC='kanban_emoji_recent';
+let emRecent=[];
+try{ const r=JSON.parse(localStorage.getItem(LS_EMOJI_REC)||'[]'); if(Array.isArray(r))emRecent=r.filter(x=>typeof x==='string').slice(0,24); }catch(e){}
+function emRemember(e){
+  if(!e)return;
+  emRecent=[e,...emRecent.filter(x=>x!==e)].slice(0,24);
+  try{ localStorage.setItem(LS_EMOJI_REC,JSON.stringify(emRecent)); }catch(_){}
+}
 
 let emPick=null;
-function openEmojiPicker(current,onPick){
+function openEmojiPicker(current,onPick,opts){
+  opts=opts||{};
   emPick=onPick;
   document.getElementById('emojiModal').classList.add('open');
+  document.getElementById('emTitle').textContent=opts.title||'CHOISIR UNE ICÔNE';
+  const btn=document.getElementById('emClear');
+  // « Aucune icone » n'a pas de sens quand on insere dans un texte
+  btn.style.display=opts.clear===''?'none':'';
+  btn.textContent=opts.clear||'Aucune icône';
   const inp=document.getElementById('emSearch');
   inp.value=''; renderEmoji(current);
   setTimeout(()=>inp.focus(),60);
 }
 function closeEmojiPicker(){ document.getElementById('emojiModal').classList.remove('open'); emPick=null; }
 function renderEmoji(current){
-  const q=(document.getElementById('emSearch').value||'').trim().toLowerCase();
+  const q=voNorm((document.getElementById('emSearch').value||'').trim());
   const el=document.getElementById('emGrid');
   const groups=q
-    ? [['Résultats',EMOJI_ALL.filter(x=>x.c.toLowerCase().includes(q)).map(x=>x.e)]]
-    : EMOJI_SET;
+    ? [['Résultats',EMOJI_ALL.filter(x=>voNorm(x.c).includes(q)||voNorm(x.k).includes(q)||x.e===q)]]
+    : (emRecent.length?[['Récents',emRecent.map(e=>({e,k:''}))]]:[]).concat(EMOJI_SET);
   const html=groups.map(([c,list])=>list.length?
     `<div class="em-cat">${c}</div><div class="em-row">`+
-    list.map(e=>`<button class="em-b${e===current?' sel':''}" onclick="chooseEmoji('${e}')" title="${e}">${e}</button>`).join('')+
+    list.map(x=>`<button class="em-b${x.e===current?' sel':''}" onclick="chooseEmoji('${x.e}')" title="${tdEsc(x.k||x.e)}">${x.e}</button>`).join('')+
     '</div>':'').join('');
   el.innerHTML=html||'<div class="sb-none" style="padding:0.8rem">Aucun emoji pour cette recherche.</div>';
 }
-function chooseEmoji(e){ const f=emPick; closeEmojiPicker(); if(f)f(e); }
+function chooseEmoji(e){ const f=emPick; emRemember(e); closeEmojiPicker(); if(f)f(e); }
 function clearEmoji(){ const f=emPick; closeEmojiPicker(); if(f)f(''); }
+
 // ── Pieces jointes (Google Drive) ─────────────────────────────────────────
 // Les fichiers restent PRIVES : ils ne sont jamais partages publiquement. On
 // les relit avec le jeton et on les affiche via une URL blob locale. Les
@@ -7837,7 +7943,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.27.0';
+const APP_VERSION='v1.28.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
@@ -7868,6 +7974,11 @@ function swReload(){
 }
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
+    // controllerchange se declenche AUSSI a la toute premiere prise en charge,
+    // quand aucun service worker ne controlait encore la page : recharger la
+    // n'apporte rien, ce n'est pas une nouvelle version qui arrive. Sans ce
+    // garde, la toute premiere visite se rechargeait toute seule.
+    const hadController=!!navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
       swLastCheck=Date.now();
       reg.addEventListener('updatefound',()=>{
@@ -7879,7 +7990,7 @@ if('serviceWorker' in navigator){
         });
       });
     }).catch(()=>{});
-    navigator.serviceWorker.addEventListener('controllerchange',swReload);
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(hadController)swReload(); });
   });
   document.addEventListener('visibilitychange',()=>{ if(document.hidden)updateAppBadge(); else swCheck(); });
   window.addEventListener('focus',()=>swCheck());
