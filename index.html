@@ -271,8 +271,16 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sb-btn:hover{color:var(--text);border-color:var(--text-mid)}
 .sb-btn.on{color:var(--accent);border-color:var(--accent)}
 .sb-btn.danger:hover{color:var(--danger);border-color:var(--danger)}
-.sb-body{flex:1;overflow-y:auto;padding:1rem 1.4rem 4rem}
-.sb-edit{width:100%;min-height:60vh;background:none;border:none;color:var(--text);font-family:var(--font-mono);font-size:0.8rem;line-height:1.65;outline:none;resize:none}
+/* Colonne : la barre d'outils garde sa hauteur, la zone d'ecriture prend TOUT
+   le reste. Elle etait figee a 60vh — soit deux tiers de l'ecran quoi qu'il
+   arrive — et laissait un vide sous elle pendant que le texte defilait dans
+   une boite trop courte. `min-height:0` est indispensable : sans lui un
+   element flex refuse de descendre sous la hauteur de son contenu. */
+.sb-body{flex:1;overflow-y:auto;padding:1rem 1.4rem 4rem;display:flex;flex-direction:column;min-height:0}
+.sb-body>.md{flex:0 0 auto}
+.sb-edit{width:100%;flex:1;min-height:12rem;background:none;border:none;color:var(--text);font-family:var(--font-mono);font-size:0.8rem;line-height:1.65;outline:none;resize:none}
+/* En edition, c'est la zone de saisie qui defile, pas la page derriere. */
+.sb-body:has(>.md-tools){overflow:hidden;padding-bottom:1rem}
 .sb-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:0.8rem;color:var(--text-dim);font-family:var(--font-mono);font-size:0.7rem}
 /* rendu markdown */
 .md{font-size:0.86rem;line-height:1.7;max-width:78ch}
@@ -1057,7 +1065,9 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .md-hold{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .adp-jbar{display:flex;gap:0.3rem;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap}
 #adpJBody{flex:1;display:flex;flex-direction:column;min-height:0;overflow-y:auto}
-.adp-edit{flex:1;min-height:260px}
+/* Un plancher fixe de 260 px debordait son conteneur sur petit ecran :
+   il s'efface quand la place manque. */
+.adp-edit{flex:1;min-height:min(260px,40vh)}
 .adp-tpl{display:flex;flex-direction:column;min-height:0;flex:1}
 .fld-hint{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.05em;color:var(--text-dim);margin-top:0.25rem;line-height:1.5;text-transform:none}
 .fld-hint code{background:var(--surface3);padding:0 3px;border-radius:2px}
@@ -13566,7 +13576,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.49.0';
+const APP_VERSION='v1.50.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
