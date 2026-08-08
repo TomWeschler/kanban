@@ -415,6 +415,15 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .adp-next:focus{border-color:var(--accent)}
 .adp-next::placeholder{color:var(--text-dim);font-style:italic}
 .td-more{font-family:'Space Mono',var(--sys-mono);font-size:0.5rem;letter-spacing:0.08em;color:var(--text-dim);padding:0.35rem 0 0;text-align:right}
+/* En-tete repliable : c'est un bouton, il doit se lire comme le titre qu'il
+   remplace et rester atteignable au clavier. */
+.td-fold{width:100%;background:none;border:none;border-bottom:1px solid var(--border);
+  cursor:pointer;text-align:left;font-family:'Space Mono',var(--sys-mono);color:var(--text-mid)}
+.td-fold:hover{color:var(--text)}
+.td-fold:focus-visible{outline:1px solid var(--accent);outline-offset:3px}
+.td-car{font-size:0.55rem;color:var(--text-dim);flex-shrink:0}
+.td-fold:hover .td-car{color:var(--accent)}
+.td-fold.open{margin-bottom:0.7rem}
 .td-go.quiet{background:transparent;border-color:var(--border);color:var(--text-mid)}
 .td-go.quiet:hover{background:var(--surface2);color:var(--text)}
 @media (max-width:900px){.td-grid{grid-template-columns:1fr}.td-wrap{padding:0.9rem 0.7rem 4rem}}
@@ -3881,6 +3890,11 @@ function openModal(id, prefill, proj){
 function syncColFromDue(){ document.getElementById('fCol').value=taskColumnFromDate(document.getElementById('fDue').value); }
 function syncDueFromCol(){ document.getElementById('fDue').value=dueDateForColumn(document.getElementById('fCol').value); }
 
+// Repli des habitudes sur la page du jour. Variable de session, jamais
+// persistée : chaque ouverture repart replié.
+let tdHabOpen=false;
+function tdToggleHab(){ tdHabOpen=!tdHabOpen; renderTodayPage(); }
+
 // ── Vue « Aujourd'hui » ───────────────────────────────────────────────────
 // Le quotidien était éclaté sur trois onglets : tâches, habitudes, séance.
 // Cette page les agrège et ne montre que ce qui concerne la journée.
@@ -3952,9 +3966,20 @@ async function renderTodayPage(){
     return `<div class="td-sec" style="color:${catColor}">◆ ${cat.toUpperCase()}</div>`+
       inCat.map(h=>habRowToday(h,doneSet,today)).join('');
   }).join('');
+  // La liste des habitudes est ce que la page du jour a de plus personnel, et
+  // c'est la page d'accueil : elle s'ouvre repliée. Le compteur reste visible —
+  // il dit qu'il reste à faire sans dire QUOI, ce qui suffit d'un coup d'œil.
+  // L'état n'est PAS mémorisé : montrer son écran deux jours de suite ne doit
+  // pas dépendre de ce qu'on a déplié la veille.
   document.getElementById('tdHabits').innerHTML=
-    `<div class="td-t">Habitudes <span class="td-n">${nDone}/${due.length}</span></div>`+
-    (due.length?habSections:'<div class="td-empty">Aucune habitude prévue.</div>');
+    `<button class="td-t td-fold${tdHabOpen?' open':''}" onclick="tdToggleHab()"
+       title="${tdHabOpen?'Replier':'Déplier'} la liste des habitudes"
+       aria-expanded="${tdHabOpen?'true':'false'}">
+       <span class="td-car">${tdHabOpen?'▾':'▸'}</span>Habitudes
+       <span class="td-n">${nDone}/${due.length}</span></button>`+
+    (tdHabOpen
+      ? (due.length?habSections:'<div class="td-empty">Aucune habitude prévue.</div>')
+      : '');
 
   // ── séance du jour ──
   const plan=sportPlanFor(today),log=sportLogFor(today);
@@ -8069,10 +8094,16 @@ function computeSignals(){
   // ── Ce que les automatismes ont signalé ──
   // Trois jours de fenêtre : un signal levé le vendredi doit survivre au
   // week-end, sinon il n'aura jamais été vu.
+  // Même règle pour les signaux produits par les automatismes : un déclencheur
+  // « habitude » y écrit le nom de l'habitude dans le gabarit.
   autoJournal.filter(j=>j.ref==='signal'&&j.statut!=='annule'&&j.date&&dayDiff(j.date)>=-2)
     .sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,3).forEach(j=>{
       const r=autoRegles.find(x=>x.id===j.regle_id);
-      push('auto.'+j.id,'orange',String(j.quoi||'').replace(/^Signal : /,''),
+      const vientDHabitude=r&&r.trigger==='habitude.decroche';
+      push('auto.'+j.id,'orange',
+        vientDHabitude&&!tdHabOpen
+          ? 'Une habitude a décroché'
+          : String(j.quoi||'').replace(/^Signal : /,''),
         `Automatisme${r?` · ${r.nom}`:''}${j.date!==day?` · ${j.date}`:''}`,
         ()=>{ switchPage('adp'); setAdpView('auto'); });
     });
@@ -8100,8 +8131,12 @@ function computeSignals(){
       due++;
       if(habitsLog.some(l=>String(l.habit_id)===String(h.id)&&l.date===ymd(dt)))fait++;
     }
+    // Replier la carte des habitudes ne sert à rien si le bandeau, juste
+    // au-dessus, en affiche le nom en plus gros. Tant qu'elle est repliée, le
+    // signal dit QU'IL Y A quelque chose sans dire quoi ; on déplie pour voir.
     if(due>=Math.max(2,Math.round(sigCfg.habitude/3.5))&&fait===0)push(`h.${h.id}`,'orange',
-      `« ${h.title} » n'a pas été faite une seule fois en ${sigCfg.habitude} jours`,
+      tdHabOpen?`« ${h.title} » n'a pas été faite une seule fois en ${sigCfg.habitude} jours`
+               :`Une habitude n'a pas été faite une seule fois en ${sigCfg.habitude} jours`,
       `${due} occasions manquées. La mettre en pause vaut mieux qu'un échec quotidien.`,
       ()=>{ switchPage('habits'); openHabitModal(h.id); });
   });
@@ -13531,7 +13566,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.48.0';
+const APP_VERSION='v1.49.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
