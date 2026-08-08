@@ -679,6 +679,18 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .crp-box-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem}
 .crp-box-ttl{font-family:'Space Mono',var(--sys-mono);font-size:0.53rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-mid)}
 .crp-wrap{position:relative;height:190px}.crp-wrap.tall{height:220px}
+/* ── Graphes SVG (remplacent Chart.js) ─────────────────────────────────── */
+.gx{width:100%;height:100%;display:block;color:var(--text-dim)}
+.crp-wrap .gx,.fin-wrap .gx{height:100%}
+.gx-c{font-family:var(--font-mono);font-size:13px;font-weight:700}
+.gx-donut{display:flex;flex-direction:column;align-items:center;gap:0.5rem;height:100%}
+.gx-donut svg{width:120px;height:120px;flex-shrink:0;color:var(--text-dim)}
+.gx-leg{display:flex;flex-wrap:wrap;gap:0.15rem 0.7rem;justify-content:center;width:100%}
+.gx-leg.mid{margin-top:0.3rem}
+.gx-li{display:inline-flex;align-items:center;gap:0.3rem;font-family:var(--font-mono);
+  font-size:0.48rem;letter-spacing:0.04em;color:var(--text-mid);white-space:nowrap}
+.gx-li i{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.gx-li b{color:var(--text)}
 .crp-table{width:100%;border-collapse:collapse;font-family:'Space Mono',var(--sys-mono);font-size:0.57rem}
 .crp-table th{text-align:left;color:var(--text-dim);letter-spacing:0.1em;font-weight:400;padding:0.28rem 0.6rem;border-bottom:1px solid var(--border)}
 .crp-table td{padding:0.32rem 0.6rem;border-bottom:1px solid rgba(37,37,53,0.4);color:var(--text)}
@@ -842,6 +854,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sp-hist-status.skipped{background:rgba(248,113,113,0.14);color:var(--danger)}
 .sp-hist-status.none{background:rgba(148,163,184,0.1);color:var(--text-dim)}
 .sp-wrap{position:relative;height:160px}
+.fit-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.fit-scroll::-webkit-scrollbar{height:9px}
+.fit-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px}
+.fit-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
+.fit-scroll table{min-width:100%}
 .sp-graph{margin-top:0.3rem}
 /* Semaine d'un coup d'oeil */
 .sp-week{display:grid;grid-template-columns:repeat(7,1fr);gap:0.4rem;margin:0.7rem 0}
@@ -3449,14 +3466,34 @@ async function saveHabit() {
   toast('Habitude enregistrée','ok');
 }
 
+// Supprimer une habitude effaçait aussi TOUTES ses coches, sans confirmation
+// ni retour en arrière — la seule suppression de l'app dans ce cas. Une série
+// d'un an ne se reconstitue pas : on annonce ce qu'on va détruire, et on garde
+// de quoi revenir.
 async function deleteHabit() {
   const id = parseInt(document.getElementById('hfId').value);
-  habits = habits.filter(h => h.id !== id);
-  habitsLog = habitsLog.filter(l => String(l.habit_id) !== String(id));
-  closeHabitModal();
-  await Promise.all([saveHabits(), rewriteHabitsLog()]);
-  renderHabitsPage();
-  toast('Habitude supprimée','ok');
+  const h = habits.find(x => x.id === id);
+  if (!h) { closeHabitModal(); return; }
+  const coches = habitsLog.filter(l => String(l.habit_id) === String(id));
+  const snapH = {...h}, snapL = coches.map(l => ({...l}));
+  const suite = async () => {
+    habits = habits.filter(x => x.id !== id);
+    habitsLog = habitsLog.filter(l => String(l.habit_id) !== String(id));
+    closeHabitModal();
+    await Promise.all([saveHabits(), rewriteHabitsLog()]);
+    renderHabitsPage(); updateHStats();
+    offerUndo(`Habitude supprimée · ${h.title}${coches.length?` (${coches.length} coches)`:''}`, async () => {
+      habits.push(snapH); habitsLog.push(...snapL);
+      await Promise.all([saveHabits(), rewriteHabitsLog()]);
+      renderHabitsPage(); updateHStats();
+    });
+  };
+  if (coches.length) {
+    offerChoice(`Supprimer « ${h.title} » et ses ${coches.length} coche${coches.length>1?'s':''} ?`,
+      [['Supprimer', suite]], 0, 'err');
+    return;
+  }
+  await suite();
 }
 
 function setHabDayFilter(filter) {
@@ -5739,6 +5776,12 @@ function cmdSearch(q){
   tasks.filter(t=>hit(t.title)||hit(t.notes)||hit(t.project)).slice(0,20).forEach(t=>
     out.push({kind:'Tâche',label:t.title,meta:t.project||taskColumnFromDate(t.due_date),
               go:()=>{switchPage('board');openModal(t.id);}}));
+  // Une tâche terminée restait introuvable : il fallait déjà savoir qu'elle
+  // existait pour la retrouver dans l'historique. Elle porte son propre libellé
+  // pour qu'on ne la confonde pas avec une tâche encore ouverte.
+  if(n)allTasks.filter(t=>t.completed_at&&(hit(t.title)||hit(t.notes)||hit(t.project))).slice(0,10).forEach(t=>
+    out.push({kind:'Terminée',label:t.title,meta:[t.project,'fait le '+t.completed_at].filter(Boolean).join(' · '),
+              go:()=>openDoneModal()}));
   goals.filter(g=>hit(g.title)||hit(g.description)||hit(g.category)).slice(0,20).forEach(g=>
     out.push({kind:'Objectif',label:g.title,meta:`${g.category} · N${g.level||1}`,
               go:()=>{switchPage('objectifs');openGoalModal(g.id);}}));
@@ -6469,10 +6512,29 @@ async function mesQuick(key,raw){
             :{id:'v'+Date.now().toString(36)+key.slice(0,3),date:day,key,value:val,note:''};
   const ok=await mesSaveVal(v);
   if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
+  // La pesée circulait de Sport vers Mesures, jamais l'inverse : le bandeau
+  // « dernière pesée » de Sport pouvait donc rester périmé alors que la donnée
+  // existait juste à côté. Les deux sens sont désormais couverts.
+  if(key==='poids')await mesPoidsVersSport(day,val);
   toast(`${d.label} · ${mesFmt(val,d)}`,'ok');
   if(curPage==='metrics')renderMetricsPage();
   if(curPage==='today')renderTodayPage();
   updateHStats();
+}
+// Écrit la pesée dans sport_log sans toucher au reste de la ligne du jour.
+// Ne crée pas de séance : une pesée n'est pas un entraînement, la ligne
+// existante est complétée, sinon une ligne sans statut est posée.
+async function mesPoidsVersSport(date,kg){
+  if(!(kg>0)||!date)return null;
+  if(typeof sportUpsertLog!=='function')return null;
+  if(!sportLoaded&&accessToken){ try{ await loadSportData(); }catch(e){ return null; } }
+  const ex=sportLogFor(date);
+  if(ex&&Math.abs((ex.weight||0)-kg)<1e-9)return null;
+  const log=Object.assign({date,status:'',exercises:'',feeling:0,weight:0,comment:'',bonusDone:false},
+                          ex||{},{weight:kg});
+  const ok=await sportUpsertLog(log);
+  if(ok&&curPage==='sport')renderSportPage();
+  return ok;
 }
 async function mesRemove(id){
   const v=mesVals.find(x=>x.id===id); if(!v)return;
@@ -6574,7 +6636,10 @@ async function saveMesVal(){
             :{id:'v'+Date.now().toString(36)+mesEditKey.slice(0,3),date,key:mesEditKey,value:val,
               note:document.getElementById('mvNote').value.trim()};
   closeMesValModal();
-  showLoad(true); const ok=await mesSaveVal(v); showLoad(false);
+  showLoad(true);
+  const ok=await mesSaveVal(v);
+  if(mesEditKey==='poids')await mesPoidsVersSport(date,val);   // même aller-retour que la saisie rapide
+  showLoad(false);
   if(!ok)toast("ÉCHEC de l'enregistrement",'err');
   renderMetricsPage(); if(curPage==='today')renderTodayPage(); updateHStats();
 }
@@ -10352,7 +10417,7 @@ const CRYPTOS = [
   { sym:'BNB', name:'BNB',      hex:'#eab308', rgb:'234,179,8',   gecko:'binancecoin' },
 ];
 
-let cryptoTrades = [], cryptoLoaded = false, cryptoCharts = {}, cryptoPrices = {};
+let cryptoTrades = [], cryptoLoaded = false, cryptoPrices = {};
 
 // ════════════════════════════════════════════════════
 // FINANCES — CONFIG & STATE
@@ -10368,7 +10433,7 @@ const FIN_MILESTONES = [
   { label:'1M€',   val:1_000_000,icon:'👑' },
 ];
 const FIN_START_DATE = new Date('2026-01-01');
-let finComptes = [], finDepenses = [], finLoaded = false, finCharts = {};
+let finComptes = [], finDepenses = [], finLoaded = false;
 let usdToEur = 0.92; // fallback rate, updated at load time
 
 // ════════════════════════════════════════════════════
@@ -10639,9 +10704,6 @@ function setCryptoFilter(id) {
   cryptoFilter = id;
   localStorage.setItem(LS_CRP_FILTER, id);
   applyCryptoFilter();
-  // Destroy charts to force rebuild on new dataset
-  Object.values(cryptoCharts).forEach(c => { try { c.destroy(); } catch(e){} });
-  cryptoCharts = {};
   renderCryptoBanner();
   renderCryptoCards();
   renderCryptoChartsA();
@@ -10661,19 +10723,113 @@ function renderCryptoFilters() {
   el.innerHTML = `<span class="crp-filter-lbl">PÉRIODE</span>${buttons}`;
 }
 
-// Chart.js pesait sur chaque ouverture de l'app alors qu'il ne sert qu'ici.
-// Charge a la demande, une seule fois ; son echec ne prive que des graphes.
-let chartJsPromise=null;
-function ensureChartJs(){
-  if(window.Chart)return Promise.resolve(true);
-  if(chartJsPromise)return chartJsPromise;
-  chartJsPromise=new Promise(res=>{
-    const sc=document.createElement('script');
-    sc.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
-    sc.onload=()=>res(true); sc.onerror=()=>res(false);
-    document.head.appendChild(sc);
-  });
-  return chartJsPromise;
+// ── Graphes SVG ───────────────────────────────────────────────────────────
+// Chart.js etait charge depuis un CDN, a la demande, et seulement depuis la
+// page Crypto. Les Finances l'appelaient sans garde : hors ligne, la page
+// jetait « Chart is not defined » AVANT de rendre le tableau des transactions,
+// qui n'apparaissait donc jamais. Le Sport avait le meme defaut.
+// Plutot que d'ajouter des gardes partout, les trois formes utilisees sont
+// dessinees a la main, comme le sont deja les Mesures, la trajectoire
+// budgetaire et le poids. L'app n'a plus AUCUNE dependance externe : elle se
+// charge et fonctionne entierement hors ligne.
+const gxEsc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const gxNum=v=>Math.round(v*100)/100;
+
+// Courbe (avec aire) : pts = [{lbl, val, col?, info?}]
+// `fmt` formate l'axe et les infobulles. Un seul point ne trace pas de ligne.
+function gxLine(pts,opts){
+  const o=Object.assign({w:640,h:190,fmt:v=>gxNum(v),col:'var(--accent)',zero:false},opts||{});
+  if(!pts.length)return `<div class="fin-empty">Aucune donnée</div>`;
+  const pad={l:52,r:10,t:12,b:24};
+  const ys=pts.map(p=>p.val);
+  let lo=Math.min(...ys), hi=Math.max(...ys);
+  if(o.zero){ lo=Math.min(lo,0); hi=Math.max(hi,0); }
+  if(hi-lo<1e-9){ hi=lo+Math.abs(lo||1)*0.1+1; lo-=Math.abs(lo||1)*0.1+1; }
+  const marge=(hi-lo)*0.12; lo-=marge; hi+=marge;
+  const px=i=>pad.l+(pts.length===1?0.5:i/(pts.length-1))*(o.w-pad.l-pad.r);
+  const py=v=>pad.t+(1-(v-lo)/(hi-lo))*(o.h-pad.t-pad.b);
+  const line=pts.map((p,i)=>`${i?'L':'M'}${px(i).toFixed(1)},${py(p.val).toFixed(1)}`).join(' ');
+  const grid=[lo,(lo+hi)/2,hi].map(v=>
+    `<line x1="${pad.l}" y1="${py(v).toFixed(1)}" x2="${o.w-pad.r}" y2="${py(v).toFixed(1)}" stroke="currentColor" opacity="0.10"/>`+
+    `<text x="2" y="${(py(v)+3).toFixed(1)}" class="mes-ax">${gxEsc(o.fmt(v))}</text>`).join('');
+  const zero=(lo<0&&hi>0)
+    ? `<line x1="${pad.l}" y1="${py(0).toFixed(1)}" x2="${o.w-pad.r}" y2="${py(0).toFixed(1)}" stroke="currentColor" opacity="0.28" stroke-dasharray="3 3"/>`:'';
+  const r=pts.length>80?2:pts.length>40?2.4:3.2;
+  const dots=pts.map((p,i)=>
+    `<circle cx="${px(i).toFixed(1)}" cy="${py(p.val).toFixed(1)}" r="${r}" fill="${p.col||o.col}"><title>${gxEsc(p.lbl)} · ${gxEsc(o.fmt(p.val))}${p.info?'\n'+gxEsc(p.info):''}</title></circle>`).join('');
+  return `<svg class="gx" viewBox="0 0 ${o.w} ${o.h}" preserveAspectRatio="none" role="img" aria-label="${gxEsc(o.titre||'Courbe')}">
+    ${grid}${zero}
+    ${pts.length>1?`<path d="${line} L${px(pts.length-1).toFixed(1)},${(o.h-pad.b).toFixed(1)} L${px(0).toFixed(1)},${(o.h-pad.b).toFixed(1)} Z" fill="${o.col}" opacity="0.10"/>`:''}
+    ${pts.length>1?`<path d="${line}" fill="none" stroke="${o.col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`:''}
+    ${dots}
+    <text x="${pad.l}" y="${o.h-5}" class="mes-ax">${gxEsc(pts[0].lbl)}</text>
+    ${pts.length>1?`<text x="${o.w-pad.r}" y="${o.h-5}" class="mes-ax" text-anchor="end">${gxEsc(pts[pts.length-1].lbl)}</text>`:''}
+  </svg>`;
+}
+
+// Anneau : items = [{lbl, val, col}]. Le total s'inscrit au centre, la legende
+// dessous — le SVG ne sait pas envelopper du texte, elle reste donc en HTML.
+function gxDonut(items,opts){
+  const o=Object.assign({size:150,fmt:v=>gxNum(v),centre:'var(--text)',vide:'Aucune donnée'},opts||{});
+  const list=items.filter(x=>x.val>0);
+  if(!list.length)return `<div class="fin-empty" style="font-size:0.5rem">${gxEsc(o.vide)}</div>`;
+  const tot=list.reduce((s,x)=>s+x.val,0);
+  const R=o.size/2, ep=o.size*0.14, ray=R-ep/2;
+  const C=2*Math.PI*ray;
+  let acc=0;
+  const arcs=list.map(x=>{
+    const frac=x.val/tot, dash=C*frac;
+    const el=`<circle cx="${R}" cy="${R}" r="${ray.toFixed(2)}" fill="none" stroke="${x.col}" stroke-width="${ep.toFixed(2)}"
+       stroke-dasharray="${(dash-1.5>0?dash-1.5:dash).toFixed(2)} ${(C-dash+1.5).toFixed(2)}"
+       stroke-dashoffset="${(-acc).toFixed(2)}" transform="rotate(-90 ${R} ${R})"><title>${gxEsc(x.lbl)} · ${gxEsc(o.fmt(x.val))}</title></circle>`;
+    acc+=dash; return el;
+  }).join('');
+  return `<div class="gx-donut">
+    <svg viewBox="0 0 ${o.size} ${o.size}" role="img" aria-label="${gxEsc(o.titre||'Répartition')}">
+      ${arcs}
+      <text x="${R}" y="${R+4}" text-anchor="middle" class="gx-c" fill="${o.centre}">${gxEsc(o.fmt(tot))}</text>
+    </svg>
+    <div class="gx-leg">${list.map(x=>
+      `<span class="gx-li"><i style="background:${x.col}"></i>${gxEsc(x.lbl)} <b>${gxEsc(o.fmt(x.val))}</b></span>`).join('')}</div>
+  </div>`;
+}
+
+// Barres groupees : groupes = [libellés], series = [{lbl, col, bord?, vals:[]}]
+// Une valeur null laisse un trou : « pas de donnée » n'est pas « zéro ».
+function gxBars(groupes,series,opts){
+  const o=Object.assign({w:640,h:200,fmt:v=>gxNum(v),legende:false},opts||{});
+  if(!groupes.length)return `<div class="fin-empty">Aucune donnée</div>`;
+  const pad={l:52,r:10,t:12,b:22};
+  const vals=series.flatMap(s=>s.vals).filter(v=>v!=null);
+  let lo=Math.min(0,...vals), hi=Math.max(0,...vals);
+  if(hi-lo<1e-9)hi=lo+1;
+  const marge=(hi-lo)*0.12; lo-=marge; hi+=marge;
+  const py=v=>pad.t+(1-(v-lo)/(hi-lo))*(o.h-pad.t-pad.b);
+  const larg=(o.w-pad.l-pad.r)/groupes.length;
+  const bw=Math.max(4,(larg*0.68)/series.length);
+  const y0=py(0);
+  const grid=[lo,(lo+hi)/2,hi].map(v=>
+    `<line x1="${pad.l}" y1="${py(v).toFixed(1)}" x2="${o.w-pad.r}" y2="${py(v).toFixed(1)}" stroke="currentColor" opacity="0.10"/>`+
+    `<text x="2" y="${(py(v)+3).toFixed(1)}" class="mes-ax">${gxEsc(o.fmt(v))}</text>`).join('');
+  const barres=groupes.map((g,i)=>{
+    const cx=pad.l+larg*(i+0.5);
+    const x0=cx-(bw*series.length)/2;
+    return series.map((s,j)=>{
+      const v=s.vals[i];
+      if(v==null)return '';
+      const y=py(v), haut=Math.abs(y-y0);
+      return `<rect x="${(x0+j*bw).toFixed(1)}" y="${Math.min(y,y0).toFixed(1)}" width="${(bw-1.5).toFixed(1)}"
+        height="${Math.max(1,haut).toFixed(1)}" rx="2" fill="${s.col(i,v)}" stroke="${s.bord?s.bord(i,v):'none'}" stroke-width="1"
+        ><title>${gxEsc(g)}${series.length>1?' · '+gxEsc(s.lbl):''} · ${gxEsc(o.fmt(v))}</title></rect>`;
+    }).join('')+
+    `<text x="${cx.toFixed(1)}" y="${o.h-6}" text-anchor="middle" class="mes-ax">${gxEsc(g)}</text>`;
+  }).join('');
+  return `<svg class="gx" viewBox="0 0 ${o.w} ${o.h}" preserveAspectRatio="none" role="img" aria-label="${gxEsc(o.titre||'Barres')}">
+    ${grid}
+    <line x1="${pad.l}" y1="${y0.toFixed(1)}" x2="${o.w-pad.r}" y2="${y0.toFixed(1)}" stroke="currentColor" opacity="0.3"/>
+    ${barres}
+  </svg>`+(o.legende?`<div class="gx-leg mid">${series.map(s=>
+    `<span class="gx-li"><i style="background:${s.leg||s.col(0,1)}"></i>${gxEsc(s.lbl)}</span>`).join('')}</div>`:'');
 }
 async function renderCryptoBot() {
   if (!cryptoLoaded) {
@@ -10698,8 +10854,6 @@ async function renderCryptoBot() {
 
 async function reloadCryptoData() {
   cryptoLoaded = false; cryptoPrices = {}; cryptoTrades = []; cryptoTradesAll = [];
-  Object.values(cryptoCharts).forEach(c => { try { c.destroy(); } catch(e){} });
-  cryptoCharts = {};
   renderCryptoBot();
 }
 
@@ -10847,15 +11001,12 @@ function calcBotRoiPct(sym) {
 }
 
 function renderCryptoChartsA() {
-  if(!window.Chart){ ensureChartJs().then(ok=>{ if(ok&&curPage==='crypto'){renderCryptoChartsA();renderCryptoChartsB();} }); return; }
-  // Chart A: Cumulative P&L line (+ gif on the right)
-  ['cCrpCumul'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
 
   document.getElementById('crpChartsA').innerHTML = `
     <div class="crp-evol-row">
       <div class="crp-box">
         <div class="crp-box-hdr"><span class="crp-box-ttl">ÉVOLUTION CUMULATIVE DU P&L (POSITION FINALE)</span></div>
-        <div class="crp-wrap tall"><canvas id="cCrpCumul"></canvas></div>
+        <div class="crp-wrap tall" id="cCrpCumul"></div>
       </div>
       <div class="crp-evol-gif"><img src="gifs/zen1.gif" alt="" loading="lazy"></div>
     </div>`;
@@ -10872,76 +11023,45 @@ function renderCryptoChartsA() {
     cumulPtColors.push(cc ? `rgba(${cc.rgb},0.9)` : 'rgba(124,106,255,0.9)');
   });
 
-  if (cumulVals.length) {
-    cryptoCharts.cCrpCumul = new Chart(document.getElementById('cCrpCumul'), {
-      type: 'line',
-      data: { labels: cumulLabels, datasets: [{ data: cumulVals,
-        borderColor: 'rgba(124,106,255,0.9)', backgroundColor: 'rgba(124,106,255,0.06)',
-        borderWidth: 2, fill: true, tension: 0.3,
-        pointBackgroundColor: cumulPtColors,
-        pointRadius: cumulVals.length > 80 ? 2 : 4, pointHoverRadius: 6 }] },
-      options: { responsive:true, maintainAspectRatio:false,
-        plugins: { legend:{display:false}, tooltip:{ callbacks:{
-          label: i => ` Cumul P&L: ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$`,
-          afterLabel: i => {
-            const t = tradePnLs[i.dataIndex];
-            if (!t) return '';
-            const delta = t.pnlDelta >= 0 ? `+${t.pnlDelta.toFixed(2)}` : t.pnlDelta.toFixed(2);
-            const pf = t.posFinale != null ? ` · Pos: ${t.posFinale.toFixed(2)}$` : '';
-            return ` Δ ${delta}$${pf}`;
-          },
-          title: items => { const t = tradePnLs[items[0].dataIndex]; return t ? `${t.symbol} · ${t.date||''}` : ''; },
-        }}},
-        scales: {
-          x: { ticks:{font:{family:'Space Mono',size:8},maxTicksLimit:10}, grid:{color:'#1c1c28'} },
-          y: { ticks:{font:{family:'Space Mono',size:9},callback:v=>`${v}$`}, grid:{color:'#1c1c28'} }
-        }
-      }
-    });
-  }
+  const host=document.getElementById('cCrpCumul');
+  if(host)host.innerHTML=cumulVals.length
+    ? gxLine(cumulVals.map((v,i)=>{
+        const t=tradePnLs[i];
+        return {lbl:cumulLabels[i],val:v,col:cumulPtColors[i],
+          info:t?`${t.symbol} · Δ ${t.pnlDelta>=0?'+':''}${t.pnlDelta.toFixed(2)}$`+
+               (t.posFinale!=null?` · Pos ${t.posFinale.toFixed(2)}$`:''):''};}),
+        {w:760,h:230,zero:true,fmt:v=>`${Math.round(v)}$`,titre:'P&L cumulé'})
+    : `<div class="fin-empty">Aucun trade</div>`;
 
 }
 
 function renderCryptoChartsB() {
-  if(!window.Chart)return;
   // Chart B1: P&L total par crypto  |  Chart B2: Bot ROI% vs HODL%
-  ['cCrpComp','cCrpHodl'].forEach(id => { if (cryptoCharts[id]) { try { cryptoCharts[id].destroy(); } catch(e){} } });
-
   const hodlAvail = CRYPTOS.some(c => cryptoPrices[c.sym]?.hodlPct != null);
   const hodlNote = hodlAvail ? 'depuis le premier trade détecté' : 'chargement données marché...';
 
   document.getElementById('crpChartsB').innerHTML = `
     <div class="crp-box">
       <div class="crp-box-hdr"><span class="crp-box-ttl">P&L TOTAL PAR CRYPTO</span></div>
-      <div class="crp-wrap tall"><canvas id="cCrpComp"></canvas></div>
+      <div class="crp-wrap tall" id="cCrpComp"></div>
     </div>
     <div class="crp-box">
       <div class="crp-box-hdr"><span class="crp-box-ttl">BOT ROI% vs HODL%</span></div>
-      <div class="crp-wrap tall"><canvas id="cCrpHodl"></canvas></div>
+      <div class="crp-wrap tall" id="cCrpHodl"></div>
       <div class="crp-hodl-note">HODL : ${hodlNote}</div>
     </div>`;
 
   // B1 — P&L par crypto (calcNetPnL via Position Finale)
   const compVals = CRYPTOS.map(c => parseFloat(calcNetPnL(c.sym).toFixed(2)));
-  cryptoCharts.cCrpComp = new Chart(document.getElementById('cCrpComp'), {
-    type: 'bar',
-    data: { labels: CRYPTOS.map(c=>c.sym), datasets: [{
-      data: compVals,
-      backgroundColor: CRYPTOS.map((c,i) => compVals[i] >= 0 ? `rgba(${c.rgb},0.72)` : `rgba(${c.rgb},0.32)`),
-      borderColor: CRYPTOS.map(c=>c.hex), borderWidth:1, borderRadius:3
-    }]},
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{
-        label: i => ` P&L: ${i.raw>=0?'+':''}${i.raw.toFixed(2)}$ (last−first Pos. Finale)`
-      }}},
-      scales:{
-        x:{ticks:{font:{family:'Space Mono',size:9}},grid:{display:false}},
-        y:{ticks:{font:{family:'Space Mono',size:9},callback:v=>`${v}$`},grid:{color:'#1c1c28'}}
-      }
-    }
-  });
+  document.getElementById('cCrpComp').innerHTML = gxBars(
+    CRYPTOS.map(c=>c.sym),
+    [{lbl:'P&L',
+      col:(i,v)=>`rgba(${CRYPTOS[i].rgb},${v>=0?0.72:0.32})`,
+      bord:i=>CRYPTOS[i].hex,
+      vals:compVals}],
+    {w:520,h:230,fmt:v=>`${Math.round(v)}$`,titre:'P&L par crypto'});
 
-  // Bot ROI% (calcNetPnL / first posFinale) vs HODL% (CoinGecko)
+  // B2 — Bot ROI% vs HODL%, cote a cote : la comparaison EST le graphe.
   const activeCryptos = CRYPTOS.filter(c => getCryptoStats(c.sym).count > 0);
   const botRoiVals = activeCryptos.map(c => {
     const roi = calcBotRoiPct(c.sym);
@@ -10950,31 +11070,13 @@ function renderCryptoChartsB() {
   const hodlVals = activeCryptos.map(c =>
     cryptoPrices[c.sym]?.hodlPct != null ? parseFloat(cryptoPrices[c.sym].hodlPct.toFixed(2)) : null
   );
-
-  cryptoCharts.cCrpHodl = new Chart(document.getElementById('cCrpHodl'), {
-    type: 'bar',
-    data: {
-      labels: activeCryptos.map(c=>c.sym),
-      datasets: [
-        { label: 'Bot ROI %', data: botRoiVals,
-          backgroundColor: activeCryptos.map(c=>`rgba(${c.rgb},0.75)`),
-          borderColor: activeCryptos.map(c=>c.hex), borderWidth:1, borderRadius:3 },
-        { label: 'HODL %', data: hodlVals,
-          backgroundColor: 'rgba(255,255,255,0.1)', borderColor:'rgba(255,255,255,0.28)',
-          borderWidth:1, borderRadius:3 }
-      ]
-    },
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{ display:true, labels:{font:{family:'Space Mono',size:8},boxWidth:9,color:'#60607a',padding:8} },
-        tooltip:{ callbacks:{ label: i => ` ${i.dataset.label}: ${i.raw!=null?(i.raw>=0?'+':'')+i.raw.toFixed(2)+'%':'N/A'}` }}
-      },
-      scales:{
-        x:{ticks:{font:{family:'Space Mono',size:9}},grid:{display:false}},
-        y:{ticks:{font:{family:'Space Mono',size:9},callback:v=>v+'%'},grid:{color:'#1c1c28'}}
-      }
-    }
-  });
+  document.getElementById('cCrpHodl').innerHTML = gxBars(
+    activeCryptos.map(c=>c.sym),
+    [{lbl:'Bot ROI %',col:i=>`rgba(${activeCryptos[i].rgb},0.75)`,bord:i=>activeCryptos[i].hex,
+      leg:'var(--accent)',vals:botRoiVals},
+     {lbl:'HODL %',col:()=>'rgba(255,255,255,0.12)',bord:()=>'rgba(255,255,255,0.3)',
+      leg:'rgba(255,255,255,0.35)',vals:hodlVals}],
+    {w:520,h:230,fmt:v=>`${Math.round(v)}%`,legende:true,titre:'Bot ROI vs HODL'});
 }
 
 function renderCryptoTable() {
@@ -11073,8 +11175,6 @@ async function loadFinancesData() {
 async function reloadFinancesData() {
   finLoaded = false; finComptes = []; finDepenses = [];
   cryptoLoaded = false; cryptoTrades = []; // also reload crypto for fresh portfolio value
-  Object.values(finCharts).forEach(c => { try { c.destroy(); } catch(e){} });
-  finCharts = {};
   await renderFinancesPage();
 }
 
@@ -11273,9 +11373,6 @@ function renderFinAccounts(comptes) {
 // FINANCES — CHARTS
 // ════════════════════════════════════════════════════
 function renderFinCharts(comptes, depenses) {
-  Object.values(finCharts).forEach(c => { try { c.destroy(); } catch(e){} });
-  finCharts = {};
-
   const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
   // Map each compte name → palette color (same as account cards)
@@ -11340,7 +11437,7 @@ function renderFinCharts(comptes, depenses) {
           <span class="fin-box-ttl">ÉVOLUTION DU PATRIMOINE</span>
           <button class="crp-btn" onclick="reloadFinancesData()">↻ RAFRAÎCHIR</button>
         </div>
-        <div class="fin-wrap" style="flex:1;min-height:0"><canvas id="finChartArea"></canvas></div>
+        <div class="fin-wrap" style="height:240px" id="finChartArea"></div>
       </div>
       <div class="fin-box" style="display:flex;flex-direction:column">
         <div class="fin-box-hdr"><span class="fin-box-ttl">RÉPARTITION DES COMPTES</span></div>
@@ -11350,20 +11447,18 @@ function renderFinCharts(comptes, depenses) {
       <div style="display:flex;flex-direction:column;gap:0.85rem">
         <div class="fin-box" style="flex:1">
           <div class="fin-box-hdr"><span class="fin-box-ttl" style="color:var(--danger)">▼ DÉPENSES PAR CATÉGORIE</span></div>
-          <div class="fin-wrap" style="height:155px"><canvas id="finChartDep"></canvas></div>
+          <div class="fin-wrap" style="height:190px" id="finChartDep"></div>
         </div>
         <div class="fin-box" style="flex:1">
           <div class="fin-box-hdr"><span class="fin-box-ttl" style="color:var(--green)">▲ GAINS PAR CATÉGORIE</span></div>
-          <div class="fin-wrap" style="height:155px"><canvas id="finChartGain"></canvas></div>
+          <div class="fin-wrap" style="height:190px" id="finChartGain"></div>
         </div>
       </div>
     </div>`;
 
-  Chart.defaults.color = '#60607a';
-
   // ── Single-line patrimoine evolution (total across all comptes) ──
-  const ctxArea = document.getElementById('finChartArea')?.getContext('2d');
-  if (ctxArea && allDates.length) {
+  const hostArea = document.getElementById('finChartArea');
+  if (hostArea && allDates.length) {
     const getInitial = compteName => {
       const exact = comptes.find(c => c.name === compteName);
       if (exact) return exact.initial;
@@ -11398,61 +11493,22 @@ function renderFinCharts(comptes, depenses) {
       totalData.push(parseFloat(total.toFixed(2)));
     });
 
-    finCharts.area = new Chart(ctxArea, {
-      type: 'line',
-      data: {
-        labels: chartLabels,
-        datasets: [{
-          label: 'Patrimoine total',
-          data: totalData,
-          borderColor: '#7c6aff',
-          backgroundColor: 'rgba(124,106,255,0.12)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: ctx => ctx.dataIndex === 0 ? 0 : 3,
-          pointHoverRadius: 5,
-          borderWidth: 2,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: i => ` Total : ${i.raw.toLocaleString('fr-FR',{maximumFractionDigits:0})} €`,
-              afterBody: items => {
-                const di = items[0]?.dataIndex;
-                if (!di) return [' Point de départ (valeurs initiales)'];
-                const date = allDates[di - 1];
-                if (!date) return [];
-                const txns = depenses.filter(d => d.date === date);
-                if (!txns.length) return [];
-                return txns.map(d => {
-                  const sign = d.amount >= 0 ? '+' : '';
-                  return ` ${d.desc || d.compte || '—'} : ${sign}${d.amount.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €`;
-                });
-              },
-              footer: items => {
-                const di = items[0]?.dataIndex;
-                if (!di) return '';
-                const date = allDates[di - 1];
-                const net  = depenses.filter(d => d.date === date).reduce((s,d) => s+d.amount, 0);
-                const sign = net >= 0 ? '+' : '';
-                return ` Net du jour : ${sign}${net.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: { ticks:{ font:{family:'Space Mono',size:8}, maxRotation:40, maxTicksLimit:20 }, grid:{ color:'rgba(37,37,53,0.5)' } },
-          y: { ticks:{ font:{family:'Space Mono',size:9}, callback: v => v.toLocaleString('fr-FR',{maximumFractionDigits:0})+'€' }, grid:{ color:'rgba(37,37,53,0.5)' } }
-        }
-      }
+    // Une infobulle par point : le detail des transactions du jour, que la
+    // version Chart.js mettait dans son callback `afterBody`.
+    const eur=v=>v.toLocaleString('fr-FR',{maximumFractionDigits:0})+'€';
+    const pts=chartLabels.map((lbl,i)=>{
+      if(!i)return {lbl,val:totalData[0],info:'Point de départ (valeurs initiales)'};
+      const date=allDates[i-1];
+      const txns=depenses.filter(d=>d.date===date);
+      const net=txns.reduce((s,d)=>s+d.amount,0);
+      const det=txns.slice(0,6).map(d=>`${d.desc||d.compte||'—'} : ${d.amount>=0?'+':''}${d.amount.toFixed(2)}€`);
+      if(txns.length>6)det.push(`… et ${txns.length-6} autres`);
+      det.push(`Net du jour : ${net>=0?'+':''}${net.toFixed(2)}€`);
+      return {lbl,val:totalData[i],info:det.join('\n')};
     });
-  } else if (ctxArea) {
-    ctxArea.canvas.parentElement.innerHTML = '<div class="fin-empty">Aucune dépense trouvée</div>';
+    hostArea.innerHTML=gxLine(pts,{w:760,h:230,fmt:eur,titre:'Évolution du patrimoine'});
+  } else if (hostArea) {
+    hostArea.innerHTML = '<div class="fin-empty">Aucune dépense trouvée</div>';
   }
 
   // ── Two doughnuts: dépenses (negative) and gains (positive) ──
@@ -11462,47 +11518,10 @@ function renderFinCharts(comptes, depenses) {
     : v.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+'€';
 
   const makePie = (id, cats, byMap, key, centerColor) => {
-    const ctx = document.getElementById(id)?.getContext('2d');
-    if (!ctx) return;
-    if (!cats.length) { ctx.canvas.parentElement.innerHTML = `<div class="fin-empty" style="font-size:0.5rem">Aucun ${key}</div>`; return; }
-    const total = cats.reduce((s,c) => s + byMap[c], 0);
-
-    // Inline plugin: draw total in the center of the ring
-    const centerPlugin = {
-      id: 'center_' + key,
-      afterDraw(chart) {
-        const { width, ctx: c, chartArea } = chart;
-        if (!chartArea) return;
-        const cx = (chartArea.left + chartArea.right) / 2;
-        const cy = (chartArea.top  + chartArea.bottom) / 2;
-        c.save();
-        c.textAlign = 'center'; c.textBaseline = 'middle';
-        c.font = `bold 11px "Space Mono", monospace`;
-        c.fillStyle = centerColor;
-        c.fillText(fmtK(total), cx, cy);
-        c.restore();
-      }
-    };
-
-    finCharts[key] = new Chart(ctx, {
-      type: 'doughnut',
-      // Labels include the category name + its amount
-      data: {
-        labels: cats.map(c => `${c}  ${fmtK(byMap[c])}`),
-        datasets: [{ data: cats.map(c => parseFloat(byMap[c].toFixed(2))),
-          backgroundColor: cats.map((_,i) => CAT_COLORS[i % CAT_COLORS.length]),
-          borderColor: '#09090e', borderWidth: 2,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false, cutout: '58%',
-        plugins: {
-          legend: { position:'bottom', labels:{ font:{family:'Space Mono',size:7}, boxWidth:7, padding:4 } },
-          tooltip: { callbacks: { label: i => ` ${cats[i.dataIndex]}  ${i.raw.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €` } }
-        }
-      },
-      plugins: [centerPlugin]
-    });
+    const host = document.getElementById(id);
+    if (!host) return;
+    host.innerHTML = gxDonut(cats.map((c,i)=>({lbl:c,val:byMap[c],col:CAT_COLORS[i%CAT_COLORS.length]})),
+      {size:132,fmt:fmtK,centre:centerColor,vide:`Aucun ${key}`,titre:`Répartition — ${key}`});
   };
   makePie('finChartDep',  catsDep,  byCatDep,  'dep',  '#f87171');
   makePie('finChartGain', catsGain, byCatGain, 'gain', '#4ade80');
@@ -11905,7 +11924,7 @@ function renderSportProgress(){
   if(!series.length){ el.innerHTML=''; return; }
   const vus=sportProgTout?series:series.slice(0,8);
   el.innerHTML=`<div class="fit-section-lbl">Progression par mouvement</div>
-    <div class="fit-box"><table class="fit-stats-table sp-prog">
+    <div class="fit-box"><div class="fit-scroll"><table class="fit-stats-table sp-prog">
       <thead><tr><th>Mouvement</th><th>Dernier</th><th>Record</th><th>Tendance</th><th>Séances</th></tr></thead>
       <tbody>${vus.map(s=>{
         const t=s.tendance;
@@ -11919,7 +11938,7 @@ function renderSportProgress(){
         </tr>`+(sportProgOpen===s.key?`<tr class="sp-prog-d"><td colspan="5">
           ${s.points.slice().reverse().slice(0,12).map(p=>
             `<span class="sp-pt${p.gene?' gene':''}" title="${sportEsc(p.date)}${p.gene?' · gêne signalée':''}">${sportEsc(p.date.slice(5))} ${p.kg!=null?p.kg+' kg':'—'} ${SP_EX_ICON[p.status]||''}</span>`).join('')}
-        </td></tr>`:'');}).join('')}</tbody></table>
+        </td></tr>`:'');}).join('')}</tbody></table></div>
       ${series.length>8?`<button class="fit-btn" style="font-size:0.5rem;margin-top:0.5rem" onclick="sportProgPlus()">${sportProgTout?'Réduire':`Voir les ${series.length-8} autres`}</button>`:''}
     </div>`;
 }
@@ -12348,9 +12367,9 @@ function renderSportHistory(){
   el.innerHTML=`<div class="fit-section-lbl">Historique — 14 derniers jours</div>
     <div class="fit-box">
       ${prop?`<div class="sp-w-delta">Bonus : <b>${faits}/${prop}</b> sur 14 jours${serie>1?` · série en cours de <b>${serie}</b> jours`:''}</div>`:''}
-      <table class="fit-stats-table">
+      <div class="fit-scroll"><table class="fit-stats-table">
       <thead><tr><th>Jour</th><th>Programme</th><th>Statut</th><th>Détail</th><th>Ressenti</th><th>✨</th></tr></thead>
-      <tbody>${body}</tbody></table></div>`;
+      <tbody>${body}</tbody></table></div></div>`;
 }
 
 // La courbe passait par Chart.js, chargé à la demande depuis la SEULE page
@@ -12533,7 +12552,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.43.0';
+const APP_VERSION='v1.44.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
