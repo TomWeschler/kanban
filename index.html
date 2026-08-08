@@ -30,6 +30,18 @@
   --font-mono:'Space Mono',var(--sys-mono);
 }
 *{box-sizing:border-box;margin:0;padding:0}
+/* Au clavier, il faut voir ou l'on est. Une seule regle :focus-visible
+   existait dans toute la feuille : partout ailleurs le navigateur posait son
+   contour par defaut, souvent invisible sur fond sombre, et une douzaine de
+   composants l'annulaient carrement avec outline:none. On repose un contour
+   unique, a la couleur de l'accent, et on le REMET sur les champs qui
+   l'avaient supprime (leur :focus ne changeait qu'une couleur de bordure,
+   indiscernable a l'oeil). :focus-visible ne se declenche pas au clic souris :
+   l'apparence habituelle ne bouge pas. */
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:0}
+.sb-edit:focus-visible,.adp-edit:focus-visible,.sb-title:focus-visible{outline-offset:-2px}
+.hg-dot:focus-visible{outline-offset:3px}
 html,body{height:100%;overflow:hidden}
 body{background:var(--bg);color:var(--text);font-family:'Syne',var(--sys-sans);display:flex;flex-direction:column}
 body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
@@ -2099,8 +2111,10 @@ body,body *{font-family:var(--font-body)}
 </div>
 
 <div class="modal-bg" id="cmdModal">
-  <div class="modal cmd-modal">
-    <input type="search" id="cmdInput" class="cmd-input" placeholder="Chercher une tâche, une note, un objectif… ou lancer une action" autocomplete="off"
+  <!-- Seule fenêtre sans en-tête ni croix : elle se nomme elle-même. -->
+  <div class="modal cmd-modal" aria-label="Palette de commandes">
+    <input type="search" id="cmdInput" class="cmd-input" aria-label="Chercher ou lancer une action"
+           placeholder="Chercher une tâche, une note, un objectif… ou lancer une action" autocomplete="off"
            oninput="renderCmdResults()" onkeydown="cmdKey(event)">
     <div class="cmd-list" id="cmdList"></div>
     <div class="cmd-hint">↑ ↓ naviguer · ↵ ouvrir · Échap fermer</div>
@@ -2364,6 +2378,78 @@ body,body *{font-family:var(--font-body)}
 <div class="toasts" id="toasts"></div>
 
 <script>
+// ════════════════════════════════════════════════════
+// FENÊTRES MODALES
+// ════════════════════════════════════════════════════
+// Dix-neuf fenêtres, chacune ouverte et fermée dans son coin par un
+// classList.add('open'). Trois défauts mesurés en découlaient : sept d'entre
+// elles ignoraient Échap (mesure, point, ADP, rapport, sauvegarde, lancement
+// de procédure, rédaction), aucune ne se déclarait comme fenêtre auprès des
+// lecteurs d'écran, et à la fermeture le focus retombait sur <body> — au
+// clavier on repartait du haut de la page à chaque fois. Tout passe désormais
+// par un point unique qui tient la pile des fenêtres ouvertes.
+const MODAL_FERME={
+  taskModal:'closeModal', habitModal:'closeHabitModal', goalModal:'closeGoalModal',
+  sportPlanModal:'closeSportPlanModal', cmdModal:'closeCmd', scModal:'closeShortcuts',
+  mesDefModal:'closeMesDefModal', mesValModal:'closeMesValModal', adpModal:'closeAdpModal',
+  rapModal:'closeRapport', rapPrevModal:'closeRapPrev', backupModal:'closeBackupModal',
+  sigCfgModal:'closeSigCfg', runLaunchModal:'closeRunLaunch', composeModal:'closeAdpCompose',
+  mdHelpModal:'closeMdHelp', emojiModal:'closeEmojiPicker', histModal:'closeHist',
+  doneModal:'closeDoneModal'
+};
+let modalPile=[];
+function modalOuvre(id){
+  const bg=document.getElementById(id);
+  if(!bg)return null;
+  if(!modalPile.some(x=>x.id===id)){
+    const src=document.activeElement;
+    modalPile.push({id,ouvreur:src instanceof HTMLElement&&src!==document.body?src:null});
+  }
+  const box=bg.querySelector('.modal');
+  if(box){
+    box.setAttribute('role','dialog');
+    box.setAttribute('aria-modal','true');
+    // Le titre est déjà à l'écran : on le réutilise comme nom de la fenêtre
+    // plutôt que d'en recopier dix-neuf dans le HTML.
+    const h=box.querySelector('.modal-hdr');
+    if(h)box.setAttribute('aria-label',h.textContent.trim());
+    const x=box.querySelector('.modal-close');
+    if(x&&!x.hasAttribute('aria-label'))x.setAttribute('aria-label','Fermer');
+  }
+  bg.classList.add('open');
+  // Ouvrir une fenêtre sans y emmener le focus laisse le clavier sur la page
+  // du dessous. La moitié des fenêtres visait déjà son premier champ : on ne
+  // sert de secours qu'aux autres, une fois leur contenu posé.
+  setTimeout(()=>{
+    if(!bg.classList.contains('open')||!box||box.contains(document.activeElement))return;
+    const f=box.querySelector(FOCUSABLE);
+    if(f)try{ f.focus(); }catch(e){}
+  },80);
+  return bg;
+}
+function modalFerme(id){
+  const bg=document.getElementById(id);
+  if(bg)bg.classList.remove('open');
+  const i=modalPile.findIndex(x=>x.id===id);
+  if(i<0)return;
+  const [e]=modalPile.splice(i,1);
+  // Rendre le focus là où on l'avait pris — sauf si l'élément a disparu avec
+  // le re-rendu déclenché par l'enregistrement.
+  if(e.ouvreur&&document.contains(e.ouvreur)&&e.ouvreur.offsetParent!==null)
+    try{ e.ouvreur.focus(); }catch(err){}
+}
+// La fenêtre du dessus, quelle qu'elle soit : c'est celle qu'Échap ferme.
+// Chaque fenêtre garde sa propre fonction de fermeture, qui fait souvent plus
+// que retirer une classe (remise à zéro d'un brouillon, d'une sélection).
+function modalFermeHaut(){
+  const haut=modalPile[modalPile.length-1];
+  const id=haut?haut.id:(document.querySelector('.modal-bg.open')||{}).id;
+  if(!id)return false;
+  const f=window[MODAL_FERME[id]];
+  if(typeof f==='function')f(); else modalFerme(id);
+  return true;
+}
+
 // ════════════════════════════════════════════════════
 // CONFIG & CONSTANTS
 // ════════════════════════════════════════════════════
@@ -3424,8 +3510,12 @@ function renderHabGrid() {
         if (!due) cls += ' notdue';
         if (isFuture) cls += ' future';
         const style = done ? `style="background:${color};border-color:${color}"` : '';
-        const onclick = isFuture ? '' : `onclick="toggleHabit(${h.id},'${ds}')"`;
-        return `<td class="hg-cell${isToday?' hg-col-today':''}"><div class="${cls}" ${style} ${onclick}></div></td>`;
+        // Une pastille vide annoncee « bouton » ne dit rien : on lui donne la
+        // semantique d'une case a cocher, son etat, et de quoi se nommer.
+        const a11y = isFuture ? '' :
+          `onclick="toggleHabit(${h.id},'${ds}')" tabindex="0" role="checkbox" aria-checked="${done}" `+
+          `aria-label="${tdEsc(h.title)} — ${ds}"`;
+        return `<td class="hg-cell${isToday?' hg-col-today':''}"><div class="${cls}" ${style} ${a11y}></div></td>`;
       }).join('');
       body += `<tr class="hg-row${h.active?'':' paused'}">
       <td class="hg-name-cell" onclick="openHabitModal(${h.id})" title="Éditer">
@@ -3521,11 +3611,11 @@ function openHabitModal(id) {
     document.getElementById('habitModalTitle').textContent = 'ÉDITER L\'HABITUDE';
   }
 
-  document.getElementById('habitModal').classList.add('open');
+  modalOuvre('habitModal');
   setTimeout(() => { const i = document.getElementById('hfTitle'); i.focus(); i.setSelectionRange(i.value.length,i.value.length); }, 70);
 }
 
-function closeHabitModal() { document.getElementById('habitModal').classList.remove('open'); }
+function closeHabitModal() { modalFerme('habitModal'); }
 
 function setCat(v) {
   selCat = v;
@@ -3904,7 +3994,7 @@ function openModal(id, prefill, proj){
     document.getElementById('modalTitle').textContent='ÉDITER LA TÂCHE';
   }
   if(prefill)document.getElementById('fTitle').value=prefill;
-  document.getElementById('taskModal').classList.add('open');
+  modalOuvre('taskModal');
   setTimeout(()=>{const inp=document.getElementById('fTitle');
     // Le focus est différé : entre-temps, un autre formulaire a pu remplacer
     // le champ. On ne se donne pas le droit de supposer qu'il est encore là.
@@ -4477,11 +4567,11 @@ async function noteSnapshot(prevTitle,prevContent,noteId){
 
 function openHist(){
   const n=noteById(noteCurId); if(!n)return;
-  document.getElementById('histModal').classList.add('open');
+  modalOuvre('histModal');
   renderHist();
   if(!nhistLoaded&&accessToken)loadHist().then(renderHist);
 }
-function closeHist(){ document.getElementById('histModal').classList.remove('open'); }
+function closeHist(){ modalFerme('histModal'); }
 function renderHist(){
   const n=noteById(noteCurId); if(!n)return;
   const el=document.getElementById('histList');
@@ -5148,8 +5238,8 @@ function mdToolbar(){
     `<button class="md-t" title="Aide-mémoire du format" onclick="openMdHelp()">?</button>`+
     `</div>`;
 }
-function openMdHelp(){ document.getElementById('mdHelpModal').classList.add('open'); }
-function closeMdHelp(){ document.getElementById('mdHelpModal').classList.remove('open'); }
+function openMdHelp(){ modalOuvre('mdHelpModal'); }
+function closeMdHelp(){ modalFerme('mdHelpModal'); }
 
 // ── Selecteur d'emoji ─────────────────────────────────────────────────────
 // Reutilisable : sert d'icone de note, d'icone d'objectif, et d'insertion dans
@@ -5202,7 +5292,7 @@ let emPick=null;
 function openEmojiPicker(current,onPick,opts){
   opts=opts||{};
   emPick=onPick;
-  document.getElementById('emojiModal').classList.add('open');
+  modalOuvre('emojiModal');
   document.getElementById('emTitle').textContent=opts.title||'CHOISIR UNE ICÔNE';
   const btn=document.getElementById('emClear');
   // « Aucune icone » n'a pas de sens quand on insere dans un texte
@@ -5212,7 +5302,7 @@ function openEmojiPicker(current,onPick,opts){
   inp.value=''; renderEmoji(current);
   setTimeout(()=>inp.focus(),60);
 }
-function closeEmojiPicker(){ document.getElementById('emojiModal').classList.remove('open'); emPick=null; }
+function closeEmojiPicker(){ modalFerme('emojiModal'); emPick=null; }
 function renderEmoji(current){
   const q=voNorm((document.getElementById('emSearch').value||'').trim());
   const el=document.getElementById('emGrid');
@@ -5834,9 +5924,9 @@ function openShortcuts(){
     `<div class="mh-sec">${sec}</div><table class="mh-tbl"><tbody>`+
     rows.map(([k,d])=>`<tr><td class="mh-k2"><kbd>${k}</kbd></td><td>${d}</td></tr>`).join('')+
     '</tbody></table>').join('');
-  document.getElementById('scModal').classList.add('open');
+  modalOuvre('scModal');
 }
-function closeShortcuts(){ document.getElementById('scModal').classList.remove('open'); }
+function closeShortcuts(){ modalFerme('scModal'); }
 
 // ── Piège de focus ────────────────────────────────────────────────────────
 // Sans lui, la tabulation sortait du formulaire ouvert et parcourait la page
@@ -5863,13 +5953,12 @@ const PAGES=[['today',"Aujourd'hui"],['board','Board'],['brain','Notes'],['adp',
              ['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],['finances','Finances'],['crypto','Cryptobot']];
 
 function openCmd(){
-  const m=document.getElementById('cmdModal');
-  m.classList.add('open');
+  modalOuvre('cmdModal');
   const i=document.getElementById('cmdInput');
   i.value='';cmdSel=0;renderCmdResults();
   setTimeout(()=>i.focus(),50);
 }
-function closeCmd(){ document.getElementById('cmdModal').classList.remove('open'); }
+function closeCmd(){ modalFerme('cmdModal'); }
 
 // La palette ne savait que CHERCHER : taper « nouvelle tâche » ne donnait rien.
 // Les gestes les plus frequents n'avaient aucun equivalent clavier. Le second
@@ -6045,9 +6134,9 @@ function openBackupModal(){
         <option value="replace">Remplacer — l'état du fichier fait foi</option>
       </select>
       <div class="fld-hint">Dans les deux cas, l'écriture part vers le classeur Google. Rien n'est perdu sans être remplacé par une valeur du fichier.</div></div>`;
-  document.getElementById('backupModal').classList.add('open');
+  modalOuvre('backupModal');
 }
-function closeBackupModal(){ document.getElementById('backupModal').classList.remove('open'); bkData=null; }
+function closeBackupModal(){ modalFerme('backupModal'); bkData=null; }
 
 // Fusion par identifiant : deux enregistrements de même clé ne peuvent pas
 // coexister, et l'existant l'emporte en mode « compléter ».
@@ -6125,9 +6214,9 @@ function openSigCfg(){
     `<div class="field sig-f"><label>${lbl}</label>
       <span class="sig-in"><input type="number" min="1" id="sc_${k}" value="${sigCfg[k]}"><em>${u}</em></span></div>`).join('')
     +`<div class="fld-hint">Un seuil trop bas transforme le signal en bruit, et un bruit se masque sans le lire.</div>`;
-  document.getElementById('sigCfgModal').classList.add('open');
+  modalOuvre('sigCfgModal');
 }
-function closeSigCfg(){ document.getElementById('sigCfgModal').classList.remove('open'); }
+function closeSigCfg(){ modalFerme('sigCfgModal'); }
 function saveSigCfg(){
   const c={};
   SIG_CHAMPS.forEach(([k])=>{ const v=parseInt(document.getElementById('sc_'+k).value,10); c[k]=v>0?v:SIG_DEFAUTS[k]; });
@@ -6713,10 +6802,10 @@ function openMesDefModal(key){
     ${d?`<div class="field"><label>État</label><select id="mdActive">
       <option value="1"${d.active?' selected':''}>Suivie</option>
       <option value="0"${d.active?'':' selected'}>En sommeil</option></select></div>`:''}`;
-  document.getElementById('mesDefModal').classList.add('open');
+  modalOuvre('mesDefModal');
   setTimeout(()=>{const e=document.getElementById('mdLabel'); if(e)e.focus();},60);
 }
-function closeMesDefModal(){ document.getElementById('mesDefModal').classList.remove('open'); }
+function closeMesDefModal(){ modalFerme('mesDefModal'); }
 function pickMesIcon(){
   const b=document.getElementById('mdIcon');
   openEmojiPicker(b.textContent,e=>{ if(e)b.textContent=e; },{clear:''});
@@ -6752,10 +6841,10 @@ function openMesValModal(key,id){
       <input type="number" step="any" inputmode="decimal" id="mvValue" value="${v?v.value:''}"></div>
     <div class="field"><label>Note</label><input type="text" id="mvNote" value="${tdEsc(v?v.note:'')}" placeholder="Contexte, facultatif"></div>`;
   document.getElementById('mesValDel').style.display=v?'':'none';
-  document.getElementById('mesValModal').classList.add('open');
+  modalOuvre('mesValModal');
   setTimeout(()=>{const e=document.getElementById('mvValue'); if(e)e.focus();},60);
 }
-function closeMesValModal(){ document.getElementById('mesValModal').classList.remove('open'); }
+function closeMesValModal(){ modalFerme('mesValModal'); }
 async function saveMesVal(){
   const date=document.getElementById('mvDate').value;
   const raw=document.getElementById('mvValue').value;
@@ -7641,10 +7730,10 @@ function openAdpCompose(contactId,tplId){
   adpComposeTpl=tplId||mails[0].id;
   const c=contactId?adpContById(contactId):null;
   adpComposeProj=(c&&c.project_id)||'';
-  document.getElementById('composeModal').classList.add('open');
+  modalOuvre('composeModal');
   renderAdpCompose();
 }
-function closeAdpCompose(){ document.getElementById('composeModal').classList.remove('open'); }
+function closeAdpCompose(){ modalFerme('composeModal'); }
 function setComposeField(k,v){
   if(k==='cont'){ adpComposeCont=v||null; const c=adpContById(v); if(c&&c.project_id)adpComposeProj=c.project_id; }
   if(k==='tpl')adpComposeTpl=v;
@@ -7748,7 +7837,7 @@ function openAdpProjModal(id){
     <div class="field"><label>Début</label><input type="date" id="apStart" value="${p?p.start_date:''}"></div>
     <div class="field"><label>Échéance</label><input type="date" id="apDeadline" value="${p?p.deadline:''}"></div>`;
   document.getElementById('adpDel').style.display=p?'':'none';
-  document.getElementById('adpModal').classList.add('open');
+  modalOuvre('adpModal');
   setTimeout(()=>{const e=document.getElementById('apName'); if(e)e.focus();},60);
 }
 function openAdpContModal(id,projectId){
@@ -7786,7 +7875,7 @@ function openAdpContModal(id,projectId){
       <option value="dormant"${c&&c.status==='dormant'?' selected':''}>Dormant — pas de relance</option></select></div>
     <div class="field"><label>Notes</label><textarea id="acNotes" placeholder="Contexte, préférences, historique…">${adpEsc(c?c.notes:'')}</textarea></div>`;
   document.getElementById('adpDel').style.display=c?'':'none';
-  document.getElementById('adpModal').classList.add('open');
+  modalOuvre('adpModal');
   setTimeout(()=>{const e=document.getElementById('acName'); if(e)e.focus();},60);
 }
 function openAdpMileModal(id,projectId){
@@ -7804,7 +7893,7 @@ function openAdpMileModal(id,projectId){
       ${m&&m.slips?`<div class="fld-hint">Échéance initiale <b>${adpEsc(m.baseline)}</b> — déplacée ${m.slips} fois${m.baseline&&m.due_date?` (${mileSlipDays(m)>0?'+':''}${mileSlipDays(m)} jours)`:''}.</div>`
         :m&&m.baseline?`<div class="fld-hint">Échéance initiale <b>${adpEsc(m.baseline)}</b>, jamais déplacée.</div>`:''}</div>`;
   document.getElementById('adpDel').style.display=m?'':'none';
-  document.getElementById('adpModal').classList.add('open');
+  modalOuvre('adpModal');
   setTimeout(()=>{const e=document.getElementById('amTitle'); if(e)e.focus();},60);
 }
 function openAdpTplModal(id,kind){
@@ -7827,7 +7916,7 @@ function openAdpTplModal(id,kind){
       <div class="fld-hint">À l'envoi, propose de créer la tâche de relance à cette échéance.</div></div>
     <div class="fld-hint">Variables disponibles : ${ADP_VARS.map(v=>`<code>{{${v}}}</code>`).join(' ')}. Une première ligne « Objet : … » devient le sujet du mail.</div>`:''}`;
   document.getElementById('adpDel').style.display=t?'':'none';
-  document.getElementById('adpModal').classList.add('open');
+  modalOuvre('adpModal');
   setTimeout(()=>{const e=document.getElementById('atTitle'); if(e)e.focus();},60);
 }
 // Un objet rattaché porte déjà son libellé : le champ libre n'a plus lieu
@@ -7836,7 +7925,7 @@ function acRefChange(){
   const r=document.getElementById('acRef'), t=document.getElementById('acTopic');
   if(r&&t)t.style.display=r.value?'none':'';
 }
-function closeAdpModal(){ document.getElementById('adpModal').classList.remove('open'); }
+function closeAdpModal(){ modalFerme('adpModal'); }
 
 async function saveAdpModal(){
   const v=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
@@ -8010,7 +8099,7 @@ function openOrphelins(){
       <button class="gl-pill danger" onclick="adpReparerOrphelins('supprimer')">Supprimer définitivement</button>
     </div>`;
   document.getElementById('adpDel').style.display='none';
-  document.getElementById('adpModal').classList.add('open');
+  modalOuvre('adpModal');
 }
 async function adpReparerOrphelins(mode){
   const o=adpOrphelins(); if(!o.n)return;
@@ -8576,7 +8665,7 @@ function openRunLaunch(tplId){
       <div class="run-prev">${st.map((s,i)=>{const m=runTypeMeta(s.type);
         return `<div class="run-pl"><span>${m[2]}</span><span class="run-pl-t">${i+1}. ${adpEsc(s.label)}</span>
           <span class="adp-l-sub">${s.after.length?`après ${s.after.map(k=>num[k]).join(', ')}`:'au lancement'} · J+${s.off}${s.cond?` · si ${adpEsc(runCondLabel(s.cond,num))}`:''}</span></div>`;}).join('')}</div></div>`;
-  document.getElementById('runLaunchModal').classList.add('open');
+  modalOuvre('runLaunchModal');
 }
 function runCondLabel(cond,num){
   const c=String(cond||'');
@@ -8589,7 +8678,7 @@ function runCondLabel(cond,num){
   if(!m)return c;
   return `${num&&num[m[1]]?num[m[1]]:m[1]} ${m[2]==='='?'=':'≠'} ${m[3]}`;
 }
-function closeRunLaunch(){ document.getElementById('runLaunchModal').classList.remove('open'); }
+function closeRunLaunch(){ modalFerme('runLaunchModal'); }
 
 async function launchRun(){
   const t=adpTplById(runLaunchTpl); if(!t)return;
@@ -9879,7 +9968,7 @@ function openAutoModal(id){
       <select id="auCad">${AUTO_CAD.map(([k,l])=>`<option value="${k}"${(r?r.cadence:'once')===k?' selected':''}>${adpEsc(l)}</option>`).join('')}</select>
       <div class="fld-hint">Une même cible ne redéclenche pas la règle dans cette fenêtre. « Une seule fois » ne se rejoue jamais.</div></div>`;
   document.getElementById('adpDel').style.display=r?'':'none';
-  document.getElementById('adpModal').classList.add('open');
+  modalOuvre('adpModal');
   autoFormMaj(r);
   setTimeout(()=>{const e=document.getElementById('auNom'); if(e)e.focus();},60);
 }
@@ -10089,9 +10178,9 @@ function openRapport(){
       <div class="rap-secs">${RAP_SECTIONS.map(([k,l])=>
         `<label><input type="checkbox" id="rs_${k}" ${rapSections.has(k)?'checked':''}> ${l}</label>`).join('')}</div>
       <div class="fld-hint">Le PDF passe par l'impression du navigateur : choisis « Enregistrer au format PDF » dans la boîte de dialogue.</div></div>`;
-  document.getElementById('rapModal').classList.add('open');
+  modalOuvre('rapModal');
 }
-function closeRapport(){ document.getElementById('rapModal').classList.remove('open'); }
+function closeRapport(){ modalFerme('rapModal'); }
 function rapLire(){
   rapPortee=document.getElementById('rapScope').value;
   rapSections=new Set(RAP_SECTIONS.filter(([k])=>document.getElementById('rs_'+k).checked).map(([k])=>k));
@@ -10225,9 +10314,9 @@ function rapApercu(){
   const {an}=rapLire(); rapAn=an;
   closeRapport();
   document.getElementById('rapPrevBody').innerHTML=rapHtml(an);
-  document.getElementById('rapPrevModal').classList.add('open');
+  modalOuvre('rapPrevModal');
 }
-function closeRapPrev(){ document.getElementById('rapPrevModal').classList.remove('open'); }
+function closeRapPrev(){ modalFerme('rapPrevModal'); }
 function rapImprimer(){
   closeRapPrev();
   document.getElementById('rapport').innerHTML=document.getElementById('rapPrevBody').innerHTML;
@@ -10681,8 +10770,8 @@ async function openReviewNote(){
 
 // ── Historique des tâches terminées ───────────────────────────────────────
 // Elles étaient stockées mais aucune interface ne les listait.
-function openDoneModal(){ document.getElementById('doneModal').classList.add('open'); renderDoneList(); }
-function closeDoneModal(){ document.getElementById('doneModal').classList.remove('open'); }
+function openDoneModal(){ modalOuvre('doneModal'); renderDoneList(); }
+function closeDoneModal(){ modalFerme('doneModal'); }
 function renderDoneList(){
   const days=parseInt(document.getElementById('dnRange').value,10);
   const q=document.getElementById('dnSearch').value.trim().toLowerCase();
@@ -10728,7 +10817,7 @@ function projFillSelect(val){
     tags.map(t=>`<option value="${tdEsc(t)}">${tdEsc(t)}</option>`).join('');
   el.value=val||'';
 }
-function closeModal(){ document.getElementById('taskModal').classList.remove('open'); }
+function closeModal(){ modalFerme('taskModal'); }
 function setImp(v){ selImp=v; document.querySelectorAll('.imp-btn').forEach(b=>b.classList.toggle('sel',parseInt(b.dataset.v)===v)); }
 
 async function saveTask(){
@@ -11238,14 +11327,14 @@ function openGoalModal(id,parentId){
   document.getElementById('gfCheckpoints').value=g?goalCheckpointsToText(goalCheckpoints(g)):'';
   document.getElementById('gbtnDel').style.display=g?'block':'none';
   document.getElementById('goalModalTitle').textContent=g?"ÉDITER L'OBJECTIF":(pp?'NOUVEL OBJECTIF ENFANT':'NOUVEL OBJECTIF');
-  document.getElementById('goalModal').classList.add('open');
+  modalOuvre('goalModal');
   setTimeout(()=>{
     const t=document.getElementById('gfTitle');
     t.focus();
     t.setSelectionRange(t.value.length,t.value.length);
   },70);
 }
-function closeGoalModal(){document.getElementById('goalModal').classList.remove('open');}
+function closeGoalModal(){modalFerme('goalModal');}
 async function saveGoal(){
   const title=document.getElementById('gfTitle').value.trim();
   if(!title){document.getElementById('gfTitle').focus();return;}
@@ -13502,10 +13591,10 @@ function openSportPlanModal(date){
   document.getElementById('spfContent').value=p?p.content:'';
   document.getElementById('spfBonus').value=p&&p.bonus?p.bonus:'';
   document.getElementById('sportPlanModalTitle').textContent=p?'ÉDITER LE PROGRAMME':'NOUVEAU PROGRAMME';
-  document.getElementById('sportPlanModal').classList.add('open');
+  modalOuvre('sportPlanModal');
   setTimeout(()=>{const e=document.getElementById('spfTitle'); if(e)e.focus();},70);
 }
-function closeSportPlanModal(){document.getElementById('sportPlanModal').classList.remove('open');}
+function closeSportPlanModal(){modalFerme('sportPlanModal');}
 async function saveSportPlan(){
   const date=document.getElementById('spfDateInput').value;
   if(!date){alert('Choisis une date.');return;}
@@ -13531,6 +13620,39 @@ const isTyping=el=>{
   const tag=(el&&el.tagName||'').toLowerCase();
   return tag==='input'||tag==='textarea'||tag==='select'||!!(el&&el.isContentEditable);
 };
+
+// ── Ce qui se clique doit s'atteindre au clavier ──────────────────────────
+// Une grande partie de l'interface est construite en <div onclick> : a la
+// souris tout fonctionnait, au clavier la page Habitudes avait 42 elements
+// inatteignables sur 48 (les 36 pastilles de la grille et les 6 noms de
+// ligne), la Revue 17, ADP 6, Objectifs 4. Plutot que d'annoter un a un les
+// quinze gabarits qui les produisent — et d'oublier le seizieme —, on marque
+// le rendu : tout element porteur d'un onclick qui n'est pas nativement
+// focusable devient un vrai bouton. Les gabarits qui posent deja un role ou
+// un tabindex gardent le leur.
+const CLAV_NATIF=/^(a|button|input|select|textarea|summary)$/i;
+function clavMarque(n){
+  if(!n||n.nodeType!==1)return;
+  const els=n.hasAttribute('onclick')?[n,...n.querySelectorAll('[onclick]')]:[...n.querySelectorAll('[onclick]')];
+  for(const el of els){
+    if(CLAV_NATIF.test(el.tagName)||el.hasAttribute('tabindex'))continue;
+    el.setAttribute('tabindex','0');
+    if(!el.hasAttribute('role'))el.setAttribute('role','button');
+  }
+}
+// Entree et Espace activent ces faux boutons, comme un vrai. On ne touche
+// jamais a un champ de saisie ni a un element natif, qui s'en chargent seuls.
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const el=e.target;
+  if(!(el instanceof HTMLElement)||isTyping(el))return;
+  if(CLAV_NATIF.test(el.tagName)||el.tabIndex!==0||!el.hasAttribute('onclick'))return;
+  e.preventDefault();
+  el.click();
+});
+new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) clavMarque(n); })
+  .observe(document.body,{childList:true,subtree:true});
+clavMarque(document.body);
 const pageSearchInput=()=>document.getElementById(curPage==='objectifs'?'glSearch':curPage==='brain'?'sbSearch':'bfSearch');
 function focusPageSearch(){
   const el=pageSearchInput();
@@ -13555,7 +13677,13 @@ document.addEventListener('keydown',e=>{
       el.blur();
       if(had)return;
     }
-    closeModal();closeHabitModal();closeSportPlanModal();closeGoalModal();closeDoneModal();closeHist();closeEmojiPicker();closeMdHelp();closeShortcuts();closeMoreMenu();closeCmd();if(document.getElementById('graphOverlay').classList.contains('open'))closeGraph();
+    // On fermait une liste écrite à la main : les sept fenêtres qui n'y
+    // figuraient pas ignoraient Échap. C'est la pile qui décide maintenant, et
+    // seulement la fenêtre du dessus — sinon fermer un sélecteur d'icône
+    // emportait aussi la fiche qui l'avait ouvert.
+    closeMoreMenu();
+    if(modalFermeHaut())return;
+    if(document.getElementById('graphOverlay').classList.contains('open'))closeGraph();
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     if(document.getElementById('taskModal').classList.contains('open'))saveTask();
@@ -13628,7 +13756,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.51.0';
+const APP_VERSION='v1.52.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
