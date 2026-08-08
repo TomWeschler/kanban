@@ -1000,6 +1000,9 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .jr-dec{--jrc:var(--accent)}.jr-ris{--jrc:var(--danger)}.jr-act{--jrc:var(--green)}
 .sb-btn.jr-dec{color:var(--accent)}.sb-btn.jr-ris{color:var(--danger)}.sb-btn.jr-act{color:var(--green)}
 .adp-line.jr-l{border-left:2px solid var(--jrc,var(--border));padding-left:0.5rem}
+.orph-list{max-height:190px;overflow-y:auto;margin:0.6rem 0;border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.5rem}
+.gl-pill.danger{color:var(--danger);border-color:rgba(248,113,113,0.4)}
+.gl-pill.danger:hover{background:rgba(248,113,113,0.12)}
 .sb-dup{font-family:var(--font-mono);font-size:0.5rem;line-height:1.5;letter-spacing:0.03em;
   color:var(--warn);background:rgba(251,191,36,0.09);border:1px solid rgba(251,191,36,0.28);
   border-radius:6px;padding:0.45rem 0.6rem;margin-bottom:0.7rem}
@@ -3884,7 +3887,10 @@ function syncDueFromCol(){ document.getElementById('fDue').value=dueDateForColum
 const tdEsc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 async function renderTodayPage(){
-  if(accessToken&&!sportLoaded){showLoad(true);await loadSportData();showLoad(false);}
+  // Une coupure réseau pendant le chargement jetait ici : le sablier restait
+  // affiché et la page ne se rendait pas du tout. L'app sait vivre sur son
+  // cache — ce n'est pas une raison de la bloquer.
+  if(accessToken&&!sportLoaded){showLoad(true);try{await loadSportData();}catch(e){}showLoad(false);}
   const today=td();
   const pills=document.getElementById('tdPills');
   if(pills)pills.innerHTML=[['jour',"Aujourd'hui"],['semaine','7 prochains jours']].map(([v,l])=>
@@ -4601,8 +4607,8 @@ function updateHStats(){
 
 // ── Rendu de la page ──────────────────────────────────────────────────────
 async function renderBrain(){
-  if(accessToken&&!notesLoaded){showLoad(true);await loadNotes();showLoad(false);}
-  else if(await refreshNotesIfStale()){ /* la feuille a pu changer ailleurs */ }
+  if(accessToken&&!notesLoaded){showLoad(true);try{await loadNotes();}catch(e){}showLoad(false);}
+  else { try{ await refreshNotesIfStale(); }catch(e){} }
   if(!noteCurId||!noteById(noteCurId)){
     const first=notes.slice().sort(noteSort)[0];
     noteCurId=first?first.id:null;
@@ -7784,6 +7790,7 @@ async function saveAdpModal(){
   const v=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
   let obj=null,kind=adpEditKind;
   if(kind==='auto')return saveAutoModal();
+  if(kind==='orph'){ closeAdpModal(); return; }   // ce formulaire a ses propres boutons
   if(kind==='proj'){
     const name=v('apName'); if(!name){ toast('Le nom est obligatoire','err'); return; }
     const p=adpEditId?adpProjById(adpEditId):null;
@@ -7823,19 +7830,170 @@ async function saveAdpModal(){
   if(kind==='tpl'&&!adpEditId){ adpTplCur=obj.id; adpTplMode='edit'; }
   renderAdp(); updateHStats();
 }
+// ── Ce qui dépend d'un projet ─────────────────────────────────────────────
+// Supprimer un projet ne touchait que le projet. Ses jalons, contacts,
+// procédures et lignes de budget restaient dans les feuilles, rattachés à un
+// identifiant qui n'existait plus : des fantômes dans le Suivi, sans nom de
+// projet et impossibles à atteindre, et surtout un TOTAL PORTEFEUILLE faux,
+// puisque les montants existaient encore sans appartenir à personne.
+// Un jalon de projet supprimé ne veut rien dire : on emporte tout, et
+// l'annulation ramène tout.
+function adpProjDeps(id){
+  return {
+    miles:adpMilestones.filter(m=>m.project_id===id),
+    conts:adpContacts.filter(c=>c.project_id===id),
+    runs:adpRuns.filter(r=>r.project_id===id),
+    budget:adpBudget.filter(b=>b.project_id===id),
+  };
+}
+const adpDepsTotal=d=>d.miles.length+d.conts.length+d.runs.length+d.budget.length;
+function adpDepsTexte(d){
+  const p=[];
+  if(d.miles.length)p.push(`${d.miles.length} jalon${d.miles.length>1?'s':''}`);
+  if(d.conts.length)p.push(`${d.conts.length} contact${d.conts.length>1?'s':''}`);
+  if(d.runs.length)p.push(`${d.runs.length} procédure${d.runs.length>1?'s':''} en cours`);
+  if(d.budget.length){
+    const eur=d.budget.reduce((s,b)=>s+(b.amount||0),0);
+    p.push(`${d.budget.length} ligne${d.budget.length>1?'s':''} de budget${eur?` (${budFmt(eur)})`:''}`);
+  }
+  return p.join(', ');
+}
+// Supprime le projet ET tout ce qui en dépend, d'un bloc annulable.
+async function adpDeleteProjet(id){
+  const p=adpProjById(id); if(!p)return;
+  const snap={...p}, d=adpProjDeps(id);
+  const snapD={miles:d.miles.map(x=>({...x})),conts:d.conts.map(x=>({...x})),
+               runs:d.runs.map(x=>({...x})),budget:d.budget.map(x=>({...x}))};
+  if(adpProjCur===id)adpProjCur=null;
+  showLoad(true);
+  await adpDelete('proj',id);
+  for(const m of d.miles)await adpDelete('mile',m.id);
+  for(const c of d.conts)await adpDelete('cont',c.id);
+  for(const r of d.runs)await runDelete(r.id);
+  if(d.budget.length){
+    adpBudget=adpBudget.filter(b=>b.project_id!==id); budIdxInvalidate();
+    cacheSet('adpBudget',adpBudget);
+    await sheetBatchUpsert('adp_budget',snapD.budget.map(b=>[b.id,'','','','','0',td(),'0']));
+  }
+  showLoad(false);
+  renderAdp(); updateHStats();
+  const quoi=adpDepsTexte(d);
+  offerUndo(`Supprimé · ${snap.name}${quoi?` et ${quoi}`:''}`,async()=>{
+    showLoad(true);
+    await adpSave('proj',snap);
+    for(const m of snapD.miles)await adpSave('mile',m);
+    for(const c of snapD.conts)await adpSave('cont',c);
+    for(const r of snapD.runs)await runSave(r);
+    for(const b of snapD.budget)await budSave(b);
+    showLoad(false);
+    renderAdp(); updateHStats();
+  });
+}
 async function deleteAdpModal(){
   if(!adpEditId)return;
   const kind=adpEditKind;
   if(kind==='auto'){ closeAdpModal(); return autoDeleteRegle(adpEditId); }
   const src={proj:adpProjects,cont:adpContacts,mile:adpMilestones,tpl:adpTemplates}[kind];
   const snap={...src.find(x=>x.id===adpEditId)};
+  const id=adpEditId;
   closeAdpModal();
-  if(kind==='proj'&&adpProjCur===adpEditId)adpProjCur=null;
-  if(kind==='tpl'&&adpTplCur===adpEditId)adpTplCur=null;
-  showLoad(true); await adpDelete(kind,adpEditId); showLoad(false);
+  if(kind==='proj'){
+    // On annonce ce qu'on va emporter avant de l'emporter.
+    const d=adpProjDeps(id);
+    if(adpDepsTotal(d)){
+      offerChoice(`Supprimer « ${snap.name} » et ${adpDepsTexte(d)} ?`,
+        [['Tout supprimer',()=>adpDeleteProjet(id)]],0,'err');
+      return;
+    }
+    return adpDeleteProjet(id);
+  }
+  if(kind==='tpl'&&adpTplCur===id)adpTplCur=null;
+  showLoad(true); await adpDelete(kind,id); showLoad(false);
   renderAdp(); updateHStats();
   offerUndo(`Supprimé · ${snap.name||snap.title}`,async()=>{ await adpSave(kind,snap); renderAdp(); });
 }
+// ── Orphelins ─────────────────────────────────────────────────────────────
+// Corriger la suppression protège l'avenir, pas le passé : ce qui est déjà
+// rattaché à un projet disparu le reste, invisible — et fausse le total du
+// portefeuille sans que rien ne le dise. On le détecte, on le montre, on le
+// répare. Ne rend rien tant que les projets ne sont pas chargés : « aucun
+// projet » n'est pas « tous les projets ont disparu ».
+function adpOrphelins(){
+  if(!adpLoaded)return {miles:[],conts:[],runs:[],budget:[],n:0,eur:0};
+  const vivant=id=>!id||!!adpProjById(id);
+  const miles=adpMilestones.filter(m=>m.project_id&&!vivant(m.project_id));
+  const conts=adpContacts.filter(c=>c.project_id&&!vivant(c.project_id));
+  const runs=adpRuns.filter(r=>r.project_id&&!vivant(r.project_id));
+  const budget=adpBudget.filter(b=>b.project_id&&!vivant(b.project_id));
+  const eur=budget.reduce((s,b)=>s+(b.amount||0),0);
+  return {miles,conts,runs,budget,n:miles.length+conts.length+runs.length+budget.length,eur};
+}
+let orphCible='';
+function openOrphelins(){
+  const o=adpOrphelins();
+  if(!o.n){ toast('Aucun objet orphelin','ok'); return; }
+  orphCible='';
+  document.getElementById('adpModalTitle').textContent='OBJETS ORPHELINS';
+  adpEditKind='orph'; adpEditId=null;
+  const ligne=(ic,l,sub)=>`<div class="adp-line"><span class="adp-l-main">${ic} ${adpEsc(l)}
+    <span class="adp-l-sub">${adpEsc(sub)}</span></span></div>`;
+  document.getElementById('adpFields').innerHTML=`
+    <div class="fld-hint">Ces objets sont rattachés à un projet qui n'existe plus. Ils n'apparaissent
+      sur aucune fiche, mais ${o.budget.length?`leurs <b>${budFmt(o.eur)}</b> manquent au total du portefeuille et `:''}certains
+      continuent d'encombrer le Suivi.</div>
+    <div class="orph-list">
+      ${o.miles.map(m=>ligne('⛳',m.title,'jalon')).join('')}
+      ${o.conts.map(c=>ligne('✉',c.name,'contact')).join('')}
+      ${o.runs.map(r=>ligne('⚙',r.title,'procédure')).join('')}
+      ${o.budget.length?ligne('€',`${o.budget.length} ligne${o.budget.length>1?'s':''} de budget`,budFmt(o.eur)||'0 €'):''}
+    </div>
+    <div class="field"><label>Rattacher à</label>
+      <select id="orphProj">
+        <option value="">— choisir un projet —</option>
+        ${adpProjects.map(p=>`<option value="${adpEsc(p.id)}">${adpEsc(p.name)}</option>`).join('')}
+      </select>
+      <div class="fld-hint">Ou supprime-les définitivement si ces objets n'ont plus de sens.</div></div>
+    <div style="display:flex;gap:0.5rem;margin-top:0.8rem">
+      <button class="gl-pill" onclick="adpReparerOrphelins('rattacher')">Rattacher</button>
+      <button class="gl-pill danger" onclick="adpReparerOrphelins('supprimer')">Supprimer définitivement</button>
+    </div>`;
+  document.getElementById('adpDel').style.display='none';
+  document.getElementById('adpModal').classList.add('open');
+}
+async function adpReparerOrphelins(mode){
+  const o=adpOrphelins(); if(!o.n)return;
+  const pid=mode==='rattacher'?(document.getElementById('orphProj')||{}).value:'';
+  if(mode==='rattacher'&&!pid){ toast('Choisis un projet','err'); return; }
+  closeAdpModal();
+  showLoad(true);
+  if(mode==='rattacher'){
+    for(const m of o.miles){ m.project_id=pid; await adpSave('mile',m); }
+    for(const c of o.conts){ c.project_id=pid; await adpSave('cont',c); }
+    for(const r of o.runs){ r.project_id=pid; await runSave(r); }
+    // La clé d'une ligne de budget PORTE le projet : la déplacer, c'est en
+    // écrire une nouvelle et effacer l'ancienne.
+    for(const b of o.budget){
+      const neuf={...b,project_id:pid,id:budKey(pid,b.capex,b.nature,b.month)};
+      adpBudget=adpBudget.filter(x=>x.id!==b.id);
+      await sheetUpsertByKey('adp_budget',b.id,[b.id,'','','','','0',td(),'0']);
+      await budSave(neuf);
+    }
+  }else{
+    for(const m of o.miles)await adpDelete('mile',m.id);
+    for(const c of o.conts)await adpDelete('cont',c.id);
+    for(const r of o.runs)await runDelete(r.id);
+    if(o.budget.length){
+      adpBudget=adpBudget.filter(b=>!o.budget.some(x=>x.id===b.id));
+      await sheetBatchUpsert('adp_budget',o.budget.map(b=>[b.id,'','','','','0',td(),'0']));
+    }
+  }
+  budIdxInvalidate(); cacheSet('adpBudget',adpBudget);
+  showLoad(false);
+  renderAdp(); updateHStats();
+  toast(mode==='rattacher'?`${o.n} objet${o.n>1?'s':''} rattaché${o.n>1?'s':''}`
+                          :`${o.n} objet${o.n>1?'s':''} supprimé${o.n>1?'s':''}`,'ok');
+}
+
 async function adpToggleMile(id){
   const m=adpMilestones.find(x=>x.id===id); if(!m)return;
   const prev={status:m.status,done_at:m.done_at};
@@ -7898,6 +8056,15 @@ function sigUnmuteAll(){
 function computeSignals(){
   const out=[], day=td();
   const push=(id,level,text,hint,go)=>out.push({id,level,text,hint,go});
+
+  // ── Intégrité des données ──
+  // Un total de portefeuille faux ne se voit pas : il faut le dire.
+  const orph=adpOrphelins();
+  if(orph.n)push('adp.orphelins','orange',
+    `${orph.n} objet${orph.n>1?'s':''} rattaché${orph.n>1?'s':''} à un projet supprimé`,
+    orph.eur?`${budFmt(orph.eur)} manquent au total du portefeuille.`
+            :'Ils encombrent le Suivi sans pouvoir être atteints.',
+    ()=>{ switchPage('adp'); setAdpView('projets'); openOrphelins(); });
 
   // ── Ce que les automatismes ont signalé ──
   // Trois jours de fenêtre : un signal levé le vendredi doit survivre au
@@ -10246,8 +10413,8 @@ function rvGoalStats(){
 async function renderReviewPage(){
   // la revue lit les finances : on les charge si l'onglet n'a jamais ete ouvert
   if(accessToken&&!finLoaded&&navigator.onLine){try{await loadFinancesData();}catch(e){}}
-  if(accessToken&&!sportLoaded){showLoad(true);await loadSportData();showLoad(false);}
-  if(accessToken&&!goalsLoaded){showLoad(true);await loadGoals();showLoad(false);}
+  if(accessToken&&!sportLoaded){showLoad(true);try{await loadSportData();}catch(e){}showLoad(false);}
+  if(accessToken&&!goalsLoaded){showLoad(true);try{await loadGoals();}catch(e){}showLoad(false);}
   const r=rvRange(rvPeriod),pr=rvPrev(r);
   document.getElementById('rvPills').innerHTML=RV_PERIODS.map(([v,l])=>
     // .gl-pill.active force un texte sombre : il lui faut son fond inline,
@@ -10740,7 +10907,7 @@ async function goalDelete(id){
 
 // ── render ──
 async function renderGoalsPage(){
-  if(!goalsLoaded){showLoad(true);await loadGoals();showLoad(false);}
+  if(!goalsLoaded){showLoad(true);try{await loadGoals();}catch(e){}showLoad(false);}
   applyGoalWallpaper();
   renderGoalsBanner();
   renderGoalsToolbar();
@@ -11052,14 +11219,27 @@ async function deleteGoal(){
   const snap=goals.find(g=>g.id===id);
   if(!snap)return;
   closeGoalModal();
-  showLoad(true);const ok=await goalDelete(id);showLoad(false);
+  // Les enfants gardaient un parent mort et un niveau devenu faux — la branche
+  // flottait dans l'arbre. Ils remontent d'un cran, comme le font les notes.
+  const kids=goals.filter(g=>g.parent_id===id);
+  const snapKids=kids.map(k=>({k,parent:k.parent_id,level:k.level}));
+  kids.forEach(k=>{ k.parent_id=snap.parent_id||''; });
+  showLoad(true);
+  const ok=await goalDelete(id);
+  const bouges=goalRecomputeLevels();
+  const aEcrire=[...new Set([...kids,...bouges])];
+  if(aEcrire.length)await sheetBatchUpsert('goals',aEcrire.map(goalToRow));
+  showLoad(false);
   const refresh=()=>{renderGoalsBanner();renderGoalsToolbar();renderGoalsTree();};
   refresh();
   if(!ok){ toast("ÉCHEC de la suppression — l'objectif est toujours là",'err'); return; }
   // undo plutôt qu'un confirm() qu'on valide machinalement
-  offerUndo(`Objectif supprimé · ${snap.title}`,async()=>{
-    goals.push(snap);goalRecomputeLevels();
+  offerUndo(`Objectif supprimé · ${snap.title}${kids.length?` · ${kids.length} enfant${kids.length>1?'s':''} remonté${kids.length>1?'s':''}`:''}`,async()=>{
+    goals.push(snap);
+    snapKids.forEach(({k,parent})=>{ k.parent_id=parent; });
+    goalRecomputeLevels();
     await goalUpsert(snap);
+    if(snapKids.length)await sheetBatchUpsert('goals',snapKids.map(x=>goalToRow(x.k)));
     refresh();
   });
 }
@@ -11633,7 +11813,7 @@ function gxBars(groupes,series,opts){
 async function renderCryptoBot() {
   if (!cryptoLoaded) {
     showLoad(true);
-    await loadCryptoData();
+    try{ await loadCryptoData(); }catch(e){}
     // Capture master copy + init filter
     cryptoTradesAll = cryptoTrades.slice();
     cryptoFilter = localStorage.getItem(LS_CRP_FILTER) || detectDefaultCryptoFilter();
@@ -12672,7 +12852,7 @@ function sportLogFor(date){return sportLogs.find(l=>l.date===date)||null;}
 
 // ── render ──────────────────────────────────────────
 async function renderSportPage(){
-  if(!sportLoaded){showLoad(true);await loadSportData();showLoad(false);}
+  if(!sportLoaded){showLoad(true);try{await loadSportData();}catch(e){}showLoad(false);}
   renderSportBanner();
   renderSportWeek();
   renderSportBonus();
@@ -13351,7 +13531,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.47.0';
+const APP_VERSION='v1.48.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
