@@ -842,6 +842,48 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sp-hist-status.skipped{background:rgba(248,113,113,0.14);color:var(--danger)}
 .sp-hist-status.none{background:rgba(148,163,184,0.1);color:var(--text-dim)}
 .sp-wrap{position:relative;height:160px}
+.sp-graph{margin-top:0.3rem}
+/* Semaine d'un coup d'oeil */
+.sp-week{display:grid;grid-template-columns:repeat(7,1fr);gap:0.4rem;margin:0.7rem 0}
+.sp-wk{display:flex;flex-direction:column;gap:0.15rem;align-items:center;padding:0.45rem 0.2rem;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--wc,var(--border));
+  border-radius:6px;color:var(--text-mid);font-family:var(--font-mono);transition:all .12s}
+.sp-wk:hover{background:var(--surface2);color:var(--text)}
+.sp-wk.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.sp-wk.repos{opacity:0.55}
+.sp-wk-d{font-size:0.5rem;letter-spacing:0.06em;opacity:0.7}
+.sp-wk-t{font-size:0.55rem;color:var(--wc,var(--text-dim));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sp-wk-m{font-size:0.62rem;line-height:1}
+.sp-wk.l-done .sp-wk-m{color:var(--green)}
+.sp-wk.l-partial .sp-wk-m{color:var(--warn)}
+.sp-wk.l-skipped .sp-wk-m{color:var(--danger)}
+/* Charge a battre et gene, sur la ligne d'exercice */
+.sp-ex-prev{display:inline-block;margin-left:0.45rem;font-family:var(--font-mono);font-size:0.5rem;
+  letter-spacing:0.04em;color:var(--accent);opacity:0.85;white-space:nowrap}
+.sp-ex-gene{background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);
+  cursor:pointer;font-size:0.6rem;line-height:1;padding:0.2rem 0.3rem;flex-shrink:0}
+.sp-ex-gene:hover{color:var(--warn);border-color:var(--warn)}
+.sp-ex-gene.on{color:var(--warn);border-color:var(--warn);background:rgba(251,191,36,0.14)}
+.sp-ex-row.gene{background:rgba(251,191,36,0.06)}
+/* Progression par mouvement */
+.sp-prog-r{cursor:pointer}
+.sp-prog-r:hover{background:var(--surface2)}
+.sp-prog-dt{font-size:0.5rem;color:var(--text-dim)}
+.sp-up{color:var(--green)}.sp-dn{color:var(--danger)}
+.sp-pr{font-family:var(--font-mono);font-size:0.45rem;letter-spacing:0.06em;color:#09090e;background:var(--green);
+  padding:1px 3px;border-radius:2px;vertical-align:1px}
+.sp-gene-flag{margin-left:0.35rem;color:var(--warn)}
+.sp-prog-d td{padding-top:0.2rem!important;padding-bottom:0.5rem!important}
+.sp-pt{display:inline-block;margin:0.15rem 0.3rem 0 0;padding:1px 5px;border-radius:3px;background:var(--surface2);
+  font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.04em;color:var(--text-mid)}
+.sp-pt.gene{color:var(--warn);background:rgba(251,191,36,0.12)}
+.sp-b-ok{color:var(--green)}.sp-b-ko{color:var(--text-dim)}
+.sp-goal{background:none;border:1px solid var(--border);border-radius:3px;color:var(--text-dim);cursor:pointer;
+  font-family:var(--font-mono);font-size:0.55rem;line-height:1;padding:0 0.24rem;margin-left:0.15rem}
+.sp-goal:hover{color:var(--accent);border-color:var(--accent)}
+.sp-graph svg{width:100%;height:170px;color:var(--text-dim)}
+.sp-w-delta{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.06em;color:var(--text-dim)}
+.sp-w-delta b.dn{color:var(--green)}.sp-w-delta b.up{color:var(--warn)}
 .modal textarea.fit-input{width:100%;resize:vertical;line-height:1.5}
 
 /* ═══════════════════════════════
@@ -1915,12 +1957,14 @@ body,body *{font-family:var(--font-body)}
 <!-- SPORT PAGE -->
 <div class="page" id="pagesport">
   <div id="sportBanner"></div>
+  <div id="sportWeek"></div>
   <div id="sportBonus"></div>
   <div class="sp-grid">
     <div id="sportToday"></div>
     <div id="sportLogger"></div>
   </div>
   <div id="sportTomorrow" class="fit-section"></div>
+  <div id="sportProgress" class="fit-section"></div>
   <div id="sportHistory" class="fit-section"></div>
   <div id="sportWeight" class="fit-section"></div>
 </div>
@@ -11621,7 +11665,7 @@ function renderFinTable(depenses) {
 // ════════════════════════════════════════════════════
 // SPORT — programme piloté par Claude + retour quotidien
 // ════════════════════════════════════════════════════
-let sportPlans=[], sportLogs=[], sportLoaded=false, sportCharts={};
+let sportPlans=[], sportLogs=[], sportLoaded=false;
 let sportDraft={status:null,feeling:null,weight:null,comment:null};
 let sportExDraft={}; // per-exercise draft, keyed by exercise index → {status, weight}
 const SPORT_PLAN_HEADER=['date','type','duration_min','title','content','bonus'];
@@ -11630,7 +11674,7 @@ const SPORT_LOG_HEADER =['date','status','exercises','feeling','weight_kg','comm
 // Give the kanban_data Sheet access to the Claude strategy project: it reads
 // this tab + sport_log, and writes sport_plan rows.
 const SPORT_FORMAT_DOC=[
-  'SPEC v4 — BOUCLE SPORT (projet stratégie ↔ Sheet ↔ app)',
+  'SPEC v5 — BOUCLE SPORT (projet stratégie ↔ Sheet ↔ app)',
   '',
   'Tu (projet Claude stratégie) LIS sport_log (retours réels) et ÉCRIS des lignes dans sport_plan (programme).',
   "L'app affiche sport_plan et écrit sport_log quand l'utilisateur coche. Ne JAMAIS écrire/effacer sport_log.",
@@ -11674,6 +11718,9 @@ const SPORT_FORMAT_DOC=[
   'B status     : done | partial | skipped (statut global, sinon déduit des exercices)',
   'C exercises  : JSON [{"ex":"Développé couché 4×8","status":"done","weight":"60"}, ...]',
   '               → les POIDS RÉELS et le statut par exercice. SOURCE CLÉ pour la progression et le calcul des @kg.',
+  '               Un exercice peut porter "gene":true — GÊNE OU DOULEUR signalée sur CE mouvement.',
+  '               Le champ n\'apparaît QUE s\'il est levé. Réaction attendue : ne pas monter la charge sur ce',
+  '               mouvement, proposer une variante ou le retirer — sans imposer un repos complet pour autant.',
   'D feeling    : 1–5 (1 = vidé, 5 = en forme)',
   'E weight_kg  : poids CORPOREL du jour (pesée), nombre ou vide',
   'F comment    : commentaire global libre de la séance',
@@ -11688,6 +11735,8 @@ const SPORT_FORMAT_DOC=[
   '2. Croise avec la stratégie (ton .md de connaissance) : progression, volume, récup, contraintes.',
   '3. Signaux : skipped répétés → format plus court ; feeling 1-2 ou séances dures d affilée → récup/Repos ;',
   '   tendance weight_kg → ajuste selon objectif (sèche/prise/maintien). bonus_done souvent FALSE → bonus plus simple.',
+  '   "gene":true sur un mouvement → charge maintenue ou réduite SUR CE MOUVEMENT, variante proposée. Deux fois',
+  '   de suite sur le même mouvement → retire-le du programme et propose autre chose.',
   '4. Écris UNE ligne dans sport_plan pour la prochaine date : séance (B-E) + TOUJOURS une activité bonus (F).',
   '   Reps = nombre UNIQUE ; poids = @<poids>kg par exercice, recalculé sur les logs (vide si pas d historique).',
   '',
@@ -11807,12 +11856,72 @@ function sportLogFor(date){return sportLogs.find(l=>l.date===date)||null;}
 async function renderSportPage(){
   if(!sportLoaded){showLoad(true);await loadSportData();showLoad(false);}
   renderSportBanner();
+  renderSportWeek();
   renderSportBonus();
   renderSportToday();
   renderSportLogger();
   renderSportTomorrow();
+  renderSportProgress();
   renderSportHistory();
   renderSportWeight();
+}
+
+// ── La semaine d'un coup d'œil ────────────────────────────────────────────
+// La page ne montrait que J et J+1. Une semaine programmée à l'avance par la
+// stratégie était illisible sans ouvrir chaque jour. Sept cases : le type, le
+// titre, et ce qui a été fait. Un clic ouvre le programme du jour.
+function renderSportWeek(){
+  const el=document.getElementById('sportWeek'); if(!el)return;
+  const today=sportYmd(new Date());
+  const d=new Date(); d.setHours(0,0,0,0);
+  const dow=(d.getDay()+6)%7;                       // lundi = 0
+  const lundi=new Date(d); lundi.setDate(d.getDate()-dow);
+  const JJ=['L','M','M','J','V','S','D'];
+  el.innerHTML=`<div class="sp-week">${Array.from({length:7},(_,i)=>{
+    const x=new Date(lundi); x.setDate(lundi.getDate()+i);
+    const ds=sportYmd(x);
+    const p=sportPlanFor(ds), l=sportLogFor(ds);
+    const repos=p&&/repos/i.test(p.type);
+    const col=p?sportTypeColor(p.type):'';
+    const st=l?l.status:'';
+    return `<button class="sp-wk${ds===today?' today':''}${st?' l-'+st:''}${repos?' repos':''}"
+      style="${col?`--wc:${col}`:''}" onclick="openSportPlanModal('${ds}')"
+      title="${sportEsc(ds)}${p?` · ${sportEsc(p.title||p.type)}`:' · rien de prévu'}${l?` · ${sportStatusLabel(st)}`:''}">
+      <span class="sp-wk-d">${JJ[i]}${x.getDate()}</span>
+      <span class="sp-wk-t">${p?sportEsc(p.type):'—'}</span>
+      <span class="sp-wk-m">${st==='done'?'✓':st==='partial'?'~':st==='skipped'?'✗':p&&!repos?'·':''}</span>
+    </button>`;}).join('')}</div>`;
+}
+
+// ── Progression par mouvement ─────────────────────────────────────────────
+// La donnée existait depuis toujours dans `exercises` ; elle n'était lue que
+// par la stratégie. Ici, elle répond enfin à « où j'en suis ? ».
+let sportProgOpen=null, sportProgTout=false;
+function sportToggleProg(k){ sportProgOpen=sportProgOpen===k?null:k; renderSportProgress(); }
+function sportProgPlus(){ sportProgTout=!sportProgTout; renderSportProgress(); }
+function renderSportProgress(){
+  const el=document.getElementById('sportProgress'); if(!el)return;
+  const series=sportExSeries().filter(s=>s.dernier);
+  if(!series.length){ el.innerHTML=''; return; }
+  const vus=sportProgTout?series:series.slice(0,8);
+  el.innerHTML=`<div class="fit-section-lbl">Progression par mouvement</div>
+    <div class="fit-box"><table class="fit-stats-table sp-prog">
+      <thead><tr><th>Mouvement</th><th>Dernier</th><th>Record</th><th>Tendance</th><th>Séances</th></tr></thead>
+      <tbody>${vus.map(s=>{
+        const t=s.tendance;
+        const pr=s.record&&s.dernier&&s.record.kg<=s.dernier.kg;
+        return `<tr class="sp-prog-r" onclick="sportToggleProg('${sportEsc(s.key)}')">
+          <td>${sportEsc(s.nom)}${s.genes?`<span class="sp-gene-flag" title="${s.genes} gêne(s) signalée(s)">⚠</span>`:''}</td>
+          <td><b>${s.dernier.kg} kg</b> <span class="sp-prog-dt">${sportEsc(s.dernier.date.slice(5))}</span></td>
+          <td>${s.record?`${s.record.kg} kg${pr?' <span class="sp-pr">PR</span>':''}`:'—'}</td>
+          <td class="${t>0?'sp-up':t<0?'sp-dn':''}">${t==null?'—':`${t>0?'+':''}${Math.round(t*10)/10} kg`}</td>
+          <td>${s.seances}</td>
+        </tr>`+(sportProgOpen===s.key?`<tr class="sp-prog-d"><td colspan="5">
+          ${s.points.slice().reverse().slice(0,12).map(p=>
+            `<span class="sp-pt${p.gene?' gene':''}" title="${sportEsc(p.date)}${p.gene?' · gêne signalée':''}">${sportEsc(p.date.slice(5))} ${p.kg!=null?p.kg+' kg':'—'} ${SP_EX_ICON[p.status]||''}</span>`).join('')}
+        </td></tr>`:'');}).join('')}</tbody></table>
+      ${series.length>8?`<button class="fit-btn" style="font-size:0.5rem;margin-top:0.5rem" onclick="sportProgPlus()">${sportProgTout?'Réduire':`Voir les ${series.length-8} autres`}</button>`:''}
+    </div>`;
 }
 function renderSportBonus(){
   const el=document.getElementById('sportBonus');
@@ -11849,10 +11958,27 @@ async function sportToggleBonus(){
   if(!okB)toast("ÉCHEC de l'enregistrement — réessaie",'err');
   renderSportBonus();renderSportBanner();
 }
+// Écrit la pesée dans la série « poids » des Mesures. Ne crée pas la mesure si
+// elle n'existe pas — on ne fabrique pas une série que l'utilisateur n'a pas
+// voulue — et n'écrase pas une valeur déjà saisie du même jour par une autre.
+// Rend null quand il n'y avait rien à faire, true/false sinon.
+async function sportSyncPoids(date,kg){
+  if(!(kg>0)||!date)return null;
+  if(typeof mesDefByKey!=='function')return null;
+  // Les Mesures ne sont chargées qu'à l'ouverture de leur onglet : sans ça, la
+  // pesée partirait dans le vide pour qui ne l'ouvre jamais.
+  if(!mesLoaded&&accessToken){ try{ await loadMetrics(); }catch(e){ return null; } }
+  const d=mesDefByKey('poids'); if(!d)return null;
+  const ex=mesValOn('poids',date);
+  if(ex&&Math.abs(ex.value-kg)<1e-9)return null;
+  const v=ex?{...ex,value:kg}
+           :{id:'vsp'+date,date,key:'poids',value:kg,note:'pesée du Sport'};
+  const ok=await mesSaveVal(v);
+  if(ok&&curPage==='metrics')renderMetricsPage();
+  return ok;
+}
 async function reloadSportData(){
   sportLoaded=false;sportPlans=[];sportLogs=[];
-  Object.values(sportCharts).forEach(c=>{try{c.destroy();}catch(e){}});
-  sportCharts={};
   await renderSportPage();
 }
 
@@ -11871,16 +11997,23 @@ function renderSportBanner(){
   const adh=planned?Math.round(honored/planned*100):0;
   document.getElementById('sportBanner').innerHTML=`
     <div class="fit-banner">
-      <div class="fit-kpi"><div class="fit-kpi-lbl">Cette semaine</div><div class="fit-kpi-val" style="color:var(--accent)">${weekDone}<span style="font-size:0.7rem;opacity:0.4">/${sportWeekGoal}</span></div><div class="fit-kpi-sub">séances · <span onclick="sportSetGoal()" style="cursor:pointer;text-decoration:underline dotted">objectif</span></div></div>
+      <div class="fit-kpi"><div class="fit-kpi-lbl">Cette semaine</div><div class="fit-kpi-val" style="color:var(--accent)">${weekDone}<span style="font-size:0.7rem;opacity:0.4">/${sportWeekGoal}</span></div><div class="fit-kpi-sub">séances · objectif
+        <button class="sp-goal" onclick="sportSetGoal(-1)" title="Objectif hebdomadaire −1">−</button>
+        <button class="sp-goal" onclick="sportSetGoal(1)" title="Objectif hebdomadaire +1">+</button></div></div>
       <div class="fit-kpi"><div class="fit-kpi-lbl">Ce mois</div><div class="fit-kpi-val green">${monthDone}</div><div class="fit-kpi-sub">séances réalisées</div></div>
       <div class="fit-kpi"><div class="fit-kpi-lbl">Adhérence 14j</div><div class="fit-kpi-val" style="color:${adh>=70?'var(--green)':adh>=40?'var(--warn)':'var(--danger)'}">${planned?adh+'%':'—'}</div><div class="fit-kpi-sub">${honored}/${planned} prévus honorés</div></div>
       <div class="fit-kpi"><div class="fit-kpi-lbl">Poids</div><div class="fit-kpi-val">${lastW?lastW+'<span style="font-size:0.7rem;opacity:0.4"> kg</span>':'—'}</div><div class="fit-kpi-sub">${lastW?'dernière pesée':'aucune pesée'}</div></div>
     </div>
     <div style="display:flex;justify-content:flex-end;margin-top:0.5rem"><button class="fit-btn" style="font-size:0.5rem" onclick="reloadSportData()">↺ Rafraîchir</button></div>`;
 }
-function sportSetGoal(){
-  const v=prompt('Objectif de séances par semaine :',sportWeekGoal);
-  if(v){const n=parseInt(v);if(n>0){sportWeekGoal=n;localStorage.setItem(SPORT_GOAL_KEY,n);renderSportBanner();}}
+// Dernier prompt() natif de l'app : boîte du navigateur, hors charte, et
+// bloquante. Un pas à pas sur place suffit — l'objectif est un petit entier.
+function sportSetGoal(delta){
+  const n=Math.max(1,Math.min(14,sportWeekGoal+(delta||0)));
+  if(n===sportWeekGoal&&delta)return;
+  sportWeekGoal=n;
+  try{ localStorage.setItem(SPORT_GOAL_KEY,String(n)); }catch(e){}
+  renderSportBanner();
 }
 
 // Parse program content into items: headings, paragraphs, exercises (bullets)
@@ -11902,6 +12035,79 @@ function sportParseProgram(content){
     else items.push({type:'p',text:line});
   });
   return items;
+}
+// ── Historique par exercice ───────────────────────────────────────────────
+// Le champ `exercises` du log porte, séance après séance, le poids RÉEL et le
+// statut de chaque ligne. L'app l'écrivait, la stratégie le lisait, et
+// l'utilisateur ne le voyait jamais : « où j'en suis au développé couché ? »
+// n'avait pas de réponse dans l'app. Tout ce qui suit ne fait que relire cette
+// donnée — rien de neuf n'est saisi.
+//
+// Le nom d'un exercice varie d'une séance à l'autre (« Développé couché 4×8 »,
+// puis « Développé couché 4×10 ») : on le normalise en retirant le schéma de
+// séries, les charges et la ponctuation, pour que ce soit le MOUVEMENT qui
+// fasse la série, pas son prescriptif du jour.
+function sportExName(txt){
+  return String(txt||'')
+    .replace(/\*\*/g,'')
+    .replace(/@\s*[\d.,]+\s*kg\b/ig,'')
+    .replace(/\b\d+\s*[x×]\s*\d+\s*(s|sec|min)?\b/ig,'')   // 4×8, 3×45s
+    .replace(/\((?:[^()]*)\)/g,'')                             // (RPE 8)
+    .replace(/[\d]+\s*(?:reps?|répétitions?)\b/ig,'')
+    .replace(/[·:,;–—-]+\s*$/,'')
+    .replace(/\s{2,}/g,' ')
+    .trim();
+}
+const sportExKey=txt=>voNorm(sportExName(txt));
+// Toutes les lignes d'exercice loguées, à plat et datées, du plus ancien au
+// plus récent. Une ligne sans poids ni statut n'apprend rien : on la saute.
+function sportExLog(){
+  const out=[];
+  sportLogs.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{
+    if(!l.exercises)return;
+    let arr=[]; try{ arr=JSON.parse(l.exercises)||[]; }catch(e){ return; }
+    if(!Array.isArray(arr))return;
+    arr.forEach(e=>{
+      const nom=sportExName(e&&e.ex);
+      if(!nom)return;
+      const kg=parseFloat(String(e.weight||'').replace(',','.'));
+      if(!e.status&&!(kg>0))return;
+      out.push({date:l.date,key:sportExKey(e.ex),nom,status:e.status||'',
+                kg:kg>0?kg:null,gene:!!e.gene,note:e.note||''});
+    });
+  });
+  return out;
+}
+// Une série par mouvement : {key, nom, points[], dernier, record, tendance}
+// `tendance` = dernier poids moins celui d'il y a trois séances, ou le premier.
+function sportExSeries(){
+  const par=new Map();
+  sportExLog().forEach(x=>{
+    if(!par.has(x.key))par.set(x.key,{key:x.key,nom:x.nom,points:[]});
+    const s=par.get(x.key);
+    s.nom=x.nom;                       // le libellé le plus récent fait foi
+    s.points.push(x);
+  });
+  return [...par.values()].map(s=>{
+    const kgs=s.points.filter(p=>p.kg!=null);
+    const dernier=kgs.length?kgs[kgs.length-1]:null;
+    const record=kgs.reduce((m,p)=>!m||p.kg>m.kg?p:m,null);
+    const ref=kgs.length>3?kgs[kgs.length-4]:kgs[0];
+    return {...s,dernier,record,
+      tendance:(dernier&&ref&&dernier!==ref)?dernier.kg-ref.kg:null,
+      genes:s.points.filter(p=>p.gene).length,
+      seances:s.points.length};
+  }).sort((a,b)=>{
+    const da=a.points[a.points.length-1].date, db=b.points[b.points.length-1].date;
+    return db.localeCompare(da)||a.nom.localeCompare(b.nom,'fr');
+  });
+}
+// Ce qu'il faut battre aujourd'hui sur une ligne du programme : la dernière
+// charge tenue sur ce mouvement, hors séance du jour.
+function sportExDernier(txt,saufDate){
+  const k=sportExKey(txt);
+  const l=sportExLog().filter(x=>x.key===k&&x.kg!=null&&x.date!==saufDate);
+  return l.length?l[l.length-1]:null;
 }
 // Today's stored per-exercise log (JSON in sport_log.exercises) → array of {ex,status,weight}
 function sportExisting(){
@@ -11934,9 +12140,15 @@ function renderSportToday(){
     const status=sportExDraft[i]?.status ?? existing[i]?.status ?? '';
     // Priorité : saisie en cours > log du jour > poids suggéré par la stratégie (@kg).
     const weight=sportExDraft[i]?.weight ?? existing[i]?.weight ?? it.sugg ?? '';
-    return `<div class="sp-ex-row">
+    const gene=sportExDraft[i]?.gene ?? existing[i]?.gene ?? false;
+    // Le chiffre à battre : la dernière charge tenue sur ce mouvement. À la
+    // salle, c'est la seule information qui manque vraiment.
+    const prec=sportExDernier(it.text,today);
+    return `<div class="sp-ex-row${gene?' gene':''}">
       <button class="sp-ex-status st-${status||'none'}" onclick="sportCycleEx(${i})" title="Statut : fait → partiel → pas fait">${SP_EX_ICON[status]}</button>
-      <div class="sp-ex-txt">${sportExBold(it.text)}</div>
+      <div class="sp-ex-txt">${sportExBold(it.text)}
+        ${prec?`<span class="sp-ex-prev" title="Dernière charge tenue, le ${sportEsc(prec.date)}">dernier : ${prec.kg} kg</span>`:''}</div>
+      <button class="sp-ex-gene${gene?' on':''}" onclick="sportToggleGene(${i})" title="Signaler une gêne ou une douleur sur ce mouvement">⚠</button>
       <input class="sp-ex-w" data-spexw="${i}" type="text" inputmode="decimal" placeholder="kg" value="${sportEsc(weight)}">
     </div>`;
   }).join(''):'<p style="opacity:0.5">Aucun détail fourni.</p>';
@@ -11968,6 +12180,17 @@ function sportCycleEx(i){
   const next=SP_EX_CYCLE[(SP_EX_CYCLE.indexOf(cur)+1)%SP_EX_CYCLE.length];
   sportExDraft[i]={...(sportExDraft[i]||{}),status:next};
   renderSportToday();
+}
+// Une gêne se signale sur LE mouvement concerné, pas sur la séance entière :
+// c'est ce qui permet à la stratégie de lever le pied sur un exercice précis
+// plutôt que d'imposer un repos complet. Le détail va dans le commentaire.
+function sportToggleGene(i){
+  sportCaptureExInputs();
+  const existing=sportExisting();
+  const cur=sportExDraft[i]?.gene ?? existing[i]?.gene ?? false;
+  sportExDraft[i]={...(sportExDraft[i]||{}),gene:!cur};
+  renderSportToday();
+  if(!cur)toast('Gêne signalée — précise-la dans le commentaire','info');
 }
 
 function sportCaptureInputs(){
@@ -12014,9 +12237,14 @@ async function saveSportLog(){
   const items=p?sportParseProgram(p.content).filter(it=>it.type==='ex'):[];
   const exercises=items.map(it=>{
     const i=it.idx;
-    return {ex:it.text.replace(/\*\*/g,''),
+    const g=(sportExDraft[i]?.gene ?? existing[i]?.gene ?? false);
+    const o={ex:it.text.replace(/\*\*/g,''),
       status:(sportExDraft[i]?.status ?? existing[i]?.status ?? ''),
       weight:(sportExDraft[i]?.weight ?? existing[i]?.weight ?? '')};
+    // Le drapeau n'entre dans le JSON que s'il est levé : la ligne reste
+    // identique à ce qu'elle a toujours été quand tout va bien.
+    if(g)o.gene=true;
+    return o;
   });
   // Overall status: explicit session choice wins, else derive from per-exercise
   const marked=exercises.map(e=>e.status).filter(Boolean);
@@ -12031,8 +12259,15 @@ async function saveSportLog(){
     weight:parseFloat(sportDraft.weight??(ex?ex.weight:''))||0,
     comment:(sportDraft.comment??ex?.comment)||'',
     bonusDone:!!(ex&&ex.bonusDone)};
-  showLoad(true);const okL=await sportUpsertLog(log);showLoad(false);
+  showLoad(true);
+  const okL=await sportUpsertLog(log);
+  // Le poids corporel vivait à deux endroits — sport_log et la série « poids »
+  // des Mesures — reliés par un import manuel à sens unique. Deux courbes du
+  // même corps pouvaient donc diverger. La pesée alimente les deux d'un coup.
+  const okP=await sportSyncPoids(today,log.weight);
+  showLoad(false);
   if(!okL)toast("ÉCHEC de l'enregistrement — réessaie",'err');
+  else if(okP===false)toast('Séance enregistrée, mais le poids n\'est pas parti dans Mesures','err');
   sportDraft={status:null,feeling:null,weight:null,comment:null};
   sportExDraft={};
   toast('Retour enregistré ✓','ok');
@@ -12087,33 +12322,79 @@ function renderSportHistory(){
       }catch(e){}
     }
     if(!detail&&l&&l.comment) detail=`<span style="font-style:italic">${sportEsc(l.comment).slice(0,40)}</span>`;
+    // Le bonus était enregistré et lu par la stratégie, mais invisible ici :
+    // on ne pouvait pas constater soi-même qu'on décrochait dessus.
+    const bonus=p&&p.bonus?(l&&l.bonusDone?'<span class="sp-b-ok">✓</span>':'<span class="sp-b-ko">✗</span>'):'';
     return `<tr>
       <td style="white-space:nowrap;color:var(--text-mid)">${dlabel}</td>
       <td>${p?tdEsc(p.title||p.type):'<span style="opacity:0.4">—</span>'}</td>
       <td><span class="sp-hist-status ${status}">${l?sportStatusLabel(status):'non loggé'}</span></td>
       <td style="color:var(--text-mid);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${detail}</td>
       <td>${feel}</td>
+      <td title="Activité bonus du jour">${bonus}</td>
     </tr>`;
   }).join('');
+  // Série de bonus : le nombre de jours consécutifs, en repartant d'aujourd'hui,
+  // où un bonus était proposé ET fait.
+  let serie=0;
+  for(let i=0;i<60;i++){
+    const x=new Date(); x.setDate(x.getDate()-i); const ds=sportYmd(x);
+    const pp=sportPlanFor(ds); if(!pp||!pp.bonus){ if(i===0)continue; break; }
+    const ll=sportLogFor(ds);
+    if(ll&&ll.bonusDone)serie++; else if(i===0)continue; else break;
+  }
+  const prop=rows.filter(r=>r.p&&r.p.bonus).length;
+  const faits=rows.filter(r=>r.p&&r.p.bonus&&r.l&&r.l.bonusDone).length;
   el.innerHTML=`<div class="fit-section-lbl">Historique — 14 derniers jours</div>
-    <div class="fit-box"><table class="fit-stats-table">
-      <thead><tr><th>Jour</th><th>Programme</th><th>Statut</th><th>Détail</th><th>Ressenti</th></tr></thead>
+    <div class="fit-box">
+      ${prop?`<div class="sp-w-delta">Bonus : <b>${faits}/${prop}</b> sur 14 jours${serie>1?` · série en cours de <b>${serie}</b> jours`:''}</div>`:''}
+      <table class="fit-stats-table">
+      <thead><tr><th>Jour</th><th>Programme</th><th>Statut</th><th>Détail</th><th>Ressenti</th><th>✨</th></tr></thead>
       <tbody>${body}</tbody></table></div>`;
 }
 
+// La courbe passait par Chart.js, chargé à la demande depuis la SEULE page
+// Crypto : ouvrir SPORT sans y être passé — ou l'ouvrir hors ligne — jetait un
+// « Chart is not defined » et interrompait la fin du rendu. Elle est désormais
+// dessinée à la main, comme les Mesures et la trajectoire budgétaire : la page
+// SPORT n'a plus aucune dépendance réseau.
+function sportWeightChart(w,wd,h){
+  wd=wd||620; h=h||170;
+  const pad={l:40,r:10,t:12,b:20};
+  const xs=w.map(x=>new Date(x.date+'T12:00:00').getTime());
+  const ys=w.map(x=>x.weight);
+  let lo=Math.min(...ys), hi=Math.max(...ys);
+  if(hi-lo<0.6){ const c=(hi+lo)/2; lo=c-0.5; hi=c+0.5; }
+  const marge=(hi-lo)*0.15; lo-=marge; hi+=marge;
+  const x0=Math.min(...xs), x1=Math.max(...xs);
+  const px=t=>pad.l+((x1===x0?0.5:(t-x0)/(x1-x0)))*(wd-pad.l-pad.r);
+  const py=v=>pad.t+(1-(v-lo)/(hi-lo))*(h-pad.t-pad.b);
+  const line=w.map((x,i)=>`${i?'L':'M'}${px(xs[i]).toFixed(1)},${py(x.weight).toFixed(1)}`).join(' ');
+  const grid=[lo,(lo+hi)/2,hi].map(v=>
+    `<line x1="${pad.l}" y1="${py(v).toFixed(1)}" x2="${wd-pad.r}" y2="${py(v).toFixed(1)}" stroke="currentColor" opacity="0.10"/>`+
+    `<text x="2" y="${(py(v)+3).toFixed(1)}" class="mes-ax">${(Math.round(v*10)/10).toFixed(1)}</text>`).join('');
+  const pts=w.map((x,i)=>
+    `<circle cx="${px(xs[i]).toFixed(1)}" cy="${py(x.weight).toFixed(1)}" r="${w.length>60?1.6:2.6}" fill="var(--accent)"><title>${sportEsc(x.date)} · ${x.weight} kg</title></circle>`).join('');
+  return `<svg class="mes-svg" viewBox="0 0 ${wd} ${h}" preserveAspectRatio="none" role="img" aria-label="Évolution du poids corporel">
+    ${grid}
+    <path d="${line} L${px(x1).toFixed(1)},${(h-pad.b).toFixed(1)} L${px(x0).toFixed(1)},${(h-pad.b).toFixed(1)} Z" fill="var(--accent)" opacity="0.10"/>
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    ${pts}
+    <text x="${pad.l}" y="${h-4}" class="mes-ax">${sportEsc(w[0].date)}</text>
+    <text x="${wd-pad.r}" y="${h-4}" class="mes-ax" text-anchor="end">${sportEsc(w[w.length-1].date)}</text>
+  </svg>`;
+}
 function renderSportWeight(){
   const el=document.getElementById('sportWeight');
   const w=sportLogs.filter(l=>l.weight>0).sort((a,b)=>a.date.localeCompare(b.date));
-  if(w.length<2){el.innerHTML='';if(sportCharts.w){try{sportCharts.w.destroy();}catch(e){}sportCharts.w=null;}return;}
-  el.innerHTML=`<div class="fit-section-lbl">Évolution du poids</div><div class="fit-box"><div class="sp-wrap"><canvas id="spWeightChart"></canvas></div></div>`;
-  if(sportCharts.w){try{sportCharts.w.destroy();}catch(e){}}
-  const acc=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#7c6aff';
-  sportCharts.w=new Chart(document.getElementById('spWeightChart'),{
-    type:'line',
-    data:{labels:w.map(x=>x.date.slice(5)),datasets:[{data:w.map(x=>x.weight),borderColor:acc,backgroundColor:acc+'22',borderWidth:2,fill:true,tension:0.3,pointRadius:3,pointHoverRadius:5}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>` ${i.raw} kg`}}},
-      scales:{x:{ticks:{font:{family:'monospace',size:8},maxTicksLimit:10},grid:{color:'rgba(255,255,255,0.05)'}},y:{ticks:{font:{family:'monospace',size:9},callback:v=>v+' kg'},grid:{color:'rgba(255,255,255,0.05)'}}}}
-  });
+  if(w.length<2){el.innerHTML='';return;}
+  const d30=w.filter(x=>dayDiff(x.date)>=-30);
+  const delta=d30.length>1?d30[d30.length-1].weight-d30[0].weight:null;
+  el.innerHTML=`<div class="fit-section-lbl">Évolution du poids</div>
+    <div class="fit-box">
+      ${delta!==null?`<div class="sp-w-delta">Sur 30 jours : <b class="${delta<0?'dn':delta>0?'up':''}">${delta>0?'+':''}${Math.round(delta*10)/10} kg</b></div>`:''}
+      <div class="sp-graph">${sportWeightChart(w)}</div>
+    </div>`;
 }
 
 // ── Plan modal ──────────────────────────────────────
@@ -12252,7 +12533,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.42.0';
+const APP_VERSION='v1.43.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
