@@ -98,6 +98,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6px}
 .card[data-imp="1"]::before{background:var(--imp1)}.card[data-imp="2"]::before{background:var(--imp2)}.card[data-imp="3"]::before{background:var(--imp3)}.card[data-imp="4"]::before{background:var(--imp4)}.card[data-imp="5"]::before{background:var(--imp5)}
 .card.a-warn{border-color:rgba(251,191,36,0.43)}.card.a-danger{border-color:rgba(248,113,113,0.62);box-shadow:0 0 9px rgba(248,113,113,0.11)}
+.card.a-wait{opacity:0.72;border-style:dashed}.card.a-wait:hover{opacity:1}
 .card-title{font-size:0.78rem;font-weight:600;line-height:1.35;color:var(--text);padding-left:10px;margin-bottom:0.45rem;word-break:break-word;padding-right:2rem}
 .card-meta{display:flex;align-items:center;justify-content:space-between;padding-left:10px}
 .imp-dots{display:flex;gap:3px}
@@ -105,6 +106,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .idot-1{background:var(--imp1)}.idot-2{background:var(--imp2)}.idot-3{background:var(--imp3)}.idot-4{background:var(--imp4)}.idot-5{background:var(--imp5)}
 .due-badge{font-family:'Space Mono',var(--sys-mono);font-size:0.5rem;letter-spacing:0.05em;padding:2px 5px}
 .due-badge.normal{color:var(--text-dim);background:rgba(255,255,255,0.03)}.due-badge.warn{color:var(--warn);background:rgba(251,191,36,0.09)}.due-badge.danger{color:var(--danger);background:rgba(248,113,113,0.09)}.due-badge.overdue{color:#fff;background:var(--danger)}
+/* En attente : gris, jamais alarmant — la tache n'est pas en retard, elle attend. */
+.due-badge.wait{color:var(--text-mid);background:rgba(255,255,255,0.05);border:1px solid var(--border);max-width:11rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Les notes de tache tenaient sur une seule ligne tronquee : impossible d'y
    lire quoi que ce soit, encore moins de cliquer un lien. Trois lignes par
    defaut, depliables d'un clic, et le markdown du Second Brain s'y applique. */
@@ -395,6 +398,17 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .td-sp-b.on.skipped{background:rgba(248,113,113,0.15);border-color:var(--danger);color:var(--danger)}
 .td-go{margin-top:0.8rem;width:100%;background:rgba(124,106,255,0.08);border:1px solid rgba(124,106,255,0.28);color:var(--accent);font-family:'Space Mono',var(--sys-mono);font-size:0.55rem;letter-spacing:0.1em;padding:0.4rem;cursor:pointer;text-transform:uppercase}
 .td-go:hover{background:rgba(124,106,255,0.2)}
+.bud-a{text-align:left;white-space:nowrap;max-width:22rem;overflow:hidden;text-overflow:ellipsis;color:var(--text-mid)}
+.bud-vide{color:var(--text-dim);font-style:italic;opacity:0.7}
+.adp-c-next.act{color:var(--accent)}
+.adp-c-next.vide{color:var(--text-dim);font-style:italic;opacity:0.7}
+.adp-next{width:100%;background:var(--surface2);border:1px solid var(--border);border-left:2px solid var(--accent);
+  border-radius:5px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.65rem;outline:none;margin-bottom:0.9rem}
+.adp-next:focus{border-color:var(--accent)}
+.adp-next::placeholder{color:var(--text-dim);font-style:italic}
+.td-more{font-family:'Space Mono',var(--sys-mono);font-size:0.5rem;letter-spacing:0.08em;color:var(--text-dim);padding:0.35rem 0 0;text-align:right}
+.td-go.quiet{background:transparent;border-color:var(--border);color:var(--text-mid)}
+.td-go.quiet:hover{background:var(--surface2);color:var(--text)}
 @media (max-width:900px){.td-grid{grid-template-columns:1fr}.td-wrap{padding:0.9rem 0.7rem 4rem}}
 .bf-spacer{flex:1}
 .board-filter.f-late{color:var(--danger);border-color:rgba(248,113,113,0.35)}
@@ -1074,6 +1088,13 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .bud-p .bud-c1{cursor:pointer;font-weight:700;color:var(--text)}
 .bud-p .bud-c2,.bud-p .bud-c3{font-weight:700}
 .bud-c3.over{color:var(--danger)}
+/* Mode Ecart : le depassement est rouge, l'economie verte. Le signe porte
+   deja l'info, la couleur la rend lisible d'un coup d'oeil sur 12 mois. */
+.bud .bud-n,.bud .bud-c3,.bud .bud-y-r{transition:color .12s}
+.bud .bud-n:not(.neg):not(.bud-edit),.bud .bud-c3:not(.neg){}
+.bud .neg{color:var(--green)}
+.bud .bud-n.over,.bud .bud-y-r.over{color:var(--danger)}
+
 .bud-cx .bud-c1{cursor:pointer;color:var(--text-mid);font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.06em}
 .bud-nat .bud-c1{color:var(--text-dim);font-size:0.68rem}
 .bud-nat .bud-c3,.bud-nat .bud-y-r{color:var(--text-dim)}
@@ -1105,6 +1126,8 @@ input.bud-y-e{font-size:0.58rem;padding:0;color:var(--text-dim);margin-top:1px}
 input.bud-y-e:focus{color:var(--text)}
 .bud-legend{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;color:var(--text-dim)}
 .bud-legend b{display:inline-block;width:0.6rem;height:0.6rem;border-radius:2px;background:var(--edit-bg2);border:1px solid var(--edit-brd);vertical-align:-1px;margin-right:0.2rem}
+.bud-legend b.pos,.bud-legend b.neg2{width:auto;height:auto;background:none;border:none;font-weight:700}
+.bud-legend b.pos{color:var(--danger)}.bud-legend b.neg2{color:var(--green)}
 @media(max-width:900px){
   :root{--w1:150px;--w2:96px;--w3:96px;--wy:88px}
   .bud .bud-n{min-width:84px}
@@ -1137,9 +1160,11 @@ input.bud-y-e:focus{color:var(--text)}
 .sig-in em{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);font-style:normal;width:3.4rem}
 .bud-leg{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;color:var(--text-dim);
   display:flex;align-items:center;gap:0.35rem;margin-top:0.3rem;flex-wrap:wrap}
-.bud-leg-r,.bud-leg-e{display:inline-block;width:14px;height:0;border-top:2px solid var(--accent);margin-left:0.6rem}
+.bud-leg-r,.bud-leg-e,.bud-leg-p{display:inline-block;width:14px;height:0;border-top:2px solid var(--accent);margin-left:0.6rem}
 .bud-leg-r:first-child{margin-left:0}
 .bud-leg-e{border-top:2px dashed var(--text-dim)}
+.bud-leg-p{border-top:2px dotted var(--warn)}
+.bud-leg-a{display:inline-block;margin-left:0.7rem;color:var(--text-mid);font-weight:600}
 .bud.pj th{cursor:pointer;user-select:none}
 .bud.pj th:hover{color:var(--text)}
 .bud.pj .bud-c1{min-width:230px;width:auto;max-width:none}
@@ -1207,6 +1232,7 @@ input.bud-y-e:focus{color:var(--text)}
 .sv-r.g-jaune{border-left-color:var(--warn);opacity:0.95}
 .sv-r.g-orange{border-left-color:var(--warn);background:rgba(251,191,36,0.05)}
 .sv-r.g-rouge{border-left-color:var(--danger);background:rgba(248,113,113,0.06)}
+.sv-r.sv-attente .sv-ic{opacity:0.65}
 .sv-ic{font-size:0.82rem;flex-shrink:0;width:1.1rem;text-align:center}
 .sv-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .sv-q{font-size:0.8rem;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2163,6 +2189,8 @@ body,body *{font-family:var(--font-body)}
         <option value="yearly">Tous les ans</option>
       </select>
     </div>
+    <div class="field"><label>En attente de <span style="color:var(--text-dim);text-transform:none;letter-spacing:0">— qui ou quoi bloque ? vide = rien ne bloque</span></label>
+      <input type="text" id="fBlock" placeholder="Ex : retour de M. Renard, validation DSI…" autocomplete="off"/></div>
     <div class="field"><label>Sous-tâches <span style="color:var(--text-dim);text-transform:none;letter-spacing:0">— une par ligne, « [x] » si faite</span></label>
       <textarea id="fCheck" placeholder="[ ] Première étape&#10;[x] Étape déjà faite"></textarea></div>
     <div class="field"><label>Notes <span style="color:var(--text-dim);text-transform:none;letter-spacing:0">— **gras**, *italique*, #tag et <span style="color:var(--accent)">[[lien vers une note]]</span> sont reconnus</span></label><textarea id="fNotes" placeholder="Notes optionnelles… &#10;Prépare [[Entretien Dupont]] · #urgent"></textarea></div>
@@ -2332,8 +2360,17 @@ const cfg = {
   account:       'weschler.tom@gmail.com'
 };
 
-const SHEET_HEADER      = ['id','title','column','importance','due_date','created_at','completed_at','notes','project','recurrence','checklist','snoozes'];
-const TASK_LAST_COL     = 'L';
+const SHEET_HEADER      = ['id','title','column','importance','due_date','created_at','completed_at','notes','project','recurrence','checklist','snoozes','blocked_by'];
+const TASK_LAST_COL     = 'M';
+// ── Tâches en attente ─────────────────────────────────────────────────────
+// Une tâche n'est pas seulement « à faire » ou « faite » : la moitié du travail
+// d'un chef de projet attend quelqu'un d'autre. Tant qu'elle attend, elle n'est
+// pas actionnable — la compter en retard rend le compteur de retard faux, et un
+// compteur faux, on cesse de le regarder. Elle sort donc des retards et de la
+// page du jour, mais remonte dans le Suivi avec son ancienneté : rien ne se
+// perd, tout se range là où c'est vrai.
+const taskBlocked=t=>!!String(t&&t.blocked_by||'').trim();
+const taskLate=t=>!!(t.due_date&&t.due_date<td()&&!taskBlocked(t));
 // Récurrence : cocher une tâche récurrente en recrée aussitôt la suivante.
 const RECURRENCES = [['','Aucune'],['daily','Tous les jours'],['weekly','Toutes les semaines'],
                      ['monthly','Tous les mois'],['yearly','Tous les ans']];
@@ -2822,7 +2859,8 @@ async function loadFromSheets() {
       id: parseInt(p[0])||Date.now(), title:p[1]||'', column:p[2]||'BackLog',
       importance:parseInt(p[3])||3, due_date:p[4]||'', created_at:p[5]||td(),
       completed_at:p[6]||'', notes:p[7]||'', project:(p[8]||'').trim(),
-      recurrence:(p[9]||'').trim(), checklist:p[10]||'', snoozes:parseInt(p[11],10)||0
+      recurrence:(p[9]||'').trim(), checklist:p[10]||'', snoozes:parseInt(p[11],10)||0,
+      blocked_by:(p[12]||'').trim()
     }));
     // Migration : le projet vivait dans le titre (« DCB : … »). On le remonte dans
     // sa colonne et on retire le préfixe, devenu redondant avec le tag de la carte.
@@ -2862,7 +2900,7 @@ async function fetchRemoteRows(){
 function taskToRow(t){
   return [String(t.id),t.title,taskColumnFromDate(t.due_date),String(t.importance),
           t.due_date||'',t.created_at||'',t.completed_at||'',t.notes||'',t.project||'',t.recurrence||'',t.checklist||'',
-          String(t.snoozes||0)];
+          String(t.snoozes||0),t.blocked_by||''];
 }
 let conflictPending=false;
 async function saveToSheets(force) {
@@ -3354,7 +3392,7 @@ function filterTasksByBoard(list) {
   const today=td();
   return list.filter(t =>
     (boardFilter==='all'||(t.project||'')===boardFilter) &&
-    (!boardLate||(t.due_date&&t.due_date<today)) &&
+    (!boardLate||taskLate(t)) &&
     (!q||[t.title,t.notes,t.project].join(' ').toLowerCase().includes(q))
   );
 }
@@ -3384,7 +3422,7 @@ function render() {
   });
   const lt=document.getElementById('bfLate');
   if(lt){
-    const n=tasks.filter(t=>t.due_date&&t.due_date<td()).length;
+    const n=tasks.filter(taskLate).length;
     lt.style.display=n?'':'none';
     lt.classList.toggle('active',boardLate);
     lt.textContent=`⚠ EN RETARD ${n}`;
@@ -3403,7 +3441,11 @@ function mkCard(t, now) {
   const proj=t.project||'';
   const tag=proj?`<div class="card-tag ${projClass(proj)}">${tdEsc(proj).toUpperCase()}</div>`:'';
   let badge='',ac='';
-  if(t.due_date){
+  // Une tâche en attente garde son échéance mais perd son alarme : elle n'est
+  // pas actionnable, la faire clignoter en rouge n'aide personne.
+  const bloq=taskBlocked(t);
+  if(bloq)c.classList.add('a-wait');
+  if(t.due_date&&!bloq){
     const due=new Date(t.due_date);due.setHours(0,0,0,0);
     const diff=Math.ceil((due-now)/86400000);
     let bc='normal',bl=`J-${diff}`;
@@ -3413,6 +3455,7 @@ function mkCard(t, now) {
     else if(diff<=3){bc='warn';bl=`J-${diff}`;ac='a-warn'}
     badge=`<span class="due-badge ${bc}">${bl}</span>`;
   }
+  if(bloq)badge=`<span class="due-badge wait" title="En attente de ${tdEsc(t.blocked_by)}${t.due_date?` · échéance ${tdEsc(t.due_date)}`:''}">⏸ ${tdEsc(t.blocked_by).toUpperCase()}</span>`;
   if(ac)c.classList.add(ac);
   let dots='';for(let i=1;i<=5;i++)dots+=`<div class="idot idot-${i}${i<=t.importance?' on':''}"></div>`;
   const notes=t.notes?`<div class="card-notes md" onclick="event.stopPropagation();this.classList.toggle('open')" title="Cliquer pour déplier">${mdTaskNote(t.notes)}</div>`:'';
@@ -3547,6 +3590,25 @@ async function completeTask(id){
   await persist();
 }
 
+// Débloquer : ce qui attendait redevient actionnable. Si l'échéance est déjà
+// passée, elle repart à aujourd'hui — la tâche n'était pas en retard, elle
+// attendait ; la faire réapparaître avec dix jours de retard serait un mensonge.
+async function taskUnblock(id){
+  const at=allTasks.find(x=>x.id===id); if(!at||!taskBlocked(at))return;
+  const qui=at.blocked_by;
+  const dateAvant=at.due_date;
+  const t=tasks.find(x=>x.id===id);
+  [at,t].forEach(x=>{ if(!x)return;
+    x.blocked_by='';
+    if(x.due_date&&x.due_date<td())x.due_date=td();
+    x.column=taskColumnFromDate(x.due_date); });
+  render(); if(curPage==='adp')renderAdp(); await persist();
+  offerUndo(`Débloqué — attendait ${qui}`,async()=>{
+    [at,tasks.find(x=>x.id===id)].forEach(x=>{ if(!x)return;
+      x.blocked_by=qui; x.due_date=dateAvant; x.column=taskColumnFromDate(x.due_date); });
+    render(); if(curPage==='adp')renderAdp(); await persist();
+  });
+}
 // Report d'échéance : on repart d'aujourd'hui si la tâche est en retard ou sans
 // date, sinon de son échéance — un report ne doit jamais retomber dans le passé.
 async function snoozeTask(id,days){
@@ -3595,6 +3657,7 @@ function openModal(id, prefill, proj){
   document.getElementById('fNotes').value='';setImp(3);
   document.getElementById('fProj').value=proj||'';
   document.getElementById('fRec').value='';document.getElementById('fCheck').value='';
+  document.getElementById('fBlock').value='';
   document.getElementById('btnDel').style.display='none';
   document.getElementById('modalTitle').textContent='NOUVELLE TÂCHE';
   if(id){
@@ -3605,6 +3668,7 @@ function openModal(id, prefill, proj){
     document.getElementById('fProj').value=t.project||'';
     document.getElementById('fRec').value=t.recurrence||'';
     document.getElementById('fCheck').value=checklistToText(taskChecklist(t));
+    document.getElementById('fBlock').value=t.blocked_by||'';
     document.getElementById('btnDel').style.display='block';
     document.getElementById('modalTitle').textContent='ÉDITER LA TÂCHE';
   }
@@ -3644,9 +3708,10 @@ async function renderTodayPage(){
     d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}).toUpperCase();
 
   // ── tâches du jour (les retards remontent ici) ──
-  const list=tasks.filter(t=>taskColumnFromDate(t.due_date)==="Aujourd'hui")
+  const list=tasks.filter(t=>taskColumnFromDate(t.due_date)==="Aujourd'hui"&&!taskBlocked(t))
     .sort(taskSort);
-  const late=list.filter(t=>t.due_date&&t.due_date<today).length;
+  const late=list.filter(taskLate).length;
+  const attente=tasks.filter(taskBlocked).length;
   document.getElementById('tdTasks').innerHTML=
     `<div class="td-t">Tâches <span class="td-n">${list.length}</span>${late?`<span class="td-late">${late} en retard</span>`:''}</div>`+
     (list.length?list.map(t=>{
@@ -3667,7 +3732,10 @@ async function renderTodayPage(){
         ${badge}
         <div class="imp-dots td-imp" title="Importance ${t.importance}">${dots}</div>
       </div>`;
-    }).join(''):'<div class="td-empty">Rien pour aujourd\'hui.</div>');
+    }).join(''):'<div class="td-empty">Rien pour aujourd\'hui.</div>')+
+    // Ce qui attend quelqu'un d'autre ne se fait pas ici : on rappelle juste
+    // qu'il y en a, et on renvoie là où on relance.
+    (attente?`<button class="td-go quiet" onclick="switchPage('adp');setAdpView('suivi');setSuiviFiltre('attente')">⏸ ${attente} en attente de quelqu'un →</button>`:'');
 
   // ── habitudes du jour ──
   const due=habits.filter(h=>h.active&&isHabitDueToday(h.frequency));
@@ -3714,6 +3782,14 @@ async function renderTodayPage(){
 // ── ce qui attend cote projets ──
 // Les relances et les jalons ne servent a rien s'il faut ouvrir ADP pour les
 // voir : ils remontent ici, actionnables sur place.
+// La carte tirait ses lignes de sa propre logique — relances dues, jalons a
+// sept jours — pendant que la vue Suivi en tenait une seconde, plus large. Deux
+// verites pour la meme question. Elle lit desormais suiviItems(7), la meme
+// source, avec le meme tri par anciennete et les memes gestes.
+// Les taches en sont retirees : elles ont leur carte juste a cote. Ce qui
+// ATTEND quelqu'un, en revanche, n'apparait nulle part ailleurs sur cette page.
+let tdAdpActs=[];
+function tdAdpRun(i){ const f=tdAdpActs[i]; if(f)f(); }
 function renderTodayAdp(){
   const el=document.getElementById('tdAdp'); if(!el)return;
   if(!adpLoaded&&!adpProjects.length&&!adpContacts.length){
@@ -3722,29 +3798,26 @@ function renderTodayAdp(){
       `<button class="td-go" onclick="switchPage('adp')">Ouvrir ADP →</button>`;
     return;
   }
-  const due=adpDueContacts();
-  const miles=adpSoonMiles(7);
-  el.innerHTML=`<div class="td-t">Projets <span class="td-n">${due.length+miles.length}</span></div>`+
-    (due.length?`<div class="rv-sub">À relancer</div>`+due.slice(0,6).map(c=>{
-      const p=c.project_id?adpProjById(c.project_id):null;
+  const tous=suiviItems(7).filter(x=>x.type!=='tache');
+  const enRetard=tous.filter(x=>x.depuis>0).length;
+  const list=tous.slice(0,5);
+  tdAdpActs=[];
+  const age=n=>n<-1?`J-${-n}`:n===-1?'demain':n===0?'auj.':n===1?'hier':`+${n}j`;
+  el.innerHTML=`<div class="td-t">Projets <span class="td-n">${tous.length}</span>`
+    +`${enRetard?`<span class="td-late">${enRetard} en retard</span>`:''}</div>`+
+    (list.length?list.map(x=>{
+      const i=tdAdpActs.length;
+      tdAdpActs.push(x.actions[0][1]);
+      const cls=x.depuis>=14?'overdue':x.depuis>=3?'danger':x.depuis>0?'warn':'normal';
       return `<div class="td-row">
-        <button class="td-check" onclick="adpTouch('${c.id}')" title="Marquer comme relancé aujourd'hui"></button>
-        <span class="td-lbl"><span class="td-name">${tdEsc(c.name)}</span>
-          <span class="td-meta">${p?tdEsc(p.name)+' · ':''}${c.last_contact?`vu le ${c.last_contact}`:'jamais contacté'}</span></span>
-        <button class="adp-act" onclick="switchPage('adp');setAdpView('suivi');openAdpCompose('${c.id}')">✉</button>
+        <button class="td-check" onclick="tdAdpRun(${i})" title="${tdEsc(x.actions[0][0])}"></button>
+        <span class="td-lbl"><span class="td-name">${tdEsc(x.ic)} ${tdEsc(x.quoi)}</span>
+          <span class="td-meta">${tdEsc(x.ou)}${x.det?` · ${tdEsc(x.det)}`:''}</span></span>
+        <span class="due-badge ${cls}" title="échéance ${tdEsc(x.date)}">${age(x.depuis)}</span>
       </div>`;
-    }).join(''):'')+
-    (miles.length?`<div class="rv-sub">Jalons sous 7 jours</div>`+miles.slice(0,6).map(m=>{
-      const p=adpProjById(m.project_id), d=dayDiff(m.due_date);
-      return `<div class="td-row">
-        <button class="td-check" onclick="adpToggleMile('${m.id}')" title="Terminer"></button>
-        <span class="td-lbl"><span class="td-name">${tdEsc(m.title)}</span>
-          <span class="td-meta">${p?tdEsc(p.name)+' · ':''}${m.due_date}</span></span>
-        <span class="due-badge ${d<0?'overdue':d<=1?'danger':'warn'}">${d<0?'EN RETARD':'J-'+d}</span>
-      </div>`;
-    }).join(''):'')+
-    (due.length||miles.length?'':'<div class="td-empty">Rien à relancer, aucun jalon proche.</div>')+
-    `<button class="td-go" onclick="switchPage('adp')">Ouvrir ADP →</button>`;
+    }).join(''):'<div class="td-empty">Rien ne traîne, rien n\'arrive sous 7 jours.</div>')+
+    (tous.length>list.length?`<div class="td-more">+ ${tous.length-list.length} autre${tous.length-list.length>1?'s':''}</div>`:'')+
+    `<button class="td-go" onclick="switchPage('adp');setAdpView('suivi')">Ouvrir LE SUIVI →</button>`;
 }
 
 // Enregistre le statut du jour sans quitter la page, en preservant ce qui a
@@ -4235,7 +4308,7 @@ function updateHStats(){
   if(!el)return;
   const todayStr=td();
   const auj=tasks.filter(t=>taskColumnFromDate(t.due_date)==="Aujourd'hui").length;
-  const retard=tasks.filter(t=>t.due_date&&t.due_date<todayStr).length;
+  const retard=tasks.filter(taskLate).length;
   // Chaque indicateur mene a l'endroit ou l'on agit dessus : ils cessent d'etre
   // de simples compteurs.
   const kpi=(l,v,c,act,ti)=>`<div class="hstat${act?' go':''}"${c?` style="color:${c}"`:''}`
@@ -5757,14 +5830,23 @@ function resetSigCfg(){
 function budChart(pid,year,w,h){
   w=w||620; h=h||190;
   const mois=budMonths(year);
-  const reel=[], est=[];
-  let cr=0;
+  // Trois courbes plutôt qu'une : le réalisé s'arrête au dernier mois saisi, le
+  // PRÉVU va jusqu'en décembre. C'est le prolongement du réalisé par le prévu
+  // qui dit où l'on atterrit — la courbe cumulée seule ne disait que d'où l'on
+  // vient.
+  const reel=[], est=[], prev=[];
+  let cr=0, cp=0;
   const estAn=budProjEst(pid,String(year))||budProjEst(pid,'G');
-  mois.forEach((m,i)=>{ cr+=budProjMonth(pid,m); reel.push(cr); est.push(estAn*(i+1)/12); });
-  const dernier=mois.reduce((acc,m,i)=>budProjMonth(pid,m)?i:acc,-1);
-  if(dernier<0&&!estAn)return '<div class="mes-nochart">Aucun montant saisi sur l\'exercice.</div>';
+  mois.forEach((m,i)=>{ cr+=budProjMonth(pid,m,'reel'); cp+=budProjMonth(pid,m,'prevu');
+    reel.push(cr); prev.push(cp); est.push(estAn*(i+1)/12); });
+  const dernier=mois.reduce((acc,m,i)=>budProjMonth(pid,m,'reel')?i:acc,-1);
+  const dernierP=mois.reduce((acc,m,i)=>budProjMonth(pid,m,'prevu')?i:acc,-1);
+  if(dernier<0&&dernierP<0&&!estAn)return '<div class="mes-nochart">Aucun montant saisi sur l\'exercice.</div>';
+  // Atterrissage : le réalisé jusqu'à aujourd'hui, puis le prévu qui reste.
+  const atter=dernier>=0&&dernierP>dernier
+    ? reel[dernier]+(prev[dernierP]-prev[dernier]) : null;
   const pad={l:52,r:10,t:12,b:20};
-  const hi=Math.max(...reel,...est,1)*1.1;
+  const hi=Math.max(...reel,...est,...prev,1)*1.1;
   const px=i=>pad.l+i/11*(w-pad.l-pad.r);
   const py=v=>pad.t+(1-v/hi)*(h-pad.t-pad.b);
   const trace=(a,n)=>a.slice(0,n).map((v,i)=>`${i?'L':'M'}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
@@ -5775,6 +5857,7 @@ function budChart(pid,year,w,h){
   return `<svg class="mes-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Trajectoire budgétaire">
     ${grid}
     ${estAn?`<path d="${trace(est,12)}" fill="none" stroke="var(--text-dim)" stroke-width="1.4" stroke-dasharray="5 4"/>`:''}
+    ${dernierP>=0?`<path d="${trace(prev,dernierP+1)}" fill="none" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="2 3" opacity="0.85"/>`:''}
     ${n>1?`<path d="${trace(reel,n)}" fill="none" stroke="${estAn&&reel[n-1]>est[n-1]?'var(--danger)':'var(--accent)'}" stroke-width="2" stroke-linejoin="round"/>`:''}
     ${reel.slice(0,n).map((v,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(v).toFixed(1)}" r="2.4"
        fill="${estAn&&v>est[i]?'var(--danger)':'var(--accent)'}"><title>${BUD_MOIS[i]} · ${budFmt(v)} cumulé${estAn?` · estimé ${budFmt(est[i])}`:''}</title></circle>`).join('')}
@@ -5782,7 +5865,9 @@ function budChart(pid,year,w,h){
     <text x="${w-pad.r}" y="${h-4}" class="mes-ax" text-anchor="end">déc. ${year}</text>
   </svg>
   <div class="bud-leg"><span class="bud-leg-r"></span>réalisé cumulé
-    ${estAn?`<span class="bud-leg-e"></span>estimé réparti (${budFmt(estAn)}/an)`:''}</div>`;
+    ${dernierP>=0?`<span class="bud-leg-p"></span>prévu cumulé`:''}
+    ${estAn?`<span class="bud-leg-e"></span>estimé réparti (${budFmt(estAn)}/an)`:''}
+    ${atter!=null?`<span class="bud-leg-a">atterrissage ${budFmt(atter)}${estAn?` · estimé ${budFmt(estAn)}`:''}${estAn&&atter>estAn?' ⚠':''}</span>`:''}</div>`;
 }
 
 // ── Point projet ──────────────────────────────────────────────────────────
@@ -5820,6 +5905,7 @@ function ptMarkdown(p){
   const sante=(ADP_HEALTH.find(h=>h[0]===p.health)||['','?'])[1];
   const L=[`> ${p.client?p.client+' · ':''}${p.domaine?p.domaine+' · ':''}point du ${td()}`,'',
     '## État',
+    ...(p.next_action?[`- Prochaine action : **${p.next_action}**`]:[]),
     `- Santé : **${sante}**${p.deadline?` · échéance **${p.deadline}** (J-${dayDiff(p.deadline)})`:''}`,
     `- Jalons : **${jalons.length-ouverts.length}/${jalons.length}** faits${retard.length?` · {rouge:${retard.length} en retard}`:''}`,
     `- Tâches ouvertes sur le board : **${tks.length}**`];
@@ -5900,7 +5986,8 @@ const PROJ_COLS=[
   ['retard',  'En retard',p=>adpProjMiles(p.id).filter(m=>m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<0).length],
   ['relances','Relances', p=>adpContacts.filter(c=>c.project_id===p.id&&adpIsDue(c)).length],
   ['budget',  'Réalisé',  p=>budProjReel(p.id)],
-  ['maj',     'Avancée',  p=>{const n=p.note_id?noteById(p.note_id):null;return n&&n.updated_at?n.updated_at:'';}]];
+  ['maj',     'Avancée',  p=>{const n=p.note_id?noteById(p.note_id):null;return n&&n.updated_at?n.updated_at:'';}],
+  ['action',  'Prochaine action',p=>p.next_action||'zzz']];
 function renderProjTable(el,list){
   const col=PROJ_COLS.find(c=>c[0]===adpProjSort)||PROJ_COLS[3];
   const tri=list.slice().sort((a,b)=>{
@@ -5929,6 +6016,7 @@ function renderProjTable(el,list){
         <td class="bud-n${rel?' over':''}">${rel||'—'}</td>
         <td class="bud-n${est&&reel>est?' over':''}">${budFmt(reel)||'—'}</td>
         <td class="bud-n">${n&&n.updated_at?n.updated_at:'—'}</td>
+        <td class="bud-a">${p.next_action?adpEsc(p.next_action):'<span class="bud-vide">— à poser —</span>'}</td>
       </tr>`;}).join('')}</tbody></table></div>`;
 }
 
@@ -6361,17 +6449,17 @@ const MES_SEED=[
 //     [[liens]], du graphe et de la recherche — sans une ligne de plus.
 //   · les MODÈLES et PROCÉDURES gardent leur corps dans la feuille : ce sont
 //     des documents de référence, courts, qu'on remplit plutôt qu'on écrit.
-const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at','budget','domaine'];
+const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at','budget','domaine','next_action'];
 const ADP_CONT_HEADER = ['id','name','org','role','email','phone','project_id','cadence','last_contact','status','notes','updated_at'];
 const ADP_MILE_HEADER = ['id','project_id','title','due_date','status','kind','done_at','updated_at'];
 const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at','steps','followup','status'];
 const ADP_RUN_HEADER=['id','template_id','project_id','title','start_date','status','steps','updated_at'];
-const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updated_at'];
+const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updated_at','planned'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
-const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'M'],['adp_contacts',ADP_CONT_HEADER,'L'],
+const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'N'],['adp_contacts',ADP_CONT_HEADER,'L'],
                     ['adp_milestones',ADP_MILE_HEADER,'H'],['adp_templates',ADP_TPL_HEADER,'J'],
-                    ['adp_budget',ADP_BUD_HEADER,'G'],['adp_runs',ADP_RUN_HEADER,'H']];
+                    ['adp_budget',ADP_BUD_HEADER,'H'],['adp_runs',ADP_RUN_HEADER,'H']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
 const ADP_HEALTH  = [['vert','Sous contrôle'],['orange','Vigilance'],['rouge','En difficulté']];
@@ -6423,9 +6511,9 @@ async function loadAdp(){
   if(!accessToken)return;
   await ensureAdpSheets();
   const [pr,co,mi,tp,bu,ru]=await Promise.all([
-    adpFetch('adp_projects','A:M'), adpFetch('adp_contacts','A:L'),
+    adpFetch('adp_projects','A:N'), adpFetch('adp_contacts','A:L'),
     adpFetch('adp_milestones','A:H'), adpFetch('adp_templates','A:J'),
-    adpFetch('adp_budget','A:G'), adpFetch('adp_runs','A:H')]);
+    adpFetch('adp_budget','A:H'), adpFetch('adp_runs','A:H')]);
   // La dernière ligne gagne. Une ligne vidée est une pierre tombale : la
   // suppression garde la ligne pour ne jamais décaler la feuille sous les
   // écritures en vol, mais l'objet ne doit pas ressusciter au rechargement.
@@ -6439,7 +6527,7 @@ async function loadAdp(){
     health:adpCell(x,6)||'vert',note_id:adpCell(x,7),color:adpCell(x,8),
     created_at:adpCell(x,9),updated_at:adpCell(x,10),
     budget:parseFloat(String(adpCell(x,11)).replace(',','.'))||0,
-    domaine:adpCell(x,12)})),'name');
+    domaine:adpCell(x,12),next_action:adpCell(x,13)})),'name');
   adpContacts=dedupe(co.map(x=>({id:adpCell(x,0),name:adpCell(x,1),org:adpCell(x,2),
     role:adpCell(x,3),email:adpCell(x,4),phone:adpCell(x,5),project_id:adpCell(x,6),
     cadence:parseInt(adpCell(x,7),10)||0,last_contact:adpCell(x,8),
@@ -6455,9 +6543,10 @@ async function loadAdp(){
   const bd={};
   bu.forEach(x=>{ const o={id:adpCell(x,0),project_id:adpCell(x,1),capex:adpCell(x,2),
     nature:adpCell(x,3),month:adpCell(x,4),
-    amount:parseFloat(String(adpCell(x,5)).replace(',','.'))||0};
-    // une ligne remise a zero n'a plus rien a dire : on l'oublie
-    if(o.id&&o.project_id&&o.amount)bd[o.id]=o; else if(o.id)delete bd[o.id]; });
+    amount:parseFloat(String(adpCell(x,5)).replace(',','.'))||0,
+    planned:parseFloat(String(adpCell(x,7)).replace(',','.'))||0};
+    // une ligne remise a zero des DEUX cotes n'a plus rien a dire : on l'oublie
+    if(o.id&&o.project_id&&(o.amount||o.planned))bd[o.id]=o; else if(o.id)delete bd[o.id]; });
   adpBudget=Object.values(bd); budIdxInvalidate();
   adpRuns=dedupe(ru.map(x=>{
     let st=[]; try{ st=JSON.parse(x[6]||'[]')||[]; }catch(e){}
@@ -6479,7 +6568,7 @@ function adpRestoreCache(){
   adpBudget=cacheGet('adpBudget',[]); budIdxInvalidate(); adpRuns=cacheGet('adpRuns',[]);
 }
 const adpProjRow=p=>[p.id,p.name,p.client||'',p.status||'actif',p.start_date||'',p.deadline||'',
-  p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td(),String(p.budget||0),p.domaine||''];
+  p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td(),String(p.budget||0),p.domaine||'',p.next_action||''];
 const adpContRow=c=>[c.id,c.name,c.org||'',c.role||'',c.email||'',c.phone||'',c.project_id||'',
   String(c.cadence||0),c.last_contact||'',c.status||'actif',c.notes||'',td()];
 const adpMileRow=m=>[m.id,m.project_id||'',m.title,m.due_date||'',m.status||'todo',m.kind||'jalon',m.done_at||'',td()];
@@ -6574,7 +6663,7 @@ function toggleAdpArchived(){ adpShowArchived=!adpShowArchived; renderAdp(); }
 function renderAdpProjects(el){
   if(adpProjCur)return renderAdpProjectPage(el);
   const q=voNorm(adpSearch);
-  const list=adpActive().filter(p=>!q||voNorm(`${p.name} ${p.client} ${p.domaine}`).includes(q))
+  const list=adpActive().filter(p=>!q||voNorm(`${p.name} ${p.client} ${p.domaine} ${p.next_action||''}`).includes(q))
     .sort((a,b)=>(a.deadline||'9999').localeCompare(b.deadline||'9999')||a.name.localeCompare(b.name,'fr'));
   el.innerHTML=`
     <div class="adp-tools">
@@ -6610,7 +6699,10 @@ function adpProjCard(p){
       ${miles.length?`<span class="adp-c-tag">${done}/${miles.length} jalons</span>`:''}
       ${due?`<span class="adp-c-tag warn">${due} relance${due>1?'s':''}</span>`:''}
     </div>
-    ${next?`<div class="adp-c-next">▸ ${adpEsc(next.title)}${next.due_date?` · ${next.due_date}`:''}</div>`:''}
+    ${p.next_action
+      ?`<div class="adp-c-next act" title="Prochaine action">▶ ${adpEsc(p.next_action)}</div>`
+      :next?`<div class="adp-c-next">▸ ${adpEsc(next.title)}${next.due_date?` · ${next.due_date}`:''}</div>`
+      :'<div class="adp-c-next vide">▶ prochaine action non posée</div>'}
   </div>`;
 }
 
@@ -6631,6 +6723,18 @@ async function openAdpProject(id){
   renderAdp();
 }
 function closeAdpProject(){ adpProjCur=null; renderAdp(); }
+
+// La fiche projet disait tout — jalons, contacts, journal, budget — sauf ce
+// qu'on venait y chercher : « c'est quoi la balle dans mon camp ? ». Une seule
+// phrase, editable sur place, reprise dans les rapports et dans la Revue.
+// Pas de re-rendu : on ne fait pas sauter le champ sous le curseur.
+async function adpSetNextAction(id,val){
+  const p=adpProjById(id); if(!p)return;
+  const v=String(val||'').trim();
+  if(v===(p.next_action||''))return;
+  p.next_action=v;
+  if(!(await adpSave('proj',p)))toast("ÉCHEC de l'enregistrement",'err');
+}
 
 function renderAdpProjectPage(el){
   const p=adpProjById(adpProjCur);
@@ -6653,6 +6757,11 @@ function renderAdpProjectPage(el){
     </div>
     <div class="adp-proj">
       <div class="adp-journal">
+        <div class="adp-sec">Prochaine action</div>
+        <input class="adp-next" id="adpNextAct" value="${adpEsc(p.next_action||'')}"
+               placeholder="La balle est dans mon camp pour…"
+               onchange="adpSetNextAction('${p.id}',this.value)"
+               title="Une seule phrase : ce que TU dois faire ensuite. Reprise dans les rapports et la Revue.">
         <div class="adp-sec">Journal du projet</div>
         ${n?`<div class="md-hold" id="adpJournal"></div>`
            :`<div class="gl-empty">Journal indisponible hors connexion.</div>`}
@@ -7283,7 +7392,7 @@ function computeSignals(){
   const push=(id,level,text,hint,go)=>out.push({id,level,text,hint,go});
 
   // ── Tâches ──
-  const retard=tasks.filter(t=>t.due_date&&dayDiff(t.due_date)<=-sigCfg.retard);
+  const retard=tasks.filter(t=>t.due_date&&dayDiff(t.due_date)<=-sigCfg.retard&&!taskBlocked(t));
   if(retard.length)push('t.retard','orange',
     `${retard.length} tâche${retard.length>1?'s':''} en retard de plus de ${sigCfg.retard} jours`,
     retard.slice(0,3).map(t=>t.title).join(' · '),
@@ -7474,6 +7583,54 @@ const RUN_TYPES=[
   ['note',   'Entrée au journal', '📝', 'Ajoute une ligne datée au journal du projet.'],
   ['choix',  'Choix (aiguillage)','❓', 'Pose une question ; les options ouvrent des branches différentes.']];
 const runTypeMeta=t=>RUN_TYPES.find(x=>x[0]===t)||RUN_TYPES[0];
+
+// ── Conditions sur DONNÉES ────────────────────────────────────────────────
+// Une condition « e3=Oui » attend qu'un humain réponde. Utile, mais ça n'est
+// qu'une checklist guidée : la procédure ne SAIT rien. Ces prédicats-là lisent
+// l'état réel du projet — santé, jalons, échéance, budget, relances, tâches —
+// et se réévaluent à chaque rendu. Une branche « escalade » peut donc s'ouvrir
+// toute seule le jour où le budget passe au rouge, et se refermer si ça rentre
+// dans l'ordre. C'est ce qui fait passer les procédures de guide à surveillance.
+//
+// Écriture : `$clé` (vrai) ou `$!clé` (faux). Le `$` distingue sans ambiguïté
+// d'une clé d'étape, et le format texte de la feuille reste lisible.
+// Chaque prédicat prend le PROJET de la procédure ; sans projet, il est faux —
+// on ne devine pas.
+const RUN_DATA=[
+  ['sante.rouge',  'la santé du projet est rouge',
+    p=>p.health==='rouge'],
+  ['sante.pasvert','la santé du projet n\'est pas au vert',
+    p=>p.health!=='vert'],
+  ['jalon.retard', 'un jalon du projet est en retard',
+    p=>adpMilestones.some(m=>m.project_id===p.id&&m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<0)],
+  ['deadline.14',  'l\'échéance du projet est à moins de 14 jours',
+    p=>!!p.deadline&&dayDiff(p.deadline)<=14],
+  ['deadline.passee','l\'échéance du projet est dépassée',
+    p=>!!p.deadline&&dayDiff(p.deadline)<0],
+  ['budget.depasse','le réalisé dépasse l\'estimé',
+    p=>budProjEst(p.id,'G')>0&&budProjReel(p.id)>budProjEst(p.id,'G')],
+  ['budget.80',    'le réalisé dépasse 80% de l\'estimé',
+    p=>budProjEst(p.id,'G')>0&&budProjReel(p.id)>=0.8*budProjEst(p.id,'G')],
+  ['budget.derive','l\'atterrissage dépasse l\'estimé',
+    p=>{ const e=budProjEst(p.id,'G'); if(!e)return false;
+         return budProjReel(p.id,'reel')+Math.max(0,budProjReel(p.id,'prevu')-budProjReel(p.id,'reel'))>e; }],
+  ['relance.due',  'une relance est due sur le projet',
+    p=>adpContacts.some(c=>c.project_id===p.id&&adpIsDue(c))],
+  ['tache.retard', 'une tâche du projet est en retard',
+    p=>!!p.client&&tasks.some(t=>t.project===p.client&&taskLate(t))],
+  ['tache.attente','une tâche du projet attend quelqu\'un',
+    p=>!!p.client&&tasks.some(t=>t.project===p.client&&taskBlocked(t))]];
+const runDataMeta=k=>RUN_DATA.find(x=>x[0]===k)||null;
+// Rend true / false, jamais null : une donnée est toujours connue, contrairement
+// à une réponse qu'on n'a pas encore donnée.
+function runDataTest(cond,proj){
+  const neg=cond.charAt(0)==='!';
+  const m=runDataMeta(neg?cond.slice(1):cond);
+  if(!m)return true;                       // prédicat inconnu : on ne bloque rien
+  let v=false;
+  try{ v=!!(proj&&m[2](proj)); }catch(e){ v=false; }
+  return neg?!v:v;
+}
 const RUN_STATES={active:['À faire','act'],bloquee:['En attente','blo'],
                   faite:['Faite','fai'],ignoree:['Branche écartée','ign']};
 
@@ -7503,7 +7660,8 @@ function parseSteps(raw){
   out.forEach((s,i)=>{
     const avant=new Set(out.slice(0,i).map(x=>x.key));
     s.after=s.after.filter(k=>avant.has(k));          // jamais de cycle
-    if(s.cond){ const m=/^(.+?)!?=/.exec(s.cond); if(!m||!connues.has(m[1]))s.cond=''; }
+    if(s.cond&&s.cond.charAt(0)!=='$'){ const m=/^(.+?)!?=/.exec(s.cond); if(!m||!connues.has(m[1]))s.cond=''; }
+    if(s.cond&&s.cond.charAt(0)==='$'&&!runDataMeta(s.cond.replace(/^\$!?/,'')))s.cond='';
   });
   return out;
 }
@@ -7562,13 +7720,16 @@ function stepDoneOn(s){
 // Pur : ne touche à rien, sert au rendu, aux compteurs et aux signaux.
 // Rend {state, avail} indexés par clé d'étape.
 function runStates(r){
-  const steps=r.steps||[], byKey={};
+  const steps=r.steps||[], byKey={}, proj=adpProjById(r.project_id);
   steps.forEach(s=>{ byKey[s.key]=s; });
   const state={}, avail={};
   steps.forEach(s=>{
     // 1. la condition d'abord : une branche écartée n'attend plus rien
     let cond='ok';
-    if(s.cond){
+    if(s.cond&&s.cond.charAt(0)==='$'){
+      // Condition sur données : toujours tranchée, jamais en attente.
+      cond=runDataTest(s.cond.slice(1),proj)?'ok':'ko';
+    }else if(s.cond){
       const m=/^(.+?)(!=|=)(.*)$/.exec(s.cond);
       const src=m&&byKey[m[1]];
       if(!m||!src)cond='ok';                       // condition orpheline : on n'en tient pas compte
@@ -7622,6 +7783,10 @@ async function runAdvance(r){
   let bouge=false, nouvelles=[];
   for(const s of r.steps||[]){
     if(state[s.key]==='ignoree'){ if(!s.skipped){ s.skipped=td(); bouge=true; } continue; }
+    // Une condition sur données peut se retourner : ce qui avait été écarté
+    // redevient vivant. On efface la date d'abandon, sinon la feuille garderait
+    // la trace d'un écartement qui n'a plus lieu.
+    if(s.skipped){ s.skipped=''; bouge=true; }
     if(state[s.key]!=='active')continue;
     if(!s.due){ s.due=plusDaysFrom(avail[s.key]||r.start_date,s.off); bouge=true; }
     if(s.type==='tache'&&!s.ref){
@@ -7664,8 +7829,14 @@ function openRunLaunch(tplId){
   document.getElementById('runLaunchModal').classList.add('open');
 }
 function runCondLabel(cond,num){
-  const m=/^(.+?)(!=|=)(.*)$/.exec(cond||'');
-  if(!m)return cond||'';
+  const c=String(cond||'');
+  if(c.charAt(0)==='$'){
+    const neg=c.charAt(1)==='!';
+    const m=runDataMeta(c.slice(neg?2:1));
+    return m?(neg?'non : ':'')+m[1]:c;
+  }
+  const m=/^(.+?)(!=|=)(.*)$/.exec(c);
+  if(!m)return c;
   return `${num&&num[m[1]]?num[m[1]]:m[1]} ${m[2]==='='?'=':'≠'} ${m[3]}`;
 }
 function closeRunLaunch(){ document.getElementById('runLaunchModal').classList.remove('open'); }
@@ -7864,18 +8035,27 @@ function renderTplSteps(t){
                  onchange="tplStepDep(${i},'${x.key}',this.checked)"> ${j+1}. ${adpEsc(x.label)}</label>`).join('')
               :'<span class="sb-none">Première étape.</span>'}</div>
           </details>
-          ${choix.length?`<select class="run-f run-cond" onchange="tplStepSet(${i},'cond',this.value)">
+          <select class="run-f run-cond" onchange="tplStepSet(${i},'cond',this.value)">
             <option value="">— toujours —</option>
-            ${choix.map(c=>runOptions(c).map(o=>
+            ${choix.length?`<optgroup label="Selon une réponse">`+choix.map(c=>runOptions(c).map(o=>
               `<option value="${adpEsc(c.key)}=${adpEsc(o)}"${s.cond===`${c.key}=${o}`?' selected':''}>si ${num[c.key]} = ${adpEsc(o)}</option>`+
-              `<option value="${adpEsc(c.key)}!=${adpEsc(o)}"${s.cond===`${c.key}!=${o}`?' selected':''}>si ${num[c.key]} ≠ ${adpEsc(o)}</option>`).join('')).join('')}
-          </select>`:''}
+              `<option value="${adpEsc(c.key)}!=${adpEsc(o)}"${s.cond===`${c.key}!=${o}`?' selected':''}>si ${num[c.key]} ≠ ${adpEsc(o)}</option>`).join('')).join('')+`</optgroup>`:''}
+            <optgroup label="Selon l'état du projet">
+              ${RUN_DATA.map(([k,l])=>
+                `<option value="$${k}"${s.cond==='$'+k?' selected':''}>si ${adpEsc(l)}</option>`+
+                `<option value="$!${k}"${s.cond==='$!'+k?' selected':''}>si NON : ${adpEsc(l)}</option>`).join('')}
+            </optgroup>
+          </select>
         </div>
       </div>`;}).join('')
       :'<div class="sb-none">Aucune étape. Sans étapes, la procédure ne se lance pas — elle se lit seulement.</div>')
     +`<div class="fld-hint">${RUN_TYPES.map(([,l,ic,d])=>`${ic} <b>${l}</b> — ${d}`).join('<br>')}
       <br><br>Le <b>J+</b> court à partir du déblocage de l'étape, pas du départ : ce qui glisse décale la suite.
-      Plusieurs étapes sur le même prérequis avancent <b>en parallèle</b>.</div>`;
+      Plusieurs étapes sur le même prérequis avancent <b>en parallèle</b>.
+      <br><br>Une condition <b>selon une réponse</b> attend qu'on réponde au choix ;
+      une condition <b>selon l'état du projet</b> se relit toute seule à chaque
+      ouverture — la branche s'ouvre le jour où le budget dérape et se referme
+      si ça rentre dans l'ordre.</div>`;
 }
 let tplStepTimer=null;
 function tplStepsCommit(t){
@@ -7962,14 +8142,41 @@ const budIdxInvalidate=()=>{ budIdx=null; budMoisIdx=null; };
 function budIndex(){
   if(budIdx)return budIdx;
   budIdx=new Map();
-  adpBudget.forEach(x=>budIdx.set(x.id,x.amount));
+  adpBudget.forEach(x=>budIdx.set(x.id,x));
   return budIdx;
 }
-const budAmount=(p,c,n,m)=>budIndex().get(budKey(p,c,n,m))||0;
+// ── Prévu, réalisé, écart ─────────────────────────────────────────────────
+// La grille mélangeait prévisionnel et réel dans une seule case : un mois passé
+// et un mois à venir s'y lisaient pareil, donc l'écart n'existait nulle part et
+// la trajectoire cumulait des chiffres de deux natures. Une même coordonnée
+// (projet · CAPEX · nature · mois) porte désormais DEUX montants — la ligne de
+// la feuille garde `amount` pour le réalisé et gagne `planned` pour le prévu.
+// Pas de ligne en double, pas de clé à changer : les données déjà saisies
+// restent le réalisé, ce qu'elles étaient.
+// Le mode ne change QUE l'affichage de la grille : les rapports, la trajectoire
+// et les signaux demandent explicitement ce qu'ils veulent lire.
+const BUD_MODES=[['reel','Réalisé'],['prevu','Prévu'],['ecart','Écart']];
+let budMode='reel';
+const LS_BUD_MODE='kanban_bud_mode';
+try{ const v=localStorage.getItem(LS_BUD_MODE); if(BUD_MODES.some(([k])=>k===v))budMode=v; }catch(e){}
+function setBudMode(m){
+  if(!BUD_MODES.some(([k])=>k===m))return;
+  budMode=m;
+  try{ localStorage.setItem(LS_BUD_MODE,m); }catch(e){}
+  renderAdp();
+}
+const budModeLabel=m=>(BUD_MODES.find(([k])=>k===(m||budMode))||BUD_MODES[0])[1];
+function budVal(id,md){
+  const r=budIndex().get(id); if(!r)return 0;
+  return md==='prevu'?(r.planned||0):md==='ecart'?((r.amount||0)-(r.planned||0)):(r.amount||0);
+}
+const budAmount=(p,c,n,m,md)=>budVal(budKey(p,c,n,m),md||'reel');
 // L'estimé vit dans la même feuille, sous une nature « est » que les sommes
 // ignorent : sa portée est soit 'G' (global, tous exercices), soit une année.
 // Pas de table de plus, pas d'index à tenir.
-const budEst=(p,c,scope)=>budAmount(p,c,'est',scope);
+// L'estimé n'a pas de prévu ni de réalisé : un estimé est un estimé. Il se lit
+// toujours sur `amount`, quel que soit le mode d'affichage de la grille.
+const budEst=(p,c,scope)=>budAmount(p,c,'est',scope,'reel');
 const budProjEst=(p,scope)=>ADP_CAPEX.reduce((s,[c])=>s+budEst(p,c,scope),0);
 // Réalisé : par mois, par année, ou tout confondu
 // Les mois réellement saisis, une fois pour toutes : le total d'une nature ne
@@ -7982,34 +8189,41 @@ function budMoisConnus(){
   budMoisIdx=[...set].sort();
   return budMoisIdx;
 }
-const budNatReel=(p,c,n)=>budMoisConnus().reduce((s,m)=>s+budAmount(p,c,n,m),0);
-const budNatReelYear=(p,c,n,y)=>budMoisConnus().filter(m=>m.startsWith(y+'-'))
-  .reduce((s,m)=>s+budAmount(p,c,n,m),0);
-const budCapexReel=(p,c)=>ADP_NATURE.reduce((s,[n])=>s+budNatReel(p,c,n),0);
-const budCapexReelYear=(p,c,y)=>ADP_NATURE.reduce((s,[n])=>s+budNatReelYear(p,c,n,y),0);
-const budProjReel=p=>ADP_CAPEX.reduce((s,[c])=>s+budCapexReel(p,c),0);
-const budProjReelYear=(p,y)=>ADP_CAPEX.reduce((s,[c])=>s+budCapexReelYear(p,c,y),0);
+// `md` par défaut à 'reel' : tout ce qui n'a pas explicitement demandé un mode
+// (rapports, trajectoire, signaux, point projet) continue de lire le réalisé.
+const budNatReel=(p,c,n,md)=>budMoisConnus().reduce((s,m)=>s+budAmount(p,c,n,m,md),0);
+const budNatReelYear=(p,c,n,y,md)=>budMoisConnus().filter(m=>m.startsWith(y+'-'))
+  .reduce((s,m)=>s+budAmount(p,c,n,m,md),0);
+const budCapexReel=(p,c,md)=>ADP_NATURE.reduce((s,[n])=>s+budNatReel(p,c,n,md),0);
+const budCapexReelYear=(p,c,y,md)=>ADP_NATURE.reduce((s,[n])=>s+budNatReelYear(p,c,n,y,md),0);
+const budProjReel=(p,md)=>ADP_CAPEX.reduce((s,[c])=>s+budCapexReel(p,c,md),0);
+const budProjReelYear=(p,y,md)=>ADP_CAPEX.reduce((s,[c])=>s+budCapexReelYear(p,c,y,md),0);
 // Années à rappeler dans la partie figée : celles où quelque chose est saisi,
 // plus celle qu'on regarde. Une colonne vide n'apprend rien.
 function budYears(){
   const set=new Set([String(adpBudYear)]);
   adpBudget.forEach(x=>{
-    if(!x.amount)return;
+    if(!x.amount&&!x.planned)return;
     if(/^\d{4}-\d{2}$/.test(x.month))set.add(x.month.slice(0,4));
     else if(/^\d{4}$/.test(x.month))set.add(x.month);
   });
   return [...set].sort();
 }
 // Somme d'une catégorie CAPEX sur un mois : les trois natures
-const budCapexMonth=(p,c,m)=>ADP_NATURE.reduce((s,[n])=>s+budAmount(p,c,n,m),0);
-const budProjMonth =(p,m)=>ADP_CAPEX.reduce((s,[c])=>s+budCapexMonth(p,c,m),0);
+const budCapexMonth=(p,c,m,md)=>ADP_NATURE.reduce((s,[n])=>s+budAmount(p,c,n,m,md),0);
+const budProjMonth =(p,m,md)=>ADP_CAPEX.reduce((s,[c])=>s+budCapexMonth(p,c,m,md),0);
 // Zéro ne s'affiche pas : une grille pleine de « 0 € » masque les vrais chiffres
 const budFmt=v=>!v?'':Math.round(v).toLocaleString('fr-FR')+' €';
+// En mode Écart, le signe EST l'information : un dépassement et une économie
+// du même montant s'écriraient sinon à l'identique.
+const budFmtM=(v,md)=>!v?'':((md||budMode)==='ecart'&&v>0?'+':'')+Math.round(v).toLocaleString('fr-FR')+' €';
 
-const adpBudRow=r=>[r.id,r.project_id,r.capex,r.nature,r.month,String(r.amount),td()];
+const adpBudRow=r=>[r.id,r.project_id,r.capex,r.nature,r.month,String(r.amount||0),td(),String(r.planned||0)];
 async function budSave(r){
   const i=adpBudget.findIndex(x=>x.id===r.id);
-  if(i>=0)adpBudget[i]=r; else adpBudget.push(r);
+  // Écrire le prévu ne doit pas effacer le réalisé, ni l'inverse : la ligne
+  // porte les deux, on ne remplace que ce qui a été saisi.
+  if(i>=0)adpBudget[i]=Object.assign({},adpBudget[i],r); else adpBudget.push(r);
   budIdxInvalidate();
   cacheSet('adpBudget',adpBudget);
   return sheetUpsertByKey('adp_budget',r.id,adpBudRow(r));
@@ -8023,30 +8237,38 @@ const budCell=k=>document.querySelector(`[data-b="${k}"]`);
 // categorie, son projet, et le total du portefeuille. Le focus ne bouge pas,
 // on peut donc remplir la grille a la tabulation.
 function budRefresh(pid,capex,month){
-  const y=month.slice(0,4), list=budVisibleProjects();
-  const set=(k,v)=>{ const el=budCell(k); if(el)el.textContent=budFmt(v); };
-  const setY=(sel,v)=>{ const el=document.querySelector(sel+' .bud-y-r'); if(el)el.textContent=budFmt(v); };
-  ADP_NATURE.forEach(([n])=>set(`nrt|${pid}|${capex}|${n}`,budNatReel(pid,capex,n)));
-  set(`cm|${pid}|${capex}|${month}`,budCapexMonth(pid,capex,month));
-  set(`crt|${pid}|${capex}`,budCapexReel(pid,capex));
-  set(`pm|${pid}|${month}`,budProjMonth(pid,month));
-  set(`prt|${pid}`,budProjReel(pid));
-  setY(`.y-${pid}-${y}`,budProjReelYear(pid,y));
-  setY(`.ty-${y}`,list.reduce((s,x)=>s+budProjReelYear(x.id,y),0));
+  const y=month.slice(0,4), list=budVisibleProjects(), md=budMode;
+  const set=(k,v)=>{ const el=budCell(k); if(el)el.textContent=budFmtM(v,md); };
+  const setY=(sel,v)=>{ const el=document.querySelector(sel+' .bud-y-r'); if(el)el.textContent=budFmtM(v,md); };
+  const neg=(k,v)=>{ const el=budCell(k); if(!el)return;
+    el.classList.toggle('neg',md==='ecart'&&v<0); el.classList.toggle('over',md==='ecart'&&v>0); };
+  ADP_NATURE.forEach(([n])=>{ const v=budNatReel(pid,capex,n,md);
+    set(`nrt|${pid}|${capex}|${n}`,v); neg(`nrt|${pid}|${capex}|${n}`,v); });
+  set(`cm|${pid}|${capex}|${month}`,budCapexMonth(pid,capex,month,md));
+  const vc=budCapexReel(pid,capex,md); set(`crt|${pid}|${capex}`,vc);
+  set(`pm|${pid}|${month}`,budProjMonth(pid,month,md));
+  const vp=budProjReel(pid,md); set(`prt|${pid}`,vp);
+  setY(`.y-${pid}-${y}`,budProjReelYear(pid,y,md));
+  setY(`.ty-${y}`,list.reduce((s,x)=>s+budProjReelYear(x.id,y,md),0));
+  // Le dépassement se juge sur ce qui est affiché : en mode Prévu, c'est le
+  // prévu qui doit tenir dans l'estimé.
   const eg=budProjEst(pid,'G'), pc=budCell(`prt|${pid}`);
-  if(pc)pc.classList.toggle('over',eg>0&&budProjReel(pid)>eg);
+  if(pc){ pc.classList.toggle('over',md==='ecart'?vp>0:(eg>0&&vp>eg)); pc.classList.toggle('neg',md==='ecart'&&vp<0); }
   const ec=budEst(pid,capex,'G'), cc=budCell(`crt|${pid}|${capex}`);
-  if(cc)cc.classList.toggle('over',ec>0&&budCapexReel(pid,capex)>ec);
-  set(`tm|${month}`,list.reduce((s,x)=>s+budProjMonth(x.id,month),0));
-  set('tt',list.reduce((s,x)=>s+budProjReel(x.id),0));
+  if(cc){ cc.classList.toggle('over',md==='ecart'?vc>0:(ec>0&&vc>ec)); cc.classList.toggle('neg',md==='ecart'&&vc<0); }
+  set(`tm|${month}`,list.reduce((s,x)=>s+budProjMonth(x.id,month,md),0));
+  const vt=list.reduce((s,x)=>s+budProjReel(x.id,md),0);
+  set('tt',vt); neg('tt',vt);
 }
 async function budSet(pid,capex,nature,month,raw,el){
+  if(budMode==='ecart')return;                       // un écart se constate, pas se saisit
   const v=budNum(raw);
   const id=budKey(pid,capex,nature,month);
-  const avant=budAmount(pid,capex,nature,month);
+  const avant=budAmount(pid,capex,nature,month,budMode);
   if(el){ el.dataset.raw=v?String(v):''; el.value=v?budFmt(v):''; }
   if(v===avant)return;
-  const ok=await budSave({id,project_id:pid,capex,nature,month,amount:v});
+  const champ=budMode==='prevu'?{planned:v}:{amount:v};
+  const ok=await budSave(Object.assign({id,project_id:pid,capex,nature,month},champ));
   if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
   budRefresh(pid,capex,month);
 }
@@ -8064,11 +8286,11 @@ function budRefreshEst(pid,capex,scope){
   const list=budVisibleProjects();
   const set=(k,v)=>{ const el=budCell(k); if(el)el.textContent=budFmt(v); };
   if(scope==='G'){
-    const eg=budProjEst(pid,'G'), rt=budProjReel(pid);
+    const eg=budProjEst(pid,'G'), rt=budProjReel(pid,budMode);
     set(`peg|${pid}`,eg);
-    const pc=budCell(`prt|${pid}`); if(pc)pc.classList.toggle('over',eg>0&&rt>eg);
-    const cc=budCell(`crt|${pid}|${capex}`);
-    if(cc)cc.classList.toggle('over',budEst(pid,capex,'G')>0&&budCapexReel(pid,capex)>budEst(pid,capex,'G'));
+    const pc=budCell(`prt|${pid}`); if(pc)pc.classList.toggle('over',budMode!=='ecart'&&eg>0&&rt>eg);
+    const cc=budCell(`crt|${pid}|${capex}`), ce=budEst(pid,capex,'G');
+    if(cc)cc.classList.toggle('over',budMode!=='ecart'&&ce>0&&budCapexReel(pid,capex,budMode)>ce);
     set('te',list.reduce((s,x)=>s+budProjEst(x.id,'G'),0));
     return;
   }
@@ -8090,17 +8312,21 @@ function budToggleC(k){ adpBudOpenC.has(k)?adpBudOpenC.delete(k):adpBudOpenC.add
 function budVisibleProjects(){
   const q=voNorm(adpSearch);
   return adpProjects.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr'))
-    .filter(p=>!q||voNorm(`${p.name} ${p.client} ${p.domaine}`).includes(q));
+    .filter(p=>!q||voNorm(`${p.name} ${p.client} ${p.domaine} ${p.next_action||''}`).includes(q));
 }
 function renderAdpBudget(el){
   const mois=budMonths(adpBudYear), list=budVisibleProjects(), ans=budYears();
+  const md=budMode, ecart=md==='ecart';
+  // En mode Écart, le dépassement vire au rouge et l'économie au vert : sur
+  // douze colonnes, le signe seul se lit trop lentement.
+  const ec=v=>ecart?(v>0?' over':v<0?' neg':''):'';
   // Décalages des colonnes figées : les largeurs sont des variables CSS, le
   // calcul reste donc juste quand la mise en page change de gabarit.
   const leftY=i=>`calc(var(--w1) + var(--w2) + var(--w3) + ${i} * var(--wy))`;
 
   // ── cellules ──
   const tdY=(i,inner,cls)=>`<td class="bud-y${cls?' '+cls:''}" style="left:${leftY(i)}">${inner}</td>`;
-  const reel=v=>`<div class="bud-y-r">${budFmt(v)}</div>`;
+  const reel=v=>`<div class="bud-y-r${ec(v)}">${budFmtM(v,md)}</div>`;
   const estRo=v=>v?`<div class="bud-y-e ro">est. ${budFmt(v)}</div>`:'';
   const champ=(v,attrs,cls)=>`<input class="bud-i${cls?' '+cls:''}" inputmode="decimal" data-raw="${v?v:''}" value="${budFmt(v)}" ${attrs}
       onfocus="this.value=this.dataset.raw;this.select()" onblur="this.value=budFmtInput(this.value)">`;
@@ -8108,39 +8334,48 @@ function renderAdpBudget(el){
   let corps='';
   list.forEach(p=>{
     const ouvert=adpBudOpenP.has(p.id);
-    const estG=budProjEst(p.id,'G'), reelT=budProjReel(p.id);
+    const estG=budProjEst(p.id,'G'), reelT=budProjReel(p.id,md);
     corps+=`<tr class="bud-r bud-p${ouvert?' open':''}">
       <td class="bud-c1" onclick="budToggleP('${p.id}')" title="${adpEsc([p.name,p.domaine,p.client].filter(Boolean).join(' · '))}">
         <span class="bud-car">${ouvert?'▾':'▸'}</span><span class="bud-t">${adpEsc(p.name)}</span>
         ${p.domaine?`<span class="adp-c-tag">${adpEsc(p.domaine)}</span>`:''}</td>
       <td class="bud-c2" data-b="peg|${p.id}">${budFmt(estG)}</td>
-      <td class="bud-c3${estG>0&&reelT>estG?' over':''}" data-b="prt|${p.id}"
-          title="${estG>0?`Estimé ${budFmt(estG)} · réalisé ${budFmt(reelT)}`:''}">${budFmt(reelT)}</td>
-      ${ans.map((y,i)=>tdY(i,reel(budProjReelYear(p.id,y))+estRo(budProjEst(p.id,y)),
+      <td class="bud-c3${!ecart&&estG>0&&reelT>estG?' over':''}${ec(reelT)}" data-b="prt|${p.id}"
+          title="${estG>0?`Estimé ${budFmt(estG)} · ${budModeLabel(md).toLowerCase()} ${budFmtM(reelT,md)}`:''}">${budFmtM(reelT,md)}</td>
+      ${ans.map((y,i)=>tdY(i,reel(budProjReelYear(p.id,y,md))+estRo(budProjEst(p.id,y)),
         `y-${p.id}-${y}`)).join('')}
-      ${mois.map(m=>`<td class="bud-n" data-b="pm|${p.id}|${m}">${budFmt(budProjMonth(p.id,m))}</td>`).join('')}</tr>`;
+      ${mois.map(m=>{const v=budProjMonth(p.id,m,md);
+        return `<td class="bud-n${ec(v)}" data-b="pm|${p.id}|${m}">${budFmtM(v,md)}</td>`;}).join('')}</tr>`;
     if(!ouvert)return;
     ADP_CAPEX.forEach(([c,cl])=>{
       const k=p.id+'~'+c, oc=adpBudOpenC.has(k);
-      const eG=budEst(p.id,c,'G'), rT=budCapexReel(p.id,c);
+      const eG=budEst(p.id,c,'G'), rT=budCapexReel(p.id,c,md);
       corps+=`<tr class="bud-r bud-cx${oc?' open':''}">
         <td class="bud-c1" onclick="budToggleC('${k}')">
           <span class="bud-car lvl2">${oc?'▾':'▸'}</span>${cl}</td>
         <td class="bud-c2">${champ(eG,`onchange="budSetEst('${p.id}','${c}','G',this.value,this)" onclick="event.stopPropagation()"`,'bud-est')}</td>
-        <td class="bud-c3${eG>0&&rT>eG?' over':''}" data-b="crt|${p.id}|${c}">${budFmt(rT)}</td>
+        <td class="bud-c3${!ecart&&eG>0&&rT>eG?' over':''}${ec(rT)}" data-b="crt|${p.id}|${c}">${budFmtM(rT,md)}</td>
         ${ans.map((y,i)=>tdY(i,
-          reel(budCapexReelYear(p.id,c,y))+
+          reel(budCapexReelYear(p.id,c,y,md))+
           champ(budEst(p.id,c,y),`onchange="budSetEst('${p.id}','${c}','${y}',this.value,this)" onclick="event.stopPropagation()" title="Estimé ${y}"`,'bud-y-e'))).join('')}
-        ${mois.map(m=>`<td class="bud-n" data-b="cm|${p.id}|${c}|${m}">${budFmt(budCapexMonth(p.id,c,m))}</td>`).join('')}</tr>`;
+        ${mois.map(m=>{const v=budCapexMonth(p.id,c,m,md);
+          return `<td class="bud-n${ec(v)}" data-b="cm|${p.id}|${c}|${m}">${budFmtM(v,md)}</td>`;}).join('')}</tr>`;
       if(!oc)return;
       ADP_NATURE.forEach(([n,nl])=>{
+        const vn=budNatReel(p.id,c,n,md);
         corps+=`<tr class="bud-r bud-nat">
           <td class="bud-c1"><span class="bud-car lvl3"></span>${nl}</td>
           <td class="bud-c2"></td>
-          <td class="bud-c3" data-b="nrt|${p.id}|${c}|${n}">${budFmt(budNatReel(p.id,c,n))}</td>
-          ${ans.map((y,i)=>tdY(i,reel(budNatReelYear(p.id,c,n,y)))).join('')}
-          ${mois.map(m=>`<td class="bud-n bud-edit">${champ(budAmount(p.id,c,n,m),
-              `onchange="budSet('${p.id}','${c}','${n}','${m}',this.value,this)"`)}</td>`).join('')}</tr>`;
+          <td class="bud-c3${ec(vn)}" data-b="nrt|${p.id}|${c}|${n}">${budFmtM(vn,md)}</td>
+          ${ans.map((y,i)=>tdY(i,reel(budNatReelYear(p.id,c,n,y,md)))).join('')}
+          ${mois.map(m=>{const v=budAmount(p.id,c,n,m,md);
+            // En mode Écart la case cesse d'être saisissable : un écart est un
+            // résultat. La couleur des cases modifiables disparaît avec elle.
+            return ecart
+              ? `<td class="bud-n${v<0?' neg':''}" data-b="ne|${p.id}|${c}|${n}|${m}"
+                   title="prévu ${budFmt(budAmount(p.id,c,n,m,'prevu'))||'0 €'} · réalisé ${budFmt(budAmount(p.id,c,n,m,'reel'))||'0 €'}">${budFmtM(v,md)}</td>`
+              : `<td class="bud-n bud-edit">${champ(v,
+                  `onchange="budSet('${p.id}','${c}','${n}','${m}',this.value,this)"`)}</td>`;}).join('')}</tr>`;
       });
     });
   });
@@ -8151,15 +8386,18 @@ function renderAdpBudget(el){
       <button class="gl-pill" onclick="setBudYear(${adpBudYear-1})">◀</button>
       <span class="adp-title">${adpBudYear}</span>
       <button class="gl-pill" onclick="setBudYear(${adpBudYear+1})">▶</button>
+      ${BUD_MODES.map(([k,l])=>`<button class="gl-pill${md===k?' active':''}"${md===k?' style="background:var(--accent);border-color:var(--accent)"':''} onclick="setBudMode('${k}')" title="${k==='prevu'?'Ce qu\'on a planifié':k==='reel'?'Ce qui a été consommé':'Réalisé moins prévu'}">${l}</button>`).join('')}
       <input type="search" class="gl-search" placeholder="Projet, domaine, client…" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
       <div style="flex:1"></div>
-      <span class="bud-legend"><b></b> cases saisissables · le reste est calculé</span>
+      <span class="bud-legend">${ecart
+        ? 'Réalisé moins prévu · <b class="pos">+</b> dépassement, <b class="neg2">−</b> économie · les mois ne se saisissent pas ici'
+        : '<b></b> cases saisissables · le reste est calculé'}</span>
     </div>`
     +(list.length?`<div class="bud-wrap"><table class="bud">
       <thead><tr>
         <th class="bud-c1">Projet</th>
         <th class="bud-c2">Estimé global</th>
-        <th class="bud-c3">Réalisé total</th>
+        <th class="bud-c3">${ecart?'Écart total':budModeLabel(md)+' total'}</th>
         ${ans.map((y,i)=>`<th class="bud-y" style="left:${leftY(i)}">${y}</th>`).join('')}
         ${BUD_MOIS.map(m=>`<th class="bud-n">${m} ${String(adpBudYear).slice(2)}</th>`).join('')}
       </tr></thead>
@@ -8167,9 +8405,10 @@ function renderAdpBudget(el){
       <tfoot><tr class="bud-r bud-tot">
         <td class="bud-c1">TOTAL PORTEFEUILLE</td>
         <td class="bud-c2" data-b="te">${budFmt(sum(p=>budProjEst(p.id,'G')))}</td>
-        <td class="bud-c3" data-b="tt">${budFmt(sum(p=>budProjReel(p.id)))}</td>
-        ${ans.map((y,i)=>tdY(i,reel(sum(p=>budProjReelYear(p.id,y)))+estRo(sum(p=>budProjEst(p.id,y))),`ty-${y}`)).join('')}
-        ${mois.map(m=>`<td class="bud-n" data-b="tm|${m}">${budFmt(sum(p=>budProjMonth(p.id,m)))}</td>`).join('')}
+        <td class="bud-c3${ec(sum(p=>budProjReel(p.id,md)))}" data-b="tt">${budFmtM(sum(p=>budProjReel(p.id,md)),md)}</td>
+        ${ans.map((y,i)=>tdY(i,reel(sum(p=>budProjReelYear(p.id,y,md)))+estRo(sum(p=>budProjEst(p.id,y))),`ty-${y}`)).join('')}
+        ${mois.map(m=>{const v=sum(p=>budProjMonth(p.id,m,md));
+          return `<td class="bud-n${ec(v)}" data-b="tm|${m}">${budFmtM(v,md)}</td>`;}).join('')}
       </tr></tfoot></table></div>`
       :`<div class="gl-empty">Aucun projet. Crée-en un dans « Projets » pour lui poser un budget.</div>`);
 }
@@ -8193,7 +8432,8 @@ const JOURS=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
 // Tout ce qui tombe un jour donné, toutes sources confondues
 function weekItems(jour){
   const out=[];
-  tasks.filter(t=>t.due_date===jour).forEach(t=>out.push({t:'Tâche',ic:'✅',lbl:t.title,
+  // Les tâches en attente ne se planifient pas : elles attendent quelqu'un.
+  tasks.filter(t=>t.due_date===jour&&!taskBlocked(t)).forEach(t=>out.push({t:'Tâche',ic:'✅',lbl:t.title,
     sub:t.project||'',imp:t.importance,go:()=>{switchPage('board');openModal(t.id);}}));
   adpMilestones.filter(m=>m.status!=='done'&&m.due_date===jour).forEach(m=>{
     const p=adpProjById(m.project_id);
@@ -8222,7 +8462,7 @@ function renderWeekPage(){
   el.innerHTML=`<div class="wk-grid">${jours.map((j,k)=>{
     const d=new Date(j+'T00:00:00');
     const items=weekItems(j);
-    const retard=k===0?tasks.filter(t=>t.due_date&&t.due_date<td()).length:0;
+    const retard=k===0?tasks.filter(taskLate).length:0;
     return `<section class="wk-col${k===0?' today':''}${d.getDay()===0||d.getDay()===6?' we':''}">
       <div class="wk-h"><span class="wk-d">${k===0?"aujourd'hui":k===1?'demain':JOURS[d.getDay()]}</span>
         <span class="wk-n">${d.getDate()}/${String(d.getMonth()+1).padStart(2,'0')}</span>
@@ -8258,7 +8498,10 @@ function rvAdpStats(r){
   const actifs=adpProjects.filter(p=>p.status==='actif');
   return {jalons:jalons.length,tenus:tenus.length,glisses,conso,relFaites,
           relDues:adpDueContacts().length,etapes,actifs:actifs.length,
-          risque:actifs.filter(p=>p.health!=='vert')};
+          risque:actifs.filter(p=>p.health!=='vert'),
+          // Un projet actif sans prochaine action posée n'avance pas : il attend
+          // qu'on décide. La revue est le bon moment pour s'en apercevoir.
+          sansAction:actifs.filter(p=>!String(p.next_action||'').trim())};
 }
 
 // ── Suivi ─────────────────────────────────────────────────────────────────
@@ -8270,7 +8513,7 @@ function rvAdpStats(r){
 // Les contacts n'ont pas disparu : ils se gèrent depuis la page du projet et
 // depuis les lignes de relance, là où on s'en sert.
 const SUIVI_FILTRES=[['tout','Tout'],['relance','Relances'],['jalon','Jalons'],
-                     ['etape','Étapes'],['tache','Tâches']];
+                     ['etape','Étapes'],['tache','Tâches'],['attente','En attente']];
 let suiviFiltre='tout';
 const LS_SUIVI='kanban_adp_suivi';
 try{ const v=localStorage.getItem(LS_SUIVI); if(SUIVI_FILTRES.some(([k])=>k===v))suiviFiltre=v; }catch(e){}
@@ -8281,40 +8524,58 @@ function setSuiviFiltre(f){
 }
 
 // Chaque entrée : {type, ic, quoi, ou, depuis (jours), date, actions:[[label,fn]]}
-// `depuis` positif = en retard de N jours ; 0 = dû aujourd'hui.
-function suiviItems(){
-  const out=[], jour=td();
-  adpDueContacts().forEach(c=>{
+// `depuis` positif = en retard de N jours ; 0 = dû aujourd'hui ; négatif = à
+// venir. L'horizon dit jusqu'où on regarde devant : 0 pour la vue Suivi, qui
+// ne montre que ce qui traîne, 7 pour la carte du jour, qui anticipe.
+function suiviItems(horizon){
+  const h=horizon|0, out=[], jour=td(), limite=plusDays(h);
+  adpContacts.filter(c=>{ const d=adpDueDay(c); return !!d&&d<=limite; })
+    .sort((a,b)=>String(adpDueDay(a)).localeCompare(String(adpDueDay(b)))||a.name.localeCompare(b.name,'fr'))
+    .forEach(c=>{
     const p=c.project_id?adpProjById(c.project_id):null;
     const d=adpDueDay(c);
     out.push({type:'relance',ic:'✉',quoi:c.name,
       ou:[c.org,p&&p.name].filter(Boolean).join(' · '),
-      depuis:Math.max(0,-dayDiff(d)),date:d,
+      depuis:-dayDiff(d),date:d,
       det:c.last_contact?`vu le ${c.last_contact}`:'jamais contacté',
       actions:[['✓ Relancé',()=>adpTouch(c.id)],['✉ Écrire',()=>openAdpCompose(c.id)],
                ['Fiche',()=>openAdpContModal(c.id)]]});
   });
-  adpMilestones.filter(m=>m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<=0).forEach(m=>{
+  adpMilestones.filter(m=>m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<=h).forEach(m=>{
     const p=adpProjById(m.project_id);
     out.push({type:'jalon',ic:'⛳',quoi:m.title,ou:p?p.name:'',
-      depuis:Math.max(0,-dayDiff(m.due_date)),date:m.due_date,
+      depuis:-dayDiff(m.due_date),date:m.due_date,
       det:(ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1],
       actions:[['✓ Fait',()=>adpToggleMile(m.id)],['Ouvrir',()=>openAdpMileModal(m.id)]]});
   });
   runActive().forEach(r=>{
     const {state}=runStates(r), p=adpProjById(r.project_id);
     (r.steps||[]).forEach((s,i)=>{
-      if(state[s.key]!=='active'||!s.due||dayDiff(s.due)>0)return;
+      if(state[s.key]!=='active'||!s.due||dayDiff(s.due)>h)return;
       out.push({type:'etape',ic:runTypeMeta(s.type)[2],quoi:s.label,
         ou:[r.title.split(' — ')[0],p&&p.name].filter(Boolean).join(' · '),
-        depuis:Math.max(0,-dayDiff(s.due)),date:s.due,
+        depuis:-dayDiff(s.due),date:s.due,
         det:runTypeMeta(s.type)[1],
         actions:[['Ouvrir',()=>{setAdpView('procedures');openRun(r.id);}]]});
     });
   });
-  tasks.filter(t=>t.due_date&&t.due_date<=jour).forEach(t=>{
+  // Ce qui attend quelqu'un d'autre : invisible ailleurs par construction,
+  // c'est ici qu'on voit depuis combien de temps ça dure. L'ancienneté part de
+  // l'échéance si elle existe, sinon de la création : on mesure l'attente, pas
+  // le retard.
+  tasks.filter(taskBlocked).forEach(t=>{
+    const ref=t.due_date||t.created_at||jour;
+    out.push({type:'attente',ic:'⏸',quoi:t.title,
+      ou:[t.project,'attend '+t.blocked_by].filter(Boolean).join(' · '),
+      depuis:Math.max(0,-dayDiff(ref)),date:ref,
+      det:t.due_date?'':'sans échéance',
+      actions:[['▶ Débloquer',()=>taskUnblock(t.id)],
+               ['✓ Terminer',()=>completeTask(t.id)],
+               ['Ouvrir',()=>{switchPage('board');openModal(t.id);}]]});
+  });
+  tasks.filter(t=>t.due_date&&t.due_date<=limite&&!taskBlocked(t)).forEach(t=>{
     out.push({type:'tache',ic:'✅',quoi:t.title,ou:t.project||'',
-      depuis:Math.max(0,-dayDiff(t.due_date)),date:t.due_date,
+      depuis:-dayDiff(t.due_date),date:t.due_date,
       det:(t.snoozes||0)>=2?`reportée ${t.snoozes} fois`:'',
       actions:[['✓ Terminer',()=>completeTask(t.id)],['+1J',()=>snoozeTask(t.id,1)],
                ['Ouvrir',()=>{switchPage('board');openModal(t.id);}]]});
@@ -8330,7 +8591,7 @@ function renderAdpSuivi(el){
     .filter(x=>!q||voNorm(`${x.quoi} ${x.ou} ${x.det}`).includes(q));
   const cnt=t=>tous.filter(x=>t==='tout'||x.type===t).length;
   suiviActs=[];
-  const age=n=>n===0?'aujourd\'hui':n===1?'depuis hier':`depuis ${n} jours`;
+  const age=n=>n<-1?`dans ${-n} jours`:n===-1?'demain':n===0?'aujourd\'hui':n===1?'depuis hier':`depuis ${n} jours`;
   el.innerHTML=`
     <div class="adp-tools">
       ${SUIVI_FILTRES.map(([k,l])=>{const n=cnt(k);
@@ -8406,7 +8667,8 @@ function rapHtml(an){
   // synthèse toujours présente : c'est le tableau qu'on regarde en premier
   h+=`<h2>Synthèse</h2><table class="rap-t"><thead><tr>
     <th>Projet</th><th>Domaine</th><th>Santé</th><th>Échéance</th>
-    <th class="r">Estimé</th><th class="r">Réalisé</th><th class="r">Jalons</th><th class="r">Relances</th></tr></thead><tbody>`;
+    <th class="r">Estimé</th><th class="r">Réalisé</th><th class="r">Jalons</th><th class="r">Relances</th>
+    <th>Prochaine action</th></tr></thead><tbody>`;
   list.forEach(p=>{
     const ml=adpProjMiles(p.id), ouv=ml.filter(m=>m.status!=='done');
     const est=budProjEst(p.id,'G'), reel=budProjReel(p.id);
@@ -8416,16 +8678,18 @@ function rapHtml(an){
       <td class="r">${budFmt(est)||'—'}</td>
       <td class="r${est&&reel>est?' ko':''}">${budFmt(reel)||'—'}</td>
       <td class="r">${ml.length?`${ml.length-ouv.length}/${ml.length}`:'—'}</td>
-      <td class="r">${adpContacts.filter(c=>c.project_id===p.id&&adpIsDue(c)).length||'—'}</td></tr>`;});
+      <td class="r">${adpContacts.filter(c=>c.project_id===p.id&&adpIsDue(c)).length||'—'}</td>
+      <td class="rap-na">${E(p.next_action)||'—'}</td></tr>`;});
   const tE=list.reduce((s,p)=>s+budProjEst(p.id,'G'),0), tR=list.reduce((s,p)=>s+budProjReel(p.id),0);
   h+=`</tbody><tfoot><tr><td colspan="4">TOTAL</td><td class="r">${budFmt(tE)}</td>
-    <td class="r">${budFmt(tR)}</td><td></td><td></td></tr></tfoot></table>`;
+    <td class="r">${budFmt(tR)}</td><td></td><td></td><td></td></tr></tfoot></table>`;
 
   list.forEach(p=>{
     if(list.length>1)h+=`<h2 class="rap-p rap-brk">${E(p.name)}${[p.domaine,p.client].filter(Boolean).length?` <small>${E([p.domaine,p.client].filter(Boolean).join(' · '))}</small>`:''}</h2>`;
     if(rapSections.has('etat')){
       const ml=adpProjMiles(p.id);
       h+=`<h3>État</h3><ul class="rap-l">
+        ${p.next_action?`<li>Prochaine action : <b>${E(p.next_action)}</b></li>`:''}
         <li>Santé : <b>${E((ADP_HEALTH.find(x=>x[0]===p.health)||['','?'])[1])}</b>${p.deadline?` · échéance <b>${E(p.deadline)}</b>`:''}</li>
         <li>Tâches ouvertes sur le board : <b>${adpProjTasks(p).length}</b></li></ul>`;
       if(ml.length)h+=`<table class="rap-t"><thead><tr><th>Jalon</th><th>Type</th><th>Échéance</th><th>État</th></tr></thead><tbody>`+
@@ -8435,20 +8699,28 @@ function rapHtml(an){
         `</tbody></table>`;
     }
     if(rapSections.has('budget')){
-      h+=`<h3>Budget ${an}</h3><table class="rap-t"><thead><tr><th>Ligne</th><th class="r">Estimé</th><th class="r">Réalisé</th>`+
+      // Prévu, réalisé et écart côte à côte : un tableau de suivi qui ne montre
+      // que le consommé ne permet pas d'arbitrer.
+      const ecw=v=>`<td class="r${v>0?' ko':''}">${v?(v>0?'+':'')+budFmt(v).replace('-',''):'—'}</td>`;
+      h+=`<h3>Budget ${an}</h3><table class="rap-t"><thead><tr><th>Ligne</th><th class="r">Estimé</th>
+        <th class="r">Prévu</th><th class="r">Réalisé</th><th class="r">Écart</th>`+
         BUD_MOIS.map(m=>`<th class="r">${m}</th>`).join('')+`</tr></thead><tbody>`;
       ADP_CAPEX.forEach(([c,cl])=>{
+        const pv=budCapexReel(p.id,c,'prevu'), rl=budCapexReel(p.id,c,'reel');
         h+=`<tr><td><b>${cl}</b></td><td class="r">${budFmt(budEst(p.id,c,'G'))||'—'}</td>
-          <td class="r">${budFmt(budCapexReel(p.id,c))||'—'}</td>`+
-          mois.map(m=>`<td class="r">${budFmt(budCapexMonth(p.id,c,m))}</td>`).join('')+`</tr>`;
+          <td class="r">${budFmt(pv)||'—'}</td><td class="r">${budFmt(rl)||'—'}</td>${ecw(rl-pv)}`+
+          mois.map(m=>`<td class="r">${budFmt(budCapexMonth(p.id,c,m,'reel'))}</td>`).join('')+`</tr>`;
         ADP_NATURE.forEach(([n,nl])=>{
-          const t=budNatReel(p.id,c,n); if(!t)return;
-          h+=`<tr class="sub"><td>${nl}</td><td></td><td class="r">${budFmt(t)}</td>`+
-            mois.map(m=>`<td class="r">${budFmt(budAmount(p.id,c,n,m))}</td>`).join('')+`</tr>`;});
+          const t=budNatReel(p.id,c,n,'reel'), q=budNatReel(p.id,c,n,'prevu');
+          if(!t&&!q)return;
+          h+=`<tr class="sub"><td>${nl}</td><td></td><td class="r">${budFmt(q)}</td>
+            <td class="r">${budFmt(t)}</td>${ecw(t-q)}`+
+            mois.map(m=>`<td class="r">${budFmt(budAmount(p.id,c,n,m,'reel'))}</td>`).join('')+`</tr>`;});
       });
+      const tp=budProjReel(p.id,'prevu'), tr=budProjReel(p.id,'reel');
       h+=`</tbody><tfoot><tr><td>TOTAL</td><td class="r">${budFmt(budProjEst(p.id,'G'))}</td>
-        <td class="r">${budFmt(budProjReel(p.id))}</td>`+
-        mois.map(m=>`<td class="r">${budFmt(budProjMonth(p.id,m))}</td>`).join('')+`</tr></tfoot></table>`;
+        <td class="r">${budFmt(tp)}</td><td class="r">${budFmt(tr)}</td>${ecw(tr-tp)}`+
+        mois.map(m=>`<td class="r">${budFmt(budProjMonth(p.id,m,'reel'))}</td>`).join('')+`</tr></tfoot></table>`;
       // la trajectoire cumulee dit QUAND ca decroche, ce que le tableau ne dit pas
       h+=`<div class="rap-fig">${budChart(p.id,an,620,150)}</div>`;
     }
@@ -8569,7 +8841,8 @@ function rapFeuilles(an){
   const f=[];
   f.push({nom:'Synthèse',lignes:[
     ['Projet','Domaine','Client','Santé','Statut','Échéance','Estimé global','Réalisé total',
-     'Réalisé '+an,'Jalons faits','Jalons total','Jalons en retard','Relances dues','Dernière avancée'],
+     'Réalisé '+an,'Jalons faits','Jalons total','Jalons en retard','Relances dues','Dernière avancée',
+     'Prochaine action'],
     ...list.map(p=>{
       const ml=adpProjMiles(p.id), ouv=ml.filter(m=>m.status!=='done');
       const n=p.note_id?noteById(p.note_id):null;
@@ -8581,14 +8854,19 @@ function rapFeuilles(an){
         ml.length-ouv.length,ml.length,
         ouv.filter(m=>m.due_date&&dayDiff(m.due_date)<0).length,
         adpContacts.filter(c=>c.project_id===p.id&&adpIsDue(c)).length,
-        n&&n.updated_at?n.updated_at:''];})]});
+        n&&n.updated_at?n.updated_at:'',p.next_action||''];})]});
   if(rapSections.has('budget')){
-    const l=[['Projet','CAPEX','Nature','Estimé global','Réalisé total',...BUD_MOIS.map(m=>m+' '+an)]];
+    // Prévu, réalisé, écart en colonnes fixes, puis le détail mensuel du
+    // réalisé : le tableur sert à refaire les calculs, il lui faut les deux.
+    const l=[['Projet','CAPEX','Nature','Estimé global','Prévu total','Réalisé total','Écart',
+      ...BUD_MOIS.map(m=>m+' '+an)]];
     list.forEach(p=>ADP_CAPEX.forEach(([c,cl])=>{
-      l.push([p.name,cl,'— total —',budEst(p.id,c,'G'),budCapexReel(p.id,c),
-        ...mois.map(m=>budCapexMonth(p.id,c,m))]);
-      ADP_NATURE.forEach(([n,nl])=>l.push([p.name,cl,nl,'',budNatReel(p.id,c,n),
-        ...mois.map(m=>budAmount(p.id,c,n,m))]));}));
+      const pv=budCapexReel(p.id,c,'prevu'), rl=budCapexReel(p.id,c,'reel');
+      l.push([p.name,cl,'— total —',budEst(p.id,c,'G'),pv,rl,rl-pv,
+        ...mois.map(m=>budCapexMonth(p.id,c,m,'reel'))]);
+      ADP_NATURE.forEach(([n,nl])=>{
+        const q=budNatReel(p.id,c,n,'prevu'), t=budNatReel(p.id,c,n,'reel');
+        l.push([p.name,cl,nl,'',q,t,t-q,...mois.map(m=>budAmount(p.id,c,n,m,'reel'))]);});}));
     f.push({nom:'Budget',lignes:l});
   }
   if(rapSections.has('etat')){
@@ -8804,6 +9082,8 @@ async function renderReviewPage(){
         +(ap.glisses.length?`<div class="rv-sub">Jalons glissés</div>`+ap.glisses.slice(0,5).map(m=>{
             const p=adpProjById(m.project_id);
             return `<div class="td-row"><span class="td-lbl"><span class="td-name">${tdEsc(m.title)}</span><span class="td-meta">${p?tdEsc(p.name)+' · ':''}${m.due_date}</span></span><span class="rv-n warn">!</span></div>`;}).join(''):'')
+        +(ap.sansAction.length?`<div class="rv-sub">Sans prochaine action</div>`+ap.sansAction.slice(0,5).map(p=>
+            `<div class="td-row" onclick="switchPage('adp');setAdpView('projets');openAdpProject('${p.id}')"><span class="td-lbl"><span class="td-name">${tdEsc(p.name)}</span><span class="td-meta">${tdEsc(p.domaine||p.client||'')}</span></span><span class="rv-n warn">?</span></div>`).join(''):'')
         +(ap.risque.length?`<div class="rv-sub">Sous vigilance</div>`+ap.risque.slice(0,5).map(p=>
             `<div class="td-row"><span class="td-lbl"><span class="td-name">${tdEsc(p.name)}</span><span class="td-meta">${tdEsc((ADP_HEALTH.find(h=>h[0]===p.health)||['','?'])[1])}</span></span></div>`).join(''):'')
       : '<div class="td-empty">Aucun projet.</div>');
@@ -8961,6 +9241,7 @@ async function saveTask(){
   const data={title,column:taskColumnFromDate(due),importance:selImp,due_date:due,
     notes:document.getElementById('fNotes').value.trim(),project:document.getElementById('fProj').value,
     recurrence:document.getElementById('fRec').value,
+    blocked_by:document.getElementById('fBlock').value.trim(),
     checklist:(()=>{const c=parseChecklistText(document.getElementById('fCheck').value);return c.length?JSON.stringify(c):''})()};
   if(editId){
     const t=tasks.find(t=>t.id===parseInt(editId));if(t)Object.assign(t,data);
@@ -11610,7 +11891,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.40.0';
+const APP_VERSION='v1.41.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
