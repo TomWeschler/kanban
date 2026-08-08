@@ -1670,10 +1670,9 @@ body,body *{font-family:var(--font-body)}
     <div id="tdGrid">
     <div class="td-grid">
       <section class="td-col" id="tdTasks"></section>
+      <section class="td-col" id="tdAdp"></section>
       <section class="td-col" id="tdHabits"></section>
       <section class="td-col" id="tdSport"></section>
-      <section class="td-col" id="tdAdp"></section>
-      <section class="td-col" id="tdMes"></section>
     </div>
     </div>
   </div>
@@ -3636,10 +3635,9 @@ async function renderTodayPage(){
   if(!document.getElementById('tdTasks')){
     document.getElementById('tdGrid').innerHTML=`<div class="td-grid">
       <section class="td-col" id="tdTasks"></section>
-      <section class="td-col" id="tdHabits"></section>
-      <section class="td-col" id="tdSport"></section>
       <section class="td-col" id="tdAdp"></section>
-      <section class="td-col" id="tdMes"></section></div>`;
+      <section class="td-col" id="tdHabits"></section>
+      <section class="td-col" id="tdSport"></section></div>`;
   }
   const d=new Date();
   document.getElementById('tdDate').textContent=
@@ -3708,37 +3706,10 @@ async function renderTodayPage(){
     `<button class="td-go" onclick="switchPage('sport')">Ouvrir SPORT →</button>`;
 
   renderTodayAdp();
-  renderTodayMes();
   renderSignals();
 }
-
-// ── ce qui reste a mesurer ──
-// Une serie ne vaut que si elle est alimentee : la saisie doit tenir sur la
-// page qu'on ouvre le matin, pas dans un onglet qu'on oublie.
-function renderTodayMes(){
-  const el=document.getElementById('tdMes'); if(!el)return;
-  const manque=mesMissingToday();
-  const suivies=mesActive();
-  el.innerHTML=`<div class="td-t">Mesures${manque.length?` <span class="td-n">${manque.length}</span>`:''}</div>`+
-    (manque.length?`<div class="mes-qrow">${manque.map(d=>`
-      <label class="mes-qf"><span>${tdEsc(d.icon)} ${tdEsc(d.label)}${d.unit?` (${tdEsc(d.unit)})`:''}</span>
-        <input type="number" step="any" inputmode="decimal" placeholder="—"
-               onkeydown="if(event.key==='Enter'){mesQuick('${d.key}',this.value);this.value='';}"
-               onblur="if(this.value){mesQuick('${d.key}',this.value);this.value='';}"></label>`).join('')}</div>`
-     :suivies.length?`<div class="td-empty">Tout est saisi.</div>`
-     :`<div class="td-empty">Aucune mesure suivie.</div>`)+
-    (suivies.length?suivies.filter(d=>!manque.some(m=>m.key===d.key)).slice(0,5).map(d=>{
-      const st=mesStats(d.key,30);
-      const delta=(st.avg!=null&&st.prevAvg!=null)?st.avg-st.prevAvg:null;
-      return `<div class="td-row" onclick="switchPage('metrics');openMetric('${d.key}')">
-        <span class="td-icon">${tdEsc(d.icon)||'📈'}</span>
-        <span class="td-lbl"><span class="td-name">${tdEsc(d.label)}</span>
-          <span class="td-meta">${st.last?st.last.date:'aucun point'}</span></span>
-        <span class="rv-n">${st.last?mesFmt(st.last.value,d):'—'}</span>
-        ${delta!==null?`<span class="rv-d ${mesTrendClass(d,delta)}">${delta>0?'+':''}${Math.round(delta*100)/100}</span>`:''}
-      </div>`;}).join(''):'')+
-    `<button class="td-go" onclick="switchPage('metrics')">Ouvrir MESURES →</button>`;
-}
+// La saisie des mesures vivait ici ; elle est restee sur la page Mesures, ou
+// elle a son contexte. La page du matin s'en tient a ce qui se coche.
 
 // ── ce qui attend cote projets ──
 // Les relances et les jalons ne servent a rien s'il faut ouvrir ADP pour les
@@ -11639,7 +11610,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.39.0';
+const APP_VERSION='v1.40.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
