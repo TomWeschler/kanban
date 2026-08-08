@@ -2449,24 +2449,39 @@ function enqueueWrite(op){
   writeQueue.push(op); queueSave();
   setSyncStatus('error',`HORS LIGNE · ${writeQueue.length} EN ATTENTE`);
 }
+let flushEnCours=false;
 async function flushWriteQueue(){
+  if(flushEnCours) return;
   if(!writeQueue.length||!navigator.onLine||!accessToken) return;
+  flushEnCours=true;
   const pending=writeQueue.slice();
   setSyncStatus('syncing',`ENVOI · ${pending.length}`);
   const rest=[];
   for(const op of pending){
     try{
-      const ok = op.kind==='replace'
-        ? await sheetReplaceAll(op.sheet,op.lastCol,op.values,true)
-        : await sheetBatchUpsert(op.sheet,op.rows,true);
-      if(!ok) rest.push(op);
+      // sheetReplaceAll jette si l'écriture échoue ; ne pas jeter VAUT succès.
+      // Tester sa valeur de retour remettait en file une écriture pourtant
+      // passée dès que la réponse ne portait pas de `updatedData`.
+      if(op.kind==='replace'){ await sheetReplaceAll(op.sheet,op.lastCol,op.values,true); }
+      else if(!(await sheetBatchUpsert(op.sheet,op.rows,true))) rest.push(op);
     }catch(e){ rest.push(op); }
   }
   writeQueue=rest; queueSave();
+  flushEnCours=false;
   if(rest.length){ setSyncStatus('error',`${rest.length} EN ATTENTE`); }
   else { setSyncStatus('ok','SYNCED'); toast(`${pending.length} modification(s) envoyée(s)`,'ok'); }
 }
+// La file n'était rejouée qu'à l'événement `online`. Or celui-ci ne se
+// déclenche PAS quand on rouvre l'app déjà connecté : une session passée hors
+// ligne pouvait donc garder ses écritures dans localStorage indéfiniment,
+// pendant que le bandeau affichait « PRÊT ». Trois occasions désormais : le
+// retour du réseau, l'arrivée du jeton, et le retour sur l'onglet.
 window.addEventListener('online',()=>flushWriteQueue());
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden)flushWriteQueue(); });
+// Au chargement, on le DIT : une file en attente ne doit pas se lire « PRÊT ».
+function annonceFile(){
+  if(writeQueue.length)setSyncStatus('error',`${writeQueue.length} EN ATTENTE`);
+}
 
 const FREQ_OPTS = [
   ['daily',             'Tous les jours'],
@@ -2861,6 +2876,7 @@ function init() {
     render();
   } catch(e){}
   renderProjTags();   // les boutons d'ajout rapide vivent dans l'en-tête, pas dans le board
+  annonceFile();      // une écriture en attente se voit dès l'ouverture
   renderCurrentPage();
   // hors ligne, les pages doivent afficher le dernier etat connu
   habits=cacheGet('habits',[]); habitsLog=cacheGet('habitsLog',[]);
@@ -2946,6 +2962,10 @@ function initTokenClient() {
       const firstAuth = !accessToken;
       accessToken = resp.access_token;
       resolveToken(accessToken);
+      // Le jeton vient d'arriver : c'est la première occasion de vider une file
+      // laissée par une session hors ligne. Avant même de recharger, sinon la
+      // relecture écraserait en mémoire ce qui n'est pas encore parti.
+      await flushWriteQueue();
       if (!firstAuth) return;              // simple renouvellement : ne pas tout recharger
       document.getElementById('authScreen').style.display = 'none';
       showLoad(true);
@@ -3969,6 +3989,7 @@ function renderTodayAdp(){
       `<button class="td-go" onclick="switchPage('adp')">Ouvrir ADP →</button>`;
     return;
   }
+  const today=td();
   const tous=suiviItems(7).filter(x=>x.type!=='tache');
   const enRetard=tous.filter(x=>x.depuis>0).length;
   const list=tous.slice(0,5);
@@ -3988,6 +4009,10 @@ function renderTodayAdp(){
       </div>`;
     }).join(''):'<div class="td-empty">Rien ne traîne, rien n\'arrive sous 7 jours.</div>')+
     (tous.length>list.length?`<div class="td-more">+ ${tous.length-list.length} autre${tous.length-list.length>1?'s':''}</div>`:'')+
+    // Un moteur qui agit sans toi doit dire ce qu'il a fait là où tu regardes,
+    // pas seulement dans son propre onglet.
+    (()=>{const n=autoJournal.filter(j=>j.date===today&&j.statut!=='annule').length;
+      return n?`<button class="td-go quiet" onclick="switchPage('adp');setAdpView('auto')">⚙ ${n} action${n>1?'s':''} automatique${n>1?'s':''} aujourd'hui →</button>`:'';})()+
     `<button class="td-go" onclick="switchPage('adp');setAdpView('suivi')">Ouvrir LE SUIVI →</button>`;
 }
 
@@ -7825,6 +7850,17 @@ function computeSignals(){
   const out=[], day=td();
   const push=(id,level,text,hint,go)=>out.push({id,level,text,hint,go});
 
+  // ── Ce que les automatismes ont signalé ──
+  // Trois jours de fenêtre : un signal levé le vendredi doit survivre au
+  // week-end, sinon il n'aura jamais été vu.
+  autoJournal.filter(j=>j.ref==='signal'&&j.statut!=='annule'&&j.date&&dayDiff(j.date)>=-2)
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,3).forEach(j=>{
+      const r=autoRegles.find(x=>x.id===j.regle_id);
+      push('auto.'+j.id,'orange',String(j.quoi||'').replace(/^Signal : /,''),
+        `Automatisme${r?` · ${r.nom}`:''}${j.date!==day?` · ${j.date}`:''}`,
+        ()=>{ switchPage('adp'); setAdpView('auto'); });
+    });
+
   // ── Tâches ──
   const retard=tasks.filter(t=>t.due_date&&dayDiff(t.due_date)<=-sigCfg.retard&&!taskBlocked(t));
   if(retard.length)push('t.retard','orange',
@@ -8983,6 +9019,10 @@ function rvAdpStats(r){
   return {jalons:jalons.length,tenus:tenus.length,glisses,conso,relFaites,
           relDues:adpDueContacts().length,etapes,actifs:actifs.length,
           risque:actifs.filter(p=>p.health!=='vert'),repousses,
+          // Une règle qui ne s'est jamais déclenchée sur trois mois ne mérite
+          // pas de rester allumée ; une qui se déclenche tous les jours mérite
+          // qu'on regarde ce qu'elle produit. La revue est le moment d'élaguer.
+          auto:autoBilan(r),
           // Un projet actif sans prochaine action posée n'avance pas : il attend
           // qu'on décide. La revue est le bon moment pour s'en apercevoir.
           sansAction:actifs.filter(p=>!String(p.next_action||'').trim())};
@@ -9162,6 +9202,9 @@ function autoPlan(regles){
       const proj=c.pid?adpProjById(c.pid):null;
       // Une action qui vise un projet n'a rien à faire sans projet.
       if(['journal','sante','procedure','jalon'].includes(r.action)&&!proj)return;
+      // Écrire au journal d'un projet qui n'en a pas est IMPOSSIBLE, pas
+      // « en échec » : l'écarter du plan évite de retenter éternellement.
+      if(r.action==='journal'&&!proj.note_id)return;
       out.push({regle:r,cible:c,proj,quoi:autoQuoi(r,c,proj)});
     });
   });
@@ -9222,7 +9265,10 @@ async function autoExec(e){
       const ok=await runSave(run);
       return {ok,ref:ok?'run:'+run.id:''};
     }
-    return {ok:true,ref:''};                    // signal : la trace suffit
+    // La trace EST le signal : computeSignals relit ces lignes et les fait
+    // remonter dans le bandeau d'Aujourd'hui. Sans ça, « Signaler seulement »
+    // n'aurait signalé qu'à qui serait allé le chercher dans cet onglet.
+    return {ok:true,ref:'signal'};
   }catch(err){ return {ok:false,ref:''}; }
 }
 // Ajoute une ligne typée sous l'entrée du jour du journal d'un projet.
@@ -9259,7 +9305,10 @@ async function autoRun(manuel){
       date:td(),quoi:e.quoi,ref:res.ref,statut:'fait'});
     n++;
   }
-  try{ localStorage.setItem(LS_AUTO_RUN,td()); }catch(err){}
+  // La journée n'est « faite » que si TOUT est passé. Marquer malgré un échec
+  // enterrait la règle jusqu'au lendemain — c'est exactement ce qui arrivait
+  // aux règles de journal, lancées avant que les notes soient chargées.
+  if(n===plan.length){ try{ localStorage.setItem(LS_AUTO_RUN,td()); }catch(err){} }
   autoEnCours=false;
   if(n){ render(); updateHStats(); if(curPage==='adp')renderAdp(); }
   return {n,total:plan.length};
@@ -9270,6 +9319,9 @@ async function autoAuJour(){
   if(!autoOn||!accessToken)return;
   let dernier=''; try{ dernier=localStorage.getItem(LS_AUTO_RUN)||''; }catch(e){}
   if(dernier===td())return;
+  // Les règles qui écrivent au journal ont besoin des notes, que loadAdp
+  // n'attend pas. Sans elles, elles échouaient en silence tous les matins.
+  if(!notesLoaded&&navigator.onLine){ try{ await loadNotes(); }catch(e){} }
   const {n}=await autoRun(false);
   if(n)toast(`${n} action${n>1?'s':''} automatique${n>1?'s':''} · voir ADP › Automatismes`,'info');
 }
@@ -9499,6 +9551,23 @@ async function saveAutoModal(){
   showLoad(true); const ok=await autoSaveRegle(obj); showLoad(false);
   if(!ok)toast("ÉCHEC de l'enregistrement",'err');
   autoApercu=null; renderAdp();
+}
+
+// Bilan des automatismes sur une période de revue : combien d'actions, par
+// quelle règle, et combien ont été défaites — le taux d'annulation est le seul
+// vrai juge d'une règle.
+function autoBilan(r){
+  const dans=autoJournal.filter(j=>j.date&&rvIn(j.date,r));
+  const faits=dans.filter(j=>j.statut!=='annule');
+  const par={};
+  faits.forEach(j=>{ par[j.regle_id]=(par[j.regle_id]||0)+1; });
+  const top=Object.entries(par).map(([id,n])=>({n,
+      nom:(autoRegles.find(x=>x.id===id)||{nom:'règle supprimée'}).nom}))
+    .sort((a,b)=>b.n-a.n).slice(0,4);
+  // Règles allumées qui n'ont rien produit sur la période : candidates au retrait.
+  const muettes=autoRegles.filter(x=>x.actif&&!par[x.id]).map(x=>x.nom);
+  return {n:faits.length,annulees:dans.length-faits.length,top,muettes,
+          actives:autoRegles.filter(x=>x.actif).length};
 }
 
 // ── Suivi ─────────────────────────────────────────────────────────────────
@@ -10116,6 +10185,12 @@ async function renderReviewPage(){
         +(ap.glisses.length?`<div class="rv-sub">Jalons glissés</div>`+ap.glisses.slice(0,5).map(m=>{
             const p=adpProjById(m.project_id);
             return `<div class="td-row"><span class="td-lbl"><span class="td-name">${tdEsc(m.title)}</span><span class="td-meta">${p?tdEsc(p.name)+' · ':''}${m.due_date}</span></span><span class="rv-n warn">!</span></div>`;}).join(''):'')
+        +(ap.auto.actives?rvKpi('Actions automatiques',String(ap.auto.n),
+            ap.auto.annulees?`<span class="rv-d down">${ap.auto.annulees} défaite${ap.auto.annulees>1?'s':''}</span>`:''):'')
+        +(ap.auto.top.length?`<div class="rv-sub">Ce que les règles ont fait</div>`+ap.auto.top.map(x=>
+            `<div class="td-row" onclick="switchPage('adp');setAdpView('auto')"><span class="td-lbl"><span class="td-name">${tdEsc(x.nom)}</span></span><span class="rv-n">${x.n}</span></div>`).join(''):'')
+        +(ap.auto.muettes.length?`<div class="rv-sub">Règles actives restées muettes</div>`+ap.auto.muettes.slice(0,5).map(nom=>
+            `<div class="td-row" onclick="switchPage('adp');setAdpView('auto')"><span class="td-lbl"><span class="td-name">${tdEsc(nom)}</span><span class="td-meta">rien sur la période</span></span></div>`).join(''):'')
         +(ap.sansAction.length?`<div class="rv-sub">Sans prochaine action</div>`+ap.sansAction.slice(0,5).map(p=>
             `<div class="td-row" onclick="switchPage('adp');setAdpView('projets');openAdpProject('${p.id}')"><span class="td-lbl"><span class="td-name">${tdEsc(p.name)}</span><span class="td-meta">${tdEsc(p.domaine||p.client||'')}</span></span><span class="rv-n warn">?</span></div>`).join(''):'')
         +(ap.risque.length?`<div class="rv-sub">Sous vigilance</div>`+ap.risque.slice(0,5).map(p=>
@@ -13126,7 +13201,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.45.0';
+const APP_VERSION='v1.46.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
