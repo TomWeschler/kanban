@@ -1000,6 +1000,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .jr-dec{--jrc:var(--accent)}.jr-ris{--jrc:var(--danger)}.jr-act{--jrc:var(--green)}
 .sb-btn.jr-dec{color:var(--accent)}.sb-btn.jr-ris{color:var(--danger)}.sb-btn.jr-act{color:var(--green)}
 .adp-line.jr-l{border-left:2px solid var(--jrc,var(--border));padding-left:0.5rem}
+.sb-dup{font-family:var(--font-mono);font-size:0.5rem;line-height:1.5;letter-spacing:0.03em;
+  color:var(--warn);background:rgba(251,191,36,0.09);border:1px solid rgba(251,191,36,0.28);
+  border-radius:6px;padding:0.45rem 0.6rem;margin-bottom:0.7rem}
+.sb-dup code{background:rgba(255,255,255,0.07);padding:0 3px;border-radius:2px}
+.sb-dup .adp-act{margin-top:0.35rem}
 .auto-list{display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.1rem}
 .auto-r{display:flex;align-items:center;gap:0.8rem;padding:0.65rem 0.85rem;background:var(--surface);
   border:1px solid var(--border);border-left:3px solid var(--green);border-radius:7px}
@@ -4142,6 +4147,9 @@ async function noteDeleteById(id){
 }
 const noteById=id=>notes.find(n=>n.id===id)||null;
 const noteByTitle=t=>noteIndex().byTitle[String(t||'').trim().toLowerCase()]||null;
+// Combien de notes portent ce titre ? 2 ou plus = les liens sont ambigus.
+const noteTitreDouble=t=>noteIndex().dup.has(String(t||'').trim().toLowerCase());
+const noteMemeTitre=t=>notes.filter(n=>n.title.toLowerCase()===String(t||'').trim().toLowerCase());
 
 
 // ── Rendu markdown ────────────────────────────────────────────────────────
@@ -4333,8 +4341,13 @@ function parseTags(n){
 }
 function noteIndex(){
   if(noteIdx)return noteIdx;
-  const byTitle={}, out={}, back={}, tags={}, tagCount={};
-  notes.forEach(n=>{ byTitle[n.title.toLowerCase()]=n; back[n.id]=[]; });
+  const byTitle={}, out={}, back={}, tags={}, tagCount={}, dup=new Set();
+  // Les liens passent par le TITRE : deux notes homonymes rendent tout
+  // [[lien]] ambigu, et c'est la dernière chargée qui gagne, en silence. On
+  // relève les doublons pour pouvoir le dire.
+  notes.forEach(n=>{ const k=n.title.toLowerCase();
+    if(byTitle[k])dup.add(k);
+    byTitle[k]=n; back[n.id]=[]; });
   notes.forEach(n=>{
     out[n.id]=parseLinks(n);
     tags[n.id]=parseTags(n);
@@ -4344,7 +4357,7 @@ function noteIndex(){
     const o=byTitle[String(t).toLowerCase()];
     if(o&&o.id!==n.id&&!back[o.id].includes(n))back[o.id].push(n);
   }));
-  return (noteIdx={byTitle,out,back,tags,tagCount});
+  return (noteIdx={byTitle,out,back,tags,tagCount,dup});
 }
 // Repli sur l'analyse directe pour une note hors de la liste courante
 const noteOutLinks=n=>noteIndex().out[n.id]||parseLinks(n);
@@ -4699,11 +4712,15 @@ function renderNoteMeta(){
   const outs=noteOutLinks(n);
   const tags=noteTags(n);
   const lk=(title,sub)=>`<span class="sb-lk" onclick="openWikiLink('${String(title).replace(/'/g,"\\'")}')">${tdEsc(title)}${sub?`<small>${tdEsc(sub)}</small>`:''}</span>`;
+  const homonymes=noteTitreDouble(n.title)?noteMemeTitre(n.title):[];
   el.innerHTML=
+    (homonymes.length>1?`<div class="sb-dup">⚠ ${homonymes.length} notes portent ce titre.
+      Les liens <code>[[${tdEsc(n.title)}]]</code> pointent tous vers une seule d'entre elles.
+      <button class="adp-act" onclick="openNote('${homonymes.find(x=>x.id!==n.id).id}')">Voir l'autre</button></div>`:'')+
     `<div class="sb-mt">Rétroliens ${back.length?`(${back.length})`:''}</div>`+
     (back.length?back.map(o=>lk(o.title)).join(''):'<div class="sb-none">Aucune note ne pointe ici.</div>')+
     `<div class="sb-mt">Liens sortants ${outs.length?`(${outs.length})`:''}</div>`+
-    (outs.length?outs.map(t=>lk(t,noteByTitle(t)?'':'note à créer')).join(''):'<div class="sb-none">Aucun lien.</div>')+
+    (outs.length?outs.map(t=>lk(t,noteByTitle(t)?(noteTitreDouble(t)?'⚠ titre en double':''):'note à créer')).join(''):'<div class="sb-none">Aucun lien.</div>')+
     (()=>{const um=noteUnlinked(n);return um.length?`<div class="sb-mt">Mentions non liées (${um.length})</div>`+
       um.slice(0,8).map(o=>`<div class="sb-um"><span class="sb-lk" onclick="openNote('${o.id}')">${tdEsc(o.title)}</span>
         <button class="sb-umb" onclick="linkMention('${o.id}')" title="Transformer la mention en lien">lier</button></div>`).join(''):'';})()+
@@ -7099,6 +7116,29 @@ async function openAdpProject(id){
 }
 function closeAdpProject(){ adpProjCur=null; renderAdp(); }
 
+// ── Journal cassé ─────────────────────────────────────────────────────────
+// Supprimer depuis les Notes la note qui sert de journal à un projet laissait
+// `note_id` pointer dans le vide. La fiche accusait alors le RÉSEAU — « journal
+// indisponible hors connexion » — alors qu'on était en ligne ; le bouton
+// « + Entrée du jour » ne faisait rien ; et une règle d'automatisme visant ce
+// journal échouait à chaque exécution, ce qui depuis v1.46 empêchait de marquer
+// la journée faite : le plan entier se rejouait à chaque chargement.
+// La distinction qui compte : notes NON CHARGÉES ≠ note SUPPRIMÉE.
+const adpJournalCasse=p=>!!(p&&p.note_id)&&notesLoaded&&!noteById(p.note_id);
+const adpJournalOk=p=>!!(p&&p.note_id)&&!!noteById(p.note_id);
+// Repose un journal neuf sur un projet dont la note a disparu.
+async function adpRecreerJournal(id){
+  const p=adpProjById(id); if(!p)return;
+  if(!accessToken){ toast('Connexion requise','err'); return; }
+  showLoad(true);
+  try{ if(!notesLoaded)await loadNotes(); }catch(e){}
+  if(adpJournalOk(p)){ showLoad(false); renderAdp(); return; }
+  p.note_id='';
+  await openAdpProject(id);          // recrée la note à l'ouverture, comme au premier jour
+  showLoad(false);
+  toast('Journal recréé','ok');
+}
+
 // La fiche projet disait tout — jalons, contacts, journal, budget — sauf ce
 // qu'on venait y chercher : « c'est quoi la balle dans mon camp ? ». Une seule
 // phrase, editable sur place, reprise dans les rapports et dans la Revue.
@@ -7139,7 +7179,11 @@ function renderAdpProjectPage(el){
                title="Une seule phrase : ce que TU dois faire ensuite. Reprise dans les rapports et la Revue.">
         <div class="adp-sec">Journal du projet</div>
         ${n?`<div class="md-hold" id="adpJournal"></div>`
-           :`<div class="gl-empty">Journal indisponible hors connexion.</div>`}
+           :adpJournalCasse(p)
+             ?`<div class="gl-empty">La note qui servait de journal a été supprimée.<br><br>
+                 <button class="gl-pill" onclick="adpRecreerJournal('${p.id}')">Recréer le journal</button>
+                 <div class="fld-hint" style="margin-top:0.7rem">Les entrées de l'ancienne note ne sont pas récupérables ici — cherche-la dans l'historique des Notes si tu l'as supprimée par erreur.</div></div>`
+             :`<div class="gl-empty">Journal indisponible hors connexion.</div>`}
       </div>
       <aside class="adp-side">
         <div class="adp-sec">Trajectoire budgétaire ${adpBudYear}</div>
@@ -7256,7 +7300,10 @@ function adpOnJournal(v){
 // chaque semaine et qu'on ne veut pas fabriquer à la main.
 async function adpStampToday(){
   const p=adpProjById(adpProjCur); if(!p)return;
-  const n=noteById(p.note_id); if(!n)return;
+  const n=noteById(p.note_id);
+  // Sans note, ce bouton ne faisait RIEN, en silence. On dit pourquoi.
+  if(!n){ toast(adpJournalCasse(p)?'Le journal de ce projet a été supprimé — recrée-le d\'abord'
+                                  :'Journal non chargé — réessaie dans un instant','err'); return; }
   // ligne vide avant le titre : sans elle, le markdown colle l'entree au
   // titre precedent et le journal devient illisible en mode lecture
   const head=`\n\n### ${td()}\n\n- `;
@@ -7274,7 +7321,9 @@ async function adpStampToday(){
 // écrire : c'est la seule chose qu'on veut faire à ce moment-là.
 async function adpAddJr(type){
   const p=adpProjById(adpProjCur); if(!p)return;
-  const n=noteById(p.note_id); if(!n)return;
+  const n=noteById(p.note_id);
+  if(!n){ toast(adpJournalCasse(p)?'Le journal de ce projet a été supprimé — recrée-le d\'abord'
+                                  :'Journal non chargé — réessaie dans un instant','err'); return; }
   const meta=jrMeta(type);
   const jour=`### ${td()}`;
   let c=n.content||'';
@@ -9107,6 +9156,60 @@ const AUTO_TRIG=[
        if(-dayDiff(st.due)<n)return;
        out.push({id:r.id+'/'+st.key,lbl:st.label,pid:r.project_id,jours:-dayDiff(st.due),obj:st,run:r}); });});
    return out;}],
+ // ── Au-delà des projets ──
+ // Les données les plus régulières de l'app — habitudes, mesures, séances — ne
+ // déclenchaient rien. Ces cibles n'ont pas de projet : seules les actions
+ // « tâche » et « signal » s'y appliquent, les autres sont écartées du plan.
+ ['habitude.decroche','Habitude due N fois d\'affilée sans être cochée','fois',7,n=>
+   (habits||[]).filter(h=>h.active).map(h=>{
+     let manque=0;
+     for(let i=1;i<=90&&manque<n;i++){
+       const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+       if(!isHabitDueOnDate(h.frequency,d))continue;
+       if(habitsLog.some(l=>String(l.habit_id)===String(h.id)&&l.date===ymd(d)))return null;
+       manque++;
+     }
+     return manque>=n?{id:'h'+h.id,lbl:h.title,pid:'',jours:manque,obj:h}:null;
+   }).filter(Boolean)],
+ ['mesure.muette','Mesure quotidienne sans point depuis N jours','jours',10,n=>
+   (mesDefs||[]).filter(d=>d.active&&d.cadence==='daily').map(d=>{
+     const pts=(mesVals||[]).filter(v=>v.key===d.key&&v.date).sort((a,b)=>a.date.localeCompare(b.date));
+     const dernier=pts.length?pts[pts.length-1].date:'';
+     const ecart=dernier?-dayDiff(dernier):null;
+     if(ecart!=null&&ecart<n)return null;
+     return {id:'m'+d.key,lbl:d.label,pid:'',jours:ecart,
+             depuis:dernier?`il y a ${ecart} j`:'jamais',obj:d};
+   }).filter(Boolean)],
+ ['mesure.ecart','Mesure à plus de N% de sa cible','%',10,n=>
+   (mesDefs||[]).filter(d=>d.active&&d.target!=null&&d.target!==''&&parseFloat(d.target)).map(d=>{
+     const cible=parseFloat(d.target);
+     const pts=(mesVals||[]).filter(v=>v.key===d.key).sort((a,b)=>a.date.localeCompare(b.date));
+     if(!pts.length)return null;
+     const val=pts[pts.length-1].value;
+     const ecart=Math.abs(val-cible)/Math.abs(cible)*100;
+     if(ecart<n)return null;
+     // Un écart du BON côté n'est pas un problème : on ne signale que la dérive.
+     if(d.dir==='down'&&val<=cible)return null;
+     if(d.dir==='up'&&val>=cible)return null;
+     return {id:'e'+d.key,lbl:d.label,pid:'',jours:Math.round(ecart),
+             depuis:`${Math.round(val*100)/100} pour une cible de ${cible}`,obj:d};
+   }).filter(Boolean)],
+ ['sport.absent','Aucune séance faite depuis N jours','jours',7,n=>{
+   const faits=(sportLogs||[]).filter(l=>l.status==='done'||l.status==='partial')
+     .map(l=>l.date).sort();
+   const dernier=faits.length?faits[faits.length-1]:'';
+   const ecart=dernier?-dayDiff(dernier):null;
+   if(ecart!=null&&ecart<n)return [];
+   return [{id:'sport',lbl:'Aucune séance',pid:'',jours:ecart,
+            depuis:dernier?`la dernière remonte à ${dernier}`:'aucune séance enregistrée'}];
+ }],
+ ['sport.gene','Gêne signalée N fois sur le même mouvement','fois',2,n=>{
+   const par={};
+   (typeof sportExLog==='function'?sportExLog():[]).filter(x=>x.gene)
+     .forEach(x=>{ (par[x.key]=par[x.key]||{n:0,nom:x.nom}).n++; });
+   return Object.entries(par).filter(([,v])=>v.n>=n)
+     .map(([k,v])=>({id:'g'+k,lbl:v.nom,pid:'',jours:v.n}));
+ }],
  ['rituel.semaine','Chaque lundi','—',0,()=>
    new Date().getDay()===1?[{id:'lundi',lbl:'Rituel hebdomadaire',pid:'',jours:0}]:[]],
  ['rituel.mois','Le 1er de chaque mois','—',0,()=>
@@ -9202,9 +9305,11 @@ function autoPlan(regles){
       const proj=c.pid?adpProjById(c.pid):null;
       // Une action qui vise un projet n'a rien à faire sans projet.
       if(['journal','sante','procedure','jalon'].includes(r.action)&&!proj)return;
-      // Écrire au journal d'un projet qui n'en a pas est IMPOSSIBLE, pas
-      // « en échec » : l'écarter du plan évite de retenter éternellement.
-      if(r.action==='journal'&&!proj.note_id)return;
+      // Écrire au journal d'un projet qui n'en a pas — ou dont la note a été
+      // supprimée — est IMPOSSIBLE, pas « en échec » : l'écarter du plan évite
+      // de retenter éternellement, et donc de rejouer le plan à chaque
+      // chargement puisque la journée ne serait jamais marquée faite.
+      if(r.action==='journal'&&!adpJournalOk(proj))return;
       out.push({regle:r,cible:c,proj,quoi:autoQuoi(r,c,proj)});
     });
   });
@@ -9295,6 +9400,11 @@ async function autoRun(manuel){
   if(autoEnCours)return {n:0,total:0};
   if(!autoOn&&!manuel)return {n:0,total:0};
   if(!accessToken)return {n:0,total:0};
+  // Les notes conditionnent le plan lui-même : sans elles, `adpJournalOk` ne
+  // distingue pas « pas de journal » de « journal pas encore lu », et les
+  // règles de journal disparaîtraient du plan en silence. On les charge ICI,
+  // quel que soit l'appelant — l'exécution du matin comme le bouton.
+  if(!notesLoaded&&navigator.onLine){ try{ await loadNotes(); }catch(e){} }
   autoEnCours=true;
   const plan=autoPlan();
   let n=0;
@@ -9319,12 +9429,29 @@ async function autoAuJour(){
   if(!autoOn||!accessToken)return;
   let dernier=''; try{ dernier=localStorage.getItem(LS_AUTO_RUN)||''; }catch(e){}
   if(dernier===td())return;
-  // Les règles qui écrivent au journal ont besoin des notes, que loadAdp
-  // n'attend pas. Sans elles, elles échouaient en silence tous les matins.
-  if(!notesLoaded&&navigator.onLine){ try{ await loadNotes(); }catch(e){} }
   const {n}=await autoRun(false);
   if(n)toast(`${n} action${n>1?'s':''} automatique${n>1?'s':''} · voir ADP › Automatismes`,'info');
 }
+// Retire du journal la ligne écrite par une action, reconstruite depuis le
+// libellé de la trace — que nous produisons nous-mêmes, donc analysable :
+//   « Journal Risque : « texte » · Projet »  →  « > Risque : texte »
+// Ne retire QUE la première occurrence : deux lignes identiques n'en perdent
+// pas deux.
+async function autoRetireLigne(noteId,quoi){
+  const n=noteById(noteId); if(!n)return false;
+  const m=/^Journal (.+?) : « ([\s\S]+?) »/.exec(String(quoi||''));
+  if(!m)return false;
+  const ligne=`> ${m[1]} : ${m[2]}`;
+  const i=n.content.indexOf(ligne);
+  if(i<0)return false;
+  const fin=i+ligne.length;
+  // on emporte le saut de ligne qui précède, pour ne pas laisser de trou
+  const deb=(i>0&&n.content[i-1]==='\n')?i-1:i;
+  n.content=n.content.slice(0,deb)+n.content.slice(fin);
+  noteIndexInvalidate(); cacheSet('notes',notes);
+  return noteUpsert(n);
+}
+
 // Défaire : on retire l'objet créé ET on marque l'entrée annulée, ce qui rouvre
 // la règle pour cette cible — sinon on ne pourrait jamais la rejouer.
 async function autoUndo(id){
@@ -9339,6 +9466,12 @@ async function autoUndo(id){
     await sheetUpsertByKey('adp_runs',ref,[ref,'','','','','supprime','','']);
   }else if(kind==='sante'){
     const p=adpProjById(ref); if(p&&extra){ p.health=extra; await adpSave('proj',p); }
+  }else if(kind==='note'){
+    // « Défaire » marquait la trace annulée mais laissait le texte dans le
+    // journal. On retire la ligne exacte qu'on y avait écrite.
+    if(!(await autoRetireLigne(ref,j.quoi))){
+      toast("La ligne n'a pas été retrouvée dans le journal — trace annulée seule",'err');
+    }
   }
   j.statut='annule';
   await autoLog(j);
@@ -9376,23 +9509,38 @@ const AUTO_SEED=[
   'Décider la prochaine action de {{projet}}','semaine'],
  ['Instruire ce qui traîne','tache.fuie',4,'journal','action',
   '« {{cible}} » reportée {{jours}} fois : découper, déléguer ou renoncer','once'],
+ ['Rattraper une habitude qui décroche','habitude.decroche',7,'tache','0',
+  'Reprendre « {{cible}} » — {{jours}} fois manquée d\'affilée','semaine'],
+ ['Reprendre le sport','sport.absent',7,'signal','',
+  'Aucune séance depuis {{jours}} jours — {{depuis}}','semaine'],
 ];
+// Le catalogue refusait de s'ouvrir dès qu'UNE règle existait, et son bouton ne
+// s'affichait que dans l'état vide : une fois sa première règle créée, on ne
+// pouvait plus jamais récupérer un modèle supprimé par erreur. Il reste
+// atteignable et n'ajoute que ce qui manque, par nom.
+const autoSeedManquantes=()=>AUTO_SEED.filter(([nom])=>!autoRegles.some(r=>r.nom===nom));
 async function autoSeed(){
-  if(autoRegles.length){ toast('Des règles existent déjà','info'); return; }
+  const manque=autoSeedManquantes();
+  if(!manque.length){ toast('Les sept modèles sont déjà là','info'); return; }
   showLoad(true);
   let ok=true;
-  for(const [nom,trigger,param,action,cible,gabarit,cadence] of AUTO_SEED){
+  for(const [nom,trigger,param,action,cible,gabarit,cadence] of manque){
     ok=await autoSaveRegle({id:adpId('a'),nom,trigger,param,action,cible,gabarit,
       actif:false,cadence})&&ok;
   }
   showLoad(false);
   renderAdp();
-  toast(ok?`${AUTO_SEED.length} règles ajoutées — toutes éteintes`:"ÉCHEC de l'enregistrement",ok?'ok':'err');
+  toast(ok?`${manque.length} règle${manque.length>1?'s':''} ajoutée${manque.length>1?'s':''} — éteinte${manque.length>1?'s':''}`
+          :"ÉCHEC de l'enregistrement",ok?'ok':'err');
 }
 
 // ── Vue ───────────────────────────────────────────────────────────────────
 let autoApercu=null;
-function autoSimuler(){
+async function autoSimuler(){
+  // Même exigence que l'exécution : simuler sans les notes montrerait un plan
+  // amputé des règles de journal.
+  if(!notesLoaded&&accessToken&&navigator.onLine){ showLoad(true);
+    try{ await loadNotes(); }catch(e){} showLoad(false); }
   autoApercu=autoPlan();
   renderAdp();
   if(!autoApercu.length)toast('Rien à faire : aucune règle active ne trouve de cible','info');
@@ -9434,6 +9582,8 @@ function renderAdpAuto(el){
       <button class="gl-pill" onclick="autoLancer()" title="Exécuter maintenant les règles actives">▶ Exécuter</button>
       <div style="flex:1"></div>
       <span class="bud-legend">${actives}/${autoRegles.length} règle${autoRegles.length>1?'s':''} active${actives>1?'s':''} · ${faits} action${faits>1?'s':''} au total</span>
+      ${autoSeedManquantes().length&&autoRegles.length
+        ?`<button class="gl-pill" onclick="autoSeed()" title="Réajouter les modèles absents, éteints">+ ${autoSeedManquantes().length} modèle${autoSeedManquantes().length>1?'s':''}</button>`:''}
       <button class="gl-pill" onclick="openAutoModal(null)">+ Règle</button>
     </div>
     ${!autoOn&&actives?`<div class="auto-warn">Les automatismes sont en pause : les règles actives ne se déclencheront pas au chargement. « Exécuter » reste disponible à la main.</div>`:''}
@@ -13201,7 +13351,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.46.0';
+const APP_VERSION='v1.47.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
