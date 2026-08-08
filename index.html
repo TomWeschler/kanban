@@ -49,10 +49,14 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .nav-tab.active{color:var(--accent);border-color:var(--accent)}
 .proj-shortcuts{display:flex;gap:0.35rem;flex-shrink:0}
 .proj-btn{font-family:'Space Mono',var(--sys-mono);font-size:0.58rem;font-weight:700;letter-spacing:0.1em;padding:0.28rem 0.6rem;border:1px solid;cursor:pointer;transition:all 0.13s;clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)}
-.proj-btn.dcb{color:var(--dcb);border-color:rgba(56,189,248,0.28);background:rgba(56,189,248,0.06)}.proj-btn.dcb:hover{background:rgba(56,189,248,0.14)}
-.proj-btn.gld{color:var(--gld);border-color:rgba(252,211,77,0.28);background:rgba(252,211,77,0.06)}.proj-btn.gld:hover{background:rgba(252,211,77,0.14)}
-.proj-btn.air{color:var(--air);border-color:rgba(110,231,183,0.28);background:rgba(110,231,183,0.06)}.proj-btn.air:hover{background:rgba(110,231,183,0.14)}
-.proj-btn.perso{color:var(--perso);border-color:rgba(192,132,252,0.28);background:rgba(192,132,252,0.06)}.proj-btn.perso:hover{background:rgba(192,132,252,0.14)}
+/* La couleur d'une etiquette arrive par --tg, posee en ligne : plus de regle
+   CSS a ajouter quand un projet apparait. color-mix teinte le fond ; les
+   navigateurs qui l'ignorent gardent la declaration precedente. */
+.proj-btn{color:var(--tg,var(--text-mid));border-color:var(--tg,var(--border));background:rgba(255,255,255,0.04)}
+@supports(background:color-mix(in srgb,red 10%,transparent)){
+  .proj-btn{background:color-mix(in srgb,var(--tg,#fff) 8%,transparent)}
+  .proj-btn:hover{background:color-mix(in srgb,var(--tg,#fff) 18%,transparent)}
+}
 .header-right{display:flex;align-items:center;gap:0.75rem;margin-left:auto;flex-shrink:0}
 .sync-status{font-family:'Space Mono',var(--sys-mono);font-size:0.56rem;letter-spacing:0.07em;color:var(--text-dim);display:flex;align-items:center;gap:0.3rem;white-space:nowrap}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
@@ -94,7 +98,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .card:active{cursor:grabbing}
 .card.dragging{opacity:0.2;transform:rotate(1.5deg)}
 .card-tag{position:absolute;top:0;right:0;font-family:'Space Mono',var(--sys-mono);font-size:0.72rem;font-weight:700;letter-spacing:0.1em;padding:4px 10px}
-.card-tag.dcb{background:rgba(56,189,248,0.18);color:var(--dcb);border-bottom:1px solid rgba(56,189,248,0.4);border-left:1px solid rgba(56,189,248,0.4)}.card-tag.gld{background:rgba(252,211,77,0.18);color:var(--gld);border-bottom:1px solid rgba(252,211,77,0.4);border-left:1px solid rgba(252,211,77,0.4)}.card-tag.air{background:rgba(110,231,183,0.18);color:var(--air);border-bottom:1px solid rgba(110,231,183,0.4);border-left:1px solid rgba(110,231,183,0.4)}.card-tag.perso{background:rgba(192,132,252,0.18);color:var(--perso);border-bottom:1px solid rgba(192,132,252,0.4);border-left:1px solid rgba(192,132,252,0.4)}
+.card-tag{background:rgba(255,255,255,0.08);color:var(--tg,var(--text-mid));
+  border-bottom:1px solid var(--tg,transparent);border-left:1px solid var(--tg,transparent)}
+@supports(background:color-mix(in srgb,red 10%,transparent)){
+  .card-tag{background:color-mix(in srgb,var(--tg,#fff) 18%,transparent)}
+}
 .card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6px}
 .card[data-imp="1"]::before{background:var(--imp1)}.card[data-imp="2"]::before{background:var(--imp2)}.card[data-imp="3"]::before{background:var(--imp3)}.card[data-imp="4"]::before{background:var(--imp4)}.card[data-imp="5"]::before{background:var(--imp5)}
 .card.a-warn{border-color:rgba(251,191,36,0.43)}.card.a-danger{border-color:rgba(248,113,113,0.62);box-shadow:0 0 9px rgba(248,113,113,0.11)}
@@ -436,10 +444,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .board-filter:hover{color:var(--text);border-color:var(--text-mid)}
 .board-filter.active{color:var(--bg);border-color:transparent;background:var(--text-mid)}
 .board-filter.active.f-all{background:var(--accent)}
-.board-filter.active.f-dcb{background:var(--dcb);color:#09090e}
-.board-filter.active.f-gld{background:var(--gld);color:#09090e}
-.board-filter.active.f-air{background:var(--air);color:#09090e}
-.board-filter.active.f-perso{background:var(--perso)}
+.board-filter[style*="--tg"]{color:var(--tg)}
+.board-filter.active[style*="--tg"]{background:var(--tg);color:#09090e;border-color:var(--tg)}
 
 /* DASHBOARD */
 #pageobjectifs{overflow-y:auto;padding:1.25rem 1.5rem 3rem;gap:1.1rem;flex-direction:column}
@@ -451,7 +457,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .proj-row{display:grid;grid-template-columns:repeat(3,1fr);gap:0.85rem;margin-bottom:1.1rem}
 .proj-kpi{background:var(--surface);border:1px solid var(--border);padding:0.9rem 1.1rem;display:flex;flex-direction:column;gap:0.3rem}
 .proj-kpi-label{font-family:'Space Mono',var(--sys-mono);font-size:0.63rem;font-weight:700;letter-spacing:0.14em}
-.proj-kpi-label.dcb{color:var(--dcb)}.proj-kpi-label.gld{color:var(--gld)}.proj-kpi-label.air{color:var(--air)}
+.proj-kpi-label[style*="--tg"]{color:var(--tg)}
 .proj-kpi-val{font-family:'Space Mono',var(--sys-mono);font-size:1.55rem;font-weight:700;color:var(--text)}
 .proj-kpi-sub{font-size:0.68rem;color:var(--text-dim)}
 .charts-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:0.85rem}
@@ -926,6 +932,16 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .adp-line.due{background:rgba(251,191,36,0.06)}
 .adp-l-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;overflow:hidden}
 .adp-l-sub{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Journal structure : trois couleurs, trois natures. */
+.jr{display:flex;gap:0.6rem;align-items:baseline;margin:0.5rem 0;padding:0.45rem 0.7rem;
+  border-left:3px solid var(--jrc,var(--border));background:var(--surface2);border-radius:0 5px 5px 0}
+.jr-k{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--jrc,var(--text-mid));white-space:nowrap;flex-shrink:0}
+.jr-t{flex:1}
+.jr-dec{--jrc:var(--accent)}.jr-ris{--jrc:var(--danger)}.jr-act{--jrc:var(--green)}
+.sb-btn.jr-dec{color:var(--accent)}.sb-btn.jr-ris{color:var(--danger)}.sb-btn.jr-act{color:var(--green)}
+.adp-line.jr-l{border-left:2px solid var(--jrc,var(--border));padding-left:0.5rem}
+.adp-slip{color:var(--warn)}
 .adp-l-flag{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--warn);background:rgba(251,191,36,0.12);padding:2px 5px;border-radius:3px;flex-shrink:0}
 .adp-act{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;text-transform:uppercase;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);border-radius:4px;padding:0.2rem 0.45rem;cursor:pointer;flex-shrink:0}
 .adp-act:hover{color:var(--accent);border-color:var(--accent)}
@@ -1123,6 +1139,9 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .bud-nat .bud-edit .bud-i:hover,.bud-cx .bud-c2 .bud-i:hover,.bud-cx .bud-y .bud-i:hover{border-color:var(--accent)}
 .bud-i:focus{border-color:var(--accent);background:var(--surface3);box-shadow:0 0 0 2px var(--accent-dim)}
 input.bud-y-e{font-size:0.58rem;padding:0;color:var(--text-dim);margin-top:1px}
+/* Differentiel annuel : ce qu'il reste (vert) ou ce qu'on va depasser (rouge) */
+.bud-y-d{font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.04em;margin-top:2px;font-weight:700}
+.bud-y-d.ok{color:var(--green)}.bud-y-d.ko{color:var(--danger)}
 input.bud-y-e:focus{color:var(--text)}
 .bud-legend{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;color:var(--text-dim)}
 .bud-legend b{display:inline-block;width:0.6rem;height:0.6rem;border-radius:2px;background:var(--edit-bg2);border:1px solid var(--edit-brd);vertical-align:-1px;margin-right:0.2rem}
@@ -1255,6 +1274,9 @@ input.bud-y-e:focus{color:var(--text)}
 .rap-foot{margin-top:14px;padding-top:5px;border-top:1px solid #ccc;color:#777;font-size:8.5px}
 .rap-ok{color:#2a7;font-size:10px;margin:2px 0 8px}
 .rap-fig{margin:6px 0 10px}
+.rap-delta{margin:6px 0;padding:6px 9px;border-left:3px solid;font-size:11px}
+.rap-delta.ok{border-color:#16a34a;color:#166534;background:#f0fdf4}
+.rap-delta.ko{border-color:#dc2626;color:#991b1b;background:#fef2f2}
 .rap-fig svg{width:100%;height:auto;color:#444}
 .tpl-arch{opacity:0.5}
 .tpl-use{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim)}
@@ -1646,12 +1668,7 @@ body,body *{font-family:var(--font-body)}
     <button class="nav-tab" data-page="review" onclick="switchPage('review')">REVUE</button>
   </nav>
   <div class="nav-sep"></div>
-  <div class="proj-shortcuts">
-    <button class="proj-btn dcb" onclick="quickTask('DCB')">+ DCB</button>
-    <button class="proj-btn gld" onclick="quickTask('GLD')">+ GLD</button>
-    <button class="proj-btn air" onclick="quickTask('Airside')">+ AIRSIDE</button>
-    <button class="proj-btn perso" onclick="quickTask('Perso')">+ PERSO</button>
-  </div>
+  <div class="proj-shortcuts" id="projShortcuts"></div>
   <div class="header-right">
     <div class="hstats" id="hStats"></div>
     <div class="sync-status"><div class="sync-dot ok" id="syncDot"></div><span id="syncLabel">PRÊT</span></div>
@@ -1792,11 +1809,7 @@ body,body *{font-family:var(--font-body)}
 <div class="page" id="pageboard">
   <div class="pg-bg" id="boardBg"></div>
   <div class="board-filters" id="boardFilters">
-    <button class="board-filter f-all active" title="Raccourci : 0" onclick="setBoardFilter('all')">TOUS</button>
-    <button class="board-filter f-dcb" title="Raccourci : 1" onclick="setBoardFilter('DCB')">DCB</button>
-    <button class="board-filter f-gld" title="Raccourci : 2" onclick="setBoardFilter('GLD')">GLD</button>
-    <button class="board-filter f-air" title="Raccourci : 3" onclick="setBoardFilter('Airside')">AIRSIDE</button>
-    <button class="board-filter f-perso" title="Raccourci : 4" onclick="setBoardFilter('Perso')">PERSO</button>
+    <span id="bfTags"></span>
     <div class="bf-spacer"></div>
     <button class="board-filter f-late" id="bfLate" onclick="toggleBoardLate()" title="Ne voir que les tâches en retard">⚠ EN RETARD</button>
     <button class="board-filter f-done" onclick="openDoneModal()" title="Historique des tâches terminées">✓ TERMINÉES</button>
@@ -2153,13 +2166,7 @@ body,body *{font-family:var(--font-body)}
       </div>
     </div>
     <div class="field"><label>Projet</label>
-      <select id="fProj">
-        <option value="">— Aucun —</option>
-        <option value="DCB">DCB</option>
-        <option value="GLD">GLD</option>
-        <option value="Airside">Airside</option>
-        <option value="Perso">Perso</option>
-      </select>
+      <select id="fProj"></select>
     </div>
     <div class="field"><label>Colonne</label>
       <select id="fCol" onchange="syncDueFromCol()">
@@ -2279,17 +2286,57 @@ function dueDateForColumn(col){
     default: return ''; // BackLog = sans échéance
   }
 }
-const PROJECTS = ['DCB','GLD','Airside','Perso'];
+// ── Étiquettes de projet ──────────────────────────────────────────────────
+// La liste était écrite en dur, et recopiée à six endroits : filtres du board,
+// boutons d'ajout rapide, sélecteur du modal tâche, sélecteur client de la
+// fiche ADP, raccourcis clavier, et une règle CSS par étiquette. Ajouter un
+// projet demandait donc d'éditer le HTML — ce qui plafonnait le lien board ↔
+// ADP à quatre valeurs pendant qu'ADP gérait un portefeuille de taille libre.
+// La liste se DÉDUIT désormais des données : les clients des projets ADP, plus
+// les étiquettes que portent déjà les tâches. Rien à déclarer, rien à migrer.
+const PROJ_SEED = ['DCB','GLD','Airside','Perso'];   // seulement si tout est vide
+// « Perso » n'est pas un projet, c'est le fourre-tout personnel : il reste en
+// bout de liste quoi qu'il arrive, pour que les raccourcis 1..n soient stables.
+const PROJ_FIN = 'Perso';
+let projTagCache=null;
+const projTagsInvalidate=()=>{ projTagCache=null; };
+function projTags(){
+  if(projTagCache)return projTagCache;
+  const ext=new Set(), tks=new Set();
+  adpProjects.forEach(p=>{ const c=String(p.client||'').trim(); if(c)ext.add(c); });
+  allTasks.forEach(t=>{ const c=String(t.project||'').trim(); if(c&&!ext.has(c))tks.add(c); });
+  const tri=x=>[...x].sort((a,b)=>a.localeCompare(b,'fr'));
+  let out=[...tri(ext),...tri(tks)];
+  if(!out.length)out=PROJ_SEED.slice();
+  out=out.filter(x=>x!==PROJ_FIN);
+  if(ext.has(PROJ_FIN)||tks.has(PROJ_FIN)||!out.length)out.push(PROJ_FIN);
+  projTagCache=out;
+  return out;
+}
+// Les quatre étiquettes historiques gardent leur couleur — on ne redécore pas
+// un board qu'on lit tous les jours. Les nouvelles la tirent d'un hachage du
+// nom : stable d'un appareil à l'autre, sans table à tenir.
+const PROJ_COUL={DCB:'#38bdf8',GLD:'#fcd34d',Airside:'#6ee7b7',Perso:'#c084fc'};
+function projColor(tag){
+  const t=String(tag||'');
+  if(PROJ_COUL[t])return PROJ_COUL[t];
+  let h=2166136261;
+  for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,16777619)>>>0; }
+  return `hsl(${h%360} 72% 68%)`;
+}
 // Le projet est une vraie colonne. Ces deux helpers ne servent plus qu'à migrer
 // l'ancien format, où il était encodé dans le titre (« DCB : Faire X »).
 function projectFromTitle(title){
-  return PROJECTS.find(p=>String(title).startsWith(p+' :')||String(title).startsWith(p+':'))||'';
+  return projTags().find(p=>String(title).startsWith(p+' :')||String(title).startsWith(p+':'))||'';
 }
 function stripProjectPrefix(title,proj){
   if(!proj)return title;
   return String(title).slice(proj.length).replace(/^\s*:\s*/,'').trim()||title;
 }
+// Conservé pour les feuilles de style historiques ; la couleur passe désormais
+// par la variable --tg posée sur l'élément.
 const projClass=p=>p==='Airside'?'air':String(p).toLowerCase();
+const projStyle=p=>`--tg:${projColor(p)}`;
 const CATEGORIES = ['Finance','Esprit','Santé','Productivité','Autre'];
 const LS_CACHE = 'kanban_cache_v3';
 // ── Cache local generique ─────────────────────────────────────────────────
@@ -2723,9 +2770,10 @@ function init() {
   mesRestoreCache();
   try {
     const cached = JSON.parse(localStorage.getItem(LS_CACHE) || '[]');
-    allTasks = cached; tasks = allTasks.filter(t => !t.completed_at);
+    allTasks = cached; tasks = allTasks.filter(t => !t.completed_at); projTagsInvalidate();
     render();
   } catch(e){}
+  renderProjTags();   // les boutons d'ajout rapide vivent dans l'en-tête, pas dans le board
   renderCurrentPage();
   // hors ligne, les pages doivent afficher le dernier etat connu
   habits=cacheGet('habits',[]); habitsLog=cacheGet('habitsLog',[]);
@@ -2874,6 +2922,7 @@ async function loadFromSheets() {
       t.column = taskColumnFromDate(t.due_date);
     });
     tasks = allTasks.filter(t => !t.completed_at);
+    projTagsInvalidate();
     remoteFingerprint = fingerprint(rows);   // référence pour détecter une écriture concurrente
     if(migrated) persist();
     localStorage.setItem(LS_CACHE, JSON.stringify(allTasks));
@@ -3375,17 +3424,28 @@ function setHabDayFilter(filter) {
 // BOARD RENDER
 // ════════════════════════════════════════════════════
 function setBoardFilter(f) {
+  // Un filtre sur une étiquette disparue ne renverrait plus rien : on retombe
+  // sur « tous » plutôt que de laisser un board vide sans explication.
+  if(f!=='all'&&!projTags().includes(f))f='all';
   boardFilter = f;
-  document.querySelectorAll('.board-filter').forEach(b => {
-    const isActive = (f === 'all' && b.classList.contains('f-all')) ||
-                     (f === 'DCB' && b.classList.contains('f-dcb')) ||
-                     (f === 'GLD' && b.classList.contains('f-gld')) ||
-                     (f === 'Airside' && b.classList.contains('f-air')) ||
-                     (f === 'Perso' && b.classList.contains('f-perso'));
-    b.classList.toggle('active', isActive);
-  });
+  renderProjTags();
   render();
 }
+// Filtres du board et boutons d'ajout rapide, tirés de la liste déduite.
+// Appelé au rendu du board et après chaque chargement qui peut la changer.
+function renderProjTags(){
+  const tags=projTags();
+  const bf=document.getElementById('bfTags');
+  if(bf)bf.innerHTML=`<button class="board-filter f-all${boardFilter==='all'?' active':''}" title="Raccourci : Maj+0" onclick="setBoardFilter('all')">TOUS</button>`
+    +tags.map((t,i)=>`<button class="board-filter${boardFilter===t?' active':''}" style="${projStyle(t)}"
+        ${i<9?`title="Raccourci : Maj+${i+1}"`:''} onclick="setBoardFilter('${jsAttr(t)}')">${tdEsc(t).toUpperCase()}</button>`).join('');
+  const qs=document.getElementById('projShortcuts');
+  if(qs)qs.innerHTML=tags.slice(0,5).map(t=>
+    `<button class="proj-btn" style="${projStyle(t)}" onclick="quickTask('${jsAttr(t)}')">+ ${tdEsc(t).toUpperCase()}</button>`).join('');
+}
+// Une étiquette peut contenir une apostrophe : elle passe dans un onclick,
+// donc elle doit survivre à la fois au HTML et à la chaîne JavaScript.
+const jsAttr=s=>tdEsc(String(s||'')).replace(/'/g,'&#39;');
 
 function filterTasksByBoard(list) {
   const q=boardSearch.trim().toLowerCase();
@@ -3420,6 +3480,7 @@ function render() {
     }
     else ct.forEach(t=>body.appendChild(mkCard(t,now)));
   });
+  renderProjTags();
   const lt=document.getElementById('bfLate');
   if(lt){
     const n=tasks.filter(taskLate).length;
@@ -3439,7 +3500,7 @@ function mkCard(t, now) {
   const c = document.createElement('div');
   c.className='card'; c.dataset.id=t.id; c.dataset.imp=t.importance; c.draggable=true;
   const proj=t.project||'';
-  const tag=proj?`<div class="card-tag ${projClass(proj)}">${tdEsc(proj).toUpperCase()}</div>`:'';
+  const tag=proj?`<div class="card-tag" style="${projStyle(proj)}">${tdEsc(proj).toUpperCase()}</div>`:'';
   let badge='',ac='';
   // Une tâche en attente garde son échéance mais perd son alarme : elle n'est
   // pas actionnable, la faire clignoter en rouge n'aide personne.
@@ -3493,7 +3554,7 @@ function dropOnCol(col){
 // ════════════════════════════════════════════════════
 // `tasks` contient les mêmes objets que `allTasks` (c'est un filter), donc muter
 // l'un suffit ; on recalcule ensuite la liste active.
-const refreshActive=()=>{ tasks=allTasks.filter(t=>!t.completed_at); };
+const refreshActive=()=>{ tasks=allTasks.filter(t=>!t.completed_at); projTagsInvalidate(); };
 
 // ── Sous-tâches ───────────────────────────────────────────────────────────
 // Même format texte que les checkpoints d'objectifs : « [x] intitulé » par ligne.
@@ -3655,7 +3716,7 @@ function openModal(id, prefill, proj){
   document.getElementById('fId').value='';document.getElementById('fTitle').value='';
   document.getElementById('fDue').value=plusDays(7);syncColFromDue();
   document.getElementById('fNotes').value='';setImp(3);
-  document.getElementById('fProj').value=proj||'';
+  projFillSelect(proj||'');
   document.getElementById('fRec').value='';document.getElementById('fCheck').value='';
   document.getElementById('fBlock').value='';
   document.getElementById('btnDel').style.display='none';
@@ -3665,7 +3726,7 @@ function openModal(id, prefill, proj){
     document.getElementById('fId').value=t.id;document.getElementById('fTitle').value=t.title;
     document.getElementById('fDue').value=t.due_date||'';syncColFromDue();
     document.getElementById('fNotes').value=t.notes||'';setImp(t.importance);
-    document.getElementById('fProj').value=t.project||'';
+    projFillSelect(t.project||'');
     document.getElementById('fRec').value=t.recurrence||'';
     document.getElementById('fCheck').value=checklistToText(taskChecklist(t));
     document.getElementById('fBlock').value=t.blocked_by||'';
@@ -3674,7 +3735,10 @@ function openModal(id, prefill, proj){
   }
   if(prefill)document.getElementById('fTitle').value=prefill;
   document.getElementById('taskModal').classList.add('open');
-  setTimeout(()=>{const inp=document.getElementById('fTitle');inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);},70);
+  setTimeout(()=>{const inp=document.getElementById('fTitle');
+    // Le focus est différé : entre-temps, un autre formulaire a pu remplacer
+    // le champ. On ne se donne pas le droit de supposer qu'il est encore là.
+    if(!inp)return; inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);},70);
 }
 
 // Le modal laisse raisonner en date OU en colonne : les deux champs se suivent.
@@ -3718,7 +3782,7 @@ async function renderTodayPage(){
       const cps=taskChecklist(t);
       // mêmes composants que les cartes du board : tag projet coloré, points
       // d'importance, badge d'échéance
-      const tag=t.project?`<span class="card-tag ${projClass(t.project)} td-tag">${tdEsc(t.project).toUpperCase()}</span>`:'';
+      const tag=t.project?`<span class="card-tag td-tag" style="${projStyle(t.project)}">${tdEsc(t.project).toUpperCase()}</span>`:'';
       const dots=Array.from({length:5},(_,i)=>
         `<div class="idot idot-${i+1}${i<t.importance?' on':''}"></div>`).join('');
       const badge=t.due_date&&t.due_date<today
@@ -3963,6 +4027,34 @@ const MD_ESC=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 const MD_COLORS=[['rouge','#f87171'],['orange','#fb923c'],['jaune','#fbbf24'],['vert','#4ade80'],
                  ['bleu','#60a5fa'],['violet','#a78bfa'],['rose','#f472b6'],['gris','#9ca3af']];
 const MD_COLOR_RE=new RegExp('\\{('+MD_COLORS.map(c=>c[0]).join('|')+'):([^}\\n]+)\\}','g');
+// ── Journal structuré ─────────────────────────────────────────────────────
+// Un comité demande trois choses distinctes : ce qui a été DÉCIDÉ, ce qui
+// INQUIÈTE, ce qu'on FAIT ensuite. Le journal de projet ne savait produire que
+// de la prose datée, qu'il fallait relire pour en extraire ces trois listes.
+// Une convention suffit — « > Décision : … » — sans nouvelle feuille, sans
+// schéma, et le journal reste du markdown lisible tel quel.
+const JR_TYPES=[['decision','Décision','⚖','jr-dec'],
+                ['risque',  'Risque',  '⚠','jr-ris'],
+                ['action',  'Action',  '▶','jr-act']];
+const JR_RE=/^\s*(d[ée]cisions?|risques?|actions?)\s*:\s*(.*)$/i;
+const jrKey=w=>{ const n=voNorm(w).replace(/s$/,''); return (JR_TYPES.find(t=>t[0]===n)||JR_TYPES[0])[0]; };
+const jrMeta=w=>JR_TYPES.find(t=>t[0]===jrKey(w))||JR_TYPES[0];
+// Extraction : les entrées « ### AAAA-MM-JJ » datent ce qui les suit.
+function jrItems(note){
+  const out=[]; let date='';
+  String(note&&note.content||'').split('\n').forEach(l=>{
+    const h=/^###\s+(\d{4}-\d{2}-\d{2})/.exec(l.trim());
+    if(h){ date=h[1]; return; }
+    const m=/^\s*>\s?(.*)$/.exec(l);
+    if(!m)return;
+    const j=JR_RE.exec(m[1]);
+    if(j&&j[2].trim())out.push({type:jrKey(j[1]),date,text:j[2].trim()});
+  });
+  // L'ordre du document fait foi : les entrées sont ajoutées en tête, donc
+  // la plus récente sort déjà la première. Inverser la remettrait à l'envers.
+  return out;
+}
+const jrOf=(note,type)=>jrItems(note).filter(x=>x.type===type);
 
 function mdInline(t){
   // Le code en ligne est mis de cote en premier : ce qu'il contient ne doit
@@ -4052,7 +4144,16 @@ function mdRender(src){
     let m;
     if((m=/^(#{1,6})\s+(.*)$/.exec(l))){ flushAll(); const h=m[1].length; out+=`<h${h}>${mdInline(m[2])}</h${h}>`; return; }
     if(/^\s*(---|\*\*\*|___)\s*$/.test(l)){ flushAll(); out+='<hr>'; return; }
-    if((m=/^&gt;\s?(.*)$/.exec(l))){ flushAll(); out+=`<blockquote>${mdInline(m[1])}</blockquote>`; return; }
+    if((m=/^&gt;\s?(.*)$/.exec(l))){
+      flushAll();
+      // Une citation qui commence par « Décision : », « Risque : » ou
+      // « Action : » devient un bloc typé. Convention, pas syntaxe : le texte
+      // reste du markdown valide et lisible partout ailleurs.
+      const j=JR_RE.exec(m[1]);
+      if(j){ const k=jrMeta(j[1]);
+        out+=`<div class="jr ${k[3]}"><span class="jr-k">${k[2]} ${k[1]}</span><span class="jr-t">${mdInline(j[2])}</span></div>`;
+      } else out+=`<blockquote>${mdInline(m[1])}</blockquote>`;
+      return; }
     // case a cocher, cliquable : elle modifie la source
     if((m=/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/.exec(l))){
       flushP();flushT();
@@ -5773,6 +5874,7 @@ async function applyBackup(){
     }catch(e){ ok=false; }
   }
   showLoad(false);
+  projTagsInvalidate();
   render(); renderCurrentPage(); updateHStats();
   toast(ok?`Restauré · ${n} ligne(s) ${mode==='replace'?'remplacées':'ajoutées'}`
           :'Restauré en local — l\'envoi au classeur a échoué, il repartira',ok?'ok':'err');
@@ -5918,9 +6020,19 @@ function ptMarkdown(p){
     const r=budCapexReel(p.id,c), e=budEst(p.id,c,'G');
     if(r||e)L.push(`  - ${cl} : ${budFmt(r)||'0 €'}${e?` / ${budFmt(e)}`:''}`);
   });
+  const jr=jrItems(p.note_id?noteById(p.note_id):null);
+  if(jr.length){
+    JR_TYPES.forEach(([k,l,ic])=>{
+      const li=jr.filter(x=>x.type===k).slice(0,6); if(!li.length)return;
+      L.push('','## '+ic+' '+l+'s');
+      li.forEach(x=>L.push(`- ${x.date?x.date+' — ':''}${x.text}`));
+    });
+  }
   if(ouverts.length){
     L.push('','## Jalons à venir');
-    ouverts.slice(0,8).forEach(m=>L.push(`- ${m.due_date?m.due_date+' — ':''}${m.title}${m.due_date&&dayDiff(m.due_date)<0?' {rouge:(en retard)}':''}`));
+    ouverts.slice(0,8).forEach(m=>L.push(`- ${m.due_date?m.due_date+' — ':''}${m.title}`+
+      `${m.due_date&&dayDiff(m.due_date)<0?' {rouge:(en retard)}':''}`+
+      `${m.slips?` {orange:(repoussé ${m.slips}×, ${mileSlipDays(m)>0?'+':''}${mileSlipDays(m)} j)}`:''}`));
   }
   if(relances.length){
     L.push('','## Relances en attente');
@@ -6365,7 +6477,7 @@ function openMesDefModal(key){
       <option value="1"${d.active?' selected':''}>Suivie</option>
       <option value="0"${d.active?'':' selected'}>En sommeil</option></select></div>`:''}`;
   document.getElementById('mesDefModal').classList.add('open');
-  setTimeout(()=>document.getElementById('mdLabel').focus(),60);
+  setTimeout(()=>{const e=document.getElementById('mdLabel'); if(e)e.focus();},60);
 }
 function closeMesDefModal(){ document.getElementById('mesDefModal').classList.remove('open'); }
 function pickMesIcon(){
@@ -6404,7 +6516,7 @@ function openMesValModal(key,id){
     <div class="field"><label>Note</label><input type="text" id="mvNote" value="${tdEsc(v?v.note:'')}" placeholder="Contexte, facultatif"></div>`;
   document.getElementById('mesValDel').style.display=v?'':'none';
   document.getElementById('mesValModal').classList.add('open');
-  setTimeout(()=>document.getElementById('mvValue').focus(),60);
+  setTimeout(()=>{const e=document.getElementById('mvValue'); if(e)e.focus();},60);
 }
 function closeMesValModal(){ document.getElementById('mesValModal').classList.remove('open'); }
 async function saveMesVal(){
@@ -6450,15 +6562,25 @@ const MES_SEED=[
 //   · les MODÈLES et PROCÉDURES gardent leur corps dans la feuille : ce sont
 //     des documents de référence, courts, qu'on remplit plutôt qu'on écrit.
 const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at','budget','domaine','next_action'];
-const ADP_CONT_HEADER = ['id','name','org','role','email','phone','project_id','cadence','last_contact','status','notes','updated_at'];
-const ADP_MILE_HEADER = ['id','project_id','title','due_date','status','kind','done_at','updated_at'];
+// On ne relance pas quelqu'un « en général » : on le relance SUR quelque chose.
+// La cadence seule produisait un mail générique et un rappel sans contexte.
+// `topic` porte le sujet en clair, `topic_ref` le rattache à un objet réel
+// (`mile:…`, `task:…`, `run:…/clé`). Quand cet objet est clos, la relance perd
+// sa raison d'être : elle cesse d'être due, sans écriture silencieuse.
+const ADP_CONT_HEADER = ['id','name','org','role','email','phone','project_id','cadence','last_contact','status','notes','updated_at','topic','topic_ref'];
+// `baseline` = la PREMIÈRE échéance posée, `slips` = le nombre de décalages.
+// Sans elles, repousser un jalon écrasait sa date : la Revue comparait la date
+// de réalisation à l'échéance COURANTE, donc un jalon décalé trois fois puis
+// tenu s'affichait comme tenu. Le glissement chronique — ce qu'un comité
+// demande en premier — était invisible.
+const ADP_MILE_HEADER = ['id','project_id','title','due_date','status','kind','done_at','updated_at','baseline','slips'];
 const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at','steps','followup','status'];
 const ADP_RUN_HEADER=['id','template_id','project_id','title','start_date','status','steps','updated_at'];
 const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updated_at','planned'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
-const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'N'],['adp_contacts',ADP_CONT_HEADER,'L'],
-                    ['adp_milestones',ADP_MILE_HEADER,'H'],['adp_templates',ADP_TPL_HEADER,'J'],
+const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'N'],['adp_contacts',ADP_CONT_HEADER,'N'],
+                    ['adp_milestones',ADP_MILE_HEADER,'J'],['adp_templates',ADP_TPL_HEADER,'J'],
                     ['adp_budget',ADP_BUD_HEADER,'H'],['adp_runs',ADP_RUN_HEADER,'H']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
@@ -6511,8 +6633,8 @@ async function loadAdp(){
   if(!accessToken)return;
   await ensureAdpSheets();
   const [pr,co,mi,tp,bu,ru]=await Promise.all([
-    adpFetch('adp_projects','A:N'), adpFetch('adp_contacts','A:L'),
-    adpFetch('adp_milestones','A:H'), adpFetch('adp_templates','A:J'),
+    adpFetch('adp_projects','A:N'), adpFetch('adp_contacts','A:N'),
+    adpFetch('adp_milestones','A:J'), adpFetch('adp_templates','A:J'),
     adpFetch('adp_budget','A:H'), adpFetch('adp_runs','A:H')]);
   // La dernière ligne gagne. Une ligne vidée est une pierre tombale : la
   // suppression garde la ligne pour ne jamais décaler la feuille sous les
@@ -6531,10 +6653,14 @@ async function loadAdp(){
   adpContacts=dedupe(co.map(x=>({id:adpCell(x,0),name:adpCell(x,1),org:adpCell(x,2),
     role:adpCell(x,3),email:adpCell(x,4),phone:adpCell(x,5),project_id:adpCell(x,6),
     cadence:parseInt(adpCell(x,7),10)||0,last_contact:adpCell(x,8),
-    status:adpCell(x,9)||'actif',notes:adpCell(x,10),updated_at:adpCell(x,11)})),'name');
+    status:adpCell(x,9)||'actif',notes:adpCell(x,10),updated_at:adpCell(x,11),
+    topic:adpCell(x,12),topic_ref:adpCell(x,13)})),'name');
   adpMilestones=dedupe(mi.map(x=>({id:adpCell(x,0),project_id:adpCell(x,1),title:adpCell(x,2),
     due_date:adpCell(x,3),status:adpCell(x,4)||'todo',kind:adpCell(x,5)||'jalon',
-    done_at:adpCell(x,6),updated_at:adpCell(x,7)})),'title');
+    done_at:adpCell(x,6),updated_at:adpCell(x,7),
+    // Jalons antérieurs : leur échéance actuelle FAIT la référence. On ne
+    // fabrique pas un glissement qu'on n'a pas observé.
+    baseline:adpCell(x,8)||adpCell(x,3),slips:parseInt(adpCell(x,9),10)||0})),'title');
   adpTemplates=dedupe(tp.map(x=>({id:adpCell(x,0),kind:adpCell(x,1)||'mail',title:adpCell(x,2),
     category:adpCell(x,3),body:String(x[4]==null?'':x[4]),
     created_at:adpCell(x,5),updated_at:adpCell(x,6),
@@ -6547,7 +6673,7 @@ async function loadAdp(){
     planned:parseFloat(String(adpCell(x,7)).replace(',','.'))||0};
     // une ligne remise a zero des DEUX cotes n'a plus rien a dire : on l'oublie
     if(o.id&&o.project_id&&(o.amount||o.planned))bd[o.id]=o; else if(o.id)delete bd[o.id]; });
-  adpBudget=Object.values(bd); budIdxInvalidate();
+  adpBudget=Object.values(bd); budIdxInvalidate(); projTagsInvalidate();
   adpRuns=dedupe(ru.map(x=>{
     let st=[]; try{ st=JSON.parse(x[6]||'[]')||[]; }catch(e){}
     const steps=(Array.isArray(st)?st:[]).map((o,i)=>({
@@ -6561,17 +6687,21 @@ async function loadAdp(){
   ['adpProjects','adpContacts','adpMilestones','adpTemplates','adpBudget','adpRuns'].forEach((k,i)=>
     cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates,adpBudget,adpRuns][i]));
   adpLoaded=true;
+  projTagsInvalidate(); renderProjTags();
 }
 function adpRestoreCache(){
   adpProjects=cacheGet('adpProjects',[]); adpContacts=cacheGet('adpContacts',[]);
   adpMilestones=cacheGet('adpMilestones',[]); adpTemplates=cacheGet('adpTemplates',[]);
   adpBudget=cacheGet('adpBudget',[]); budIdxInvalidate(); adpRuns=cacheGet('adpRuns',[]);
+  projTagsInvalidate();
 }
 const adpProjRow=p=>[p.id,p.name,p.client||'',p.status||'actif',p.start_date||'',p.deadline||'',
   p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td(),String(p.budget||0),p.domaine||'',p.next_action||''];
 const adpContRow=c=>[c.id,c.name,c.org||'',c.role||'',c.email||'',c.phone||'',c.project_id||'',
-  String(c.cadence||0),c.last_contact||'',c.status||'actif',c.notes||'',td()];
-const adpMileRow=m=>[m.id,m.project_id||'',m.title,m.due_date||'',m.status||'todo',m.kind||'jalon',m.done_at||'',td()];
+  String(c.cadence||0),c.last_contact||'',c.status||'actif',c.notes||'',td(),
+  c.topic||'',c.topic_ref||''];
+const adpMileRow=m=>[m.id,m.project_id||'',m.title,m.due_date||'',m.status||'todo',m.kind||'jalon',m.done_at||'',td(),
+  m.baseline||m.due_date||'',String(m.slips||0)];
 const adpTplRow =t=>[t.id,t.kind||'mail',t.title,t.category||'',t.body||'',t.created_at||td(),td(),
   t.steps||'',String(t.followup||0),t.status||'actif'];
 
@@ -6585,6 +6715,7 @@ async function adpSave(kind,obj){
   obj.updated_at=td();
   const i=arr.findIndex(x=>x.id===obj.id);
   if(i>=0)arr[i]=obj; else arr.push(obj);
+  if(kind==='proj')projTagsInvalidate();     // le client d'un projet fait l'étiquette
   cacheSet(cacheKey,arr);
   return sheetUpsertByKey(sheet,obj.id,toRow(obj));
 }
@@ -6597,6 +6728,7 @@ async function adpDelete(kind,id){
               tpl :['adp_templates',()=>adpTemplates=adpTemplates.filter(x=>x.id!==id),'adpTemplates',ADP_TPL_HEADER.length]}[kind];
   const [sheet,drop,cacheKey,cols]=conf;
   drop();
+  if(kind==='proj')projTagsInvalidate();
   cacheSet(cacheKey,{proj:adpProjects,cont:adpContacts,mile:adpMilestones,tpl:adpTemplates}[kind]);
   return sheetUpsertByKey(sheet,id,[id,...Array(cols-2).fill(''),'supprime']);
 }
@@ -6604,8 +6736,58 @@ async function adpDelete(kind,id){
 // ── Calculs métier ────────────────────────────────────────────────────────
 // Un contact est « à relancer » si sa cadence est dépassée. Sans dernier
 // contact connu, on considère qu'il l'est : c'est justement celui qu'on oublie.
+// ── Objet d'une relance ───────────────────────────────────────────────────
+// `topic_ref` = "mile:<id>" | "task:<id>" | "run:<runId>/<clé>". Rend
+// {libelle, clos, go} ou null si la référence ne pointe plus sur rien —
+// un objet supprimé ne doit pas geler une relance.
+function contTopicRef(c){
+  const r=String(c&&c.topic_ref||'');
+  const i=r.indexOf(':');
+  if(i<0)return null;
+  const kind=r.slice(0,i), id=r.slice(i+1);
+  if(kind==='mile'){
+    const m=adpMilestones.find(x=>x.id===id); if(!m)return null;
+    return {libelle:m.title,clos:m.status==='done',ech:m.due_date,
+      go:()=>{switchPage('adp');setAdpView('projets');openAdpProject(m.project_id);}};
+  }
+  if(kind==='task'){
+    const t=allTasks.find(x=>String(x.id)===id); if(!t)return null;
+    return {libelle:t.title,clos:!!t.completed_at,ech:t.due_date,
+      go:()=>{switchPage('board');openModal(t.id);}};
+  }
+  if(kind==='run'){
+    const [rid,key]=id.split('/');
+    const run=runById(rid); if(!run)return null;
+    const st=(run.steps||[]).find(x=>x.key===key); if(!st)return null;
+    const {state}=runStates(run);
+    return {libelle:st.label,clos:state[key]==='faite'||state[key]==='ignoree',ech:st.due,
+      go:()=>{switchPage('adp');setAdpView('procedures');openRun(rid);}};
+  }
+  return null;
+}
+// Le sujet à afficher : l'objet rattaché s'il existe, sinon le texte libre.
+const contTopic=c=>{ const r=contTopicRef(c); return (r&&r.libelle)||String(c&&c.topic||'').trim(); };
+const contTopicClos=c=>{ const r=contTopicRef(c); return !!(r&&r.clos); };
+// Les objets qu'on peut rattacher à une relance, pour le projet du contact.
+function contTopicChoices(pid){
+  const out=[];
+  adpMilestones.filter(m=>m.project_id===pid&&m.status!=='done'&&m.title)
+    .forEach(m=>out.push([`mile:${m.id}`,`⛳ ${m.title}${m.due_date?` · ${m.due_date}`:''}`]));
+  const p=pid?adpProjById(pid):null;
+  if(p&&p.client)tasks.filter(t=>t.project===p.client)
+    .forEach(t=>out.push([`task:${t.id}`,`✅ ${t.title}${t.due_date?` · ${t.due_date}`:''}`]));
+  runActive().filter(r=>r.project_id===pid).forEach(r=>{
+    const {state}=runStates(r);
+    (r.steps||[]).filter(st=>state[st.key]==='active')
+      .forEach(st=>out.push([`run:${r.id}/${st.key}`,`${runTypeMeta(st.type)[2]} ${st.label} · ${r.title.split(' — ')[0]}`]));
+  });
+  return out;
+}
 function adpDueDay(c){
   if(!c.cadence||c.status!=='actif')return null;
+  // L'objet de la relance est clos : il n'y a plus rien à réclamer. On ne
+  // touche pas à `last_contact` pour autant — rien ne se réécrit tout seul.
+  if(contTopicClos(c))return null;
   if(!c.last_contact)return td();
   const p=c.last_contact.split('-');
   if(p.length!==3)return td();
@@ -6769,15 +6951,27 @@ function renderAdpProjectPage(el){
       <aside class="adp-side">
         <div class="adp-sec">Trajectoire budgétaire ${adpBudYear}</div>
         <div class="adp-graph">${budChart(p.id,adpBudYear,300,150)}</div>
+        ${(()=>{const jr=jrItems(n);
+          if(!jr.length)return '';
+          return `<div class="adp-sec">Décisions, risques, actions</div>`+
+            JR_TYPES.map(([k,l,ic])=>{const li=jr.filter(x=>x.type===k).slice(0,4);
+              if(!li.length)return '';
+              return `<div class="rv-sub">${ic} ${l}${jr.filter(x=>x.type===k).length>4?` (${jr.filter(x=>x.type===k).length})`:''}</div>`+
+                li.map(x=>`<div class="adp-line jr-l ${'jr-'+k.slice(0,3)}">
+                  <span class="adp-l-main">${adpEsc(x.text)}<span class="adp-l-sub">${adpEsc(x.date||'sans date')}</span></span>
+                  ${k==='action'?`<button class="adp-act" onclick="jrToTask('${adpEsc(x.text).replace(/'/g,"&#39;")}')" title="Créer la tâche correspondante">→ tâche</button>`:''}
+                </div>`).join('');
+            }).join('');})()}
         <div class="adp-sec">Jalons et échéances
           <button class="adp-mini" onclick="openAdpMileModal(null,'${p.id}')">+</button></div>
         ${miles.length?miles.map(m=>adpMileRow2(m)).join(''):'<div class="sb-none">Aucun jalon.</div>'}
         <div class="adp-sec">Contacts
           <button class="adp-mini" onclick="openAdpContModal(null,'${p.id}')">+</button></div>
-        ${conts.length?conts.map(c=>`<div class="adp-line${adpIsDue(c)?' due':''}" onclick="openAdpContModal('${c.id}')">
-            <span class="adp-l-main">${adpEsc(c.name)}${c.role?`<span class="adp-l-sub">${adpEsc(c.role)}</span>`:''}</span>
+        ${conts.length?conts.map(c=>{const suj=contTopic(c), clos=contTopicClos(c);
+          return `<div class="adp-line${adpIsDue(c)?' due':''}${clos?' done':''}" onclick="openAdpContModal('${c.id}')">
+            <span class="adp-l-main">${adpEsc(c.name)}<span class="adp-l-sub">${adpEsc([c.role,suj&&'sur '+suj].filter(Boolean).join(' · '))}${clos?' · objet clos':''}</span></span>
             ${adpIsDue(c)?'<span class="adp-l-flag">à relancer</span>':''}
-          </div>`).join(''):'<div class="sb-none">Aucun contact.</div>'}
+          </div>`;}).join(''):'<div class="sb-none">Aucun contact.</div>'}
         ${(()=>{const rs=runActive().filter(r=>r.project_id===p.id);
           return rs.length?`<div class="adp-sec">Procédures en cours</div>`+rs.map(r=>{
             const g=runProgress(r), late=runLate(r).length;
@@ -6802,13 +6996,24 @@ function adpNewTask(){
   openModal(null,null,p.client);
 }
 
+// Écart entre la référence et l'échéance courante, en jours
+function mileSlipDays(m){
+  if(!m||!m.baseline||!m.due_date)return 0;
+  const j=d=>{const p=String(d).split('-');return new Date(+p[0],+p[1]-1,+p[2]).getTime();};
+  const a=j(m.baseline), b=j(m.due_date);
+  return isNaN(a)||isNaN(b)?0:Math.round((b-a)/86400000);
+}
+// Tenu = fait AVANT LA RÉFÉRENCE, pas avant la dernière date qu'on s'est
+// donnée. C'est toute la différence entre un suivi et une auto-justification.
+const mileTenu=m=>m.status==='done'&&m.done_at&&m.done_at<=(m.baseline||m.due_date||'9999');
 function adpMileRow2(m){
   const d=m.due_date?dayDiff(m.due_date):null;
   const late=m.status!=='done'&&d!==null&&d<0;
+  const gl=m.slips||0;
   return `<div class="adp-line${m.status==='done'?' done':''}${late?' late':''}">
     <button class="adp-check${m.status==='done'?' on':''}" onclick="event.stopPropagation();adpToggleMile('${m.id}')" title="${m.status==='done'?'Rouvrir':'Terminer'}"></button>
     <span class="adp-l-main" onclick="openAdpMileModal('${m.id}')">${adpEsc(m.title)}
-      <span class="adp-l-sub">${adpEsc((ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1])}${m.due_date?` · ${m.due_date}`:''}</span></span>
+      <span class="adp-l-sub">${adpEsc((ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1])}${m.due_date?` · ${m.due_date}`:''}${gl?` · <span class="adp-slip" title="Échéance initiale ${adpEsc(m.baseline)}">glissé ${gl}×, ${mileSlipDays(m)>0?'+':''}${mileSlipDays(m)} j</span>`:''}</span></span>
     ${late?'<span class="adp-l-flag">en retard</span>':''}
   </div>`;
 }
@@ -6825,6 +7030,7 @@ function adpRenderJournal(){
       <button class="sb-btn${adpJournalMode==='read'?' on':''}" onclick="setAdpJournalMode('read')">Lecture</button>
       <button class="sb-btn${adpJournalMode==='edit'?' on':''}" onclick="setAdpJournalMode('edit')">Écrire</button>
       <button class="sb-btn" onclick="adpStampToday()" title="Ajouter une entrée datée en tête du journal">+ Entrée du jour</button>
+      ${JR_TYPES.map(([k,l,ic])=>`<button class="sb-btn ${'jr-'+k.slice(0,3)}" onclick="adpAddJr('${k}')" title="Consigner une ${l.toLowerCase()} dans l'entrée du jour">${ic} ${l}</button>`).join('')}
     </div><div id="adpJBody"></div>`;
   const body=document.getElementById('adpJBody');
   if(adpJournalMode==='edit'){
@@ -6869,6 +7075,39 @@ async function adpStampToday(){
   const ok=await noteUpsert(n);
   if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
   adpJournalMode='edit'; adpRenderJournal();
+}
+// Consigne une décision / un risque / une action sous l'entrée du jour, en la
+// créant si elle n'existe pas. Le curseur finit en bout de ligne, prêt à
+// écrire : c'est la seule chose qu'on veut faire à ce moment-là.
+async function adpAddJr(type){
+  const p=adpProjById(adpProjCur); if(!p)return;
+  const n=noteById(p.note_id); if(!n)return;
+  const meta=jrMeta(type);
+  const jour=`### ${td()}`;
+  let c=n.content||'';
+  if(c.indexOf(jour)<0){
+    const i=c.indexOf('## Avancées');
+    const head=`\n\n${jour}\n`;
+    c=i>=0?c.slice(0,i+'## Avancées'.length)+head+c.slice(i+'## Avancées'.length)
+          :c.replace(/\s*$/,'')+head;
+  }
+  const i=c.indexOf(jour)+jour.length;
+  const ligne=`\n> ${meta[1]} : `;
+  n.content=c.slice(0,i)+ligne+c.slice(i);
+  noteIndexInvalidate(); noteCurId=n.id;
+  const ok=await noteUpsert(n);
+  if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
+  adpJournalMode='edit'; adpRenderJournal();
+  const ta=document.getElementById('adpEdit');
+  if(ta){ const pos=i+ligne.length; ta.focus(); ta.setSelectionRange(pos,pos);
+    ta.scrollTop=ta.scrollHeight*(pos/Math.max(1,ta.value.length)); }
+}
+// Une action consignée au journal n'avance pas toute seule : ce bouton la fait
+// passer sur le board, avec l'étiquette du projet déjà posée.
+function jrToTask(txt){
+  const p=adpProjById(adpProjCur);
+  switchPage('board');
+  openModal(null,txt,(p&&p.client)||'');
 }
 function adpOpenJournalInNotes(){
   const p=adpProjById(adpProjCur); if(!p||!p.note_id)return;
@@ -7052,7 +7291,7 @@ async function adpDeleteTpl(id){
 // Un modèle sans variables se recopie à la main à chaque fois. Celles-ci sont
 // remplies depuis le contact et le projet choisis, le reste est laissé tel quel
 // pour qu'un trou visible vaille mieux qu'un remplacement silencieux.
-const ADP_VARS=['prenom','nom','contact','societe','role','email','projet','client','echeance','date','moi'];
+const ADP_VARS=['prenom','nom','contact','societe','role','email','projet','client','echeance','date','moi','sujet'];
 function adpTplVars(body){
   const out=new Set();
   String(body||'').replace(/\{\{\s*([a-zA-Zéèêà_]+)\s*\}\}/g,(m,v)=>{ out.add(v.toLowerCase()); return m; });
@@ -7062,7 +7301,8 @@ function adpFill(body,c,p){
   const first=(c&&c.name||'').trim().split(/\s+/)[0]||'';
   const map={prenom:first,nom:(c&&c.name)||'',contact:(c&&c.name)||'',societe:(c&&c.org)||'',
     role:(c&&c.role)||'',email:(c&&c.email)||'',projet:(p&&p.name)||'',client:(p&&p.client)||'',
-    echeance:(p&&p.deadline)||'',date:td(),moi:(cfg.account||'').split('@')[0]};
+    echeance:(p&&p.deadline)||'',date:td(),moi:(cfg.account||'').split('@')[0],
+    sujet:(c&&contTopic(c))||''};
   return String(body||'').replace(/\{\{\s*([a-zA-Zéèêà_]+)\s*\}\}/g,(m,v)=>{
     const k=v.toLowerCase();
     return map[k]!==undefined&&map[k]!==''?map[k]:m;    // vide : on laisse le trou visible
@@ -7197,11 +7437,10 @@ function openAdpProjModal(id){
       <input type="text" id="apDomaine" value="${adpEsc(p?p.domaine:'')}" list="apDomList" placeholder="Infrastructure, Applicatif, Sécurité…">
       <datalist id="apDomList">${[...new Set(adpProjects.map(x=>x.domaine).filter(Boolean))].map(d=>`<option value="${adpEsc(d)}">`).join('')}</datalist></div>
     <div class="field"><label>Client / projet du board</label>
-      <select id="apClient">
-        <option value="">— Aucun —</option>
-        ${['DCB','GLD','Airside','Perso'].map(x=>`<option value="${x}"${p&&p.client===x?' selected':''}>${x}</option>`).join('')}
-      </select>
-      <div class="fld-hint">Relie ce projet aux tâches du board portant la même étiquette.</div></div>
+      <input type="text" id="apClient" value="${adpEsc(p?p.client:'')}" list="apClientList" placeholder="DCB, GLD, Airside…">
+      <datalist id="apClientList">${projTags().map(x=>`<option value="${adpEsc(x)}">`).join('')}</datalist>
+      <div class="fld-hint">Relie ce projet aux tâches du board portant la même étiquette.
+        Une étiquette inédite crée l'entrée sur le board — filtre, bouton d'ajout rapide et couleur suivent.</div></div>
     <div class="field"><label>Statut</label><select id="apStatus">
       ${ADP_STATUS.map(([v,l])=>`<option value="${v}"${p&&p.status===v?' selected':''}>${l}</option>`).join('')}</select></div>
     <div class="field"><label>Santé</label><select id="apHealth">
@@ -7210,7 +7449,7 @@ function openAdpProjModal(id){
     <div class="field"><label>Échéance</label><input type="date" id="apDeadline" value="${p?p.deadline:''}"></div>`;
   document.getElementById('adpDel').style.display=p?'':'none';
   document.getElementById('adpModal').classList.add('open');
-  setTimeout(()=>document.getElementById('apName').focus(),60);
+  setTimeout(()=>{const e=document.getElementById('apName'); if(e)e.focus();},60);
 }
 function openAdpContModal(id,projectId){
   adpEditKind='cont'; adpEditId=id;
@@ -7226,6 +7465,16 @@ function openAdpContModal(id,projectId){
     <div class="field"><label>Projet</label><select id="acProj">
       <option value="">— Aucun —</option>
       ${adpProjects.map(x=>`<option value="${x.id}"${pid===x.id?' selected':''}>${adpEsc(x.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>Relance à propos de</label>
+      <select id="acRef" onchange="acRefChange()">
+        <option value="">— sujet libre —</option>
+        ${contTopicChoices(pid).map(([v,l])=>`<option value="${adpEsc(v)}"${c&&c.topic_ref===v?' selected':''}>${adpEsc(l)}</option>`).join('')}
+        ${c&&c.topic_ref&&!contTopicChoices(pid).some(([v])=>v===c.topic_ref)
+          ?`<option value="${adpEsc(c.topic_ref)}" selected>objet clos ou supprimé</option>`:''}
+      </select>
+      <input type="text" id="acTopic" value="${adpEsc(c?c.topic:'')}" placeholder="Ex : chiffrage du lot 3"
+             style="margin-top:0.4rem${c&&c.topic_ref?';display:none':''}">
+      <div class="fld-hint">Le sujet part dans le mail via <code>{{sujet}}</code>. Rattaché à un objet, la relance s'éteint quand l'objet est clos.</div></div>
     <div class="field"><label>Relancer tous les</label>
       <select id="acCadence">
         ${[[0,'Jamais'],[7,'7 jours'],[14,'14 jours'],[21,'21 jours'],[30,'30 jours'],[60,'60 jours'],[90,'90 jours']]
@@ -7238,7 +7487,7 @@ function openAdpContModal(id,projectId){
     <div class="field"><label>Notes</label><textarea id="acNotes" placeholder="Contexte, préférences, historique…">${adpEsc(c?c.notes:'')}</textarea></div>`;
   document.getElementById('adpDel').style.display=c?'':'none';
   document.getElementById('adpModal').classList.add('open');
-  setTimeout(()=>document.getElementById('acName').focus(),60);
+  setTimeout(()=>{const e=document.getElementById('acName'); if(e)e.focus();},60);
 }
 function openAdpMileModal(id,projectId){
   adpEditKind='mile'; adpEditId=id;
@@ -7251,10 +7500,12 @@ function openAdpMileModal(id,projectId){
       ${adpProjects.map(x=>`<option value="${x.id}"${pid===x.id?' selected':''}>${adpEsc(x.name)}</option>`).join('')}</select></div>
     <div class="field"><label>Type</label><select id="amKind">
       ${ADP_KIND.map(([v,l])=>`<option value="${v}"${m&&m.kind===v?' selected':''}>${l}</option>`).join('')}</select></div>
-    <div class="field"><label>Échéance</label><input type="date" id="amDue" value="${m?m.due_date:''}"></div>`;
+    <div class="field"><label>Échéance</label><input type="date" id="amDue" value="${m?m.due_date:''}">
+      ${m&&m.slips?`<div class="fld-hint">Échéance initiale <b>${adpEsc(m.baseline)}</b> — déplacée ${m.slips} fois${m.baseline&&m.due_date?` (${mileSlipDays(m)>0?'+':''}${mileSlipDays(m)} jours)`:''}.</div>`
+        :m&&m.baseline?`<div class="fld-hint">Échéance initiale <b>${adpEsc(m.baseline)}</b>, jamais déplacée.</div>`:''}</div>`;
   document.getElementById('adpDel').style.display=m?'':'none';
   document.getElementById('adpModal').classList.add('open');
-  setTimeout(()=>document.getElementById('amTitle').focus(),60);
+  setTimeout(()=>{const e=document.getElementById('amTitle'); if(e)e.focus();},60);
 }
 function openAdpTplModal(id,kind){
   adpEditKind='tpl'; adpEditId=id;
@@ -7277,7 +7528,13 @@ function openAdpTplModal(id,kind){
     <div class="fld-hint">Variables disponibles : ${ADP_VARS.map(v=>`<code>{{${v}}}</code>`).join(' ')}. Une première ligne « Objet : … » devient le sujet du mail.</div>`:''}`;
   document.getElementById('adpDel').style.display=t?'':'none';
   document.getElementById('adpModal').classList.add('open');
-  setTimeout(()=>document.getElementById('atTitle').focus(),60);
+  setTimeout(()=>{const e=document.getElementById('atTitle'); if(e)e.focus();},60);
+}
+// Un objet rattaché porte déjà son libellé : le champ libre n'a plus lieu
+// d'être, il ne ferait que dire deux fois la même chose de deux façons.
+function acRefChange(){
+  const r=document.getElementById('acRef'), t=document.getElementById('acTopic');
+  if(r&&t)t.style.display=r.value?'none':'';
 }
 function closeAdpModal(){ document.getElementById('adpModal').classList.remove('open'); }
 
@@ -7295,12 +7552,19 @@ async function saveAdpModal(){
     const name=v('acName'); if(!name){ toast('Le nom est obligatoire','err'); return; }
     obj={id:adpEditId||adpId('c'),name,org:v('acOrg'),role:v('acRole'),email:v('acEmail'),
       phone:v('acPhone'),project_id:v('acProj'),cadence:parseInt(v('acCadence'),10)||0,
-      last_contact:v('acLast'),status:v('acStatus'),notes:v('acNotes')};
+      last_contact:v('acLast'),status:v('acStatus'),notes:v('acNotes'),
+      topic_ref:v('acRef'),topic:v('acRef')?'':v('acTopic')};
   }else if(kind==='mile'){
     const title=v('amTitle'); if(!title){ toast("L'intitulé est obligatoire",'err'); return; }
     const m=adpEditId?adpMilestones.find(x=>x.id===adpEditId):null;
-    obj={id:adpEditId||adpId('m'),project_id:v('amProj'),title,due_date:v('amDue'),
-      status:m?m.status:'todo',kind:v('amKind'),done_at:m?m.done_at:''};
+    const due=v('amDue');
+    // Un décalage se compte au moment où on le fait : après coup, la donnée
+    // est perdue. Seul le déplacement d'une échéance DÉJÀ posée compte — poser
+    // une date pour la première fois n'est pas un glissement.
+    const glisse=!!(m&&m.due_date&&due&&due!==m.due_date);
+    obj={id:adpEditId||adpId('m'),project_id:v('amProj'),title,due_date:due,
+      status:m?m.status:'todo',kind:v('amKind'),done_at:m?m.done_at:'',
+      baseline:(m&&m.baseline)||due,slips:(m?m.slips||0:0)+(glisse?1:0)};
   }else if(kind==='tpl'){
     const title=v('atTitle'); if(!title){ toast('Le titre est obligatoire','err'); return; }
     const t=adpEditId?adpTplById(adpEditId):null;
@@ -7614,6 +7878,8 @@ const RUN_DATA=[
   ['budget.derive','l\'atterrissage dépasse l\'estimé',
     p=>{ const e=budProjEst(p.id,'G'); if(!e)return false;
          return budProjReel(p.id,'reel')+Math.max(0,budProjReel(p.id,'prevu')-budProjReel(p.id,'reel'))>e; }],
+  ['jalon.glisse', 'un jalon du projet a déjà été repoussé',
+    p=>adpMilestones.some(m=>m.project_id===p.id&&(m.slips||0)>0)],
   ['relance.due',  'une relance est due sur le projet',
     p=>adpContacts.some(c=>c.project_id===p.id&&adpIsDue(c))],
   ['tache.retard', 'une tâche du projet est en retard',
@@ -7797,7 +8063,7 @@ async function runAdvance(r){
       tasks.push(nt); allTasks.push(nt); nouvelles.push(nt); s.ref=String(nt.id); bouge=true;
     }else if(s.type==='jalon'&&!s.ref){
       const m={id:adpId('m'),project_id:r.project_id,title:s.label,due_date:s.due,
-        status:'todo',kind:'jalon',done_at:''};
+        status:'todo',kind:'jalon',done_at:'',baseline:s.due,slips:0};
       await adpSave('mile',m); s.ref=m.id; bouge=true;
     }
   }
@@ -8209,6 +8475,28 @@ function budYears(){
   });
   return [...set].sort();
 }
+// ── Différentiel annuel : où l'on atterrit face à l'estimé ────────────────
+// L'écart mensuel dit ce qui s'est déjà passé. Ce qu'un chef de projet doit
+// arbitrer, c'est ce qui VA se passer : le budget qu'il lui reste, ou celui
+// qu'il va dépasser. On prolonge donc le réalisé par le prévu — un mois
+// renseigné en réalisé fait foi, un mois qui ne l'est pas est remplacé par son
+// prévisionnel — et on retranche le tout de l'estimé de l'année.
+//   différentiel = estimé annuel − Σ(réalisé si renseigné, sinon prévu)
+// Positif : il reste du budget (vert). Négatif : on va trop dépenser (rouge).
+// « Renseigné » = non nul, la convention de toute la grille : une ligne remise
+// à zéro est effacée, un zéro ne veut donc jamais dire « zéro euro prévu ».
+const budAtterMois=(p,c,n,m)=>budAmount(p,c,n,m,'reel')||budAmount(p,c,n,m,'prevu');
+const budCapexAtter=(p,c,y)=>budMonths(y).reduce((s,m)=>
+  s+ADP_NATURE.reduce((x,[n])=>x+budAtterMois(p,c,n,m),0),0);
+const budProjAtter=(p,y)=>ADP_CAPEX.reduce((s,[c])=>s+budCapexAtter(p,c,y),0);
+// null quand l'estimé de l'année n'est pas posé : sans repère, un différentiel
+// afficherait un dépassement intégral qui ne veut rien dire.
+const budCapexDelta=(p,c,y)=>{ const e=budEst(p,c,y); return e?e-budCapexAtter(p,c,y):null; };
+const budProjDelta=(p,y)=>{ const e=budProjEst(p,y); return e?e-budProjAtter(p,y):null; };
+const budTotDelta=(list,y)=>{
+  const e=list.reduce((s,p)=>s+budProjEst(p.id,y),0);
+  return e?e-list.reduce((s,p)=>s+budProjAtter(p.id,y),0):null;
+};
 // Somme d'une catégorie CAPEX sur un mois : les trois natures
 const budCapexMonth=(p,c,m,md)=>ADP_NATURE.reduce((s,[n])=>s+budAmount(p,c,n,m,md),0);
 const budProjMonth =(p,m,md)=>ADP_CAPEX.reduce((s,[c])=>s+budCapexMonth(p,c,m,md),0);
@@ -8250,6 +8538,9 @@ function budRefresh(pid,capex,month){
   const vp=budProjReel(pid,md); set(`prt|${pid}`,vp);
   setY(`.y-${pid}-${y}`,budProjReelYear(pid,y,md));
   setY(`.ty-${y}`,list.reduce((s,x)=>s+budProjReelYear(x.id,y,md),0));
+  // Le différentiel bouge à chaque saisie mensuelle : prévu comme réalisé
+  // entrent tous deux dans l'atterrissage.
+  majDelta(pid,capex,y,list);
   // Le dépassement se juge sur ce qui est affiché : en mode Prévu, c'est le
   // prévu qui doit tenir dans l'estimé.
   const eg=budProjEst(pid,'G'), pc=budCell(`prt|${pid}`);
@@ -8282,6 +8573,17 @@ async function budSetEst(pid,capex,scope,raw,el){
   if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
   budRefreshEst(pid,capex,scope);
 }
+// Réécrit les trois Δ que touche une saisie : la ligne CAPEX, la ligne projet,
+// et le total du portefeuille pour cette année.
+function majDelta(pid,capex,y,list){
+  const put=(sel,v)=>{ const el=document.querySelector(sel+' .bud-y-d'); if(!el)return;
+    if(v==null){ el.textContent=''; return; }
+    el.textContent=`Δ ${v>0?'+':''}${budFmt(v)||'0 €'}`;
+    el.classList.toggle('ko',v<0); el.classList.toggle('ok',v>=0); };
+  if(capex)put(`.cy-${pid}-${capex}-${y}`,budCapexDelta(pid,capex,y));
+  put(`.y-${pid}-${y}`,budProjDelta(pid,y));
+  put(`.ty-${y}`,budTotDelta(list||budVisibleProjects(),y));
+}
 function budRefreshEst(pid,capex,scope){
   const list=budVisibleProjects();
   const set=(k,v)=>{ const el=budCell(k); if(el)el.textContent=budFmt(v); };
@@ -8298,6 +8600,9 @@ function budRefreshEst(pid,capex,scope){
   const maj=(sel,v)=>{ const el=document.querySelector(sel+' .bud-y-e.ro'); if(el)el.textContent=v?'est. '+budFmt(v):''; };
   maj(`.y-${pid}-${scope}`,budProjEst(pid,scope));
   maj(`.ty-${scope}`,list.reduce((s,x)=>s+budProjEst(x.id,scope),0));
+  // L'estimé de l'année EST le repère du différentiel : le poser le fait
+  // apparaître, l'effacer le fait disparaître.
+  majDelta(pid,capex,scope,list);
 }
 function setBudYear(y){
   adpBudYear=y;
@@ -8328,6 +8633,9 @@ function renderAdpBudget(el){
   const tdY=(i,inner,cls)=>`<td class="bud-y${cls?' '+cls:''}" style="left:${leftY(i)}">${inner}</td>`;
   const reel=v=>`<div class="bud-y-r${ec(v)}">${budFmtM(v,md)}</div>`;
   const estRo=v=>v?`<div class="bud-y-e ro">est. ${budFmt(v)}</div>`:'';
+  // Δ = ce qu'il reste (vert) ou ce qu'on va dépasser (rouge) sur l'exercice.
+  const deltaRo=(v,y)=>v==null?''
+    :`<div class="bud-y-d ${v<0?'ko':'ok'}" title="Estimé ${y} moins l'atterrissage (réalisé si saisi, sinon prévu)">Δ ${v>0?'+':''}${budFmt(v)||'0 €'}</div>`;
   const champ=(v,attrs,cls)=>`<input class="bud-i${cls?' '+cls:''}" inputmode="decimal" data-raw="${v?v:''}" value="${budFmt(v)}" ${attrs}
       onfocus="this.value=this.dataset.raw;this.select()" onblur="this.value=budFmtInput(this.value)">`;
 
@@ -8342,8 +8650,8 @@ function renderAdpBudget(el){
       <td class="bud-c2" data-b="peg|${p.id}">${budFmt(estG)}</td>
       <td class="bud-c3${!ecart&&estG>0&&reelT>estG?' over':''}${ec(reelT)}" data-b="prt|${p.id}"
           title="${estG>0?`Estimé ${budFmt(estG)} · ${budModeLabel(md).toLowerCase()} ${budFmtM(reelT,md)}`:''}">${budFmtM(reelT,md)}</td>
-      ${ans.map((y,i)=>tdY(i,reel(budProjReelYear(p.id,y,md))+estRo(budProjEst(p.id,y)),
-        `y-${p.id}-${y}`)).join('')}
+      ${ans.map((y,i)=>tdY(i,reel(budProjReelYear(p.id,y,md))+estRo(budProjEst(p.id,y))
+        +deltaRo(budProjDelta(p.id,y),y),`y-${p.id}-${y}`)).join('')}
       ${mois.map(m=>{const v=budProjMonth(p.id,m,md);
         return `<td class="bud-n${ec(v)}" data-b="pm|${p.id}|${m}">${budFmtM(v,md)}</td>`;}).join('')}</tr>`;
     if(!ouvert)return;
@@ -8357,7 +8665,8 @@ function renderAdpBudget(el){
         <td class="bud-c3${!ecart&&eG>0&&rT>eG?' over':''}${ec(rT)}" data-b="crt|${p.id}|${c}">${budFmtM(rT,md)}</td>
         ${ans.map((y,i)=>tdY(i,
           reel(budCapexReelYear(p.id,c,y,md))+
-          champ(budEst(p.id,c,y),`onchange="budSetEst('${p.id}','${c}','${y}',this.value,this)" onclick="event.stopPropagation()" title="Estimé ${y}"`,'bud-y-e'))).join('')}
+          champ(budEst(p.id,c,y),`onchange="budSetEst('${p.id}','${c}','${y}',this.value,this)" onclick="event.stopPropagation()" title="Estimé ${y}"`,'bud-y-e')
+          +deltaRo(budCapexDelta(p.id,c,y),y),`cy-${p.id}-${c}-${y}`)).join('')}
         ${mois.map(m=>{const v=budCapexMonth(p.id,c,m,md);
           return `<td class="bud-n${ec(v)}" data-b="cm|${p.id}|${c}|${m}">${budFmtM(v,md)}</td>`;}).join('')}</tr>`;
       if(!oc)return;
@@ -8406,7 +8715,8 @@ function renderAdpBudget(el){
         <td class="bud-c1">TOTAL PORTEFEUILLE</td>
         <td class="bud-c2" data-b="te">${budFmt(sum(p=>budProjEst(p.id,'G')))}</td>
         <td class="bud-c3${ec(sum(p=>budProjReel(p.id,md)))}" data-b="tt">${budFmtM(sum(p=>budProjReel(p.id,md)),md)}</td>
-        ${ans.map((y,i)=>tdY(i,reel(sum(p=>budProjReelYear(p.id,y,md)))+estRo(sum(p=>budProjEst(p.id,y))),`ty-${y}`)).join('')}
+        ${ans.map((y,i)=>tdY(i,reel(sum(p=>budProjReelYear(p.id,y,md)))+estRo(sum(p=>budProjEst(p.id,y)))
+          +deltaRo(budTotDelta(list,y),y),`ty-${y}`)).join('')}
         ${mois.map(m=>{const v=sum(p=>budProjMonth(p.id,m,md));
           return `<td class="bud-n${ec(v)}" data-b="tm|${m}">${budFmtM(v,md)}</td>`;}).join('')}
       </tr></tfoot></table></div>`
@@ -8484,8 +8794,12 @@ function renderWeekPage(){
 function rvAdpStats(r){
   const dansP=d=>rvIn(d,r);
   const jalons=adpMilestones.filter(m=>m.due_date&&dansP(m.due_date));
-  const tenus=jalons.filter(m=>m.status==='done'&&m.done_at&&m.done_at<=m.due_date);
-  const glisses=jalons.filter(m=>m.status!=='done'||(m.done_at&&m.done_at>m.due_date));
+  const tenus=jalons.filter(mileTenu);
+  const glisses=jalons.filter(m=>!mileTenu(m));
+  // Jalons repoussés pendant la période : ce que le seul « tenu/pas tenu »
+  // laissait passer, puisqu'un jalon décalé à temps n'est jamais en retard.
+  const repousses=adpMilestones.filter(m=>(m.slips||0)>0&&m.updated_at&&dansP(m.updated_at))
+    .sort((a,b)=>(b.slips||0)-(a.slips||0));
   // Enumeration reelle des mois couverts : la borner a 40 jours suffisait aux
   // periodes de la revue, et devenait fausse des qu'on elargissait la fenetre.
   const mois=[];
@@ -8498,7 +8812,7 @@ function rvAdpStats(r){
   const actifs=adpProjects.filter(p=>p.status==='actif');
   return {jalons:jalons.length,tenus:tenus.length,glisses,conso,relFaites,
           relDues:adpDueContacts().length,etapes,actifs:actifs.length,
-          risque:actifs.filter(p=>p.health!=='vert'),
+          risque:actifs.filter(p=>p.health!=='vert'),repousses,
           // Un projet actif sans prochaine action posée n'avance pas : il attend
           // qu'on décide. La revue est le bon moment pour s'en apercevoir.
           sansAction:actifs.filter(p=>!String(p.next_action||'').trim())};
@@ -8537,7 +8851,8 @@ function suiviItems(horizon){
     out.push({type:'relance',ic:'✉',quoi:c.name,
       ou:[c.org,p&&p.name].filter(Boolean).join(' · '),
       depuis:-dayDiff(d),date:d,
-      det:c.last_contact?`vu le ${c.last_contact}`:'jamais contacté',
+      det:[contTopic(c)&&`à propos de ${contTopic(c)}`,
+           c.last_contact?`vu le ${c.last_contact}`:'jamais contacté'].filter(Boolean).join(' · '),
       actions:[['✓ Relancé',()=>adpTouch(c.id)],['✉ Écrire',()=>openAdpCompose(c.id)],
                ['Fiche',()=>openAdpContModal(c.id)]]});
   });
@@ -8621,7 +8936,7 @@ function renderAdpSuivi(el){
 // navigateur — c'est la seule voie honnete sans embarquer un moteur de rendu.
 // Le tableur est un vrai .xlsx, fabrique avec le meme ecrivain ZIP que
 // l'export des notes : pas une seule dependance de plus.
-const RAP_SECTIONS=[['etat','État et jalons'],['budget','Budget et trajectoire'],
+const RAP_SECTIONS=[['etat','État et jalons'],['journal','Décisions, risques, actions'],['budget','Budget et trajectoire'],
                     ['suivi','Suivi : ce qui traîne'],['procedures','Procédures'],
                     ['avancees','Avancées du journal']];
 let rapPortee='tout', rapSections=new Set(RAP_SECTIONS.map(s=>s[0]));
@@ -8692,11 +9007,25 @@ function rapHtml(an){
         ${p.next_action?`<li>Prochaine action : <b>${E(p.next_action)}</b></li>`:''}
         <li>Santé : <b>${E((ADP_HEALTH.find(x=>x[0]===p.health)||['','?'])[1])}</b>${p.deadline?` · échéance <b>${E(p.deadline)}</b>`:''}</li>
         <li>Tâches ouvertes sur le board : <b>${adpProjTasks(p).length}</b></li></ul>`;
-      if(ml.length)h+=`<table class="rap-t"><thead><tr><th>Jalon</th><th>Type</th><th>Échéance</th><th>État</th></tr></thead><tbody>`+
+      if(ml.length)h+=`<table class="rap-t"><thead><tr><th>Jalon</th><th>Type</th><th>Initiale</th><th>Échéance</th><th class="r">Glissé</th><th>État</th></tr></thead><tbody>`+
         ml.map(m=>`<tr><td>${E(m.title)}</td><td>${E((ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1])}</td>
-          <td>${E(m.due_date)||'—'}</td>
-          <td class="${m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<0?'ko':''}">${m.status==='done'?'fait le '+E(m.done_at||'—'):(m.due_date&&dayDiff(m.due_date)<0?'en retard':'à venir')}</td></tr>`).join('')+
+          <td>${E(m.baseline)||'—'}</td><td>${E(m.due_date)||'—'}</td>
+          <td class="r${m.slips?' ko':''}">${m.slips?`${m.slips}× · ${mileSlipDays(m)>0?'+':''}${mileSlipDays(m)} j`:'—'}</td>
+          <td class="${m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<0?'ko':''}">${m.status==='done'?(mileTenu(m)?'tenu, fait le ':'fait le ')+E(m.done_at||'—'):(m.due_date&&dayDiff(m.due_date)<0?'en retard':'à venir')}</td></tr>`).join('')+
         `</tbody></table>`;
+    }
+    if(rapSections.has('journal')){
+      // Les trois listes qu'un comité demande, extraites du journal sans qu'on
+      // ait eu à les tenir ailleurs.
+      const jr=jrItems(p.note_id?noteById(p.note_id):null);
+      if(jr.length){
+        h+=`<h3>Décisions, risques, actions</h3>`;
+        JR_TYPES.forEach(([k,l,ic])=>{
+          const li=jr.filter(x=>x.type===k); if(!li.length)return;
+          h+=`<table class="rap-t"><thead><tr><th style="width:6.5rem">${ic} ${l}</th><th>Énoncé</th></tr></thead><tbody>`+
+            li.map(x=>`<tr><td>${E(x.date)||'—'}</td><td>${E(x.text)}</td></tr>`).join('')+`</tbody></table>`;
+        });
+      }
     }
     if(rapSections.has('budget')){
       // Prévu, réalisé et écart côte à côte : un tableau de suivi qui ne montre
@@ -8721,6 +9050,14 @@ function rapHtml(an){
       h+=`</tbody><tfoot><tr><td>TOTAL</td><td class="r">${budFmt(budProjEst(p.id,'G'))}</td>
         <td class="r">${budFmt(tp)}</td><td class="r">${budFmt(tr)}</td>${ecw(tr-tp)}`+
         mois.map(m=>`<td class="r">${budFmt(budProjMonth(p.id,m,'reel'))}</td>`).join('')+`</tr></tfoot></table>`;
+      // Le differentiel annuel repond a la seule question qui compte en comite :
+      // est-ce que ca rentre dans l'enveloppe de l'exercice ?
+      const dl=budProjDelta(p.id,an);
+      if(dl!=null)h+=`<p class="rap-delta ${dl<0?'ko':'ok'}">Différentiel ${an} :
+        <b>${dl>0?'+':''}${budFmt(dl)||'0 €'}</b> —
+        estimé ${budFmt(budProjEst(p.id,String(an)))} contre un atterrissage de
+        ${budFmt(budProjAtter(p.id,an))||'0 €'} (réalisé saisi, prévu pour le reste).
+        ${dl<0?'Le budget de l\'exercice sera dépassé.':'Il restera du budget sur l\'exercice.'}</p>`;
       // la trajectoire cumulee dit QUAND ca decroche, ce que le tableau ne dit pas
       h+=`<div class="rap-fig">${budChart(p.id,an,620,150)}</div>`;
     }
@@ -8858,24 +9195,35 @@ function rapFeuilles(an){
   if(rapSections.has('budget')){
     // Prévu, réalisé, écart en colonnes fixes, puis le détail mensuel du
     // réalisé : le tableur sert à refaire les calculs, il lui faut les deux.
-    const l=[['Projet','CAPEX','Nature','Estimé global','Prévu total','Réalisé total','Écart',
-      ...BUD_MOIS.map(m=>m+' '+an)]];
+    const l=[['Projet','CAPEX','Nature','Estimé global','Estimé '+an,'Atterrissage '+an,
+      'Différentiel '+an,'Prévu total','Réalisé total','Écart',...BUD_MOIS.map(m=>m+' '+an)]];
     list.forEach(p=>ADP_CAPEX.forEach(([c,cl])=>{
       const pv=budCapexReel(p.id,c,'prevu'), rl=budCapexReel(p.id,c,'reel');
-      l.push([p.name,cl,'— total —',budEst(p.id,c,'G'),pv,rl,rl-pv,
+      const dl=budCapexDelta(p.id,c,an);
+      l.push([p.name,cl,'— total —',budEst(p.id,c,'G'),budEst(p.id,c,String(an)),
+        budCapexAtter(p.id,c,an),dl==null?'':dl,pv,rl,rl-pv,
         ...mois.map(m=>budCapexMonth(p.id,c,m,'reel'))]);
       ADP_NATURE.forEach(([n,nl])=>{
         const q=budNatReel(p.id,c,n,'prevu'), t=budNatReel(p.id,c,n,'reel');
-        l.push([p.name,cl,nl,'',q,t,t-q,...mois.map(m=>budAmount(p.id,c,n,m,'reel'))]);});}));
+        l.push([p.name,cl,nl,'','','','',q,t,t-q,...mois.map(m=>budAmount(p.id,c,n,m,'reel'))]);});}));
     f.push({nom:'Budget',lignes:l});
+  }
+  if(rapSections.has('journal')){
+    const l=[['Projet','Type','Date','Énoncé']];
+    list.forEach(p=>jrItems(p.note_id?noteById(p.note_id):null)
+      .forEach(x=>l.push([p.name,(JR_TYPES.find(t=>t[0]===x.type)||['','?'])[1],x.date||'',x.text])));
+    if(l.length>1)f.push({nom:'Décisions et risques',lignes:l});
   }
   if(rapSections.has('etat')){
     const ids=new Set(list.map(p=>p.id));
-    f.push({nom:'Jalons',lignes:[['Projet','Jalon','Type','Échéance','État','Fait le'],
+    f.push({nom:'Jalons',lignes:[['Projet','Jalon','Type','Échéance initiale','Échéance','Décalages',
+        'Glissement (j)','État','Fait le','Tenu'],
       ...adpMilestones.filter(m=>ids.has(m.project_id)).map(m=>{
         const p=adpProjById(m.project_id);
-        return [p?p.name:'',m.title,(ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1],m.due_date||'',
-          m.status==='done'?'fait':(m.due_date&&dayDiff(m.due_date)<0?'en retard':'à venir'),m.done_at||''];})]});
+        return [p?p.name:'',m.title,(ADP_KIND.find(k=>k[0]===m.kind)||['','?'])[1],
+          m.baseline||'',m.due_date||'',m.slips||0,mileSlipDays(m),
+          m.status==='done'?'fait':(m.due_date&&dayDiff(m.due_date)<0?'en retard':'à venir'),
+          m.done_at||'',m.status==='done'?(mileTenu(m)?'oui':'non'):''];})]});
   }
   if(rapSections.has('suivi')){
     const noms=new Set(list.map(p=>p.name));
@@ -9020,7 +9368,7 @@ async function renderReviewPage(){
     rvKpi('Terminées',t.done,rvDelta(t.done,tp.done))+
     rvKpi('Créées',t.created,rvDelta(t.created,tp.created))+
     (projRows.length?`<div class="rv-sub">Réparties par projet</div>`+projRows.map(([p,n])=>
-      `<div class="td-row"><span class="td-lbl">${p==='Sans projet'?'<span style="color:var(--text-dim)">Sans projet</span>':`<span class="card-tag ${projClass(p)} td-tag">${tdEsc(p).toUpperCase()}</span>`}</span><span class="rv-n">${n}</span></div>`).join('')
+      `<div class="td-row"><span class="td-lbl">${p==='Sans projet'?'<span style="color:var(--text-dim)">Sans projet</span>':`<span class="card-tag td-tag" style="${projStyle(p)}">${tdEsc(p).toUpperCase()}</span>`}</span><span class="rv-n">${n}</span></div>`).join('')
       :'<div class="td-empty">Aucune tâche terminée sur la période.</div>');
 
   const h=rvHabitStats(r),hp=rvHabitStats(pr);
@@ -9079,6 +9427,9 @@ async function renderReviewPage(){
         +rvKpi('Relances faites',String(ap.relFaites),ap.relDues?`<span class="rv-d down">${ap.relDues} dues</span>`:'')
         +rvKpi('Étapes closes',String(ap.etapes),'')
         +rvKpi('Projets actifs',String(ap.actifs),'')
+        +(ap.repousses.length?`<div class="rv-sub">Jalons repoussés</div>`+ap.repousses.slice(0,5).map(m=>{
+            const pr=adpProjById(m.project_id);
+            return `<div class="td-row"><span class="td-lbl"><span class="td-name">${tdEsc(m.title)}</span><span class="td-meta">${pr?tdEsc(pr.name)+' · ':''}initialement ${tdEsc(m.baseline||'?')}</span></span><span class="rv-n warn">${m.slips}× · ${mileSlipDays(m)>0?'+':''}${mileSlipDays(m)}j</span></div>`;}).join(''):'')
         +(ap.glisses.length?`<div class="rv-sub">Jalons glissés</div>`+ap.glisses.slice(0,5).map(m=>{
             const p=adpProjById(m.project_id);
             return `<div class="td-row"><span class="td-lbl"><span class="td-name">${tdEsc(m.title)}</span><span class="td-meta">${p?tdEsc(p.name)+' · ':''}${m.due_date}</span></span><span class="rv-n warn">!</span></div>`;}).join(''):'')
@@ -9230,6 +9581,16 @@ async function restoreTask(id){
 }
 
 function quickTask(proj){ openModal(null,null,proj); }
+// Le sélecteur suit la liste déduite. Une tâche qui porte une étiquette
+// disparue garde la sienne : on ne réécrit pas une donnée sans le dire.
+function projFillSelect(val){
+  const el=document.getElementById('fProj'); if(!el)return;
+  const tags=projTags().slice();
+  if(val&&!tags.includes(val))tags.push(val);
+  el.innerHTML=`<option value="">— Aucun —</option>`+
+    tags.map(t=>`<option value="${tdEsc(t)}">${tdEsc(t)}</option>`).join('');
+  el.value=val||'';
+}
 function closeModal(){ document.getElementById('taskModal').classList.remove('open'); }
 function setImp(v){ selImp=v; document.querySelectorAll('.imp-btn').forEach(b=>b.classList.toggle('sel',parseInt(b.dataset.v)===v)); }
 
@@ -11766,7 +12127,7 @@ function openSportPlanModal(date){
   document.getElementById('spfBonus').value=p&&p.bonus?p.bonus:'';
   document.getElementById('sportPlanModalTitle').textContent=p?'ÉDITER LE PROGRAMME':'NOUVEAU PROGRAMME';
   document.getElementById('sportPlanModal').classList.add('open');
-  setTimeout(()=>document.getElementById('spfTitle').focus(),70);
+  setTimeout(()=>{const e=document.getElementById('spfTitle'); if(e)e.focus();},70);
 }
 function closeSportPlanModal(){document.getElementById('sportPlanModal').classList.remove('open');}
 async function saveSportPlan(){
@@ -11867,10 +12228,10 @@ document.addEventListener('keydown',e=>{
     return;
   }
   // Le filtre projet passe sur Maj+chiffre : la navigation prime
-  if(curPage==='board'&&e.shiftKey&&/^[)!@#$]$/.test(e.key)){
+  if(curPage==='board'&&e.shiftKey&&/^[)!@#$%^&*(]$/.test(e.key)){
     e.preventDefault();
-    const i=')!@#$'.indexOf(e.key);
-    setBoardFilter(i===0?'all':PROJECTS[i-1]);
+    const i=')!@#$%^&*('.indexOf(e.key);
+    setBoardFilter(i===0?'all':(projTags()[i-1]||'all'));
   }
 });
 // Fermeture des formulaires : uniquement via la croix ✕, "Annuler" ou Échap.
@@ -11891,7 +12252,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.41.0';
+const APP_VERSION='v1.42.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
