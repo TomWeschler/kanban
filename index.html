@@ -1000,6 +1000,32 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .jr-dec{--jrc:var(--accent)}.jr-ris{--jrc:var(--danger)}.jr-act{--jrc:var(--green)}
 .sb-btn.jr-dec{color:var(--accent)}.sb-btn.jr-ris{color:var(--danger)}.sb-btn.jr-act{color:var(--green)}
 .adp-line.jr-l{border-left:2px solid var(--jrc,var(--border));padding-left:0.5rem}
+.auto-list{display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.1rem}
+.auto-r{display:flex;align-items:center;gap:0.8rem;padding:0.65rem 0.85rem;background:var(--surface);
+  border:1px solid var(--border);border-left:3px solid var(--green);border-radius:7px}
+.auto-r.off{border-left-color:var(--border);opacity:0.62}
+.auto-r.off:hover{opacity:1}
+.auto-sw{flex-shrink:0;width:34px;height:19px;border-radius:10px;border:1px solid var(--border);
+  background:var(--surface2);cursor:pointer;padding:0;position:relative;transition:all .14s}
+.auto-sw span{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;
+  background:var(--text-dim);transition:all .14s}
+.auto-sw.on{background:rgba(74,222,128,0.22);border-color:var(--green)}
+.auto-sw.on span{left:16px;background:var(--green)}
+.auto-b{flex:1;min-width:0}
+.auto-n{font-size:0.85rem;color:var(--text);display:flex;align-items:center;gap:0.45rem}
+.auto-cnt{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.06em;color:#09090e;
+  background:var(--accent);padding:1px 5px;border-radius:8px}
+.auto-q{font-family:var(--font-mono);font-size:0.53rem;letter-spacing:0.04em;color:var(--text-mid);
+  margin-top:0.2rem;display:flex;flex-wrap:wrap;gap:0.35rem;align-items:baseline}
+.auto-q b{color:var(--accent);font-weight:700}
+.auto-cad{color:var(--text-dim);font-style:italic}
+.auto-warn{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.04em;color:var(--warn);
+  background:rgba(251,191,36,0.09);border:1px solid rgba(251,191,36,0.28);border-radius:6px;
+  padding:0.5rem 0.75rem;margin-bottom:0.9rem}
+.auto-sim{background:var(--surface);border:1px solid var(--accent);border-radius:8px;
+  padding:0.3rem 0.85rem 0.7rem;margin-bottom:1rem}
+.sv-r.sv-off{opacity:0.5}
+.sv-r.sv-off .sv-q{text-decoration:line-through}
 .adp-slip{color:var(--warn)}
 .adp-l-flag{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--warn);background:rgba(251,191,36,0.12);padding:2px 5px;border-radius:3px;flex-shrink:0}
 .adp-act{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;text-transform:uppercase;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);border-radius:4px;padding:0.2rem 0.45rem;cursor:pointer;flex-shrink:0}
@@ -5757,6 +5783,8 @@ const CMD_ACTIONS=[
   ['+ Nouveau projet',        'adp creer chantier',              ()=>{switchPage('adp');setAdpView('projets');openAdpProjModal(null);}],
   ['+ Nouveau contact',       'adp crm carnet annuaire',         ()=>{switchPage('adp');setAdpView('suivi');openAdpContModal(null);}],
   ['Relances du jour',        'adp contacts relancer suivi',     ()=>{switchPage('adp');setAdpView('suivi');}],
+  ['Automatismes',            'regle auto automatique declencheur',()=>{switchPage('adp');setAdpView('auto');}],
+  ['Exécuter les automatismes','auto lancer regles maintenant',   ()=>{switchPage('adp');setAdpView('auto');autoLancer();}],
   ['Exporter un rapport',     'adp pdf excel xlsx projet bilan',  ()=>{switchPage('adp');openRapport();}],
   ['Dicter une tâche',        'micro voix vocal mains libres',   ()=>{hfTarget='task';startHandsFree();}],
   ['Tâches terminées',        'historique archive fait done',    ()=>openDoneModal()],
@@ -5865,7 +5893,9 @@ const BK_TABLES=[
   ['adpMilestones','Jalons',      ()=>adpMilestones, v=>{adpMilestones=v;}],
   ['adpTemplates', 'Modèles',     ()=>adpTemplates,  v=>{adpTemplates=v;}],
   ['adpBudget',    'Budget',      ()=>adpBudget,     v=>{adpBudget=v;budIdxInvalidate();}],
-  ['adpRuns',      'Suivis',      ()=>adpRuns,       v=>{adpRuns=v;}]];
+  ['adpRuns',      'Suivis',      ()=>adpRuns,       v=>{adpRuns=v;}],
+  ['autoRegles',   'Automatismes',()=>autoRegles,    v=>{autoRegles=v;}],
+  ['autoJournal',  'Auto, journal',()=>autoJournal,  v=>{autoJournal=v;}]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -5940,7 +5970,7 @@ async function applyBackup(){
   });
   // caches locaux d'abord : même si le réseau échoue, l'état restauré survit
   ['notes','mesDefs','mesVals','adpProjects','adpContacts','adpMilestones',
-   'adpTemplates','adpBudget','adpRuns'].forEach(k=>{
+   'adpTemplates','adpBudget','adpRuns','autoRegles','autoJournal'].forEach(k=>{
     const t=BK_TABLES.find(x=>x[0]===k); if(t)cacheSet(k,t[2]()||[]);
   });
   try{ localStorage.setItem(LS_CACHE,JSON.stringify(allTasks)); }catch(e){}
@@ -5958,6 +5988,8 @@ async function applyBackup(){
       if(adpTemplates.length)ok=await sheetBatchUpsert('adp_templates',adpTemplates.map(adpTplRow))&&ok;
       if(adpBudget.length)  ok=await sheetBatchUpsert('adp_budget',adpBudget.map(adpBudRow))&&ok;
       if(adpRuns.length)    ok=await sheetBatchUpsert('adp_runs',adpRuns.map(adpRunRow))&&ok;
+      if(autoRegles.length) ok=await sheetBatchUpsert('auto_regles',autoRegles.map(autoRegRow))&&ok;
+      if(autoJournal.length)ok=await sheetBatchUpsert('auto_journal',autoJournal.map(autoJrnRow))&&ok;
     }catch(e){ ok=false; }
   }
   showLoad(false);
@@ -6688,15 +6720,20 @@ const ADP_RUN_HEADER=['id','template_id','project_id','title','start_date','stat
 const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updated_at','planned'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
+// Déclarés ici et pas avec le moteur : ADP_SHEETS les référence, et une
+// constante lue avant sa déclaration tue tout le script au chargement.
+const AUTO_REG_HEADER=['id','nom','trigger','param','action','cible','gabarit','actif','cadence','updated_at'];
+const AUTO_JRN_HEADER=['id','regle_id','cible_id','date','quoi','ref','statut'];
 const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'N'],['adp_contacts',ADP_CONT_HEADER,'N'],
                     ['adp_milestones',ADP_MILE_HEADER,'J'],['adp_templates',ADP_TPL_HEADER,'J'],
-                    ['adp_budget',ADP_BUD_HEADER,'H'],['adp_runs',ADP_RUN_HEADER,'H']];
+                    ['adp_budget',ADP_BUD_HEADER,'H'],['adp_runs',ADP_RUN_HEADER,'H'],
+                    ['auto_regles',AUTO_REG_HEADER,'J'],['auto_journal',AUTO_JRN_HEADER,'G']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
 const ADP_HEALTH  = [['vert','Sous contrôle'],['orange','Vigilance'],['rouge','En difficulté']];
 const ADP_HCOLOR  = {vert:'var(--green)',orange:'var(--warn)',rouge:'var(--danger)'};
 const ADP_KIND    = [['jalon','Jalon'],['livrable','Livrable'],['reunion','Réunion']];
-const ADP_VIEWS   = [['projets','Projets'],['budget','Budget'],['suivi','Suivi'],['modeles','Modèles'],['procedures','Procédures']];
+const ADP_VIEWS   = [['projets','Projets'],['budget','Budget'],['suivi','Suivi'],['modeles','Modèles'],['procedures','Procédures'],['auto','Automatismes']];
 const ADP_PALETTE = ['#7c6aff','#38bdf8','#fcd34d','#6ee7b7','#f472b6','#fb923c','#a78bfa','#4ade80'];
 
 let adpProjects=[], adpContacts=[], adpMilestones=[], adpTemplates=[];
@@ -6708,7 +6745,13 @@ try{ const v=localStorage.getItem(LS_ADP_VIEW); if(ADP_VIEWS.some(([k])=>k===v))
 const adpProjById = id=>adpProjects.find(p=>p.id===id)||null;
 const adpTplById  = id=>adpTemplates.find(t=>t.id===id)||null;
 const adpContById = id=>adpContacts.find(c=>c.id===id)||null;
-const adpId       = p=>p+Date.now().toString(36)+Math.floor(performance.now()*1000%1000).toString(36);
+// L'identifiant tenait à l'horloge : deux créations dans la même milliseconde
+// pouvaient tomber sur la même valeur, et la seconde écrasait la première dans
+// la feuille. Invisible tant qu'on créait à la main, révélé par la première
+// création en boucle. Un compteur monotone lève l'ambiguïté.
+let adpSeq=0;
+const adpId       = p=>p+Date.now().toString(36)+
+  (adpSeq=(adpSeq+1)%46656).toString(36).padStart(3,'0');
 
 // ── Feuilles ──────────────────────────────────────────────────────────────
 async function ensureAdpSheets(){
@@ -6741,10 +6784,11 @@ async function adpFetch(sheet,range){
 async function loadAdp(){
   if(!accessToken)return;
   await ensureAdpSheets();
-  const [pr,co,mi,tp,bu,ru]=await Promise.all([
+  const [pr,co,mi,tp,bu,ru,ar,aj]=await Promise.all([
     adpFetch('adp_projects','A:N'), adpFetch('adp_contacts','A:N'),
     adpFetch('adp_milestones','A:J'), adpFetch('adp_templates','A:J'),
-    adpFetch('adp_budget','A:H'), adpFetch('adp_runs','A:H')]);
+    adpFetch('adp_budget','A:H'), adpFetch('adp_runs','A:H'),
+    adpFetch('auto_regles','A:J'), adpFetch('auto_journal','A:G')]);
   // La dernière ligne gagne. Une ligne vidée est une pierre tombale : la
   // suppression garde la ligne pour ne jamais décaler la feuille sous les
   // écritures en vol, mais l'objet ne doit pas ressusciter au rechargement.
@@ -6795,13 +6839,27 @@ async function loadAdp(){
   }),'title').filter(r=>r.status!=='supprime');
   ['adpProjects','adpContacts','adpMilestones','adpTemplates','adpBudget','adpRuns'].forEach((k,i)=>
     cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates,adpBudget,adpRuns][i]));
+  autoRegles=dedupe(ar.map(x=>({id:adpCell(x,0),nom:adpCell(x,1),trigger:adpCell(x,2),
+    param:parseInt(adpCell(x,3),10)||0,action:adpCell(x,4)||'signal',cible:adpCell(x,5),
+    gabarit:String(x[6]==null?'':x[6]),actif:adpCell(x,7)==='oui',
+    cadence:adpCell(x,8)||'once',updated_at:adpCell(x,9)})),'nom')
+    .filter(r=>autoTrig(r.trigger));      // une règle dont le déclencheur a disparu ne vaut rien
+  const jm={};
+  aj.forEach(x=>{ const o={id:adpCell(x,0),regle_id:adpCell(x,1),cible_id:adpCell(x,2),
+    date:adpCell(x,3),quoi:String(x[4]==null?'':x[4]),ref:adpCell(x,5),statut:adpCell(x,6)||'fait'};
+    if(o.id)jm[o.id]=o; });
+  autoJournal=Object.values(jm);
+  autoLoaded=true;
+  cacheSet('autoRegles',autoRegles); cacheSet('autoJournal',autoJournal);
   adpLoaded=true;
   projTagsInvalidate(); renderProjTags();
+  autoAuJour();                            // au plus une fois par jour, si activé
 }
 function adpRestoreCache(){
   adpProjects=cacheGet('adpProjects',[]); adpContacts=cacheGet('adpContacts',[]);
   adpMilestones=cacheGet('adpMilestones',[]); adpTemplates=cacheGet('adpTemplates',[]);
   adpBudget=cacheGet('adpBudget',[]); budIdxInvalidate(); adpRuns=cacheGet('adpRuns',[]);
+  autoRegles=cacheGet('autoRegles',[]); autoJournal=cacheGet('autoJournal',[]);
   projTagsInvalidate();
 }
 const adpProjRow=p=>[p.id,p.name,p.client||'',p.status||'actif',p.start_date||'',p.deadline||'',
@@ -6941,6 +6999,7 @@ async function renderAdp(){
     adpRunCur=null;
     return renderAdpTemplates(el,'procedure');
   }
+  if(adpView==='auto')       return renderAdpAuto(el);
 }
 function setAdpView(v){
   adpView=v; adpProjCur=null; adpTplCur=null; adpRunCur=null; adpSearch='';
@@ -7650,6 +7709,7 @@ function closeAdpModal(){ document.getElementById('adpModal').classList.remove('
 async function saveAdpModal(){
   const v=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
   let obj=null,kind=adpEditKind;
+  if(kind==='auto')return saveAutoModal();
   if(kind==='proj'){
     const name=v('apName'); if(!name){ toast('Le nom est obligatoire','err'); return; }
     const p=adpEditId?adpProjById(adpEditId):null;
@@ -7692,6 +7752,7 @@ async function saveAdpModal(){
 async function deleteAdpModal(){
   if(!adpEditId)return;
   const kind=adpEditKind;
+  if(kind==='auto'){ closeAdpModal(); return autoDeleteRegle(adpEditId); }
   const src={proj:adpProjects,cont:adpContacts,mile:adpMilestones,tpl:adpTemplates}[kind];
   const snap={...src.find(x=>x.id===adpEditId)};
   closeAdpModal();
@@ -8925,6 +8986,519 @@ function rvAdpStats(r){
           // Un projet actif sans prochaine action posée n'avance pas : il attend
           // qu'on décide. La revue est le bon moment pour s'en apercevoir.
           sansAction:actifs.filter(p=>!String(p.next_action||'').trim())};
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// AUTOMATISMES — « quand ceci, fais cela »
+// ══════════════════════════════════════════════════════════════════════════
+// Tout ce qu'il fallait pour automatiser existait déjà, mais séparément : des
+// prédicats qui savent lire l'état d'un projet (conditions des procédures), des
+// signaux qui savent le repérer, et des écritures qui savent créer une tâche,
+// un jalon, une entrée de journal. Rien ne reliait les trois. L'app SAVAIT que
+// le budget dérapait ou qu'un projet n'avait pas bougé depuis trois semaines —
+// et attendait qu'on vienne le constater.
+//
+// Une règle relie un DÉCLENCHEUR (qui rend une liste de cibles) à une ACTION.
+// Trois garde-fous, parce qu'une automatisation qui se trompe coûte plus cher
+// que le travail qu'elle évite :
+//   1. IDEMPOTENCE — chaque (règle, cible, période) ne se déclenche qu'une
+//      fois. La clé du journal EST cette empreinte : impossible de doubler.
+//   2. RÉVERSIBILITÉ — tout ce qui est créé automatiquement est tracé avec la
+//      référence de l'objet créé, et se défait d'un clic.
+//   3. PLAFOND — 25 actions par exécution. Activer une règle sur trois ans
+//      d'historique ne doit pas déverser deux cents tâches d'un coup.
+// Et rien ne s'exécute sans qu'on l'ait activé : les règles livrées sont
+// éteintes, la simulation montre ce qui se passerait avant que ça se passe.
+const AUTO_MAX=25;                       // plafond d'actions par exécution
+const LS_AUTO_RUN='kanban_auto_lastrun';
+const LS_AUTO_ON='kanban_auto_on';
+let autoRegles=[], autoJournal=[], autoLoaded=false;
+let autoOn=false;
+try{ autoOn=localStorage.getItem(LS_AUTO_ON)==='1'; }catch(e){}
+
+// ── Déclencheurs ──────────────────────────────────────────────────────────
+// Chacun rend [{id, lbl, pid, jours}] : l'identité de la cible sert
+// d'empreinte, le reste alimente le gabarit du message.
+// `unite` et `defaut` ne servent qu'au formulaire.
+const autoNum=(v,d)=>{ const n=parseInt(v,10); return isNaN(n)?d:n; };
+const AUTO_TRIG=[
+ ['jalon.proche','Jalon ouvert à moins de N jours','jours',7,n=>
+   adpMilestones.filter(m=>m.status!=='done'&&m.due_date&&dayDiff(m.due_date)>=0&&dayDiff(m.due_date)<=n)
+     .map(m=>({id:m.id,lbl:m.title,pid:m.project_id,jours:dayDiff(m.due_date),obj:m}))],
+ ['jalon.retard','Jalon dépassé depuis N jours','jours',0,n=>
+   adpMilestones.filter(m=>m.status!=='done'&&m.due_date&&-dayDiff(m.due_date)>=n)
+     .map(m=>({id:m.id,lbl:m.title,pid:m.project_id,jours:-dayDiff(m.due_date),obj:m}))],
+ ['jalon.glisse','Jalon repoussé N fois ou plus','fois',2,n=>
+   adpMilestones.filter(m=>m.status!=='done'&&(m.slips||0)>=n)
+     .map(m=>({id:m.id,lbl:m.title,pid:m.project_id,jours:m.slips,obj:m}))],
+ ['relance.due','Relance due depuis N jours','jours',0,n=>
+   adpContacts.filter(c=>{const d=adpDueDay(c);return !!d&&-dayDiff(d)>=n;})
+     .map(c=>({id:c.id,lbl:c.name,pid:c.project_id,jours:-dayDiff(adpDueDay(c)),obj:c,
+               sujet:contTopic(c)}))],
+ ['tache.fuie','Tâche reportée N fois ou plus','fois',3,n=>
+   tasks.filter(t=>(t.snoozes||0)>=n)
+     .map(t=>({id:'t'+t.id,lbl:t.title,pid:autoProjDeTag(t.project),jours:t.snoozes,obj:t}))],
+ ['tache.attente','Tâche en attente depuis N jours','jours',7,n=>
+   tasks.filter(taskBlocked).filter(t=>-dayDiff(t.due_date||t.created_at||td())>=n)
+     .map(t=>({id:'t'+t.id,lbl:t.title,pid:autoProjDeTag(t.project),
+               jours:-dayDiff(t.due_date||t.created_at||td()),obj:t}))],
+ ['projet.budget','Atterrissage au-delà de N% de l\'estimé','%',90,n=>
+   adpActifs().filter(p=>{const e=budProjEst(p.id,'G')||budProjEst(p.id,String(adpBudYear));
+     if(!e)return false; return budProjAtter(p.id,adpBudYear)>=e*n/100;})
+     .map(p=>({id:p.id,lbl:p.name,pid:p.id,jours:0,obj:p}))],
+ ['projet.deadline','Échéance projet à moins de N jours','jours',14,n=>
+   adpActifs().filter(p=>p.deadline&&dayDiff(p.deadline)<=n)
+     .map(p=>({id:p.id,lbl:p.name,pid:p.id,jours:dayDiff(p.deadline),obj:p}))],
+ ['projet.sansaction','Projet actif sans prochaine action posée','—',0,()=>
+   adpActifs().filter(p=>!String(p.next_action||'').trim())
+     .map(p=>({id:p.id,lbl:p.name,pid:p.id,jours:0,obj:p}))],
+ ['projet.muet','Projet actif sans entrée de journal depuis N jours','jours',14,n=>
+   adpActifs().filter(p=>{
+     const jr=jrDernier(p); return !jr||-dayDiff(jr)>=n;})
+     // Un projet qui n'a JAMAIS eu d'entrée n'a pas un retard chiffrable : le
+     // dire « depuis 999 jours » serait un chiffre inventé.
+     .map(p=>{const jr=jrDernier(p);
+       return {id:p.id,lbl:p.name,pid:p.id,jours:jr?-dayDiff(jr):null,
+               depuis:jr?`il y a ${-dayDiff(jr)} j`:'jamais',obj:p};})],
+ ['etape.retard','Étape de procédure en retard de N jours','jours',0,n=>{
+   const out=[];
+   runActive().forEach(r=>{ const {state}=runStates(r);
+     (r.steps||[]).forEach(st=>{ if(state[st.key]!=='active'||!st.due)return;
+       if(-dayDiff(st.due)<n)return;
+       out.push({id:r.id+'/'+st.key,lbl:st.label,pid:r.project_id,jours:-dayDiff(st.due),obj:st,run:r}); });});
+   return out;}],
+ ['rituel.semaine','Chaque lundi','—',0,()=>
+   new Date().getDay()===1?[{id:'lundi',lbl:'Rituel hebdomadaire',pid:'',jours:0}]:[]],
+ ['rituel.mois','Le 1er de chaque mois','—',0,()=>
+   new Date().getDate()===1?[{id:'mois',lbl:'Rituel mensuel',pid:'',jours:0}]:[]],
+];
+const autoTrig=k=>AUTO_TRIG.find(t=>t[0]===k)||null;
+// Projets actifs seulement : automatiser sur un projet archivé n'a pas de sens.
+const adpActifs=()=>adpProjects.filter(p=>p.status==='actif');
+// Étiquette du board → projet ADP, pour rattacher une tâche à son projet.
+const autoProjDeTag=tag=>{ const p=adpProjects.find(x=>x.client&&x.client===tag); return p?p.id:''; };
+// Date de la dernière entrée datée du journal d'un projet
+function jrDernier(p){
+  const n=p.note_id?noteById(p.note_id):null;
+  if(!n)return '';
+  const d=String(n.content||'').match(/^###\s+(\d{4}-\d{2}-\d{2})/gm);
+  if(!d||!d.length)return '';
+  return d.map(x=>x.replace(/^###\s+/,'')).sort().pop();
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+// `cible` precise l'action quand elle en a besoin (niveau de sante, type
+// d'entree de journal, modele de procedure). Chaque action rend {quoi, ref} :
+// ce qu'elle a fait, et de quoi le defaire.
+const AUTO_ACT=[
+ ['tache',    'Créer une tâche',           'Aucune'],
+ ['journal',  'Consigner au journal',      'Type'],
+ ['jalon',    'Créer un jalon',            'Aucune'],
+ ['sante',    'Changer la santé du projet','Santé'],
+ ['procedure','Lancer une procédure',      'Procédure'],
+ ['signal',   'Signaler seulement',        'Aucune'],
+];
+const autoAct=k=>AUTO_ACT.find(a=>a[0]===k)||AUTO_ACT[0];
+// Gabarit : {{cible}} {{projet}} {{jours}} {{date}} {{sujet}}
+function autoFill(txt,c,proj){
+  // `sujet` porte son propre séparateur : sans lui, un gabarit qui l'utilise
+  // écrirait « Relancer Untel » collé au sujet, ou traînerait un tiret orphelin
+  // quand il n'y a pas de sujet.
+  const map={cible:c.lbl||'',projet:proj?proj.name:'',jours:String(c.jours==null?'':c.jours),
+             date:td(),sujet:c.sujet?' · '+c.sujet:'',
+             depuis:c.depuis||(c.jours!=null?`il y a ${c.jours} j`:'—')};
+  return String(txt||'').replace(/\{\{\s*([a-zA-Zéè_]+)\s*\}\}/g,(m,v)=>{
+    const k=v.toLowerCase(); return map[k]!==undefined?map[k]:m; });
+}
+
+
+// ── Persistance ───────────────────────────────────────────────────────────
+const autoRegRow=r=>[r.id,r.nom,r.trigger,String(r.param||0),r.action,r.cible||'',
+                     r.gabarit||'',r.actif?'oui':'non',r.cadence||'once',td()];
+const autoJrnRow=j=>[j.id,j.regle_id,j.cible_id,j.date,j.quoi,j.ref||'',j.statut||'fait'];
+async function autoSaveRegle(r){
+  const i=autoRegles.findIndex(x=>x.id===r.id);
+  if(i>=0)autoRegles[i]=r; else autoRegles.push(r);
+  cacheSet('autoRegles',autoRegles);
+  return sheetUpsertByKey('auto_regles',r.id,autoRegRow(r));
+}
+async function autoDeleteRegle(id){
+  const snap=autoRegles.find(x=>x.id===id); if(!snap)return;
+  autoRegles=autoRegles.filter(x=>x.id!==id);
+  cacheSet('autoRegles',autoRegles);
+  await sheetUpsertByKey('auto_regles',id,[id,'','','','','','','non','','']);
+  renderAdp();
+  offerUndo(`Règle supprimée · ${snap.nom}`,async()=>{ await autoSaveRegle(snap); renderAdp(); });
+}
+async function autoLog(j){
+  const i=autoJournal.findIndex(x=>x.id===j.id);
+  if(i>=0)autoJournal[i]=j; else autoJournal.push(j);
+  cacheSet('autoJournal',autoJournal);
+  return sheetUpsertByKey('auto_journal',j.id,autoJrnRow(j));
+}
+// Empreinte : c'est ELLE qui garantit qu'une règle ne se déclenche pas deux
+// fois sur la même cible. La période dépend de la cadence choisie.
+function autoPeriode(cad){
+  const d=new Date();
+  if(cad==='jour')return td();
+  if(cad==='semaine'){ const t=new Date(d); t.setDate(t.getDate()-((d.getDay()+6)%7)); return ymd(t); }
+  if(cad==='mois')return td().slice(0,7);
+  return '';                                    // 'once' : une seule fois, jamais rejoué
+}
+const autoCle=(r,cid)=>`${r.id}~${cid}~${autoPeriode(r.cadence)}`;
+const autoDejaFait=(r,cid)=>autoJournal.some(j=>j.id===autoCle(r,cid)&&j.statut!=='annule');
+
+// ── Simulation et exécution ───────────────────────────────────────────────
+// `autoPlan()` est PUR : il dit ce qui se passerait. C'est lui qu'affiche la
+// simulation, et c'est exactement lui qu'exécute autoRun().
+function autoPlan(regles){
+  const out=[];
+  (regles||autoRegles).filter(r=>r.actif).forEach(r=>{
+    const t=autoTrig(r.trigger); if(!t)return;
+    let cibles=[];
+    try{ cibles=t[4](autoNum(r.param,t[3]))||[]; }catch(e){ cibles=[]; }
+    cibles.forEach(c=>{
+      if(autoDejaFait(r,c.id))return;
+      const proj=c.pid?adpProjById(c.pid):null;
+      // Une action qui vise un projet n'a rien à faire sans projet.
+      if(['journal','sante','procedure','jalon'].includes(r.action)&&!proj)return;
+      out.push({regle:r,cible:c,proj,quoi:autoQuoi(r,c,proj)});
+    });
+  });
+  return out.slice(0,AUTO_MAX);
+}
+function autoQuoi(r,c,proj){
+  const g=autoFill(r.gabarit,c,proj);
+  const ou=proj?` · ${proj.name}`:'';
+  switch(r.action){
+    case 'tache':     return `Tâche « ${g||c.lbl} »${ou}`;
+    case 'journal':   return `Journal ${(JR_TYPES.find(x=>x[0]===r.cible)||JR_TYPES[0])[1]} : « ${g||c.lbl} »${ou}`;
+    case 'jalon':     return `Jalon « ${g||c.lbl} »${ou}`;
+    case 'sante':     return `Santé → ${(ADP_HEALTH.find(x=>x[0]===r.cible)||['','?'])[1]}${ou}`;
+    case 'procedure': return `Procédure « ${(adpTplById(r.cible)||{title:'?'}).title} »${ou}`;
+    default:          return `Signal : ${g||c.lbl}${ou}`;
+  }
+}
+// Exécute une entrée du plan. Rend {ok, ref} — `ref` permet de défaire.
+async function autoExec(e){
+  const {regle:r,cible:c,proj}=e;
+  const g=autoFill(r.gabarit,c,proj);
+  try{
+    if(r.action==='tache'){
+      const nt={id:Date.now()+Math.floor(Math.random()*1000),title:g||c.lbl,
+        column:taskColumnFromDate(plusDays(autoNum(r.cible,0))),importance:3,
+        due_date:plusDays(autoNum(r.cible,0)),created_at:td(),completed_at:'',
+        notes:`Créée automatiquement · ${r.nom}`,project:(proj&&proj.client)||'',
+        recurrence:'',checklist:'',snoozes:0,blocked_by:''};
+      allTasks.push(nt); refreshActive(); await persist();
+      return {ok:true,ref:'task:'+nt.id};
+    }
+    if(r.action==='journal'){
+      const type=(JR_TYPES.find(x=>x[0]===r.cible)||JR_TYPES[0]);
+      const ok=await autoJournalLigne(proj,type[1],g||c.lbl);
+      return {ok,ref:ok?'note:'+proj.note_id:''};
+    }
+    if(r.action==='jalon'){
+      const m={id:adpId('m'),project_id:proj.id,title:g||c.lbl,
+        due_date:plusDays(autoNum(r.cible,7)),status:'todo',kind:'jalon',done_at:'',
+        baseline:plusDays(autoNum(r.cible,7)),slips:0};
+      const ok=await adpSave('mile',m);
+      return {ok,ref:ok?'mile:'+m.id:''};
+    }
+    if(r.action==='sante'){
+      const avant=proj.health;
+      if(avant===r.cible)return {ok:true,ref:''};
+      proj.health=r.cible||'orange';
+      const ok=await adpSave('proj',proj);
+      return {ok,ref:ok?'sante:'+proj.id+':'+avant:''};
+    }
+    if(r.action==='procedure'){
+      const t=adpTplById(r.cible); if(!t)return {ok:false,ref:''};
+      const run={id:adpId('r'),template_id:t.id,project_id:proj.id,
+        title:`${t.title} — ${proj.name}`,start_date:td(),status:'actif',
+        steps:tplSteps(t).map(x=>({...x,due:'',done:'',ref:'',ans:'',skipped:''}))};
+      adpRuns.push(run);
+      await runAdvance(run);
+      const ok=await runSave(run);
+      return {ok,ref:ok?'run:'+run.id:''};
+    }
+    return {ok:true,ref:''};                    // signal : la trace suffit
+  }catch(err){ return {ok:false,ref:''}; }
+}
+// Ajoute une ligne typée sous l'entrée du jour du journal d'un projet.
+async function autoJournalLigne(proj,label,texte){
+  if(!proj||!proj.note_id)return false;
+  const n=noteById(proj.note_id); if(!n)return false;
+  const jour=`### ${td()}`;
+  let c=n.content||'';
+  if(c.indexOf(jour)<0){
+    const i=c.indexOf('## Avancées');
+    const head=`\n\n${jour}\n`;
+    c=i>=0?c.slice(0,i+'## Avancées'.length)+head+c.slice(i+'## Avancées'.length)
+          :c.replace(/\s*$/,'')+head;
+  }
+  const i=c.indexOf(jour)+jour.length;
+  n.content=c.slice(0,i)+`\n> ${label} : ${texte}`+c.slice(i);
+  noteIndexInvalidate(); cacheSet('notes',notes);
+  return noteUpsert(n);
+}
+
+// Exécution réelle. Ne tourne jamais toute seule si l'interrupteur est éteint.
+let autoEnCours=false;
+async function autoRun(manuel){
+  if(autoEnCours)return {n:0,total:0};
+  if(!autoOn&&!manuel)return {n:0,total:0};
+  if(!accessToken)return {n:0,total:0};
+  autoEnCours=true;
+  const plan=autoPlan();
+  let n=0;
+  for(const e of plan){
+    const res=await autoExec(e);
+    if(!res.ok)continue;
+    await autoLog({id:autoCle(e.regle,e.cible.id),regle_id:e.regle.id,cible_id:e.cible.id,
+      date:td(),quoi:e.quoi,ref:res.ref,statut:'fait'});
+    n++;
+  }
+  try{ localStorage.setItem(LS_AUTO_RUN,td()); }catch(err){}
+  autoEnCours=false;
+  if(n){ render(); updateHStats(); if(curPage==='adp')renderAdp(); }
+  return {n,total:plan.length};
+}
+// Une exécution par jour au plus, au chargement. Le reste du temps, c'est le
+// bouton qui décide : rien ne tourne en tâche de fond sans qu'on l'ait voulu.
+async function autoAuJour(){
+  if(!autoOn||!accessToken)return;
+  let dernier=''; try{ dernier=localStorage.getItem(LS_AUTO_RUN)||''; }catch(e){}
+  if(dernier===td())return;
+  const {n}=await autoRun(false);
+  if(n)toast(`${n} action${n>1?'s':''} automatique${n>1?'s':''} · voir ADP › Automatismes`,'info');
+}
+// Défaire : on retire l'objet créé ET on marque l'entrée annulée, ce qui rouvre
+// la règle pour cette cible — sinon on ne pourrait jamais la rejouer.
+async function autoUndo(id){
+  const j=autoJournal.find(x=>x.id===id); if(!j||j.statut==='annule')return;
+  const [kind,ref,extra]=String(j.ref||'').split(':');
+  if(kind==='task'){
+    allTasks=allTasks.filter(t=>String(t.id)!==ref); refreshActive(); await persist();
+  }else if(kind==='mile'){
+    await adpDelete('mile',ref);
+  }else if(kind==='run'){
+    adpRuns=adpRuns.filter(r=>r.id!==ref); cacheSet('adpRuns',adpRuns);
+    await sheetUpsertByKey('adp_runs',ref,[ref,'','','','','supprime','','']);
+  }else if(kind==='sante'){
+    const p=adpProjById(ref); if(p&&extra){ p.health=extra; await adpSave('proj',p); }
+  }
+  j.statut='annule';
+  await autoLog(j);
+  renderAdp(); render(); updateHStats();
+  toast('Action automatique défaite','ok');
+}
+function autoToggleOn(){
+  autoOn=!autoOn;
+  try{ localStorage.setItem(LS_AUTO_ON,autoOn?'1':'0'); }catch(e){}
+  renderAdp();
+  toast(autoOn?'Automatismes activés':'Automatismes en pause',autoOn?'ok':'info');
+}
+async function autoToggleRegle(id){
+  const r=autoRegles.find(x=>x.id===id); if(!r)return;
+  r.actif=!r.actif;
+  if(!(await autoSaveRegle(r)))toast("ÉCHEC de l'enregistrement",'err');
+  renderAdp();
+}
+
+// ── Règles livrées ────────────────────────────────────────────────────────
+// Éteintes. Un moteur vide ne sert à rien, un moteur qui démarre tout seul fait
+// peur : celles-ci se lisent, se modifient, et s'activent d'un clic.
+const AUTO_SEED=[
+ ['Préparer les jalons qui arrivent','jalon.proche',5,'tache','2',
+  'Préparer « {{cible}} » (jalon dans {{jours}} j)','once'],
+ ['Relancer sans y penser','relance.due',0,'tache','0',
+  'Relancer {{cible}}{{sujet}}','semaine'],
+ ['Tracer les jalons qui glissent','jalon.glisse',2,'journal','risque',
+  '{{cible}} a été repoussé {{jours}} fois — cause à instruire','semaine'],
+ ['Alerter quand le budget dérape','projet.budget',90,'sante','orange',
+  '','mois'],
+ ['Réveiller un projet muet','projet.muet',21,'tache','0',
+  'Faire le point sur {{projet}} — dernière entrée au journal : {{depuis}}','semaine'],
+ ['Poser la prochaine action','projet.sansaction',0,'tache','1',
+  'Décider la prochaine action de {{projet}}','semaine'],
+ ['Instruire ce qui traîne','tache.fuie',4,'journal','action',
+  '« {{cible}} » reportée {{jours}} fois : découper, déléguer ou renoncer','once'],
+];
+async function autoSeed(){
+  if(autoRegles.length){ toast('Des règles existent déjà','info'); return; }
+  showLoad(true);
+  let ok=true;
+  for(const [nom,trigger,param,action,cible,gabarit,cadence] of AUTO_SEED){
+    ok=await autoSaveRegle({id:adpId('a'),nom,trigger,param,action,cible,gabarit,
+      actif:false,cadence})&&ok;
+  }
+  showLoad(false);
+  renderAdp();
+  toast(ok?`${AUTO_SEED.length} règles ajoutées — toutes éteintes`:"ÉCHEC de l'enregistrement",ok?'ok':'err');
+}
+
+// ── Vue ───────────────────────────────────────────────────────────────────
+let autoApercu=null;
+function autoSimuler(){
+  autoApercu=autoPlan();
+  renderAdp();
+  if(!autoApercu.length)toast('Rien à faire : aucune règle active ne trouve de cible','info');
+}
+async function autoLancer(){
+  showLoad(true);
+  const {n,total}=await autoRun(true);
+  showLoad(false);
+  autoApercu=null;
+  renderAdp();
+  toast(n?`${n} action${n>1?'s':''} exécutée${n>1?'s':''}${total>n?` · ${total-n} en échec`:''}`
+         :'Rien à faire',n?'ok':'info');
+}
+function autoTrigLabel(r){
+  const t=autoTrig(r.trigger); if(!t)return r.trigger;
+  return t[2]==='—'?t[1]:t[1].replace(/\bN\b/,String(r.param));
+}
+function autoActLabel(r){
+  const a=autoAct(r.action);
+  if(r.action==='sante')return `Santé → ${(ADP_HEALTH.find(x=>x[0]===r.cible)||['','?'])[1]}`;
+  if(r.action==='journal')return `Journal · ${(JR_TYPES.find(x=>x[0]===r.cible)||JR_TYPES[0])[1]}`;
+  if(r.action==='procedure')return `Lancer « ${(adpTplById(r.cible)||{title:'?'}).title} »`;
+  if(r.action==='tache')return `Créer une tâche${autoNum(r.cible,0)?` à J+${autoNum(r.cible,0)}`:' pour aujourd\'hui'}`;
+  if(r.action==='jalon')return `Créer un jalon à J+${autoNum(r.cible,7)}`;
+  return a[1];
+}
+const AUTO_CAD=[['once','une seule fois par cible'],['jour','au plus une fois par jour'],
+                ['semaine','au plus une fois par semaine'],['mois','au plus une fois par mois']];
+function renderAdpAuto(el){
+  const actives=autoRegles.filter(r=>r.actif).length;
+  const jr=autoJournal.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||
+    String(b.id).localeCompare(String(a.id))).slice(0,30);
+  const faits=autoJournal.filter(j=>j.statut!=='annule').length;
+  el.innerHTML=`
+    <div class="adp-tools">
+      <button class="gl-pill${autoOn?' active':''}"${autoOn?' style="background:var(--green);border-color:var(--green);color:#09090e"':''}
+        onclick="autoToggleOn()" title="Quand c'est éteint, rien ne s'exécute tout seul">${autoOn?'● Actifs':'○ En pause'}</button>
+      <button class="gl-pill" onclick="autoSimuler()" title="Voir ce qui se passerait, sans rien faire">Simuler</button>
+      <button class="gl-pill" onclick="autoLancer()" title="Exécuter maintenant les règles actives">▶ Exécuter</button>
+      <div style="flex:1"></div>
+      <span class="bud-legend">${actives}/${autoRegles.length} règle${autoRegles.length>1?'s':''} active${actives>1?'s':''} · ${faits} action${faits>1?'s':''} au total</span>
+      <button class="gl-pill" onclick="openAutoModal(null)">+ Règle</button>
+    </div>
+    ${!autoOn&&actives?`<div class="auto-warn">Les automatismes sont en pause : les règles actives ne se déclencheront pas au chargement. « Exécuter » reste disponible à la main.</div>`:''}
+    ${autoApercu?`<div class="auto-sim">
+      <div class="adp-sec">Simulation — ${autoApercu.length} action${autoApercu.length>1?'s':''} ${autoApercu.length>=AUTO_MAX?`(plafond de ${AUTO_MAX} atteint)`:''}
+        <button class="adp-mini" onclick="autoApercu=null;renderAdp()" title="Fermer">✕</button></div>
+      ${autoApercu.length?autoApercu.map(e=>`<div class="adp-line">
+        <span class="adp-l-main">${adpEsc(e.quoi)}<span class="adp-l-sub">${adpEsc(e.regle.nom)}</span></span>
+      </div>`).join(''):'<div class="sb-none">Aucune règle active ne trouve de cible aujourd\'hui.</div>'}
+    </div>`:''}
+    ${autoRegles.length?`<div class="auto-list">${autoRegles.map(r=>{
+      const t=autoTrig(r.trigger);
+      let n=0; try{ n=r.actif?(t[4](autoNum(r.param,t[3]))||[]).filter(c=>!autoDejaFait(r,c.id)).length:0; }catch(e){}
+      return `<div class="auto-r${r.actif?'':' off'}">
+        <button class="auto-sw${r.actif?' on':''}" onclick="autoToggleRegle('${r.id}')"
+          title="${r.actif?'Désactiver':'Activer'}"><span></span></button>
+        <div class="auto-b">
+          <div class="auto-n">${adpEsc(r.nom)}${n?`<span class="auto-cnt" title="${n} cible(s) en attente">${n}</span>`:''}</div>
+          <div class="auto-q"><b>Quand</b> ${adpEsc(autoTrigLabel(r))} <b>→</b> ${adpEsc(autoActLabel(r))}
+            <span class="auto-cad">${adpEsc((AUTO_CAD.find(c=>c[0]===r.cadence)||AUTO_CAD[0])[1])}</span></div>
+        </div>
+        <button class="adp-act" onclick="openAutoModal('${r.id}')">Éditer</button>
+      </div>`;}).join('')}</div>`
+      :`<div class="gl-empty">Aucune règle.<br><br>
+          <button class="gl-pill" onclick="autoSeed()">Ajouter ${AUTO_SEED.length} règles prêtes à l'emploi</button>
+          <div class="fld-hint" style="margin-top:0.7rem">Elles arriveront éteintes : tu les lis, tu les ajustes, tu actives celles qui te vont.</div>
+        </div>`}
+    ${jr.length?`<div class="adp-sec">Ce qui a été fait automatiquement</div>
+      <div class="sv-list">${jr.map(j=>{
+        const r=autoRegles.find(x=>x.id===j.regle_id);
+        return `<div class="sv-r${j.statut==='annule'?' sv-off':''}">
+          <span class="sv-ic">${j.statut==='annule'?'↩':'⚙'}</span>
+          <span class="sv-b"><span class="sv-q">${adpEsc(j.quoi)}</span>
+            <span class="sv-o">${adpEsc(j.date)}${r?` · ${adpEsc(r.nom)}`:''}${j.statut==='annule'?' · défait':''}</span></span>
+          <span class="sv-a">${j.statut!=='annule'&&j.ref?`<button class="adp-act" onclick="autoUndo('${adpEsc(j.id)}')">Défaire</button>`:''}</span>
+        </div>`;}).join('')}</div>`:''}`;
+}
+
+// ── Formulaire d'une règle ────────────────────────────────────────────────
+let autoEditId=null;
+function openAutoModal(id){
+  autoEditId=id;
+  const r=id?autoRegles.find(x=>x.id===id):null;
+  document.getElementById('adpModalTitle').textContent=r?'ÉDITER LA RÈGLE':'NOUVELLE RÈGLE';
+  adpEditKind='auto'; adpEditId=id;
+  const trg=r?r.trigger:AUTO_TRIG[0][0];
+  const act=r?r.action:'tache';
+  document.getElementById('adpFields').innerHTML=`
+    <div class="field"><label>Nom</label>
+      <input type="text" id="auNom" value="${adpEsc(r?r.nom:'')}" placeholder="Préparer les jalons qui arrivent"></div>
+    <div class="field"><label>Quand</label>
+      <select id="auTrig" onchange="autoFormTrig()">
+        ${AUTO_TRIG.map(([k,l])=>`<option value="${k}"${trg===k?' selected':''}>${adpEsc(l)}</option>`).join('')}
+      </select>
+      <div id="auParamBox" style="margin-top:0.4rem"></div></div>
+    <div class="field"><label>Alors</label>
+      <select id="auAct" onchange="autoFormAct()">
+        ${AUTO_ACT.map(([k,l])=>`<option value="${k}"${act===k?' selected':''}>${adpEsc(l)}</option>`).join('')}
+      </select>
+      <div id="auCibleBox" style="margin-top:0.4rem"></div></div>
+    <div class="field"><label>Texte <span style="color:var(--text-dim);text-transform:none;letter-spacing:0">— {{cible}} {{projet}} {{jours}} {{depuis}} {{date}} {{sujet}}</span></label>
+      <input type="text" id="auGab" value="${adpEsc(r?r.gabarit:'')}" placeholder="Préparer « {{cible}} » (dans {{jours}} j)"></div>
+    <div class="field"><label>Ne pas répéter</label>
+      <select id="auCad">${AUTO_CAD.map(([k,l])=>`<option value="${k}"${(r?r.cadence:'once')===k?' selected':''}>${adpEsc(l)}</option>`).join('')}</select>
+      <div class="fld-hint">Une même cible ne redéclenche pas la règle dans cette fenêtre. « Une seule fois » ne se rejoue jamais.</div></div>`;
+  document.getElementById('adpDel').style.display=r?'':'none';
+  document.getElementById('adpModal').classList.add('open');
+  autoFormMaj(r);
+  setTimeout(()=>{const e=document.getElementById('auNom'); if(e)e.focus();},60);
+}
+// Le second champ dépend du déclencheur et de l'action choisis : on le
+// reconstruit à chaque changement plutôt que de tout afficher en permanence.
+// Les deux boîtes sont reconstruites SÉPARÉMENT : tout redessiner à chaque
+// changement effaçait le réglage du déclencheur dès qu'on touchait à l'action.
+function autoFormTrig(){ autoFormParam(); }
+function autoFormAct(){ autoFormCible(); }
+function autoFormMaj(r){ autoFormParam(r); autoFormCible(r); }
+const autoFormRegle=r=>r||(autoEditId?autoRegles.find(x=>x.id===autoEditId):null);
+function autoFormParam(r){
+  const cur=autoFormRegle(r);
+  const t=autoTrig(document.getElementById('auTrig').value)||AUTO_TRIG[0];
+  const pb=document.getElementById('auParamBox');
+  pb.innerHTML=t[2]==='—'
+    ?'<div class="fld-hint">Ce déclencheur n\'a pas de réglage.</div>'
+    :`<label class="run-off">${adpEsc(t[2])} <input class="run-f" type="number" id="auParam"
+        value="${cur&&cur.trigger===t[0]?cur.param:t[3]}"></label>`;
+}
+function autoFormCible(r){
+  const cur=autoFormRegle(r);
+  const a=document.getElementById('auAct').value;
+  const cb=document.getElementById('auCibleBox');
+  const val=(cur&&cur.action===a)?cur.cible:'';
+  if(a==='sante')cb.innerHTML=`<select id="auCible">${ADP_HEALTH.filter(([k])=>k!=='vert')
+    .map(([k,l])=>`<option value="${k}"${val===k?' selected':''}>${adpEsc(l)}</option>`).join('')}</select>`;
+  else if(a==='journal')cb.innerHTML=`<select id="auCible">${JR_TYPES
+    .map(([k,l,ic])=>`<option value="${k}"${val===k?' selected':''}>${ic} ${adpEsc(l)}</option>`).join('')}</select>`;
+  else if(a==='procedure'){
+    const ps=tplActifs('procedure');
+    cb.innerHTML=ps.length?`<select id="auCible">${ps.map(x=>
+      `<option value="${x.id}"${val===x.id?' selected':''}>${adpEsc(x.title)}</option>`).join('')}</select>`
+      :`<div class="fld-hint">Aucune procédure active. Crée-en une dans « Procédures ».</div>`;
+  }
+  else if(a==='tache'||a==='jalon')cb.innerHTML=`<label class="run-off">Échéance J+
+    <input class="run-f" type="number" id="auCible" value="${val!==''&&val!=null?adpEsc(val):(a==='jalon'?7:0)}"></label>`;
+  else cb.innerHTML='<div class="fld-hint">Rien à préciser : la trace au journal suffit.</div>';
+}
+async function saveAutoModal(){
+  const v=id=>{const e=document.getElementById(id);return e?String(e.value).trim():'';};
+  const nom=v('auNom'); if(!nom){ toast('Le nom est obligatoire','err'); return; }
+  const r=autoEditId?autoRegles.find(x=>x.id===autoEditId):null;
+  const obj={id:autoEditId||adpId('a'),nom,trigger:v('auTrig'),param:autoNum(v('auParam'),0),
+    action:v('auAct'),cible:v('auCible'),gabarit:v('auGab'),
+    actif:r?r.actif:false,cadence:v('auCad')||'once'};
+  closeAdpModal();
+  showLoad(true); const ok=await autoSaveRegle(obj); showLoad(false);
+  if(!ok)toast("ÉCHEC de l'enregistrement",'err');
+  autoApercu=null; renderAdp();
 }
 
 // ── Suivi ─────────────────────────────────────────────────────────────────
@@ -12552,7 +13126,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.44.0';
+const APP_VERSION='v1.45.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
