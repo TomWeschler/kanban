@@ -1105,6 +1105,17 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 @media(max-width:900px){
   .adp-proj{grid-template-columns:1fr}
   .cp-grid{grid-template-columns:1fr}
+  /* Sur un ecran etroit les panneaux s'empilent au lieu de se cotoyer, et la
+     grille de la fiche projet coupait sa hauteur en deux parts egales. Faire
+     tenir l'editeur dans ce qui restait le reduisait a 88 px pendant qu'il en
+     reclamait 260 : le contenu debordait d'une boite ecrasee. On renonce a
+     l'ajustement vertical — chaque panneau prend la hauteur de son contenu, la
+     page defile d'un bloc, et l'editeur recoit une hauteur franche. C'est ce
+     qu'on attend d'un telephone. */
+  .adp-proj{flex:0 0 auto;grid-auto-rows:min-content}
+  .adp-tpl,.adp-journal,.adp-journal .md-hold,#adpJBody{flex:0 0 auto;overflow:visible}
+  .adp-side{overflow:visible}
+  .adp-edit{flex:0 0 auto;min-height:0;height:56vh}
 }
 
 /* ── Mesures ─────────────────────────────────────────────────────────────── */
@@ -2557,7 +2568,40 @@ const LS_CACHE = 'kanban_cache_v3';
 // Seules les taches etaient mises en cache : hors ligne, HABITUDES, OBJECTIFS
 // et SPORT s'ouvraient vides, ce qui rendait le PWA a moitie utile.
 const LS_DATA = 'kanban_data_';
-function cacheSet(key,data){ try{ localStorage.setItem(LS_DATA+key,JSON.stringify(data)); }catch(e){} }
+// ── Le quota local n'a pas le droit de faire perdre un enregistrement ─────
+// Mesuré : le plafond de localStorage est d'environ 4,9 Mo, et trois ans de
+// données en occupent 4,2 — dont 96 % pour le seul corps des notes. Or
+// saveToSheets commençait par un setItem NU : quota plein, exception levée, et
+// la tâche ne partait jamais vers Sheets. Plus rien ne jette ici. Quand la
+// place manque, on sacrifie d'abord ce qui se reconstitue tout seul — et
+// jamais le cache des tâches ou des notes, qui est le filet hors ligne.
+const LS_JETABLE = ['nhist'];   // historique local des versions de note : pur confort
+let lsSature = false;
+// Tout ce qui n'est qu'un reflet du classeur : ça se reconstruit à la
+// prochaine lecture. La file d'écritures, elle, n'existe nulle part ailleurs.
+function lsPurgeCaches(){
+  Object.keys(localStorage).filter(k=>k.startsWith(LS_DATA)||k===LS_CACHE)
+    .forEach(k=>{ try{ localStorage.removeItem(k); }catch(_){} });
+}
+function lsSet(cle,valeur,vital){
+  try{ localStorage.setItem(cle,valeur); lsSature=false; return true; }
+  catch(e){
+    LS_JETABLE.forEach(k=>{ try{ localStorage.removeItem(LS_DATA+k); }catch(_){} });
+    try{ localStorage.setItem(cle,valeur); lsSature=false; return true; }catch(_){}
+    // Une écriture vitale passe avant tous les caches : perdre une
+    // modification hors ligne est irréparable, perdre un cache ne l'est pas.
+    if(vital){
+      lsPurgeCaches();
+      try{ localStorage.setItem(cle,valeur); lsSature=false; return true; }catch(_){}
+    }
+    // On le dit une fois, pas à chaque frappe. L'écriture en ligne, elle,
+    // continue : c'est le cache hors ligne qui décroche, pas la donnée.
+    if(!lsSature){ lsSature=true;
+      toast('Mémoire locale saturée — la sauvegarde en ligne continue, le cache hors ligne non','err'); }
+    return false;
+  }
+}
+function cacheSet(key,data){ return lsSet(LS_DATA+key,JSON.stringify(data)); }
 function cacheGet(key,fallback){
   try{ const v=localStorage.getItem(LS_DATA+key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; }
 }
@@ -2568,7 +2612,8 @@ function cacheGet(key,fallback){
 // Toutes sont idempotentes : reecriture d'un onglet complet, ou upsert par cle.
 const LS_QUEUE = 'kanban_write_queue';
 let writeQueue = (()=>{ try{ return JSON.parse(localStorage.getItem(LS_QUEUE))||[] }catch(e){ return [] } })();
-const queueSave = ()=>{ try{ localStorage.setItem(LS_QUEUE,JSON.stringify(writeQueue)); }catch(e){} };
+// Vitale : ce qu'elle contient n'a encore été écrit nulle part.
+const queueSave = ()=>lsSet(LS_QUEUE,JSON.stringify(writeQueue),true);
 function enqueueWrite(op){
   // une reecriture complete remplace la precedente du meme onglet : inutile de
   // rejouer dix etats intermediaires du meme onglet
@@ -2679,6 +2724,8 @@ function refreshToken(){
 }
 // Tout appel authentifie passe par ici : sur un 401/403 on renouvelle en
 // silence et on rejoue une fois.
+// Declare AVANT authFetch : un const ne se hisse pas.
+const AUTH_RETRY=[500,1500];   // attentes, en ms, entre deux tentatives
 async function authFetch(url,opts){
   const build=()=>{
     const o=Object.assign({},opts||{});
@@ -2689,6 +2736,16 @@ async function authFetch(url,opts){
   if(r.status===401||r.status===403){
     const tok=await refreshToken();
     if(tok)r=await fetch(url,build());
+  }
+  // 429 « trop de requêtes » et 503 « réessaie plus tard » sont passagers, et
+  // signifient tous deux que la requête n'a PAS été appliquée : on la rejoue,
+  // espacée, plutôt que d'annoncer une erreur qui se serait résolue seule.
+  // On ne rejoue délibérément PAS un 500/502 : sur un :append, l'écriture peut
+  // avoir abouti malgré la réponse, et une seconde tentative ferait un doublon.
+  for(let i=0;i<AUTH_RETRY.length&&(r.status===429||r.status===503);i++){
+    if(!navigator.onLine)break;
+    await new Promise(f=>setTimeout(f,AUTH_RETRY[i]));
+    r=await fetch(url,build());
   }
   return r;
 }
@@ -3160,8 +3217,12 @@ async function loadFromSheets() {
     tasks = allTasks.filter(t => !t.completed_at);
     projTagsInvalidate();
     remoteFingerprint = fingerprint(rows);   // référence pour détecter une écriture concurrente
+    // Les lignes relues ont pu être migrées ci-dessus : on ne sait plus si
+    // l'onglet correspond ligne à ligne. Le prochain enregistrement réécrira
+    // tout, et ce n'est qu'ensuite que le ciblage reprend.
+    tasksEcrites = null;
     if(migrated) persist();
-    localStorage.setItem(LS_CACHE, JSON.stringify(allTasks));
+    lsSet(LS_CACHE, JSON.stringify(allTasks));
     setSyncStatus('ok','SYNCED');
   } catch(e) { setSyncStatus('error','CACHE'); toast('Sheets inaccessible — cache local utilisé','err'); }
 }
@@ -3170,11 +3231,44 @@ async function loadFromSheets() {
 // saveToSheets réécrit l'onglet entier. Sans garde-fou, un second appareil
 // écrase en silence ce que le premier vient d'enregistrer.
 let remoteFingerprint = null;
+// Sheets rogne les cellules vides de fin d'une ligne relue. Sans normaliser,
+// une ligne construite ici et la même ligne relue là-bas n'auraient jamais la
+// même empreinte — et l'écriture ciblée ci-dessous crierait au conflit à
+// chaque fois. Une cellule vide de fin ne porte aucune information.
+const rowNorm=r=>{ const c=(r||[]).map(x=>x==null?'':String(x));
+                   while(c.length&&c[c.length-1]==='')c.pop(); return c; };
 function fingerprint(rows){
-  const s=JSON.stringify(rows||[]);
+  const s=JSON.stringify((rows||[]).map(rowNorm));
   let h=5381;
   for(let i=0;i<s.length;i++)h=((h*33)^s.charCodeAt(i))>>>0;
   return s.length+':'+h;
+}
+
+// ── Écriture ciblée ───────────────────────────────────────────────────────
+// Mesuré à trois ans de données : renommer une tâche réécrivait l'onglet
+// entier, soit 457 Ko envoyés toutes les 700 ms de frappe apaisée. Or le cas
+// courant — cocher, reporter, corriger un titre — ne change AUCUNE ligne de
+// place. Quand c'est vrai, on n'envoie que les lignes touchées : quelques
+// centaines d'octets. Ajout, suppression ou réordonnancement retombent sur la
+// réécriture complète, qui reste la seule à garantir la cohérence de l'onglet.
+let tasksEcrites = null;        // ce qu'on a RÉELLEMENT écrit la dernière fois
+const TASK_DIFF_MAX = 25;       // au-delà, la réécriture complète coûte moins cher
+function rowsDiff(av,ap){
+  if(!av||av.length!==ap.length)return null;
+  const d=[];
+  for(let i=0;i<ap.length;i++){
+    if(JSON.stringify(rowNorm(av[i]))!==JSON.stringify(rowNorm(ap[i]))){
+      d.push(i);
+      if(d.length>TASK_DIFF_MAX)return null;
+    }
+  }
+  return d;
+}
+async function sheetWriteRows(sheet,items){
+  const r=await authFetch(sheetUrl('/values:batchUpdate'),
+    {method:'POST',headers:authHeaders(),body:JSON.stringify({valueInputOption:'RAW',data:items})});
+  if(!r.ok)throw new Error(r.status);
+  return true;
 }
 async function fetchRemoteRows(){
   const r=await authFetch(`${sheetsBase()}/values/${cfg.sheetName}!A:${TASK_LAST_COL}`,{headers:{Authorization:`Bearer ${accessToken}`}});
@@ -3190,17 +3284,21 @@ function taskToRow(t){
 let conflictPending=false;
 async function saveToSheets(force) {
   if (!accessToken) return;
-  localStorage.setItem(LS_CACHE, JSON.stringify(allTasks)); // filet local avant tout
+  lsSet(LS_CACHE, JSON.stringify(allTasks));   // filet local avant tout, mais il ne bloque plus l'envoi
   // hors ligne : sheetReplaceAll met l'etat complet en file, il sera rejoue au
   // retour du reseau. On saute la detection de conflit, qui exige une lecture.
   if (!navigator.onLine) {
     await sheetReplaceAll(cfg.sheetName,TASK_LAST_COL,[SHEET_HEADER,...allTasks.map(taskToRow)]);
+    // La file rejouera l'état complet : on ne sait plus ce que contient
+    // l'onglet, donc plus d'écriture ciblée tant qu'on n'a pas réécrit en entier.
+    tasksEcrites=null;
     return;
   }
   if (conflictPending && !force) return;                    // ne pas re-crier à chaque frappe
   setSyncStatus('syncing','SAVING...');
   try {
     // Quelqu'un a-t-il écrit depuis notre dernière lecture ? Si oui, on n'écrase pas.
+    let verifie=false;
     if (!force && remoteFingerprint !== null) {
       const remote = await fetchRemoteRows();
       if (fingerprint(remote) !== remoteFingerprint) {
@@ -3212,10 +3310,22 @@ async function saveToSheets(force) {
         ],0,'err');
         return;
       }
+      verifie=true;   // l'onglet est bien celui qu'on croit : le ciblage est sûr
     }
     const values = [SHEET_HEADER, ...allTasks.map(taskToRow)];
-    const written = await sheetReplaceAll(cfg.sheetName,TASK_LAST_COL,values);
-    remoteFingerprint = written ? fingerprint(written) : await fetchRemoteRows().then(fingerprint).catch(()=>null);
+    // Le ciblage n'est permis que si la relecture ci-dessus a confirmé que
+    // l'onglet est mot pour mot celui qu'on a écrit : les numéros de ligne
+    // n'ont de sens que dans ce cas.
+    const diff = verifie ? rowsDiff(tasksEcrites,values) : null;
+    if (diff && diff.length) {
+      await sheetWriteRows(cfg.sheetName,
+        diff.map(i=>({range:`${cfg.sheetName}!A${i+1}`,values:[values[i]]})));
+    } else if (!diff) {
+      await sheetReplaceAll(cfg.sheetName,TASK_LAST_COL,values);
+    }
+    // diff vide = rien n'a bougé depuis la dernière écriture : rien à envoyer.
+    tasksEcrites = values;
+    remoteFingerprint = fingerprint(values);
     conflictPending=false;
     setSyncStatus('ok','SYNCED');
     toast('💾 Sauvegardé','ok');
@@ -4304,6 +4414,13 @@ const noteMemeTitre=t=>notes.filter(n=>n.title.toLowerCase()===String(t||'').tri
 // ligne. Le HTML est echappe D'ABORD, donc rien de ce qui est saisi ne peut
 // s'executer ; les balises sont ensuite reintroduites par les regles ci-dessous.
 const MD_ESC=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// MD_ESC neutralise & < > — mais pas le guillemet. En position d'attribut, une
+// URL ou un titre qui en contenait un refermait l'attribut, et la suite était
+// lue comme du balisage : sur sept cas forgés, cinq produisaient un
+// gestionnaire d'événement bien vivant (`[clic](https://a.fr"onmouseover="…)`).
+// MD_ATT s'applique PARTOUT où une valeur issue du texte entre dans un
+// attribut. Il ne retouche pas & : MD_ESC est déjà passé.
+const MD_ATT=t=>String(t).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
 // ── Couleur de texte ──────────────────────────────────────────────────────
 // Le markdown n'a pas de syntaxe de couleur, et laisser passer du HTML brut
@@ -4350,14 +4467,15 @@ function mdInline(t){
   t=String(t).replace(/`([^`\n]+)`/g,(m,c)=>{ spans.push(c); return `\u0001C${spans.length-1}\u0001`; });
   return (t
     .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g,(m,a,u)=>
-      /^drive:/.test(u)?`<img data-drive="${u.slice(6)}" alt="${a}" class="md-img" loading="lazy">`
-      :/^https?:\/\//.test(u)?`<img src="${u}" alt="${a}" class="md-img">`:m)
+      /^drive:/.test(u)?`<img data-drive="${MD_ATT(u.slice(6))}" alt="${MD_ATT(a)}" class="md-img" loading="lazy">`
+      :/^https?:\/\//.test(u)?`<img src="${MD_ATT(u)}" alt="${MD_ATT(a)}" class="md-img">`:m)
     .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g,(m,tgt,al)=>wlHtml(tgt,al))
     .replace(/\[\[([^\]]+)\]\]/g,(m,tgt)=>wlHtml(tgt,tgt))
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(m,txt,u)=>
-      /^drive:/.test(u)?`<a class="md-att" data-drive="${u.slice(6)}" download href="#">${txt}</a>`
-      :/^(https?:|mailto:)/.test(u)?`<a href="${u}" target="_blank" rel="noopener">${txt}</a>`:txt)
-    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,'$1<a href="$2" target="_blank" rel="noopener">$2</a>')
+      /^drive:/.test(u)?`<a class="md-att" data-drive="${MD_ATT(u.slice(6))}" download href="#">${txt}</a>`
+      :/^(https?:|mailto:)/.test(u)?`<a href="${MD_ATT(u)}" target="_blank" rel="noopener">${txt}</a>`:txt)
+    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,(m,pre,u)=>
+      `${pre}<a href="${MD_ATT(u)}" target="_blank" rel="noopener">${u}</a>`)
     // avant le gras, pour que {rouge:**important**} donne du gras rouge
     .replace(MD_COLOR_RE,(m,c,txt)=>`<span class="mc-${c}">${txt}</span>`)
     .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
@@ -4370,7 +4488,11 @@ function mdInline(t){
 }
 function wlHtml(target,label){
   const n=noteByTitle(target);
-  const t=String(target).replace(/'/g,"\\'");
+  // Deux échappements successifs, dans cet ordre : l'apostrophe est d'abord
+  // neutralisée pour la chaîne JS, puis MD_ATT neutralise tout guillemet pour
+  // l'attribut. L'analyseur HTML décode avant que JS ne lise : `\&#39;`
+  // redevient `\'`, et un guillemet du titre ne peut plus fermer l'attribut.
+  const t=MD_ATT(String(target).replace(/'/g,"\\'"));
   return `<span class="wl${n?'':' miss'}" onclick="openWikiLink('${t}')" title="${n?'Ouvrir':'Créer cette note'}">${label}</span>`;
 }
 
@@ -6161,7 +6283,7 @@ async function applyBackup(){
    'adpTemplates','adpBudget','adpRuns','autoRegles','autoJournal'].forEach(k=>{
     const t=BK_TABLES.find(x=>x[0]===k); if(t)cacheSet(k,t[2]()||[]);
   });
-  try{ localStorage.setItem(LS_CACHE,JSON.stringify(allTasks)); }catch(e){}
+  lsSet(LS_CACHE,JSON.stringify(allTasks));
   let ok=true;
   if(accessToken&&navigator.onLine){
     try{
@@ -13756,7 +13878,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.52.0';
+const APP_VERSION='v1.53.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
