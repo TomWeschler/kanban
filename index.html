@@ -1173,6 +1173,67 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
   .adp-edit{flex:0 0 auto;min-height:0;height:56vh}
 }
 
+/* ── Bourse ────────────────────────────────────────────────────────────────
+   Un ecran a lire en trente secondes : gros chiffre en tete, contexte en une
+   ligne, tableau dense, actualite en liste. */
+.brs-tools{display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap;margin-bottom:0.8rem}
+.brs-warn{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);
+  border-radius:8px;padding:0.5rem 0.7rem;font-size:0.74rem;color:var(--warn);margin-bottom:0.8rem}
+.brs-idx{display:flex;gap:1.2rem;flex-wrap:wrap;align-items:flex-start;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem}
+.brs-idx-l{min-width:220px}
+.brs-idx-nom{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.16em;
+  text-transform:uppercase;color:var(--text-dim)}
+.brs-idx-val{font-family:var(--font-mono);font-size:2.1rem;font-weight:700;line-height:1.1;margin-top:0.15rem}
+.brs-idx-var{font-family:var(--font-mono);font-size:0.9rem;font-weight:700}
+.brs-idx-sub{font-size:0.7rem;color:var(--text-dim);margin-top:0.3rem}
+.brs-idx-r{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:0.15rem 1.2rem;flex:1}
+.brs-kv{display:flex;justify-content:space-between;gap:0.6rem;font-size:0.75rem;padding:0.16rem 0;
+  border-bottom:1px solid rgba(255,255,255,0.04)}
+.brs-kv span{color:var(--text-dim)}
+.brs-kv b{font-family:var(--font-mono)}
+.brs-synth{margin:0.7rem 0;padding:0.55rem 0.8rem;background:var(--surface2);
+  border-left:3px solid var(--accent);border-radius:0 8px 8px 0;font-size:0.8rem}
+.brs-ctxs{display:flex;flex-wrap:wrap;gap:0.4rem}
+.brs-ctx{display:flex;align-items:baseline;gap:0.4rem;background:var(--surface);
+  border:1px solid var(--border);border-radius:99px;padding:0.25rem 0.7rem;font-size:0.72rem}
+.brs-ctx-n{color:var(--text-dim)}
+.brs-ctx-v{font-family:var(--font-mono)}
+.brs-ctx-p{font-family:var(--font-mono);font-weight:700}
+.brs-t{width:100%;border-collapse:collapse;font-size:0.76rem}
+.brs-t th{text-align:left;font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--text-dim);padding:0.3rem 0.5rem;border-bottom:1px solid var(--border)}
+.brs-t td{padding:0.35rem 0.5rem;border-bottom:1px solid rgba(255,255,255,0.04)}
+.brs-t th.brs-n,.brs-t td.brs-n{text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.brs-v{font-weight:700}
+.brs-code{color:var(--text-dim);font-family:var(--font-mono);font-size:0.6rem;margin-left:0.4rem}
+.brs-jauge{display:inline-block;width:54px;height:6px;background:var(--surface3);border-radius:3px;
+  overflow:hidden;vertical-align:middle;margin-right:0.35rem}
+.brs-jauge i{display:block;height:100%;background:var(--accent)}
+.up{color:var(--green)}.down{color:var(--danger)}.flat{color:var(--text-mid)}
+.brs-news{display:flex;flex-direction:column;gap:0.1rem}
+.brs-new{display:block;padding:0.45rem 0.6rem;border-radius:7px;text-decoration:none;color:inherit;
+  border-bottom:1px solid rgba(255,255,255,0.04)}
+.brs-new:hover{background:var(--surface2)}
+.brs-new-t{display:block;font-size:0.8rem}
+.brs-new-s{display:block;font-size:0.65rem;color:var(--text-dim);margin-top:0.1rem}
+.brs-diag{display:flex;flex-direction:column;gap:0.3rem}
+.brs-d{display:grid;grid-template-columns:130px 190px 1fr;gap:0.5rem;align-items:baseline;
+  padding:0.4rem 0.6rem;border-radius:7px;background:var(--surface);border:1px solid var(--border);
+  font-size:0.73rem}
+.brs-d.ok{border-color:rgba(74,222,128,0.4)}
+.brs-d.ko{border-color:rgba(248,113,113,0.35)}
+.brs-d-n{font-weight:700}
+.brs-d.ok .brs-d-e{color:var(--green)}
+.brs-d.ko .brs-d-e{color:var(--danger)}
+.brs-d-d{color:var(--text-mid);font-family:var(--font-mono);font-size:0.66rem}
+.brs-d-i{grid-column:1/-1;color:var(--text-dim);font-size:0.68rem}
+@media(max-width:900px){
+  .brs-idx-r{grid-template-columns:1fr}
+  .brs-d{grid-template-columns:1fr;gap:0.15rem}
+  .brs-t{font-size:0.7rem}
+}
+
 /* ── Mesures ─────────────────────────────────────────────────────────────── */
 .mes-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:1rem 1.25rem;gap:0.7rem;position:relative;z-index:1}
 .mes-body{flex:1;overflow-y:auto;padding-right:0.25rem}
@@ -2002,6 +2063,8 @@ body,body *{font-family:var(--font-body)}
       <button class="gl-pill" onclick="exportBackup()" title="Exporter tout l'état en JSON">⬇ Sauvegarde</button>
     </div>
     <div id="rvSignals" style="display:none;margin-bottom:1rem"></div>
+    <!-- Le tableau de bord boursier remplace la grille quand la pilule est active -->
+    <div id="rvBourse" style="display:none"></div>
     <div class="rv-grid">
       <section class="td-col" id="rvTasks"></section>
       <section class="td-col" id="rvHabits"></section>
@@ -7271,6 +7334,14 @@ const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updat
 // derniere fois ? » — la premiere question de tout comite, et la seule que le
 // rapport ne savait pas traiter, faute de memoire du precedent.
 const ADP_PT_HEADER=['id','portee','date','projets','jalons','partiel'];
+// Le suivi boursier range DEUX choses au meme endroit : les valeurs suivies et
+// les cles d'API. Les cles ne peuvent pas vivre dans le depot — il est public —
+// mais le classeur, lui, est prive : c'est le seul endroit de cette
+// application ou un secret a sa place.
+//   type='titre'  code='MC.PA'      valeur='LVMH'   ordre=1
+//   type='indice' code='^FCHI'      valeur='CAC 40' ordre=0
+//   type='cle'    code='twelvedata' valeur='<cle>'  ordre=0
+const BRS_HEADER=['id','type','code','valeur','ordre'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
 // Déclarés ici et pas avec le moteur : ADP_SHEETS les référence, et une
@@ -7281,7 +7352,7 @@ const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'Q'],['adp_contacts',ADP_CON
                     ['adp_milestones',ADP_MILE_HEADER,'J'],['adp_templates',ADP_TPL_HEADER,'L'],
                     ['adp_budget',ADP_BUD_HEADER,'H'],['adp_runs',ADP_RUN_HEADER,'H'],
                     ['auto_regles',AUTO_REG_HEADER,'J'],['auto_journal',AUTO_JRN_HEADER,'G'],
-                    ['adp_points',ADP_PT_HEADER,'F']];
+                    ['adp_points',ADP_PT_HEADER,'F'],['bourse',BRS_HEADER,'E']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
 const ADP_HEALTH  = [['vert','Sous contrôle'],['orange','Vigilance'],['rouge','En difficulté']];
@@ -7290,7 +7361,7 @@ const ADP_KIND    = [['jalon','Jalon'],['livrable','Livrable'],['reunion','Réun
 const ADP_VIEWS   = [['projets','Projets'],['budget','Budget'],['suivi','Suivi'],['modeles','Modèles'],['procedures','Procédures'],['gabarits','Gabarits'],['auto','Automatismes']];
 const ADP_PALETTE = ['#7c6aff','#38bdf8','#fcd34d','#6ee7b7','#f472b6','#fb923c','#a78bfa','#4ade80'];
 
-let adpProjects=[], adpContacts=[], adpMilestones=[], adpTemplates=[], adpPoints=[];
+let adpProjects=[], adpContacts=[], adpMilestones=[], adpTemplates=[], adpPoints=[], brsLignes=[];
 let adpLoaded=false, adpView='projets', adpProjCur=null, adpTplCur=null;
 let adpSearch='', adpShowArchived=false;
 const LS_ADP_VIEW='kanban_adp_view';
@@ -7336,9 +7407,10 @@ async function loadAdp(){
   await ensureAdpSheets();
   // Neuf onglets, une seule requête. C'était neuf allers-retours, soit neuf
   // fois la latence du réseau — l'essentiel du temps d'ouverture d'ADP.
-  const [pr,co,mi,tp,bu,ru,ar,aj,pt]=await sheetBatchLignes(
+  const [pr,co,mi,tp,bu,ru,ar,aj,pt,br]=await sheetBatchLignes(
     ['adp_projects!A:Q','adp_contacts!A:N','adp_milestones!A:J','adp_templates!A:L',
-     'adp_budget!A:H','adp_runs!A:H','auto_regles!A:J','auto_journal!A:G','adp_points!A:F']);
+     'adp_budget!A:H','adp_runs!A:H','auto_regles!A:J','auto_journal!A:G','adp_points!A:F',
+     'bourse!A:E']);
   // La dernière ligne gagne. Une ligne vidée est une pierre tombale : la
   // suppression garde la ligne pour ne jamais décaler la feuille sous les
   // écritures en vol, mais l'objet ne doit pas ressusciter au rechargement.
@@ -7375,6 +7447,9 @@ async function loadAdp(){
   adpPoints=dedupe(pt.map(x=>({id:adpCell(x,0),portee:adpCell(x,1),date:adpCell(x,2),
     projets:String(x[3]==null?'':x[3]),jalons:String(x[4]==null?'':x[4]),
     partiel:adpCell(x,5)==='oui'})),'portee');
+  brsLignes=dedupe(br.map(x=>({id:adpCell(x,0),type:adpCell(x,1),code:adpCell(x,2),
+    valeur:String(x[3]==null?'':x[3]),ordre:parseInt(adpCell(x,4),10)||0})),'type');
+  cacheSet('brsLignes',brsLignes);
   const bd={};
   bu.forEach(x=>{ const o={id:adpCell(x,0),project_id:adpCell(x,1),capex:adpCell(x,2),
     nature:adpCell(x,3),month:adpCell(x,4),
@@ -7395,6 +7470,7 @@ async function loadAdp(){
   }),'title').filter(r=>r.status!=='supprime');
   ['adpProjects','adpContacts','adpMilestones','adpTemplates','adpBudget','adpRuns','adpPoints'].forEach((k,i)=>
     cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates,adpBudget,adpRuns,adpPoints][i]));
+  cacheSet('brsLignes',brsLignes);
   autoRegles=dedupe(ar.map(x=>({id:adpCell(x,0),nom:adpCell(x,1),trigger:adpCell(x,2),
     param:parseInt(adpCell(x,3),10)||0,action:adpCell(x,4)||'signal',cible:adpCell(x,5),
     gabarit:String(x[6]==null?'':x[6]),actif:adpCell(x,7)==='oui',
@@ -7416,7 +7492,7 @@ function adpRestoreCache(){
   adpMilestones=cacheGet('adpMilestones',[]); adpTemplates=cacheGet('adpTemplates',[]);
   adpBudget=cacheGet('adpBudget',[]); budIdxInvalidate(); adpRuns=cacheGet('adpRuns',[]);
   autoRegles=cacheGet('autoRegles',[]); autoJournal=cacheGet('autoJournal',[]);
-  adpPoints=cacheGet('adpPoints',[]);
+  adpPoints=cacheGet('adpPoints',[]); brsLignes=cacheGet('brsLignes',[]);
   projTagsInvalidate();
 }
 // ── Le fil du projet ──────────────────────────────────────────────────────
@@ -8380,6 +8456,8 @@ async function saveAdpModal(){
   let obj=null,kind=adpEditKind;
   if(kind==='auto')return saveAutoModal();
   if(kind==='gab') return creerProjetDepuisGabarit();
+  if(kind==='brsListe') return saveBrsListe();
+  if(kind==='brsCles')  return saveBrsCles();
   if(kind==='orph'){ closeAdpModal(); return; }   // ce formulaire a ses propres boutons
   if(kind==='proj'){
     const name=v('apName'); if(!name){ toast('Le nom est obligatoire','err'); return; }
@@ -11458,9 +11536,473 @@ function rapXlsx(){
 // elle relit les données existantes et les compare à la période précédente.
 let rvPeriod='week';
 const RV_PERIODS=[['week','Cette semaine'],['lastweek','Semaine dernière'],
-                  ['month','Ce mois'],['lastmonth','Mois dernier']];
+                  ['month','Ce mois'],['lastmonth','Mois dernier'],
+                  ['bourse','📈 Bourse']];
+// « Bourse » n'est pas une periode : c'est une vue. Elle partage la barre des
+// pilules parce que c'est la qu'on la cherche, mais elle remplace le corps.
+const rvEstBourse=()=>rvPeriod==='bourse';
+
+// ════════════════════════════════════════════════════
+// BOURSE — LE POINT DE MARCHÉ
+// ════════════════════════════════════════════════════
+// Un tableau de bord à lire en trente secondes, le matin ou le soir : où en est
+// le CAC, ce qui l'explique, ce que font MES valeurs, et ce que dit l'actualité.
+//
+// AVERTISSEMENT DE CONCEPTION. Aucune de ces sources n'a pu être essayée depuis
+// l'environnement où ce code a été écrit : tous les hôtes financiers y sont
+// bloqués. La question qui décide n'est pas « l'API existe-t-elle » mais
+// « répond-elle à un navigateur, depuis TON origine, avec les bons en-têtes
+// CORS » — et cela, seul ton navigateur peut le dire. D'où la forme retenue :
+//   · plusieurs sources interchangeables derrière une même interface,
+//   · aucune n'est indispensable, chaque bloc dit ce qui lui manque,
+//   · un bouton « Tester les sources » qui répond en un clic à ce que je n'ai
+//     pas pu mesurer.
+// Les clés d'API éventuelles vivent dans le classeur, jamais dans le dépôt :
+// celui-ci est public, celui-là est à toi.
+
+const BRS_DEFAUT=[
+  ['^FCHI','CAC 40'],['MC.PA','LVMH'],['RMS.PA','Hermès'],['OR.PA',"L'Oréal"],
+  ['TTE.PA','TotalEnergies'],['SAN.PA','Sanofi'],['SU.PA','Schneider'],
+  ['AI.PA','Air Liquide'],['AIR.PA','Airbus'],['BNP.PA','BNP Paribas'],['SAF.PA','Safran']];
+// Le CAC ne s'explique pas seul : ces sept-là disent d'où vient le mouvement.
+const BRS_CONTEXTE=[['^STOXX50E','Euro Stoxx 50'],['^GDAXI','DAX'],['^GSPC','S&P 500'],
+  ['^IXIC','Nasdaq'],['EURUSD=X','EUR/USD'],['BZ=F','Brent'],['GC=F','Or']];
+const LS_BRS='kanban_bourse_cache';
+const BRS_FRAIS=10*60*1000;          // au-delà, on considère la photo périmée
+
+let brsData=null, brsErreurs=[], brsDiag=null, brsCharge=false;
+
+// ── Ce que l'utilisateur a rangé dans le classeur ─────────────────────────
+const brsCle    = n=>(brsLignes.find(x=>x.type==='cle'&&x.code===n)||{}).valeur||'';
+const brsTitres = ()=>{ const l=brsLignes.filter(x=>x.type==='titre'||x.type==='indice')
+    .sort((a,b)=>(a.ordre||0)-(b.ordre||0));
+  return l.length?l.map(x=>({code:x.code,nom:x.valeur||x.code}))
+                 :BRS_DEFAUT.map(([code,nom])=>({code,nom})); };
+const brsIndice = ()=>brsTitres()[0]||{code:'^FCHI',nom:'CAC 40'};
+
+// ── Traduction des symboles ───────────────────────────────────────────────
+// Le format de référence est celui de Yahoo (MC.PA, ^FCHI) : c'est le plus
+// répandu et le plus lisible. Chaque source le traduit à sa façon. Ces
+// conversions sont la partie que le diagnostic est le plus susceptible de
+// corriger — c'est là qu'il faudra revenir si une source répond mais ne
+// reconnaît pas les codes.
+const brsVersStooq=c=>String(c).startsWith('^')?String(c).toLowerCase()
+  :String(c).replace(/\.PA$/i,'.fr').replace(/=X$/,'').toLowerCase();
+const brsSansSuffixe=c=>String(c).replace(/\.[A-Z]+$/,'').replace(/^\^/,'');
+
+// ── Un appel réseau qui ne peut pas figer la page ─────────────────────────
+async function brsFetch(url,ms){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),ms||9000);
+  try{ return await fetchRepris(url,{signal:ctrl.signal}); }
+  finally{ clearTimeout(t); }
+}
+
+// ── Les sources ───────────────────────────────────────────────────────────
+// Chacune rend la MÊME forme : {code,nom,dernier,cloture,var,varPct,ouv,haut,
+// bas,volume,haut52,bas52}. Une source qui échoue rend null et laisse la
+// suivante essayer ; aucune n'est privilégiée autrement que par son rang.
+const BRS_SOURCES=[
+ {id:'stooq', nom:'Stooq', cle:null,
+  info:'Sans clé. Point d\'entrée public non officiel : il peut refuser les appels navigateur.',
+  async cours(list){
+    const s=list.map(x=>brsVersStooq(x.code)).join(',');
+    const r=await brsFetch(`https://stooq.com/q/l/?s=${encodeURIComponent(s)}&f=sd2t2ohlcvn&h&e=csv`);
+    if(!r||!r.ok)throw new Error('HTTP '+(r?r.status:'?'));
+    const txt=await r.text();
+    const lignes=txt.trim().split(/\r?\n/); if(lignes.length<2)throw new Error('réponse vide');
+    const col=lignes[0].split(',').map(x=>x.trim().toLowerCase());
+    const idx=n=>col.indexOf(n);
+    return lignes.slice(1).map((l,i)=>{
+      const c=l.split(',');
+      const v=k=>{ const j=idx(k); return j<0?null:nbFr(c[j]); };
+      const close=v('close'), open=v('open');
+      if(close===null)return null;
+      return {code:list[i]&&list[i].code,nom:list[i]&&list[i].nom,dernier:close,
+        ouv:open,haut:v('high'),bas:v('low'),volume:v('volume'),
+        cloture:open,var:open!==null?close-open:null,
+        varPct:open?((close-open)/open)*100:null,haut52:null,bas52:null};
+    }).filter(Boolean);
+  }},
+ {id:'yahoo', nom:'Yahoo Finance', cle:null,
+  info:'Sans clé. Point d\'entrée non documenté : Yahoo le restreint régulièrement.',
+  async cours(list){
+    const out=[];
+    for(const x of list){
+      const r=await brsFetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(x.code)}?interval=1d&range=5d`);
+      if(!r||!r.ok)throw new Error('HTTP '+(r?r.status:'?'));
+      const j=await r.json();
+      const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
+      if(!m)throw new Error('forme inattendue');
+      const d=m.regularMarketPrice, p=m.chartPreviousClose||m.previousClose;
+      out.push({code:x.code,nom:x.nom,dernier:d,cloture:p,
+        var:d!=null&&p!=null?d-p:null,varPct:p?((d-p)/p)*100:null,
+        ouv:m.regularMarketOpen??null,haut:m.regularMarketDayHigh??null,
+        bas:m.regularMarketDayLow??null,volume:m.regularMarketVolume??null,
+        haut52:m.fiftyTwoWeekHigh??null,bas52:m.fiftyTwoWeekLow??null});
+    }
+    return out;
+  }},
+ {id:'twelvedata', nom:'Twelve Data', cle:'twelvedata',
+  info:'Clé gratuite (800 appels/jour). Couvre Euronext Paris. La plus fiable des trois.',
+  async cours(list){
+    const k=brsCle('twelvedata'); if(!k)throw new Error('clé absente');
+    // Un seul appel pour toute la liste : le quota se compte en requêtes.
+    const s=list.map(x=>brsSansSuffixe(x.code)).join(',');
+    const r=await brsFetch(`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(s)}&country=France&apikey=${encodeURIComponent(k)}`);
+    if(!r||!r.ok)throw new Error('HTTP '+(r?r.status:'?'));
+    const j=await r.json();
+    if(j&&j.status==='error')throw new Error(j.message||'refus de l\'API');
+    const uns=list.length===1?{[brsSansSuffixe(list[0].code)]:j}:j;
+    return list.map(x=>{
+      const q=uns[brsSansSuffixe(x.code)];
+      if(!q||q.status==='error')return null;
+      const d=nbFr(q.close), p=nbFr(q.previous_close);
+      return {code:x.code,nom:x.nom||q.name,dernier:d,cloture:p,
+        var:d!=null&&p!=null?d-p:null,varPct:nbFr(q.percent_change),
+        ouv:nbFr(q.open),haut:nbFr(q.high),bas:nbFr(q.low),volume:nbFr(q.volume),
+        haut52:q.fifty_two_week?nbFr(q.fifty_two_week.high):null,
+        bas52:q.fifty_two_week?nbFr(q.fifty_two_week.low):null};
+    }).filter(Boolean);
+  }}];
+
+const BRS_NEWS=[
+ {id:'marketaux', nom:'Marketaux', cle:'marketaux',
+  info:'Clé gratuite (100 appels/jour). Sources françaises, filtre par langue.',
+  async news(){
+    const k=brsCle('marketaux'); if(!k)throw new Error('clé absente');
+    const r=await brsFetch(`https://api.marketaux.com/v1/news/all?countries=fr&language=fr&filter_entities=true&limit=10&api_token=${encodeURIComponent(k)}`);
+    if(!r||!r.ok)throw new Error('HTTP '+(r?r.status:'?'));
+    const j=await r.json();
+    return (j&&j.data||[]).map(a=>({titre:a.title,source:a.source,url:a.url,
+      quand:a.published_at,resume:a.description||''}));
+  }},
+ {id:'finnhub', nom:'Finnhub', cle:'finnhub',
+  info:'Clé gratuite (60 appels/minute). Actualité générale, surtout anglophone.',
+  async news(){
+    const k=brsCle('finnhub'); if(!k)throw new Error('clé absente');
+    const r=await brsFetch(`https://finnhub.io/api/v1/news?category=general&token=${encodeURIComponent(k)}`);
+    if(!r||!r.ok)throw new Error('HTTP '+(r?r.status:'?'));
+    const j=await r.json();
+    return (Array.isArray(j)?j:[]).slice(0,10).map(a=>({titre:a.headline,source:a.source,
+      url:a.url,quand:a.datetime?new Date(a.datetime*1000).toISOString():'',resume:a.summary||''}));
+  }}];
+
+// ── Récupération ──────────────────────────────────────────────────────────
+// On essaie les sources dans l'ordre et on garde la première qui répond. Ce
+// qui échoue est CONSERVÉ et affiché : une source muette doit se voir, sinon
+// on croit à un marché calme alors qu'on ne reçoit rien.
+async function brsCharger(forcer){
+  if(!navigator.onLine){ brsErreurs=[{quoi:'réseau',err:'hors ligne'}]; return brsLireCache(); }
+  const cache=brsLireCache();
+  if(!forcer&&cache&&Date.now()-cache.quand<BRS_FRAIS)return cache;
+  brsErreurs=[];
+  const list=brsTitres().concat(BRS_CONTEXTE.map(([code,nom])=>({code,nom,contexte:true})));
+  let cours=null, source=null;
+  for(const s of BRS_SOURCES){
+    try{ const r=await s.cours(list); if(r&&r.length){ cours=r; source=s.nom; break; } }
+    catch(e){ brsErreurs.push({quoi:s.nom,err:brsMsg(e)}); }
+  }
+  let news=null, srcNews=null;
+  for(const s of BRS_NEWS){
+    try{ const r=await s.news(); if(r&&r.length){ news=r; srcNews=s.nom; break; } }
+    catch(e){ brsErreurs.push({quoi:s.nom,err:brsMsg(e)}); }
+  }
+  if(!cours&&!news)return cache;                   // rien de neuf : on garde l'ancien
+  const d={quand:Date.now(),source,srcNews,cours:cours||(cache&&cache.cours)||[],
+           news:news||(cache&&cache.news)||[]};
+  brsData=d; lsSet(LS_BRS,JSON.stringify(d));
+  return d;
+}
+// Un échec CORS arrive au JavaScript sous la forme d'un TypeError sans détail :
+// c'est le seul cas où le navigateur refuse d'expliquer. On le nomme, sinon le
+// message « Failed to fetch » n'apprend rien à personne.
+const brsMsg=e=>{
+  const m=String(e&&e.message||e);
+  if(/abort/i.test(m))return 'délai dépassé';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m))
+    return 'refusé par le navigateur (CORS) ou injoignable';
+  return m.slice(0,90);
+};
+function brsLireCache(){
+  if(brsData)return brsData;
+  try{ const v=localStorage.getItem(LS_BRS); if(v)brsData=JSON.parse(v); }catch(e){}
+  return brsData;
+}
+
+// ── Le diagnostic : ce que je n'ai pas pu mesurer, ton navigateur le dira ──
+async function brsTester(){
+  brsDiag=[{nom:'…',etat:'essai en cours'}];
+  renderBourse();
+  const res=[];
+  const un=[{code:'^FCHI',nom:'CAC 40'}];
+  for(const s of BRS_SOURCES){
+    const t=Date.now();
+    try{ const r=await s.cours(un);
+         res.push({nom:s.nom,etat:(r&&r.length&&r[0].dernier!=null)?'ok':'répond mais sans cours',
+                   ms:Date.now()-t,detail:r&&r[0]?`${r[0].dernier}`:'',info:s.info,cle:s.cle}); }
+    catch(e){ res.push({nom:s.nom,etat:'échec',ms:Date.now()-t,detail:brsMsg(e),info:s.info,cle:s.cle}); }
+  }
+  for(const s of BRS_NEWS){
+    const t=Date.now();
+    try{ const r=await s.news();
+         res.push({nom:s.nom,etat:r&&r.length?'ok':'répond mais sans titre',
+                   ms:Date.now()-t,detail:r&&r.length?`${r.length} titres`:'',info:s.info,cle:s.cle}); }
+    catch(e){ res.push({nom:s.nom,etat:'échec',ms:Date.now()-t,detail:brsMsg(e),info:s.info,cle:s.cle}); }
+  }
+  brsDiag=res;
+  renderBourse();
+}
+
+// ── Mise en forme ─────────────────────────────────────────────────────────
+const brsPct=v=>v==null?'—':`${v>0?'+':''}${v.toFixed(2)} %`;
+const brsVal=(v,d)=>v==null?'—':v.toLocaleString('fr-FR',{minimumFractionDigits:d??2,maximumFractionDigits:d??2});
+const brsSens=v=>v==null?'':v>0?'up':v<0?'down':'flat';
+const brsHeure=t=>{ if(!t)return ''; const d=new Date(t);
+  return isNaN(d)?'':d.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); };
+// Position dans les douze derniers mois : un chiffre plus parlant qu'un cours.
+function brsRange(q){
+  if(q.haut52==null||q.bas52==null||q.haut52<=q.bas52)return null;
+  return Math.round((q.dernier-q.bas52)/(q.haut52-q.bas52)*100);
+}
+// La séance parisienne, en heure locale de Paris : 9 h 00 – 17 h 30, du lundi
+// au vendredi. Approximation assumée — les jours fériés d'Euronext ne sont pas
+// une donnée que l'application possède.
+function brsSeance(){
+  const p=new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Paris'}));
+  const j=p.getDay(), m=p.getHours()*60+p.getMinutes();
+  if(j===0||j===6)return {ouverte:false,txt:'marché fermé (week-end)'};
+  if(m<540)return {ouverte:false,txt:'avant ouverture'};
+  if(m>1050)return {ouverte:false,txt:'après clôture'};
+  return {ouverte:true,txt:'séance en cours'};
+}
+// Une synthèse qui ne dit QUE ce que les chiffres disent. Pas d'explication
+// inventée : on compte, on ne commente pas.
+function brsSynthese(d){
+  const suivis=brsTitres().map(t=>t.code);
+  const q=(d.cours||[]).filter(x=>suivis.includes(x.code)&&!String(x.code).startsWith('^'));
+  const idx=(d.cours||[]).find(x=>x.code===brsIndice().code);
+  const h=q.filter(x=>x.varPct>0).length, b=q.filter(x=>x.varPct<0).length;
+  const bits=[];
+  if(idx&&idx.varPct!=null)
+    bits.push(`${brsIndice().nom} ${idx.varPct>0?'en hausse':idx.varPct<0?'en baisse':'stable'} de ${brsPct(idx.varPct)}`);
+  if(q.length)bits.push(`${h} de tes ${q.length} valeurs en hausse, ${b} en baisse`);
+  const tri=q.slice().sort((a,b2)=>(b2.varPct||0)-(a.varPct||0));
+  if(tri.length&&tri[0].varPct!=null)bits.push(`plus forte hausse ${tri[0].nom} ${brsPct(tri[0].varPct)}`);
+  if(tri.length>1&&tri[tri.length-1].varPct!=null)
+    bits.push(`plus forte baisse ${tri[tri.length-1].nom} ${brsPct(tri[tri.length-1].varPct)}`);
+  return bits.join(' · ');
+}
+
+// ── Rendu ─────────────────────────────────────────────────────────────────
+async function renderBourse(){
+  const el=document.getElementById('rvBourse'); if(!el)return;
+  const E=tdEsc;
+  const d=brsData||brsLireCache();
+  const suivis=brsTitres();
+  const codes=suivis.map(t=>t.code);
+  const par=c=>(d&&d.cours||[]).find(x=>x.code===c)||null;
+  const idx=par(brsIndice().code);
+  const s=brsSeance();
+  const cel=q=>`<td class="brs-n ${brsSens(q&&q.varPct)}">${q?brsPct(q.varPct):'—'}</td>`;
+
+  const carteIndice=idx?`
+    <div class="brs-idx">
+      <div class="brs-idx-l">
+        <div class="brs-idx-nom">${E(brsIndice().nom)}</div>
+        <div class="brs-idx-val ${brsSens(idx.varPct)}">${brsVal(idx.dernier)}</div>
+        <div class="brs-idx-var ${brsSens(idx.varPct)}">${idx.var!=null?(idx.var>0?'+':'')+brsVal(idx.var):'—'} · ${brsPct(idx.varPct)}</div>
+        <div class="brs-idx-sub">${E(s.txt)}${d&&d.quand?` · relevé ${E(brsHeure(d.quand))}`:''}</div>
+      </div>
+      <div class="brs-idx-r">
+        ${[['Ouverture',idx.ouv],['Plus haut',idx.haut],['Plus bas',idx.bas]]
+          .map(([l,v])=>`<div class="brs-kv"><span>${l}</span><b>${brsVal(v)}</b></div>`).join('')}
+        ${idx.volume!=null?`<div class="brs-kv"><span>Volume</span><b>${brsVal(idx.volume,0)}</b></div>`:''}
+      </div>
+    </div>`:`<div class="gl-empty">Aucun cours pour ${E(brsIndice().nom)}.</div>`;
+
+  const ctx=BRS_CONTEXTE.map(([code,nom])=>{ const q=par(code); if(!q)return '';
+    return `<div class="brs-ctx"><span class="brs-ctx-n">${E(nom)}</span>
+      <span class="brs-ctx-v">${brsVal(q.dernier)}</span>
+      <span class="brs-ctx-p ${brsSens(q.varPct)}">${brsPct(q.varPct)}</span></div>`;}).join('');
+
+  const lignes=suivis.filter(t=>!String(t.code).startsWith('^')).map(t=>par(t.code))
+    .filter(Boolean).sort((a,b)=>(b.varPct||0)-(a.varPct||0));
+  const tableau=lignes.length?`<table class="brs-t"><thead><tr>
+      <th>Valeur</th><th class="brs-n">Dernier</th><th class="brs-n">Var.</th>
+      <th class="brs-n">Ouv.</th><th class="brs-n">+ bas / + haut</th><th class="brs-n">52 sem.</th>
+    </tr></thead><tbody>${lignes.map(q=>{
+      const r=brsRange(q);
+      return `<tr><td class="brs-v">${E(q.nom||q.code)}<span class="brs-code">${E(q.code)}</span></td>
+        <td class="brs-n">${brsVal(q.dernier)}</td>${cel(q)}
+        <td class="brs-n">${brsVal(q.ouv)}</td>
+        <td class="brs-n">${q.bas!=null&&q.haut!=null?`${brsVal(q.bas)} – ${brsVal(q.haut)}`:'—'}</td>
+        <td class="brs-n">${r==null?'—':`<span class="brs-jauge" title="${r} % de l'amplitude des 12 derniers mois"><i style="width:${r}%"></i></span> ${r} %`}</td>
+      </tr>`;}).join('')}</tbody></table>`
+    :`<div class="sb-none">Aucune valeur suivie. Ajoute-les avec « ✎ Ma liste ».</div>`;
+
+  const news=(d&&d.news||[]).length?`<div class="brs-news">${(d.news||[]).slice(0,10).map(a=>
+      `<a class="brs-new" href="${MD_ATT(a.url||'#')}" target="_blank" rel="noopener">
+        <span class="brs-new-t">${E(a.titre||'')}</span>
+        <span class="brs-new-s">${E(a.source||'')}${a.quand?' · '+E(brsHeure(a.quand)):''}</span>
+      </a>`).join('')}</div>`
+    :`<div class="sb-none">Aucune actualité. Les deux sources d'actualité demandent une clé gratuite — « ⚙ Sources » pour la renseigner.</div>`;
+
+  const diag=brsDiag?`<div class="adp-sec">Test des sources</div>
+    <div class="brs-diag">${brsDiag.map(x=>`<div class="brs-d ${x.etat==='ok'?'ok':'ko'}">
+      <span class="brs-d-n">${E(x.nom)}</span>
+      <span class="brs-d-e">${E(x.etat)}${x.ms!=null?` · ${x.ms} ms`:''}</span>
+      <span class="brs-d-d">${E(x.detail||'')}</span>
+      ${x.info?`<span class="brs-d-i">${E(x.info)}</span>`:''}</div>`).join('')}</div>`:'';
+
+  const pannes=brsErreurs.length?`<div class="brs-warn">Sources muettes : ${
+    brsErreurs.map(e=>`${E(e.quoi)} (${E(e.err)})`).join(' · ')}</div>`:'';
+
+  el.innerHTML=`
+    <div class="brs-tools">
+      <button class="gl-pill" onclick="brsRafraichir()">⟳ Actualiser</button>
+      <button class="gl-pill" onclick="openBrsListe()">✎ Ma liste</button>
+      <button class="gl-pill" onclick="openBrsCles()">⚙ Sources</button>
+      <button class="gl-pill" onclick="brsTester()" title="Essayer chaque source depuis ce navigateur">🔎 Tester les sources</button>
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="brsConsigner()" title="Écrire ce point de marché dans la note de revue">✍ Consigner</button>
+      ${d&&d.source?`<span class="adp-c-tag">cours : ${E(d.source)}</span>`:''}
+      ${d&&d.srcNews?`<span class="adp-c-tag">actu : ${E(d.srcNews)}</span>`:''}
+    </div>
+    ${pannes}
+    ${d?'':`<div class="gl-empty">Rien n'a encore été récupéré. « ⟳ Actualiser » pour essayer, « 🔎 Tester les sources » pour savoir ce que ce navigateur accepte.</div>`}
+    ${d?carteIndice:''}
+    ${d&&brsSynthese(d)?`<div class="brs-synth">${E(brsSynthese(d))}</div>`:''}
+    ${ctx?`<div class="adp-sec">Le contexte</div><div class="brs-ctxs">${ctx}</div>`:''}
+    ${d?`<div class="adp-sec">Ma liste <span class="adp-badge quiet">${lignes.length}</span></div>${tableau}`:''}
+    ${d?`<div class="adp-sec">Actualité</div>${news}`:''}
+    ${diag}`;
+}
+async function brsRafraichir(){
+  showLoad(true);
+  try{ await brsCharger(true); }catch(e){ brsErreurs.push({quoi:'chargement',err:brsMsg(e)}); }
+  showLoad(false);
+  renderBourse();
+}
+
+// ── Édition : la liste et les clés ────────────────────────────────────────
+async function brsEcrire(lignes){
+  brsLignes=lignes; cacheSet('brsLignes',brsLignes);
+  if(!accessToken)return true;
+  return sheetReplaceAll('bourse','E',[BRS_HEADER,
+    ...brsLignes.map(x=>[x.id,x.type,x.code,x.valeur,String(x.ordre||0)])]);
+}
+function openBrsListe(){
+  adpEditKind='brsListe'; adpEditId=null;
+  document.getElementById('adpModalTitle').textContent='MA LISTE';
+  const t=brsTitres();
+  document.getElementById('adpFields').innerHTML=`
+    <div class="fld-hint">Un code par ligne, au format Yahoo : <b>^FCHI</b> pour l'indice,
+      <b>MC.PA</b> pour une action de Paris. Le libellé après une virgule est facultatif.
+      La première ligne sert d'indice de référence en tête de tableau de bord.</div>
+    <div class="field"><textarea class="fit-input" id="brsListeTxt" style="width:100%;min-height:220px"
+      spellcheck="false">${tdEsc(t.map(x=>`${x.code}, ${x.nom}`).join('\n'))}</textarea></div>`;
+  document.getElementById('adpDel').style.display='none';
+  modalOuvre('adpModal');
+}
+async function saveBrsListe(){
+  const txt=(document.getElementById('brsListeTxt')||{value:''}).value;
+  const lignes=txt.split('\n').map(l=>l.trim()).filter(Boolean).map((l,i)=>{
+    const [code,...reste]=l.split(',');
+    const c=code.trim();
+    return {id:'b'+uid().toString(36),type:c.startsWith('^')?'indice':'titre',
+            code:c,valeur:reste.join(',').trim()||c,ordre:i};
+  });
+  if(!lignes.length){ toast('La liste ne peut pas être vide','err'); return; }
+  const cles=brsLignes.filter(x=>x.type==='cle');
+  closeAdpModal(); showLoad(true);
+  const ok=await brsEcrire(cles.concat(lignes));
+  showLoad(false);
+  toast(ok?`${lignes.length} valeurs suivies`:"ÉCHEC de l'enregistrement",ok?'ok':'err');
+  await brsRafraichir();
+}
+function openBrsCles(){
+  adpEditKind='brsCles'; adpEditId=null;
+  document.getElementById('adpModalTitle').textContent='SOURCES ET CLÉS';
+  const champ=(s,i)=>`<div class="field"><label>${tdEsc(s.nom)}</label>
+    <input type="text" class="fit-input" style="width:100%" id="brsCle_${s.cle}"
+      value="${tdEsc(brsCle(s.cle))}" placeholder="clé d'API" autocomplete="off">
+    <div class="fld-hint">${tdEsc(s.info)}</div></div>`;
+  document.getElementById('adpFields').innerHTML=`
+    <div class="fld-hint">Les clés sont rangées dans <b>ton classeur</b>, jamais dans le code :
+      le dépôt est public, le classeur est à toi. Les sources sans clé sont essayées d'abord ;
+      une clé ne sert que si elles échouent.</div>
+    ${BRS_SOURCES.filter(s=>s.cle).map(champ).join('')}
+    ${BRS_NEWS.filter(s=>s.cle).map(champ).join('')}
+    <div class="fld-hint">Sans clé, les sources publiques peuvent suffire pour les cours.
+      Pour l'actualité, aucune source gratuite ne répond aujourd'hui sans clé.</div>`;
+  document.getElementById('adpDel').style.display='none';
+  modalOuvre('adpModal');
+}
+async function saveBrsCles(){
+  const noms=[...BRS_SOURCES,...BRS_NEWS].filter(s=>s.cle).map(s=>s.cle);
+  const cles=noms.map((n,i)=>{
+    const e=document.getElementById('brsCle_'+n);
+    return {id:'k'+n,type:'cle',code:n,valeur:e?e.value.trim():'',ordre:i};
+  }).filter(x=>x.valeur);
+  const titres=brsLignes.filter(x=>x.type!=='cle');
+  closeAdpModal(); showLoad(true);
+  const ok=await brsEcrire(cles.concat(titres));
+  showLoad(false);
+  toast(ok?'Sources enregistrées':"ÉCHEC de l'enregistrement",ok?'ok':'err');
+  await brsRafraichir();
+}
+
+// ── Consigner dans la revue ───────────────────────────────────────────────
+// Le tableau de bord est fait pour être lu ; ce bouton en garde une trace, dans
+// la même note que le reste de la revue. C'est ce qui en fait une habitude
+// plutôt qu'un écran de plus.
+function brsBlocMd(){
+  const d=brsData||brsLireCache();
+  if(!d)return '';
+  const idx=(d.cours||[]).find(x=>x.code===brsIndice().code);
+  const suivis=brsTitres().map(t=>t.code);
+  const q=(d.cours||[]).filter(x=>suivis.includes(x.code)&&!String(x.code).startsWith('^'))
+    .sort((a,b)=>(b.varPct||0)-(a.varPct||0));
+  let m=`### ${td()} — Point de marché\n\n`;
+  if(idx)m+=`**${brsIndice().nom}** ${brsVal(idx.dernier)} (${brsPct(idx.varPct)}) · ${brsSeance().txt}\n\n`;
+  const syn=brsSynthese(d); if(syn)m+=syn+'\n\n';
+  if(q.length){
+    m+=`| Valeur | Dernier | Var. |\n|---|---|---|\n`;
+    q.forEach(x=>{ m+=`| ${x.nom||x.code} | ${brsVal(x.dernier)} | ${brsPct(x.varPct)} |\n`; });
+    m+='\n';
+  }
+  if((d.news||[]).length){
+    m+=`**Actualité**\n\n`;
+    d.news.slice(0,5).forEach(a=>{ m+=`- [${String(a.titre||'').replace(/[\[\]]/g,'')}](${a.url||''})${a.source?` — ${a.source}`:''}\n`; });
+    m+='\n';
+  }
+  return m;
+}
+async function brsConsigner(){
+  const bloc=brsBlocMd();
+  if(!bloc){ toast('Rien à consigner : actualise d\'abord','info'); return; }
+  showLoad(true);
+  try{
+    if(!notesLoaded&&navigator.onLine)await loadNotes();
+    const r=rvRange(rvPeriod==='bourse'?'week':rvPeriod);
+    const titre=rvNoteTitle(r,rvPeriod==='bourse'?'week':rvPeriod);
+    let n=notes.find(x=>x.title===titre);
+    if(!n){
+      n={id:'n'+uid(),title:titre,content:'',tags:'revue',parent_id:'',icon:'📊',
+         pinned:false,status:'active',created_at:td(),updated_at:td(),gx:null,gy:null};
+      notes.push(n); noteIndexInvalidate();
+    }
+    n.content=bloc+'\n'+(n.content||'');
+    noteIndexInvalidate(); cacheSet('notes',notes);
+    const ok=await noteUpsert(n);
+    showLoad(false);
+    toast(ok?`Consigné dans « ${titre} »`:"ÉCHEC de l'enregistrement",ok?'ok':'err');
+  }catch(e){ showLoad(false); toast("ÉCHEC de l'enregistrement",'err'); }
+}
 
 function rvRange(kind){
+  if(kind==='bourse')kind='week';      // la vue Bourse n'a pas de periode propre
   const n=new Date();n.setHours(0,0,0,0);
   if(kind==='week'||kind==='lastweek'){
     const start=new Date(n);start.setDate(n.getDate()-((n.getDay()+6)%7)); // lundi
@@ -11542,7 +12084,23 @@ async function renderReviewPage(){
     // .gl-pill.active force un texte sombre : il lui faut son fond inline,
     // comme dans la barre des objectifs, sinon la pilule active est illisible
     `<button class="gl-pill${rvPeriod===v?' active':''}"${rvPeriod===v?' style="background:var(--accent);border-color:var(--accent)"':''} onclick="setRvPeriod('${v}')">${l}</button>`).join('');
-  document.getElementById('rvRange').textContent=`${ymd(r.start)} → ${ymd(r.end)}`;
+  document.getElementById('rvRange').textContent=rvEstBourse()?'':`${ymd(r.start)} → ${ymd(r.end)}`;
+
+  // Vue Bourse : le corps de la revue s'efface, le tableau de bord prend sa
+  // place. On ne charge le marche que si l'on va reellement l'afficher.
+  const grille=document.querySelector('#pagereview .rv-grid');
+  const boite=document.getElementById('rvBourse');
+  if(boite)boite.style.display=rvEstBourse()?'block':'none';
+  if(grille)grille.style.display=rvEstBourse()?'none':'';
+  if(rvEstBourse()){
+    document.getElementById('rvSignals').style.display='none';
+    renderBourse();
+    // Une seule recuperation automatique par ouverture : le reste est manuel,
+    // pour ne pas consommer un quota sans que personne ne regarde.
+    if(!brsCharge){ brsCharge=true;
+      brsCharger(false).then(()=>renderBourse()).catch(()=>{}); }
+    return;
+  }
 
   const sigs=sigVisible();
   sigCur=sigs;
@@ -14823,7 +15381,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.57.0';
+const APP_VERSION='v1.58.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
