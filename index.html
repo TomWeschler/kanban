@@ -1177,6 +1177,12 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
    Un ecran a lire en trente secondes : gros chiffre en tete, contexte en une
    ligne, tableau dense, actualite en liste. */
 .brs-tools{display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap;margin-bottom:0.8rem}
+/* Le message d'attente tombait sur le fond d'ecran de la page : illisible.
+   Il lui faut sa propre surface. */
+.brs-vide{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:1.1rem 1.2rem;text-align:center;color:var(--text-mid);font-size:0.82rem}
+.brs-vide b{display:block;color:var(--text);font-size:0.95rem;margin-bottom:0.3rem}
+.brs-vide-a{display:flex;gap:0.45rem;justify-content:center;flex-wrap:wrap;margin-top:0.8rem}
 .brs-warn{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);
   border-radius:8px;padding:0.5rem 0.7rem;font-size:0.74rem;color:var(--warn);margin-bottom:0.8rem}
 .brs-idx{display:flex;gap:1.2rem;flex-wrap:wrap;align-items:flex-start;background:var(--surface);
@@ -11598,17 +11604,73 @@ async function brsFetch(url,ms){
   finally{ clearTimeout(t); }
 }
 
+// ── Le relais ─────────────────────────────────────────────────────────────
+// Le diagnostic a tranché ce que je ne pouvais pas mesurer : Stooq et Yahoo
+// REFUSENT les appels navigateur — ils n'envoient pas d'en-tête CORS, et aucune
+// ligne de code de ce côté-ci n'y changera quoi que ce soit. Il reste deux
+// voies : une clé d'API, ou un relais qui refait la demande depuis un serveur
+// et renvoie la réponse avec les en-têtes qui manquent.
+// Ce que le relais coûte, dit franchement : un tiers voit passer la requête.
+// Ici elle ne contient QUE des codes de valeurs boursières — pas de donnée
+// personnelle, pas de jeton Google, pas de clé. Un relais peut aussi disparaître
+// ou limiter le débit ; c'est pourquoi il y en a deux, qu'il n'est essayé
+// qu'APRÈS l'appel direct, et que l'écran dit toujours par où l'information est
+// passée. Il se coupe d'un clic dans « ⚙ Sources ».
+const BRS_RELAIS=[
+  {id:'allorigins',nom:'AllOrigins',
+   url:u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`},
+  {id:'codetabs',nom:'CodeTabs',
+   url:u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`}];
+const brsRelaisActif=()=>(brsLignes.find(x=>x.type==='cfg'&&x.code==='relais')||{}).valeur!=='non';
+// Rend {r,via} : `via` est vide quand l'appel direct a suffi.
+async function brsFetchVia(url,ms){
+  let direct='';
+  try{ const r=await brsFetch(url,ms); if(r&&r.ok)return {r,via:''}; direct='HTTP '+r.status; }
+  catch(e){ direct=brsMsg(e); }
+  if(!brsRelaisActif())throw new Error(direct+' — relais désactivé');
+  const raisons=[];
+  for(const p of BRS_RELAIS){
+    try{ const r=await brsFetch(p.url(url),(ms||9000)+4000);
+         if(r&&r.ok)return {r,via:p.nom};
+         raisons.push(`${p.nom} HTTP ${r.status}`); }
+    catch(e){ raisons.push(`${p.nom} ${brsMsg(e)}`); }
+  }
+  throw new Error(`direct : ${direct} ; relais : ${raisons.join(', ')}`);
+}
+
 // ── Les sources ───────────────────────────────────────────────────────────
 // Chacune rend la MÊME forme : {code,nom,dernier,cloture,var,varPct,ouv,haut,
 // bas,volume,haut52,bas52}. Une source qui échoue rend null et laisse la
 // suivante essayer ; aucune n'est privilégiée autrement que par son rang.
+// L'ordre compte : Yahoo passe devant parce qu'il donne la clôture de la veille
+// et l'amplitude des douze mois, que Stooq ne fournit pas.
 const BRS_SOURCES=[
+ {id:'yahoo', nom:'Yahoo Finance', cle:null,
+  info:'Sans clé, via relais si nécessaire. La plus complète des gratuites : clôture de la veille, amplitude sur douze mois, volume.',
+  async cours(list){
+    const out=[]; let via='';
+    for(const x of list){
+      const rep=await brsFetchVia(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(x.code)}?interval=1d&range=5d`);
+      via=rep.via;
+      const j=await rep.r.json();
+      const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
+      if(!m)throw new Error('forme inattendue');
+      const d=m.regularMarketPrice, p=m.chartPreviousClose||m.previousClose;
+      out.push({code:x.code,nom:x.nom,dernier:d,cloture:p,
+        var:d!=null&&p!=null?d-p:null,varPct:p?((d-p)/p)*100:null,
+        ouv:m.regularMarketOpen??null,haut:m.regularMarketDayHigh??null,
+        bas:m.regularMarketDayLow??null,volume:m.regularMarketVolume??null,
+        haut52:m.fiftyTwoWeekHigh??null,bas52:m.fiftyTwoWeekLow??null});
+    }
+    this.via=via;
+    return out;
+  }},
  {id:'stooq', nom:'Stooq', cle:null,
-  info:'Sans clé. Point d\'entrée public non officiel : il peut refuser les appels navigateur.',
+  info:'Sans clé, via relais si nécessaire. Un seul appel pour toute la liste, mais pas d\'amplitude sur douze mois.',
   async cours(list){
     const s=list.map(x=>brsVersStooq(x.code)).join(',');
-    const r=await brsFetch(`https://stooq.com/q/l/?s=${encodeURIComponent(s)}&f=sd2t2ohlcvn&h&e=csv`);
-    if(!r||!r.ok)throw new Error('HTTP '+(r?r.status:'?'));
+    const {r,via}=await brsFetchVia(`https://stooq.com/q/l/?s=${encodeURIComponent(s)}&f=sd2t2ohlcvn&h&e=csv`);
+    this.via=via;
     const txt=await r.text();
     const lignes=txt.trim().split(/\r?\n/); if(lignes.length<2)throw new Error('réponse vide');
     const col=lignes[0].split(',').map(x=>x.trim().toLowerCase());
@@ -11623,25 +11685,6 @@ const BRS_SOURCES=[
         cloture:open,var:open!==null?close-open:null,
         varPct:open?((close-open)/open)*100:null,haut52:null,bas52:null};
     }).filter(Boolean);
-  }},
- {id:'yahoo', nom:'Yahoo Finance', cle:null,
-  info:'Sans clé. Point d\'entrée non documenté : Yahoo le restreint régulièrement.',
-  async cours(list){
-    const out=[];
-    for(const x of list){
-      const r=await brsFetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(x.code)}?interval=1d&range=5d`);
-      if(!r||!r.ok)throw new Error('HTTP '+(r?r.status:'?'));
-      const j=await r.json();
-      const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
-      if(!m)throw new Error('forme inattendue');
-      const d=m.regularMarketPrice, p=m.chartPreviousClose||m.previousClose;
-      out.push({code:x.code,nom:x.nom,dernier:d,cloture:p,
-        var:d!=null&&p!=null?d-p:null,varPct:p?((d-p)/p)*100:null,
-        ouv:m.regularMarketOpen??null,haut:m.regularMarketDayHigh??null,
-        bas:m.regularMarketDayLow??null,volume:m.regularMarketVolume??null,
-        haut52:m.fiftyTwoWeekHigh??null,bas52:m.fiftyTwoWeekLow??null});
-    }
-    return out;
   }},
  {id:'twelvedata', nom:'Twelve Data', cle:'twelvedata',
   info:'Clé gratuite (800 appels/jour). Couvre Euronext Paris. La plus fiable des trois.',
@@ -11667,6 +11710,35 @@ const BRS_SOURCES=[
   }}];
 
 const BRS_NEWS=[
+ // Aucun flux d'actualite n'autorise l'appel navigateur en direct : le RSS est
+ // un format de serveur a serveur, il n'a jamais porte d'en-tete CORS. Le
+ // relais est donc ici la seule voie sans cle — et elle donne de la presse
+ // francaise, ce que les API anglophones ne font pas.
+ {id:'gnews', nom:'Google Actualités', cle:null,
+  info:'Sans clé, par relais obligatoirement. Presse économique française, dernières 24 heures.',
+  async news(){
+    const u='https://news.google.com/rss/search?q='+
+      encodeURIComponent('bourse OR CAC 40 OR Euronext when:1d')+'&hl=fr&gl=FR&ceid=FR:fr';
+    const {r,via}=await brsFetchVia(u,11000);
+    this.via=via;
+    const txt=await r.text();
+    const doc=new DOMParser().parseFromString(txt,'application/xml');
+    if(doc.querySelector('parsererror'))throw new Error('flux illisible');
+    const lis=[...doc.querySelectorAll('item')].slice(0,10).map(it=>{
+      const t=e=>{ const n=it.querySelector(e); return n?n.textContent.trim():''; };
+      // Google suffixe ses titres du nom du media : « Titre - Les Echos ». On ne
+      // coupe que si la queue ressemble a un nom de media — court — et la tete
+      // a un vrai titre : un tiret au milieu d'une phrase ne doit rien amputer.
+      const brut=t('title'), coupe=brut.lastIndexOf(' - ');
+      const media=coupe>0?brut.slice(coupe+3):'';
+      const suffixe=coupe>10&&media.length>0&&media.length<=32;
+      return {titre:suffixe?brut.slice(0,coupe):brut,
+              source:t('source')||(suffixe?media:'Google Actualités'),
+              url:t('link'),quand:t('pubDate'),resume:''};
+    }).filter(x=>x.titre);
+    if(!lis.length)throw new Error('aucun titre dans le flux');
+    return lis;
+  }},
  {id:'marketaux', nom:'Marketaux', cle:'marketaux',
   info:'Clé gratuite (100 appels/jour). Sources françaises, filtre par langue.',
   async news(){
@@ -11700,12 +11772,16 @@ async function brsCharger(forcer){
   const list=brsTitres().concat(BRS_CONTEXTE.map(([code,nom])=>({code,nom,contexte:true})));
   let cours=null, source=null;
   for(const s of BRS_SOURCES){
-    try{ const r=await s.cours(list); if(r&&r.length){ cours=r; source=s.nom; break; } }
+    s.via='';
+    try{ const r=await s.cours(list);
+         if(r&&r.length){ cours=r; source=s.nom+(s.via?` via ${s.via}`:''); break; } }
     catch(e){ brsErreurs.push({quoi:s.nom,err:brsMsg(e)}); }
   }
   let news=null, srcNews=null;
   for(const s of BRS_NEWS){
-    try{ const r=await s.news(); if(r&&r.length){ news=r; srcNews=s.nom; break; } }
+    s.via='';
+    try{ const r=await s.news();
+         if(r&&r.length){ news=r; srcNews=s.nom+(s.via?` via ${s.via}`:''); break; } }
     catch(e){ brsErreurs.push({quoi:s.nom,err:brsMsg(e)}); }
   }
   if(!cours&&!news)return cache;                   // rien de neuf : on garde l'ancien
@@ -11737,18 +11813,18 @@ async function brsTester(){
   const res=[];
   const un=[{code:'^FCHI',nom:'CAC 40'}];
   for(const s of BRS_SOURCES){
-    const t=Date.now();
+    const t=Date.now(); s.via='';
     try{ const r=await s.cours(un);
-         res.push({nom:s.nom,etat:(r&&r.length&&r[0].dernier!=null)?'ok':'répond mais sans cours',
+         res.push({nom:s.nom,via:s.via,etat:(r&&r.length&&r[0].dernier!=null)?'ok':'répond mais sans cours',
                    ms:Date.now()-t,detail:r&&r[0]?`${r[0].dernier}`:'',info:s.info,cle:s.cle}); }
-    catch(e){ res.push({nom:s.nom,etat:'échec',ms:Date.now()-t,detail:brsMsg(e),info:s.info,cle:s.cle}); }
+    catch(e){ res.push({nom:s.nom,via:'',etat:'échec',ms:Date.now()-t,detail:brsMsg(e),info:s.info,cle:s.cle}); }
   }
   for(const s of BRS_NEWS){
-    const t=Date.now();
+    const t=Date.now(); s.via='';
     try{ const r=await s.news();
-         res.push({nom:s.nom,etat:r&&r.length?'ok':'répond mais sans titre',
+         res.push({nom:s.nom,via:s.via,etat:r&&r.length?'ok':'répond mais sans titre',
                    ms:Date.now()-t,detail:r&&r.length?`${r.length} titres`:'',info:s.info,cle:s.cle}); }
-    catch(e){ res.push({nom:s.nom,etat:'échec',ms:Date.now()-t,detail:brsMsg(e),info:s.info,cle:s.cle}); }
+    catch(e){ res.push({nom:s.nom,via:'',etat:'échec',ms:Date.now()-t,detail:brsMsg(e),info:s.info,cle:s.cle}); }
   }
   brsDiag=res;
   renderBourse();
@@ -11846,12 +11922,12 @@ async function renderBourse(){
         <span class="brs-new-t">${E(a.titre||'')}</span>
         <span class="brs-new-s">${E(a.source||'')}${a.quand?' · '+E(brsHeure(a.quand)):''}</span>
       </a>`).join('')}</div>`
-    :`<div class="sb-none">Aucune actualité. Les deux sources d'actualité demandent une clé gratuite — « ⚙ Sources » pour la renseigner.</div>`;
+    :`<div class="sb-none">Aucune actualité. Sans clé, elle passe par un relais : vérifie qu'il est actif dans « ⚙ Sources ».</div>`;
 
   const diag=brsDiag?`<div class="adp-sec">Test des sources</div>
     <div class="brs-diag">${brsDiag.map(x=>`<div class="brs-d ${x.etat==='ok'?'ok':'ko'}">
       <span class="brs-d-n">${E(x.nom)}</span>
-      <span class="brs-d-e">${E(x.etat)}${x.ms!=null?` · ${x.ms} ms`:''}</span>
+      <span class="brs-d-e">${E(x.etat)}${x.via?` via ${E(x.via)}`:''}${x.ms!=null?` · ${x.ms} ms`:''}</span>
       <span class="brs-d-d">${E(x.detail||'')}</span>
       ${x.info?`<span class="brs-d-i">${E(x.info)}</span>`:''}</div>`).join('')}</div>`:'';
 
@@ -11870,7 +11946,14 @@ async function renderBourse(){
       ${d&&d.srcNews?`<span class="adp-c-tag">actu : ${E(d.srcNews)}</span>`:''}
     </div>
     ${pannes}
-    ${d?'':`<div class="gl-empty">Rien n'a encore été récupéré. « ⟳ Actualiser » pour essayer, « 🔎 Tester les sources » pour savoir ce que ce navigateur accepte.</div>`}
+    ${d?'':`<div class="brs-vide">
+      <b>Rien n'a encore été récupéré.</b>
+      <div>« ⟳ Actualiser » pour essayer, « 🔎 Tester les sources » pour savoir précisément ce que ce navigateur accepte.</div>
+      <div class="brs-vide-a">
+        <button class="gl-pill" onclick="brsRafraichir()">⟳ Actualiser</button>
+        <button class="gl-pill" onclick="brsTester()">🔎 Tester les sources</button>
+        <button class="gl-pill" onclick="openBrsCles()">⚙ Sources et relais</button>
+      </div></div>`}
     ${d?carteIndice:''}
     ${d&&brsSynthese(d)?`<div class="brs-synth">${E(brsSynthese(d))}</div>`:''}
     ${ctx?`<div class="adp-sec">Le contexte</div><div class="brs-ctxs">${ctx}</div>`:''}
@@ -11914,9 +11997,9 @@ async function saveBrsListe(){
             code:c,valeur:reste.join(',').trim()||c,ordre:i};
   });
   if(!lignes.length){ toast('La liste ne peut pas être vide','err'); return; }
-  const cles=brsLignes.filter(x=>x.type==='cle');
+  const garde=brsLignes.filter(x=>x.type==='cle'||x.type==='cfg');
   closeAdpModal(); showLoad(true);
-  const ok=await brsEcrire(cles.concat(lignes));
+  const ok=await brsEcrire(garde.concat(lignes));
   showLoad(false);
   toast(ok?`${lignes.length} valeurs suivies`:"ÉCHEC de l'enregistrement",ok?'ok':'err');
   await brsRafraichir();
@@ -11929,13 +12012,21 @@ function openBrsCles(){
       value="${tdEsc(brsCle(s.cle))}" placeholder="clé d'API" autocomplete="off">
     <div class="fld-hint">${tdEsc(s.info)}</div></div>`;
   document.getElementById('adpFields').innerHTML=`
-    <div class="fld-hint">Les clés sont rangées dans <b>ton classeur</b>, jamais dans le code :
-      le dépôt est public, le classeur est à toi. Les sources sans clé sont essayées d'abord ;
-      une clé ne sert que si elles échouent.</div>
+    <div class="field"><label>Relais</label>
+      <label class="rap-ref"><input type="checkbox" id="brsRelais"${brsRelaisActif()?' checked':''}>
+        Passer par un relais quand l'appel direct est refusé</label>
+      <div class="fld-hint">Yahoo, Stooq et les flux d'actualité <b>n'autorisent pas</b> les appels
+        depuis un navigateur : sans relais, ils resteront muets quoi qu'on fasse. Le relais refait
+        la demande depuis un serveur et rend la réponse utilisable.
+        <br>Ce qu'il coûte, dit franchement : un tiers voit passer la requête. Elle ne contient que
+        des codes de valeurs boursières — aucune donnée personnelle, aucun jeton Google, aucune clé.
+        Il n'est essayé qu'<b>après</b> l'appel direct, et l'écran indique toujours par où
+        l'information est passée.</div></div>
+    <div class="fld-hint">Les clés ci-dessous sont rangées dans <b>ton classeur</b>, jamais dans le
+      code : le dépôt est public, le classeur est à toi. Elles ne servent que si les sources
+      sans clé échouent — mais elles s'en passent, elles, de relais.</div>
     ${BRS_SOURCES.filter(s=>s.cle).map(champ).join('')}
-    ${BRS_NEWS.filter(s=>s.cle).map(champ).join('')}
-    <div class="fld-hint">Sans clé, les sources publiques peuvent suffire pour les cours.
-      Pour l'actualité, aucune source gratuite ne répond aujourd'hui sans clé.</div>`;
+    ${BRS_NEWS.filter(s=>s.cle).map(champ).join('')}`;
   document.getElementById('adpDel').style.display='none';
   modalOuvre('adpModal');
 }
@@ -11945,9 +12036,12 @@ async function saveBrsCles(){
     const e=document.getElementById('brsCle_'+n);
     return {id:'k'+n,type:'cle',code:n,valeur:e?e.value.trim():'',ordre:i};
   }).filter(x=>x.valeur);
-  const titres=brsLignes.filter(x=>x.type!=='cle');
+  const rel=document.getElementById('brsRelais');
+  const cfg2=[{id:'cfgrelais',type:'cfg',code:'relais',
+               valeur:(!rel||rel.checked)?'oui':'non',ordre:0}];
+  const titres=brsLignes.filter(x=>x.type!=='cle'&&x.type!=='cfg');
   closeAdpModal(); showLoad(true);
-  const ok=await brsEcrire(cles.concat(titres));
+  const ok=await brsEcrire(cles.concat(cfg2,titres));
   showLoad(false);
   toast(ok?'Sources enregistrées':"ÉCHEC de l'enregistrement",ok?'ok':'err');
   await brsRafraichir();
@@ -15381,7 +15475,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.58.0';
+const APP_VERSION='v1.58.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
