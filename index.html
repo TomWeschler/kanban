@@ -277,6 +277,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sb-edit.drop{outline:2px dashed var(--accent);outline-offset:-4px}
 
 .modal-btns{display:flex;justify-content:flex-end;margin-top:0.8rem}
+.rap-ref{display:flex;align-items:center;gap:0.45rem;font-size:0.78rem;cursor:pointer}
 .em-grid{max-height:56vh;overflow-y:auto;margin-top:0.3rem}
 .em-cat{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);margin:0.8rem 0 0.35rem;padding-bottom:0.2rem;border-bottom:1px solid var(--border)}
 .em-cat:first-child{margin-top:0}
@@ -1124,6 +1125,9 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sv-r.sv-off{opacity:0.5}
 .sv-r.sv-off .sv-q{text-decoration:line-through}
 .adp-slip{color:var(--warn)}
+/* Le fil : une suite d'evenements, plus discrete qu'une liste d'objets. */
+.adp-line.fil{cursor:default;opacity:0.9}
+.adp-line.fil .adp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:0.35rem;vertical-align:middle}
 .adp-l-flag{font-family:var(--font-mono);font-size:0.48rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--warn);background:rgba(251,191,36,0.12);padding:2px 5px;border-radius:3px;flex-shrink:0}
 .adp-act{font-family:var(--font-mono);font-size:0.5rem;letter-spacing:0.06em;text-transform:uppercase;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);border-radius:4px;padding:0.2rem 0.45rem;cursor:pointer;flex-shrink:0}
 .adp-act:hover{color:var(--accent);border-color:var(--accent)}
@@ -1432,6 +1436,9 @@ input.bud-y-e:focus{color:var(--text)}
 .rap-t tr.sub td{color:#555;padding-left:14px}
 .rap-l{margin:2px 0 8px 16px}
 .rap-l li.ok{color:#666;text-decoration:line-through}
+/* Le delta : le contexte de chaque ligne compte moins que la ligne elle-meme. */
+.rap-s{color:#666;font-size:9px}
+.rap-vide{color:#666;font-style:italic;margin:2px 0 8px}
 .rap-run{margin:8px 0 2px}
 .rap-md{font-size:10px}
 .rap-md h1,.rap-md h2,.rap-md h3{font-size:11px;margin:6px 0 2px;border:none}
@@ -6241,6 +6248,7 @@ const CMD_ACTIONS=[
   ['+ Nouveau projet',        'adp creer chantier',              ()=>{switchPage('adp');setAdpView('projets');openAdpProjModal(null);}],
   ['+ Nouveau contact',       'adp crm carnet annuaire',         ()=>{switchPage('adp');setAdpView('suivi');openAdpContModal(null);}],
   ['Relances du jour',        'adp contacts relancer suivi',     ()=>{switchPage('adp');setAdpView('suivi');}],
+  ['Gabarits de projet',      'adp gabarit modele nouveau projet',()=>{switchPage('adp');setAdpView('gabarits');}],
   ['Automatismes',            'regle auto automatique declencheur',()=>{switchPage('adp');setAdpView('auto');}],
   ['Exécuter les automatismes','auto lancer regles maintenant',   ()=>{switchPage('adp');setAdpView('auto');autoLancer();}],
   ['Exporter un rapport',     'adp pdf excel xlsx projet bilan',  ()=>{switchPage('adp');openRapport();}],
@@ -6674,6 +6682,7 @@ const PROJ_COLS=[
   ['jalons',  'Jalons',   p=>{const m=adpProjMiles(p.id);return m.length?m.filter(x=>x.status!=='done').length:-1;}],
   ['retard',  'En retard',p=>adpProjMiles(p.id).filter(m=>m.status!=='done'&&m.due_date&&dayDiff(m.due_date)<0).length],
   ['relances','Relances', p=>adpContacts.filter(c=>c.project_id===p.id&&adpIsDue(c)).length],
+  ['glisse',  'Glissement',p=>p.slips?projSlipDays(p):-99999],
   ['budget',  'Réalisé',  p=>budProjReel(p.id)],
   ['maj',     'Avancée',  p=>{const n=p.note_id?noteById(p.note_id):null;return n&&n.updated_at?n.updated_at:'';}],
   ['action',  'Prochaine action',p=>p.next_action||'zzz']];
@@ -6703,6 +6712,7 @@ function renderProjTable(el,list){
         <td class="bud-n">${ml.length?`${ml.length-ouv.length}/${ml.length}`:'—'}</td>
         <td class="bud-n${lat?' over':''}">${lat||'—'}</td>
         <td class="bud-n${rel?' over':''}">${rel||'—'}</td>
+        <td class="bud-n${p.slips?' over':''}" title="${p.slips?`Échéance initiale ${adpEsc(p.baseline)}`:''}">${p.slips?`${p.slips}× · ${projSlipDays(p)>0?'+':''}${projSlipDays(p)} j`:'—'}</td>
         <td class="bud-n${est&&reel>est?' over':''}">${budFmt(reel)||'—'}</td>
         <td class="bud-n">${n&&n.updated_at?n.updated_at:'—'}</td>
         <td class="bud-a">${p.next_action?adpEsc(p.next_action):'<span class="bud-vide">— à poser —</span>'}</td>
@@ -7160,7 +7170,13 @@ const MES_SEED=[
 //     [[liens]], du graphe et de la recherche — sans une ligne de plus.
 //   · les MODÈLES et PROCÉDURES gardent leur corps dans la feuille : ce sont
 //     des documents de référence, courts, qu'on remplit plutôt qu'on écrit.
-const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at','budget','domaine','next_action'];
+// `baseline`, `slips` et `fil` font au PROJET ce que les jalons faisaient
+// deja pour eux-memes : garder la trace de ce qui a bouge. Sans elles,
+// `health` et `deadline` etaient ecrases a chaque modification — impossible
+// de repondre a « depuis quand est-il orange ? » ni « combien de fois la date
+// a-t-elle bouge ? », qui sont les deux premieres questions d'un comite.
+// `fil` est un journal compact d'evenements : date~type~de~vers, separes par |.
+const ADP_PROJ_HEADER = ['id','name','client','status','start_date','deadline','health','note_id','color','created_at','updated_at','budget','domaine','next_action','baseline','slips','fil'];
 // On ne relance pas quelqu'un « en général » : on le relance SUR quelque chose.
 // La cadence seule produisait un mail générique et un rappel sans contexte.
 // `topic` porte le sujet en clair, `topic_ref` le rattache à un objet réel
@@ -7173,28 +7189,39 @@ const ADP_CONT_HEADER = ['id','name','org','role','email','phone','project_id','
 // tenu s'affichait comme tenu. Le glissement chronique — ce qu'un comité
 // demande en premier — était invisible.
 const ADP_MILE_HEADER = ['id','project_id','title','due_date','status','kind','done_at','updated_at','baseline','slips'];
-const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at','steps','followup','status'];
+// Trois sortes de modeles : `mail`, `procedure`, et desormais `projet` — un
+// gabarit qui monte un projet entier. Ses jalons reutilisent l'encodage de
+// `steps` (type~decalage~intitule~...), ou `type` est la nature du jalon et
+// `off` le nombre de jours apres la date de debut. `procedures` liste les
+// procedures a lancer, `roles` les postes a pourvoir.
+const ADP_TPL_HEADER  = ['id','kind','title','category','body','created_at','updated_at','steps','followup','status','procedures','roles'];
 const ADP_RUN_HEADER=['id','template_id','project_id','title','start_date','status','steps','updated_at'];
 const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updated_at','planned'];
+// Un point de reference : l'etat du portefeuille au moment ou un rapport a ete
+// sorti. C'est LUI qui permet de repondre a « qu'est-ce qui a change depuis la
+// derniere fois ? » — la premiere question de tout comite, et la seule que le
+// rapport ne savait pas traiter, faute de memoire du precedent.
+const ADP_PT_HEADER=['id','portee','date','projets','jalons'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
 // Déclarés ici et pas avec le moteur : ADP_SHEETS les référence, et une
 // constante lue avant sa déclaration tue tout le script au chargement.
 const AUTO_REG_HEADER=['id','nom','trigger','param','action','cible','gabarit','actif','cadence','updated_at'];
 const AUTO_JRN_HEADER=['id','regle_id','cible_id','date','quoi','ref','statut'];
-const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'N'],['adp_contacts',ADP_CONT_HEADER,'N'],
-                    ['adp_milestones',ADP_MILE_HEADER,'J'],['adp_templates',ADP_TPL_HEADER,'J'],
+const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'Q'],['adp_contacts',ADP_CONT_HEADER,'N'],
+                    ['adp_milestones',ADP_MILE_HEADER,'J'],['adp_templates',ADP_TPL_HEADER,'L'],
                     ['adp_budget',ADP_BUD_HEADER,'H'],['adp_runs',ADP_RUN_HEADER,'H'],
-                    ['auto_regles',AUTO_REG_HEADER,'J'],['auto_journal',AUTO_JRN_HEADER,'G']];
+                    ['auto_regles',AUTO_REG_HEADER,'J'],['auto_journal',AUTO_JRN_HEADER,'G'],
+                    ['adp_points',ADP_PT_HEADER,'E']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
 const ADP_HEALTH  = [['vert','Sous contrôle'],['orange','Vigilance'],['rouge','En difficulté']];
 const ADP_HCOLOR  = {vert:'var(--green)',orange:'var(--warn)',rouge:'var(--danger)'};
 const ADP_KIND    = [['jalon','Jalon'],['livrable','Livrable'],['reunion','Réunion']];
-const ADP_VIEWS   = [['projets','Projets'],['budget','Budget'],['suivi','Suivi'],['modeles','Modèles'],['procedures','Procédures'],['auto','Automatismes']];
+const ADP_VIEWS   = [['projets','Projets'],['budget','Budget'],['suivi','Suivi'],['modeles','Modèles'],['procedures','Procédures'],['gabarits','Gabarits'],['auto','Automatismes']];
 const ADP_PALETTE = ['#7c6aff','#38bdf8','#fcd34d','#6ee7b7','#f472b6','#fb923c','#a78bfa','#4ade80'];
 
-let adpProjects=[], adpContacts=[], adpMilestones=[], adpTemplates=[];
+let adpProjects=[], adpContacts=[], adpMilestones=[], adpTemplates=[], adpPoints=[];
 let adpLoaded=false, adpView='projets', adpProjCur=null, adpTplCur=null;
 let adpSearch='', adpShowArchived=false;
 const LS_ADP_VIEW='kanban_adp_view';
@@ -7225,10 +7252,14 @@ async function ensureAdpSheets(){
   for(const [t,h] of missing)await sheetPut(`${t}!A1`,[h]);
   // la première ouverture ne doit pas tomber sur des pages vides
   if(missing.some(([t])=>t==='adp_templates'))await sheetPut('adp_templates!A2',ADP_TPL_SEED);
-  // adp_projects a gagné une colonne (budget) après coup : on remet son en-tête
-  // à jour pour que la feuille reste lisible telle quelle
-  if(missing.some(([t])=>t==='adp_budget')&&titles.includes('adp_projects'))
-    await sheetPut('adp_projects!A1',[ADP_PROJ_HEADER]);
+  // Un onglet manquant signale une montée de version. Les onglets DÉJÀ là ont
+  // pu gagner des colonnes au passage — adp_projects en a gagné trois avec le
+  // fil, adp_templates deux avec les gabarits. On remet leur en-tête à jour,
+  // une fois, pour que le classeur reste lisible tel quel dans Sheets. La
+  // règle remplace les rattrapages au cas par cas, qu'il fallait penser à
+  // écrire à chaque changement de schéma.
+  for(const [t,h] of ADP_SHEETS)
+    if(titles.includes(t))await sheetPut(`${t}!A1`,[h]);
 }
 
 const adpCell=(x,i)=>String(x[i]==null?'':x[i]).trim();
@@ -7242,11 +7273,12 @@ async function adpFetch(sheet,range){
 async function loadAdp(){
   if(!accessToken)return;
   await ensureAdpSheets();
-  const [pr,co,mi,tp,bu,ru,ar,aj]=await Promise.all([
-    adpFetch('adp_projects','A:N'), adpFetch('adp_contacts','A:N'),
-    adpFetch('adp_milestones','A:J'), adpFetch('adp_templates','A:J'),
+  const [pr,co,mi,tp,bu,ru,ar,aj,pt]=await Promise.all([
+    adpFetch('adp_projects','A:Q'), adpFetch('adp_contacts','A:N'),
+    adpFetch('adp_milestones','A:J'), adpFetch('adp_templates','A:L'),
     adpFetch('adp_budget','A:H'), adpFetch('adp_runs','A:H'),
-    adpFetch('auto_regles','A:J'), adpFetch('auto_journal','A:G')]);
+    adpFetch('auto_regles','A:J'), adpFetch('auto_journal','A:G'),
+    adpFetch('adp_points','A:E')]);
   // La dernière ligne gagne. Une ligne vidée est une pierre tombale : la
   // suppression garde la ligne pour ne jamais décaler la feuille sous les
   // écritures en vol, mais l'objet ne doit pas ressusciter au rechargement.
@@ -7260,7 +7292,9 @@ async function loadAdp(){
     health:adpCell(x,6)||'vert',note_id:adpCell(x,7),color:adpCell(x,8),
     created_at:adpCell(x,9),updated_at:adpCell(x,10),
     budget:parseFloat(String(adpCell(x,11)).replace(',','.'))||0,
-    domaine:adpCell(x,12),next_action:adpCell(x,13)})),'name');
+    domaine:adpCell(x,12),next_action:adpCell(x,13),
+    baseline:adpCell(x,14)||adpCell(x,5),slips:parseInt(adpCell(x,15),10)||0,
+    fil:adpCell(x,16)})),'name');
   adpContacts=dedupe(co.map(x=>({id:adpCell(x,0),name:adpCell(x,1),org:adpCell(x,2),
     role:adpCell(x,3),email:adpCell(x,4),phone:adpCell(x,5),project_id:adpCell(x,6),
     cadence:parseInt(adpCell(x,7),10)||0,last_contact:adpCell(x,8),
@@ -7276,7 +7310,10 @@ async function loadAdp(){
     category:adpCell(x,3),body:String(x[4]==null?'':x[4]),
     created_at:adpCell(x,5),updated_at:adpCell(x,6),
     steps:String(x[7]==null?'':x[7]),followup:parseInt(adpCell(x,8),10)||0,
-    status:adpCell(x,9)||'actif'})),'title');
+    status:adpCell(x,9)||'actif',
+    procedures:adpCell(x,10),roles:String(x[11]==null?'':x[11])})),'title');
+  adpPoints=dedupe(pt.map(x=>({id:adpCell(x,0),portee:adpCell(x,1),date:adpCell(x,2),
+    projets:String(x[3]==null?'':x[3]),jalons:String(x[4]==null?'':x[4])})),'portee');
   const bd={};
   bu.forEach(x=>{ const o={id:adpCell(x,0),project_id:adpCell(x,1),capex:adpCell(x,2),
     nature:adpCell(x,3),month:adpCell(x,4),
@@ -7295,8 +7332,8 @@ async function loadAdp(){
       title:adpCell(x,3)||'Suivi',start_date:adpCell(x,4),status:adpCell(x,5)||'actif',
       steps,updated_at:adpCell(x,7)};
   }),'title').filter(r=>r.status!=='supprime');
-  ['adpProjects','adpContacts','adpMilestones','adpTemplates','adpBudget','adpRuns'].forEach((k,i)=>
-    cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates,adpBudget,adpRuns][i]));
+  ['adpProjects','adpContacts','adpMilestones','adpTemplates','adpBudget','adpRuns','adpPoints'].forEach((k,i)=>
+    cacheSet(k,[adpProjects,adpContacts,adpMilestones,adpTemplates,adpBudget,adpRuns,adpPoints][i]));
   autoRegles=dedupe(ar.map(x=>({id:adpCell(x,0),nom:adpCell(x,1),trigger:adpCell(x,2),
     param:parseInt(adpCell(x,3),10)||0,action:adpCell(x,4)||'signal',cible:adpCell(x,5),
     gabarit:String(x[6]==null?'':x[6]),actif:adpCell(x,7)==='oui',
@@ -7318,17 +7355,65 @@ function adpRestoreCache(){
   adpMilestones=cacheGet('adpMilestones',[]); adpTemplates=cacheGet('adpTemplates',[]);
   adpBudget=cacheGet('adpBudget',[]); budIdxInvalidate(); adpRuns=cacheGet('adpRuns',[]);
   autoRegles=cacheGet('autoRegles',[]); autoJournal=cacheGet('autoJournal',[]);
+  adpPoints=cacheGet('adpPoints',[]);
   projTagsInvalidate();
 }
+// ── Le fil du projet ──────────────────────────────────────────────────────
+// Un projet ne se raconte pas par son état du jour, mais par ce qui a bougé.
+// On garde donc : la PREMIÈRE échéance posée (`baseline`), le nombre de fois
+// qu'elle a été repoussée (`slips`), et un fil d'événements datés — santé et
+// échéance — dont on ne conserve que les plus récents : ce fil vit dans une
+// cellule, il ne doit pas grossir sans fin.
+const PROJ_FIL_MAX=40;
+const filLire=p=>String(p&&p.fil||'').split('|').filter(Boolean).map(e=>{
+  const [date,type,de,vers]=e.split('~');
+  return {date,type,de:de||'',vers:vers||''};
+});
+const filEcrire=ev=>ev.slice(-PROJ_FIL_MAX)
+  .map(e=>[e.date,e.type,e.de,e.vers].join('~')).join('|');
+// Le décalage total, en jours, depuis la toute première échéance.
+function projSlipDays(p){
+  if(!p||!p.baseline||!p.deadline)return 0;
+  const j=s=>{const a=String(s).split('-');return Date.UTC(+a[0],+a[1]-1,+a[2]);};
+  return Math.round((j(p.deadline)-j(p.baseline))/86400000);
+}
+// Depuis quand le projet est-il dans cet état de santé ? Le dernier changement
+// fait foi ; sans changement enregistré, on ne sait pas et on ne prétend pas.
+function projSanteDepuis(p){
+  const ev=filLire(p).filter(e=>e.type==='sante');
+  return ev.length?ev[ev.length-1].date:'';
+}
+function projHistorise(av,ap){
+  // Un objet reconstruit par un formulaire ne porte pas l'historique : on le
+  // reprend de l'état d'avant plutôt que d'exiger de chaque appelant qu'il y pense.
+  if(av){ if(ap.baseline===undefined)ap.baseline=av.baseline;
+          if(ap.slips===undefined)ap.slips=av.slips;
+          if(ap.fil===undefined)ap.fil=av.fil; }
+  ap.slips=ap.slips||0;
+  const ev=filLire(ap);
+  const jour=td();
+  if(av&&av.health&&ap.health&&av.health!==ap.health)
+    ev.push({date:jour,type:'sante',de:av.health,vers:ap.health});
+  if(av&&av.deadline&&ap.deadline&&av.deadline!==ap.deadline){
+    // Poser une date pour la première fois n'est pas un glissement : seul le
+    // déplacement d'une échéance DÉJÀ posée compte. Même règle que les jalons.
+    ap.slips=(ap.slips||0)+1;
+    ev.push({date:jour,type:'echeance',de:av.deadline,vers:ap.deadline});
+  }
+  if(!ap.baseline&&ap.deadline)ap.baseline=ap.deadline;
+  ap.fil=filEcrire(ev);
+}
+
 const adpProjRow=p=>[p.id,p.name,p.client||'',p.status||'actif',p.start_date||'',p.deadline||'',
-  p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td(),String(p.budget||0),p.domaine||'',p.next_action||''];
+  p.health||'vert',p.note_id||'',p.color||'',p.created_at||td(),td(),String(p.budget||0),p.domaine||'',p.next_action||'',
+  p.baseline||p.deadline||'',String(p.slips||0),p.fil||''];
 const adpContRow=c=>[c.id,c.name,c.org||'',c.role||'',c.email||'',c.phone||'',c.project_id||'',
   String(c.cadence||0),c.last_contact||'',c.status||'actif',c.notes||'',td(),
   c.topic||'',c.topic_ref||''];
 const adpMileRow=m=>[m.id,m.project_id||'',m.title,m.due_date||'',m.status||'todo',m.kind||'jalon',m.done_at||'',td(),
   m.baseline||m.due_date||'',String(m.slips||0)];
 const adpTplRow =t=>[t.id,t.kind||'mail',t.title,t.category||'',t.body||'',t.created_at||td(),td(),
-  t.steps||'',String(t.followup||0),t.status||'actif'];
+  t.steps||'',String(t.followup||0),t.status||'actif',t.procedures||'',t.roles||''];
 
 // Écrit puis rend la main : chaque table a la même mécanique d'upsert par clé.
 async function adpSave(kind,obj){
@@ -7339,6 +7424,11 @@ async function adpSave(kind,obj){
   const [sheet,arr,toRow,cacheKey]=conf;
   obj.updated_at=td();
   const i=arr.findIndex(x=>x.id===obj.id);
+  // Historiser AVANT de remplacer : arr[i] est encore l'état d'avant, et c'est
+  // le seul endroit du fichier par où passe toute écriture de projet — le
+  // formulaire, les automatismes, la création depuis un gabarit. Le faire ici
+  // évite d'y penser à chaque appel, et d'oublier le prochain.
+  if(kind==='proj')projHistorise(i>=0?arr[i]:null,obj);
   if(i>=0)arr[i]=obj; else arr.push(obj);
   if(kind==='proj')projTagsInvalidate();     // le client d'un projet fait l'étiquette
   cacheSet(cacheKey,arr);
@@ -7452,6 +7542,7 @@ async function renderAdp(){
   if(adpView==='budget')     return renderAdpBudget(el);
   if(adpView==='suivi')      return renderAdpSuivi(el);
   if(adpView==='modeles')    return renderAdpTemplates(el,'mail');
+  if(adpView==='gabarits')   return renderAdpGabarits(el);
   if(adpView==='procedures'){
     if(adpRunCur&&runById(adpRunCur))return renderRunPage(el);
     adpRunCur=null;
@@ -7568,6 +7659,28 @@ async function adpSetNextAction(id,val){
   if(!(await adpSave('proj',p)))toast("ÉCHEC de l'enregistrement",'err');
 }
 
+// Le fil, rendu à l'envers : le plus récent en haut, comme un journal.
+function projFilHtml(p){
+  const ev=filLire(p).slice().reverse();
+  if(!ev.length&&!p.baseline)return '';
+  const lbl=h=>(ADP_HEALTH.find(x=>x[0]===h)||['','?'])[1];
+  const lignes=ev.slice(0,8).map(e=>e.type==='sante'
+    ? `<div class="adp-line fil"><span class="adp-l-main">
+         <span class="adp-dot" style="background:${ADP_HCOLOR[e.vers]||'var(--text-mid)'}"></span>
+         ${adpEsc(lbl(e.de))} → <b>${adpEsc(lbl(e.vers))}</b>
+         <span class="adp-l-sub">${adpEsc(e.date)}</span></span></div>`
+    : `<div class="adp-line fil"><span class="adp-l-main">⏱ échéance ${adpEsc(e.de)} → <b>${adpEsc(e.vers)}</b>
+         <span class="adp-l-sub">${adpEsc(e.date)}</span></span></div>`).join('');
+  const depuis=projSanteDepuis(p);
+  return `<div class="adp-sec">Le fil du projet</div>
+    <div class="fld-hint" style="margin-bottom:0.45rem">
+      ${p.baseline?`Échéance initiale <b>${adpEsc(p.baseline)}</b>${p.slips?` — repoussée ${p.slips} fois (${projSlipDays(p)>0?'+':''}${projSlipDays(p)} jours)`:', jamais repoussée'}.`:''}
+      ${depuis?` ${adpEsc(lbl(p.health))} depuis le ${adpEsc(depuis)}.`:''}
+    </div>
+    ${lignes||'<div class="sb-none">Rien n\'a encore bougé.</div>'}
+    ${ev.length>8?`<div class="fld-hint">…et ${ev.length-8} plus anciens.</div>`:''}`;
+}
+
 function renderAdpProjectPage(el){
   const p=adpProjById(adpProjCur);
   if(!p){ adpProjCur=null; return renderAdp(); }
@@ -7581,6 +7694,7 @@ function renderAdpProjectPage(el){
       <span class="adp-title" style="color:${col}">${adpEsc(p.name)}</span>
       ${p.client?`<span class="adp-c-tag">${adpEsc(p.client)}</span>`:''}
       ${p.deadline?`<span class="adp-c-tag">échéance ${p.deadline}</span>`:''}
+      ${p.slips?`<span class="adp-slip" title="Échéance initiale ${adpEsc(p.baseline)}">repoussée ${p.slips}×, ${projSlipDays(p)>0?'+':''}${projSlipDays(p)} j</span>`:''}
       <div style="flex:1"></div>
       <button class="gl-pill" onclick="makeProjectPoint()" title="Générer le point projet dans une note">📌 Point projet</button>
       <button class="gl-pill" onclick="adpNewTask()">+ Tâche</button>
@@ -7616,6 +7730,7 @@ function renderAdpProjectPage(el){
                   ${k==='action'?`<button class="adp-act" onclick="jrToTask('${adpEsc(x.text).replace(/'/g,"&#39;")}')" title="Créer la tâche correspondante">→ tâche</button>`:''}
                 </div>`).join('');
             }).join('');})()}
+        ${projFilHtml(p)}
         <div class="adp-sec">Jalons et échéances
           <button class="adp-mini" onclick="openAdpMileModal(null,'${p.id}')">+</button></div>
         ${miles.length?miles.map(m=>adpMileRow2(m)).join(''):'<div class="sb-none">Aucun jalon.</div>'}
@@ -8105,7 +8220,9 @@ function openAdpProjModal(id){
     <div class="field"><label>Santé</label><select id="apHealth">
       ${ADP_HEALTH.map(([v,l])=>`<option value="${v}"${p&&p.health===v?' selected':''}>${l}</option>`).join('')}</select></div>
     <div class="field"><label>Début</label><input type="date" id="apStart" value="${p?p.start_date:''}"></div>
-    <div class="field"><label>Échéance</label><input type="date" id="apDeadline" value="${p?p.deadline:''}"></div>`;
+    <div class="field"><label>Échéance</label><input type="date" id="apDeadline" value="${p?p.deadline:''}">
+      ${p&&p.slips?`<div class="fld-hint">Échéance initiale <b>${adpEsc(p.baseline)}</b> — repoussée ${p.slips} fois (${projSlipDays(p)>0?'+':''}${projSlipDays(p)} jours).</div>`
+        :p&&p.baseline?`<div class="fld-hint">Échéance initiale <b>${adpEsc(p.baseline)}</b>, jamais repoussée.</div>`:''}</div>`;
   document.getElementById('adpDel').style.display=p?'':'none';
   modalOuvre('adpModal');
   setTimeout(()=>{const e=document.getElementById('apName'); if(e)e.focus();},60);
@@ -8171,12 +8288,12 @@ function openAdpTplModal(id,kind){
   const t=id?adpTplById(id):null;
   const k=t?t.kind:(kind||'mail');
   document.getElementById('adpModalTitle').textContent=
-    (t?'ÉDITER ':'NOUVEAU ')+(k==='mail'?'MODÈLE':'PROCÉDURE').toUpperCase();
+    (t?'ÉDITER ':'NOUVEAU ')+(k==='mail'?'MODÈLE':k==='projet'?'GABARIT DE PROJET':'PROCÉDURE').toUpperCase();
   const cats=[...new Set(adpTemplates.filter(x=>x.kind===k).map(x=>x.category).filter(Boolean))];
   document.getElementById('adpFields').innerHTML=`
     <input type="hidden" id="atKind" value="${k}">
     <div class="field"><label>Titre</label><input type="text" id="atTitle" value="${adpEsc(t?t.title:'')}"
-      placeholder="${k==='mail'?'Relance sans réponse':'Ouverture de chantier'}"></div>
+      placeholder="${k==='mail'?'Relance sans réponse':k==='projet'?'Déploiement site':'Ouverture de chantier'}"></div>
     <div class="field"><label>Catégorie</label><input type="text" id="atCat" value="${adpEsc(t?t.category:'')}" list="atCatList" placeholder="Relances">
       <datalist id="atCatList">${cats.map(c=>`<option value="${adpEsc(c)}">`).join('')}</datalist></div>
     ${k==='mail'?`<div class="field"><label>Relance automatique</label>
@@ -8201,6 +8318,7 @@ async function saveAdpModal(){
   const v=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
   let obj=null,kind=adpEditKind;
   if(kind==='auto')return saveAutoModal();
+  if(kind==='gab') return creerProjetDepuisGabarit();
   if(kind==='orph'){ closeAdpModal(); return; }   // ce formulaire a ses propres boutons
   if(kind==='proj'){
     const name=v('apName'); if(!name){ toast('Le nom est obligatoire','err'); return; }
@@ -8231,8 +8349,9 @@ async function saveAdpModal(){
     const t=adpEditId?adpTplById(adpEditId):null;
     obj={id:adpEditId||adpId('t'),kind:v('atKind'),title,category:v('atCat'),
       body:t?t.body:'',created_at:t?t.created_at:td(),
-      steps:t?t.steps||'':'',followup:parseInt(v('atFollow'),10)||0,
-      status:t?t.status||'actif':'actif'};
+      steps:t?t.steps||'':'',followup:entFr(v('atFollow'),0),
+      status:t?t.status||'actif':'actif',
+      procedures:t?t.procedures||'':'',roles:t?t.roles||'':''};
   }
   if(!obj)return;
   closeAdpModal();
@@ -8950,6 +9069,342 @@ function runCondLabel(cond,num){
 }
 function closeRunLaunch(){ modalFerme('runLaunchModal'); }
 
+// ════════════════════════════════════════════════════
+// GABARITS DE PROJET
+// ════════════════════════════════════════════════════
+// Monter un projet, c'est toujours la même liste : les mêmes jalons aux mêmes
+// distances du démarrage, les mêmes procédures à lancer, les mêmes rôles à
+// pourvoir. Ça se refaisait à la main à chaque fois, écran par écran, et ce qui
+// se refait à la main finit par différer d'une fois sur l'autre. Un gabarit est
+// un troisième type de modèle, à côté des mails et des procédures : ses jalons
+// réutilisent l'encodage de `steps` — le `type` porte la nature du jalon, `off`
+// le nombre de jours après la date de début.
+const gabJalons  = t=>parseSteps(t&&t.steps);
+const gabProcs   = t=>String(t&&t.procedures||'').split(',').map(x=>x.trim()).filter(Boolean);
+const gabRoles   = t=>String(t&&t.roles||'').split('|').filter(Boolean).map(x=>{
+  const [role,cad]=x.split('~'); return {role:role||'',cadence:parseInt(cad,10)||0};
+});
+const gabRolesTxt= a=>a.map(r=>[String(r.role||'').replace(/[~|]/g,' ').trim(),r.cadence||0].join('~'))
+                       .filter(x=>!x.startsWith('~')).join('|');
+const gabActifs  = ()=>adpTemplates.filter(t=>t.kind==='projet'&&t.status!=='archive')
+                       .sort((a,b)=>(a.category||'~').localeCompare(b.category||'~','fr')
+                                  ||a.title.localeCompare(b.title,'fr'));
+// La durée du gabarit : le jalon le plus lointain donne l'échéance du projet.
+const gabDuree   = t=>gabJalons(t).reduce((m,s)=>Math.max(m,parseInt(s.off,10)||0),0);
+
+// ── Écriture différée ─────────────────────────────────────────────────────
+// L'éditeur écrit à chaque frappe : on regroupe, comme pour les procédures.
+let gabTimer=null;
+function gabCommit(t){
+  clearTimeout(gabTimer);
+  gabTimer=setTimeout(async()=>{ if(!(await adpSave('tpl',t)))toast("ÉCHEC de l'enregistrement",'err'); },600);
+}
+function gabCur(){ return adpTplCur?adpTplById(adpTplCur):null; }
+
+function gabAddJalon(){
+  const t=gabCur(); if(!t)return;
+  const st=gabJalons(t);
+  const pris=new Set(st.map(s=>s.key)); let n=st.length, key;
+  do{ n++; key='j'+n; }while(pris.has(key));
+  // Le nouveau jalon se pose après le dernier : on ne repart pas de zéro à
+  // chaque ajout, sinon monter quinze jalons devient quinze corrections.
+  const off=st.length?(parseInt(st[st.length-1].off,10)||0)+7:0;
+  st.push({type:'jalon',off,label:'Nouveau jalon',extra:'',key,after:[],cond:''});
+  t.steps=stepsToText(st); renderGabJalons(t); gabCommit(t);
+}
+function gabJalonSet(i,champ,val){
+  const t=gabCur(); if(!t)return;
+  const st=gabJalons(t); if(!st[i])return;
+  st[i][champ]=champ==='off'?Math.max(0,entFr(val,0)):String(val).replace(/~|\n/g,' ').trim();
+  if(champ==='label'&&!st[i].label)st[i].label='Jalon';
+  t.steps=stepsToText(st);
+  // On ne rerend que si l'ordre a pu changer : réécrire la ligne sous le
+  // curseur ferait sauter la saisie en cours.
+  if(champ==='off')renderGabJalons(t); else gabApercu(t);
+  gabCommit(t);
+}
+function gabJalonDel(i){
+  const t=gabCur(); if(!t)return;
+  const st=gabJalons(t); if(!st[i])return;
+  st.splice(i,1); t.steps=stepsToText(st); renderGabJalons(t); gabCommit(t);
+}
+function gabJalonMove(i,d){
+  const t=gabCur(); if(!t)return;
+  const st=gabJalons(t), j=i+d;
+  if(j<0||j>=st.length)return;
+  [st[i],st[j]]=[st[j],st[i]];
+  t.steps=stepsToText(st); renderGabJalons(t); gabCommit(t);
+}
+function gabProcToggle(id,on){
+  const t=gabCur(); if(!t)return;
+  const l=new Set(gabProcs(t));
+  on?l.add(id):l.delete(id);
+  t.procedures=[...l].join(','); gabCommit(t); gabApercu(t);
+}
+function gabRoleAdd(){
+  const t=gabCur(); if(!t)return;
+  const r=gabRoles(t); r.push({role:'Nouveau rôle',cadence:14});
+  t.roles=gabRolesTxt(r); renderGabRoles(t); gabCommit(t);
+}
+function gabRoleSet(i,champ,val){
+  const t=gabCur(); if(!t)return;
+  const r=gabRoles(t); if(!r[i])return;
+  r[i][champ]=champ==='cadence'?Math.max(0,entFr(val,0)):String(val);
+  t.roles=gabRolesTxt(r); gabCommit(t);
+}
+function gabRoleDel(i){
+  const t=gabCur(); if(!t)return;
+  const r=gabRoles(t); r.splice(i,1);
+  t.roles=gabRolesTxt(r); renderGabRoles(t); gabCommit(t);
+}
+function gabOnBody(v){
+  const t=gabCur(); if(!t)return;
+  t.body=v; gabCommit(t);
+}
+
+// ── Rendu : la liste ──────────────────────────────────────────────────────
+function renderAdpGabarits(el){
+  if(adpTplCur){
+    const t=adpTplById(adpTplCur);
+    if(t&&t.kind==='projet')return renderGabPage(el,t);
+    adpTplCur=null;
+  }
+  const q=voNorm(adpSearch);
+  const arch=adpTemplates.filter(t=>t.kind==='projet'&&t.status==='archive');
+  const list=gabActifs().filter(t=>!q||voNorm(`${t.title} ${t.category} ${t.body}`).includes(q));
+  const cats=[...new Set(list.map(t=>t.category||'Sans catégorie'))];
+  const carte=t=>{
+    const nj=gabJalons(t).length, np=gabProcs(t).length, nr=gabRoles(t).length;
+    return `<div class="adp-card${t.status==='archive'?' tpl-arch':''}" onclick="openAdpTpl('${t.id}')">
+      <div class="adp-c-head"><span class="adp-c-name">${adpEsc(t.title)}</span>
+        <button class="gl-edit" onclick="event.stopPropagation();openAdpTplModal('${t.id}','projet')" title="Renommer">✎</button></div>
+      <div class="adp-c-meta">
+        <span class="adp-c-tag${nj?'':' quiet'}">${nj||'aucun'} jalon${nj>1?'s':''}</span>
+        ${np?`<span class="adp-c-tag">${np} procédure${np>1?'s':''}</span>`:''}
+        ${nr?`<span class="adp-c-tag">${nr} rôle${nr>1?'s':''}</span>`:''}
+        ${nj?`<span class="adp-c-tag">${gabDuree(t)} j</span>`:''}</div>
+      ${nj?`<button class="adp-act" onclick="event.stopPropagation();openGabCreer('${t.id}')">▶ Créer un projet</button>`
+          :'<div class="adp-c-next vide">Ajoute des jalons pour pouvoir l\'utiliser.</div>'}
+    </div>`;
+  };
+  el.innerHTML=`
+    <div class="adp-tools">
+      <input type="search" class="gl-search" placeholder="Titre, catégorie…" value="${adpEsc(adpSearch)}" oninput="setAdpSearch(this.value)">
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openAdpTplModal(null,'projet')">+ Gabarit</button>
+    </div>
+    <div class="fld-hint" style="margin-bottom:0.6rem">Un gabarit monte un projet complet : ses jalons datés à partir du démarrage, les procédures à lancer, les rôles à pourvoir et le squelette du journal.</div>
+    ${list.length?cats.map(cat=>`<div class="adp-sec">${adpEsc(cat)}</div>
+      <div class="adp-grid">${list.filter(t=>(t.category||'Sans catégorie')===cat).map(carte).join('')}</div>`).join('')
+      :`<div class="gl-empty">Aucun gabarit. Crée le premier avec le bouton ci-dessus.</div>`}
+    ${arch.length?`<div class="adp-sec">Archivés <span class="adp-badge quiet">${arch.length}</span></div>
+      <div class="adp-grid">${arch.map(carte).join('')}</div>`:''}`;
+}
+
+// ── Rendu : l'éditeur ─────────────────────────────────────────────────────
+function renderGabPage(el,t){
+  el.innerHTML=`
+    <div class="adp-tools">
+      <button class="gl-pill" onclick="closeAdpTpl()">← Gabarits</button>
+      <span class="adp-title">${adpEsc(t.title)}</span>
+      ${t.category?`<span class="adp-c-tag">${adpEsc(t.category)}</span>`:''}
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openGabCreer('${t.id}')">▶ Créer un projet</button>
+      <button class="gl-pill" onclick="openAdpTplModal('${t.id}','projet')">✎ Renommer</button>
+    </div>
+    <div class="adp-proj">
+      <div class="adp-journal">
+        <div id="gabJalons"></div>
+        <div id="gabApercu" class="fld-hint" style="margin-top:0.5rem"></div>
+        <div class="adp-sec" style="margin-top:1rem">Squelette du journal</div>
+        <div class="fld-hint">Repris tel quel dans la note du projet créé. Le titre et le client sont ajoutés au-dessus.</div>
+        <textarea class="sb-edit adp-edit" id="gabBody" spellcheck="true" style="min-height:180px"
+          placeholder="## Contexte&#10;&#10;## Avancées&#10;&#10;## Points ouverts"
+          oninput="gabOnBody(this.value)"></textarea>
+      </div>
+      <aside class="adp-side">
+        <div id="gabProcs"></div>
+        <div id="gabRoles"></div>
+      </aside>
+    </div>`;
+  const ta=document.getElementById('gabBody'); if(ta)ta.value=t.body||'';
+  renderGabJalons(t); renderGabProcs(t); renderGabRoles(t);
+}
+
+function renderGabJalons(t){
+  const host=document.getElementById('gabJalons'); if(!host)return;
+  const st=gabJalons(t);
+  host.innerHTML=`<div class="adp-sec">Jalons
+      <button class="adp-mini" onclick="gabAddJalon()" title="Ajouter un jalon">+</button></div>`
+    +(st.length?st.map((s,i)=>`<div class="run-edit">
+        <div class="run-e1">
+          <span class="run-drag">${i+1}</span>
+          <select class="run-f" onchange="gabJalonSet(${i},'type',this.value)">
+            ${ADP_KIND.map(([v,l])=>`<option value="${v}"${s.type===v?' selected':''}>${l}</option>`).join('')}
+          </select>
+          <input class="run-f run-lbl" value="${adpEsc(s.label)}" placeholder="Intitulé du jalon"
+                 onchange="gabJalonSet(${i},'label',this.value)">
+          <label class="run-off">J+<input class="run-f" ${CHAMP_ENT} value="${s.off}"
+                 onchange="gabJalonSet(${i},'off',this.value)" title="Jours après la date de début du projet"></label>
+          <button class="adp-act" onclick="gabJalonMove(${i},-1)" title="Monter">↑</button>
+          <button class="adp-act" onclick="gabJalonMove(${i},1)" title="Descendre">↓</button>
+          <button class="adp-act" onclick="gabJalonDel(${i})" title="Retirer">✕</button>
+        </div>
+      </div>`).join('')
+      :'<div class="sb-none">Aucun jalon. C\'est eux qui font le gabarit.</div>');
+  gabApercu(t);
+}
+// L'aperçu répond à la seule question qui compte en éditant : ça donne quoi ?
+function gabApercu(t){
+  const el=document.getElementById('gabApercu'); if(!el)return;
+  const st=gabJalons(t);
+  if(!st.length){ el.textContent=''; return; }
+  const d=gabDuree(t);
+  const np=gabProcs(t).length;
+  el.innerHTML=`${st.length} jalon${st.length>1?'s':''} sur ${d} jour${d>1?'s':''}`
+    +(d?` — du démarrage au ${plusDaysFrom(td(),d)} si on lançait aujourd'hui`:'')
+    +(np?` · ${np} procédure${np>1?'s':''} lancée${np>1?'s':''} au démarrage`:'');
+}
+function renderGabProcs(t){
+  const host=document.getElementById('gabProcs'); if(!host)return;
+  const dispo=tplActifs('procedure');
+  const pris=new Set(gabProcs(t));
+  host.innerHTML=`<div class="adp-sec">Procédures à lancer</div>`
+    +(dispo.length?`<div class="run-dep-box">${dispo.map(x=>
+        `<label><input type="checkbox"${pris.has(x.id)?' checked':''}
+           onchange="gabProcToggle('${x.id}',this.checked)"> ${adpEsc(x.title)}
+           <span class="adp-l-sub">${tplSteps(x).length} étape${tplSteps(x).length>1?'s':''}</span></label>`).join('')}</div>`
+      :'<div class="sb-none">Aucune procédure disponible.</div>')
+    +`<div class="fld-hint">Elles démarrent à la création du projet, datées depuis sa date de début.</div>`;
+}
+function renderGabRoles(t){
+  const host=document.getElementById('gabRoles'); if(!host)return;
+  const r=gabRoles(t);
+  host.innerHTML=`<div class="adp-sec" style="margin-top:1rem">Rôles à pourvoir
+      <button class="adp-mini" onclick="gabRoleAdd()" title="Ajouter un rôle">+</button></div>`
+    +(r.length?r.map((x,i)=>`<div class="run-edit"><div class="run-e1">
+        <input class="run-f run-lbl" value="${adpEsc(x.role)}" placeholder="MOA, exploitant…"
+               onchange="gabRoleSet(${i},'role',this.value)">
+        <label class="run-off">tous les <input class="run-f" ${CHAMP_ENT} value="${x.cadence}"
+               onchange="gabRoleSet(${i},'cadence',this.value)" title="Cadence de relance, en jours"> j</label>
+        <button class="adp-act" onclick="gabRoleDel(${i})" title="Retirer">✕</button>
+      </div></div>`).join('')
+      :'<div class="sb-none">Aucun rôle.</div>')
+    +`<div class="fld-hint">On ne connaît pas les personnes à l'avance : les rôles deviennent une liste à cocher en tête du journal du projet.</div>`;
+}
+
+// ── Créer le projet ───────────────────────────────────────────────────────
+let gabCreerId=null;
+function openGabCreer(tplId){
+  const t=adpTplById(tplId); if(!t)return;
+  const st=gabJalons(t);
+  if(!st.length){ toast('Ce gabarit n\'a pas encore de jalons','info'); return; }
+  gabCreerId=tplId;
+  adpEditKind='gab'; adpEditId=null;
+  document.getElementById('adpModalTitle').textContent='CRÉER UN PROJET';
+  const doms=[...new Set(adpProjects.map(p=>p.domaine).filter(Boolean))].sort();
+  document.getElementById('adpFields').innerHTML=`
+    <div class="field"><label>Nom du projet</label><input type="text" id="gcName" placeholder="${adpEsc(t.title)}"></div>
+    <div class="field"><label>Client</label><input type="text" id="gcClient" list="gcClientList" placeholder="DCB">
+      <datalist id="gcClientList">${projTags().map(x=>`<option value="${adpEsc(x)}">`).join('')}</datalist></div>
+    <div class="field"><label>Domaine</label><input type="text" id="gcDom" list="gcDomList" placeholder="facultatif">
+      <datalist id="gcDomList">${doms.map(x=>`<option value="${adpEsc(x)}">`).join('')}</datalist></div>
+    <div class="field"><label>Date de début</label><input type="date" id="gcStart" value="${td()}"
+      onchange="gabCreerApercu()"></div>
+    <div class="field"><label>Ce qui va être créé</label>
+      <div class="run-prev" id="gcPrev"></div></div>`;
+  // Ce formulaire crée, il ne modifie rien : le bouton Supprimer n'a pas de sens.
+  document.getElementById('adpDel').style.display='none';
+  modalOuvre('adpModal');
+  gabCreerApercu();
+}
+// Rien n'est créé à l'aveugle : on montre les dates réelles avant d'écrire.
+function gabCreerApercu(){
+  const t=adpTplById(gabCreerId); const el=document.getElementById('gcPrev');
+  if(!t||!el)return;
+  const start=(document.getElementById('gcStart')||{}).value||td();
+  const st=gabJalons(t).slice().sort((a,b)=>(parseInt(a.off,10)||0)-(parseInt(b.off,10)||0));
+  const procs=gabProcs(t).map(id=>adpTplById(id)).filter(Boolean);
+  const roles=gabRoles(t);
+  el.innerHTML=st.map(s=>`<div class="run-pl"><span>⛳</span>
+      <span class="run-pl-t">${adpEsc(s.label)}</span>
+      <span class="adp-l-sub">${(ADP_KIND.find(k=>k[0]===s.type)||['','Jalon'])[1]} · ${plusDaysFrom(start,s.off)}</span></div>`).join('')
+    +procs.map(x=>`<div class="run-pl"><span>▶</span><span class="run-pl-t">${adpEsc(x.title)}</span>
+      <span class="adp-l-sub">procédure lancée au démarrage</span></div>`).join('')
+    +(roles.length?`<div class="run-pl"><span>👤</span>
+      <span class="run-pl-t">${roles.map(r=>adpEsc(r.role)).join(', ')}</span>
+      <span class="adp-l-sub">à pourvoir, listés dans le journal</span></div>`:'');
+}
+async function creerProjetDepuisGabarit(){
+  const t=adpTplById(gabCreerId); if(!t)return;
+  const v=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+  const name=v('gcName')||t.title;
+  if(adpProjects.some(p=>p.name.toLowerCase()===name.toLowerCase())){
+    toast('Un projet porte déjà ce nom','err'); return; }
+  const start=v('gcStart')||td();
+  const st=gabJalons(t).slice().sort((a,b)=>(parseInt(a.off,10)||0)-(parseInt(b.off,10)||0));
+  closeAdpModal();
+  showLoad(true);
+  let ok=true;
+  const p={id:adpId('p'),name,client:v('gcClient'),domaine:v('gcDom'),status:'actif',
+    start_date:start,deadline:plusDaysFrom(start,gabDuree(t)),health:'vert',
+    note_id:'',color:'',created_at:td(),budget:0,next_action:'',
+    baseline:'',slips:0,fil:''};
+  // Le journal d'abord : le projet doit pouvoir le référencer dès sa première
+  // écriture, sinon il faudrait le sauver deux fois.
+  if(accessToken&&navigator.onLine){
+    try{ if(!notesLoaded)await loadNotes(); }catch(e){}
+    const roles=gabRoles(t);
+    const n={id:'n'+uid(),title:`Projet — ${name}`,
+      content:`# ${name}\n\n`
+        +(p.client?`Client : **${p.client}**\n\n`:'')
+        +`Démarrage : ${start} · Échéance visée : ${p.deadline}\n\n`
+        +(roles.length?`## Rôles à pourvoir\n\n`+roles.map(r=>`- [ ] ${r.role} : à identifier`).join('\n')+`\n\n`:'')
+        +(t.body?t.body.trim()+'\n\n':'')
+        +`## Avancées\n\n`,
+      tags:'projet',parent_id:'',icon:'📁',pinned:false,status:'active',
+      created_at:td(),updated_at:td(),gx:null,gy:null};
+    notes.push(n); noteIndexInvalidate(); cacheSet('notes',notes);
+    ok=await noteUpsert(n)&&ok;
+    p.note_id=n.id;
+  }
+  ok=await adpSave('proj',p)&&ok;
+  // Les jalons, dans l'ordre, datés depuis le démarrage.
+  const miles=st.map(s=>({id:adpId('m'),project_id:p.id,title:s.label,
+    due_date:plusDaysFrom(start,s.off),status:'todo',
+    kind:ADP_KIND.some(k=>k[0]===s.type)?s.type:'jalon',done_at:'',
+    baseline:plusDaysFrom(start,s.off),slips:0}));
+  miles.forEach(m=>adpMilestones.push(m));
+  cacheSet('adpMilestones',adpMilestones);
+  if(miles.length)ok=await sheetBatchUpsert('adp_milestones',miles.map(adpMileRow))&&ok;
+  // Puis les procédures, qui peuvent elles-mêmes créer jalons et tâches.
+  let nProc=0;
+  for(const id of gabProcs(t)){
+    const proc=adpTplById(id);
+    if(!proc||!tplSteps(proc).length)continue;
+    const r=await runLancer(proc,p,start);
+    ok=r.ok&&ok; nProc++;
+  }
+  projTagsInvalidate();
+  showLoad(false);
+  if(!ok)toast("Projet créé, mais une écriture a échoué — vérifie la synchro",'err');
+  else toast(`Projet créé · ${miles.length} jalon${miles.length>1?'s':''}${nProc?` · ${nProc} procédure${nProc>1?'s':''}`:''}`,'ok');
+  adpTplCur=null; setAdpView('projets');
+  await openAdpProject(p.id);
+  updateHStats();
+}
+
+// Lancer une procedure se fait maintenant depuis deux endroits — le bouton, et
+// la creation d'un projet depuis un gabarit. Une seule fonction pour les deux.
+async function runLancer(t,p,start){
+  const run={id:adpId('r'),template_id:t.id,project_id:p.id,
+    title:`${t.title} — ${p.name}`,start_date:start||td(),status:'actif',
+    steps:tplSteps(t).map(s=>({...s,due:'',done:'',ref:'',ans:'',skipped:''}))};
+  adpRuns.push(run);
+  await runAdvance(run);
+  const ok=await runSave(run);
+  return {run,ok};
+}
 async function launchRun(){
   const t=adpTplById(runLaunchTpl); if(!t)return;
   const pid=document.getElementById('rlProj').value;
@@ -8957,12 +9412,7 @@ async function launchRun(){
   const p=adpProjById(pid); if(!p)return;
   closeRunLaunch();
   showLoad(true);
-  const run={id:adpId('r'),template_id:t.id,project_id:pid,
-    title:`${t.title} — ${p.name}`,start_date:start,status:'actif',
-    steps:tplSteps(t).map(s=>({...s,due:'',done:'',ref:'',ans:'',skipped:''}))};
-  adpRuns.push(run);
-  await runAdvance(run);
-  const ok=await runSave(run);
+  const {run,ok}=await runLancer(t,p,start);
   showLoad(false);
   if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
   adpRunCur=run.id; adpTplCur=null;
@@ -10426,7 +10876,7 @@ function renderAdpSuivi(el){
 // navigateur — c'est la seule voie honnete sans embarquer un moteur de rendu.
 // Le tableur est un vrai .xlsx, fabrique avec le meme ecrivain ZIP que
 // l'export des notes : pas une seule dependance de plus.
-const RAP_SECTIONS=[['etat','État et jalons'],['journal','Décisions, risques, actions'],['budget','Budget et trajectoire'],
+const RAP_SECTIONS=[['delta','Depuis le dernier point'],['etat','État et jalons'],['journal','Décisions, risques, actions'],['budget','Budget et trajectoire'],
                     ['suivi','Suivi : ce qui traîne'],['procedures','Procédures'],
                     ['avancees','Avancées du journal']];
 let rapPortee='tout', rapSections=new Set(RAP_SECTIONS.map(s=>s[0]));
@@ -10434,7 +10884,7 @@ let rapPortee='tout', rapSections=new Set(RAP_SECTIONS.map(s=>s[0]));
 function openRapport(){
   const doms=[...new Set(adpProjects.map(p=>p.domaine).filter(Boolean))].sort();
   document.getElementById('rapBody').innerHTML=`
-    <div class="field"><label>Portée</label><select id="rapScope">
+    <div class="field"><label>Portée</label><select id="rapScope" onchange="rapRefHint()">
       <option value="tout">Tout le portefeuille</option>
       ${doms.length?`<optgroup label="Par domaine">${doms.map(d=>`<option value="dom:${adpEsc(d)}">${adpEsc(d)}</option>`).join('')}</optgroup>`:''}
       <optgroup label="Par projet">${adpProjects.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr'))
@@ -10447,15 +10897,135 @@ function openRapport(){
     <div class="field"><label>Contenu</label>
       <div class="rap-secs">${RAP_SECTIONS.map(([k,l])=>
         `<label><input type="checkbox" id="rs_${k}" ${rapSections.has(k)?'checked':''}> ${l}</label>`).join('')}</div>
-      <div class="fld-hint">Le PDF passe par l'impression du navigateur : choisis « Enregistrer au format PDF » dans la boîte de dialogue.</div></div>`;
+      <div class="fld-hint">Le PDF passe par l'impression du navigateur : choisis « Enregistrer au format PDF » dans la boîte de dialogue.</div></div>
+    <div class="field"><label>Point de référence</label>
+      <label class="rap-ref"><input type="checkbox" id="rapRef" checked> Marquer ce rapport comme le nouveau point de départ</label>
+      <div class="fld-hint" id="rapRefHint"></div></div>`;
   modalOuvre('rapModal');
+  rapRefHint();
 }
+// On dit ce qui sert de référence AVANT d'imprimer : c'est ce qui décide du
+// contenu de la section « Depuis le dernier point ».
+function rapRefHint(){
+  const el=document.getElementById('rapRefHint'); if(!el)return;
+  const sc=document.getElementById('rapScope');
+  const pt=ptDe(sc?sc.value:rapPortee);
+  el.textContent=pt&&pt.date
+    ? `Dernier point sur cette portée : ${pt.date}. Le rapport dira ce qui a bougé depuis.`
+    : `Aucun point de référence sur cette portée : ce rapport sera le premier.`;
+}
+let rapMarquer=true;
 function closeRapport(){ modalFerme('rapModal'); }
 function rapLire(){
   rapPortee=document.getElementById('rapScope').value;
   rapSections=new Set(RAP_SECTIONS.filter(([k])=>document.getElementById('rs_'+k).checked).map(([k])=>k));
+  const r=document.getElementById('rapRef'); rapMarquer=r?r.checked:false;
   return {an:parseInt(document.getElementById('rapYear').value,10)||adpBudYear};
 }
+// ── Le point de référence ─────────────────────────────────────────────────
+// « Qu'est-ce qui a changé depuis la dernière fois ? » est la première question
+// posée en comité, et la seule à laquelle le rapport ne savait pas répondre :
+// il redécrivait l'état à chaque fois, sans mémoire du précédent. On garde donc
+// une photo minimale au moment où un rapport est sorti — une par portée, la
+// dernière écrasant la précédente : c'est bien « depuis le DERNIER point »
+// qu'on veut, pas depuis un point quelconque.
+const ptId=portee=>'pt~'+portee;
+const ptDe=portee=>adpPoints.find(x=>x.portee===portee)||null;
+function ptPhoto(list){
+  const ids=new Set(list.map(p=>p.id));
+  return {
+    projets:list.map(p=>[p.id,p.health||'',p.deadline||'',budProjReel(p.id)].join('~')).join('|'),
+    jalons :adpMilestones.filter(m=>ids.has(m.project_id))
+              .map(m=>[m.id,m.status||'',m.due_date||''].join('~')).join('|')
+  };
+}
+const ptLireProjets=txt=>{ const m={};
+  String(txt||'').split('|').filter(Boolean).forEach(e=>{ const [id,health,deadline,reel]=e.split('~');
+    m[id]={health:health||'',deadline:deadline||'',reel:parseFloat(reel)||0}; });
+  return m; };
+const ptLireJalons=txt=>{ const m={};
+  String(txt||'').split('|').filter(Boolean).forEach(e=>{ const [id,status,due]=e.split('~');
+    m[id]={status:status||'',due:due||''}; });
+  return m; };
+async function ptEnregistrer(portee,list){
+  const photo=ptPhoto(list);
+  const pt={id:ptId(portee),portee,date:td(),projets:photo.projets,jalons:photo.jalons};
+  const i=adpPoints.findIndex(x=>x.portee===portee);
+  if(i>=0)adpPoints[i]=pt; else adpPoints.push(pt);
+  cacheSet('adpPoints',adpPoints);
+  return sheetUpsertByKey('adp_points',pt.id,[pt.id,pt.portee,pt.date,pt.projets,pt.jalons]);
+}
+// Ce qui a bougé entre la photo et maintenant. Rien n'est deviné : ce qui n'est
+// pas dans la photo est un ajout, ce qui n'est plus là est un retrait.
+function rapDelta(list){
+  const pt=ptDe(rapPortee);
+  if(!pt||!pt.date)return null;
+  const av=ptLireProjets(pt.projets), aj=ptLireJalons(pt.jalons);
+  const ids=new Set(list.map(p=>p.id));
+  const nom=id=>(adpProjById(id)||{}).name||'projet supprimé';
+  const d={date:pt.date,sante:[],echeance:[],franchis:[],glisses:[],ajoutes:[],retires:[],
+           jr:[],budget:[],totalBudget:0};
+  list.forEach(p=>{
+    const a=av[p.id];
+    if(!a){ d.ajoutes.push({quoi:p.name,type:'projet'}); return; }
+    if(a.health!==(p.health||''))d.sante.push({nom:p.name,de:a.health,vers:p.health});
+    if(a.deadline!==(p.deadline||''))d.echeance.push({nom:p.name,de:a.deadline,vers:p.deadline});
+    const dr=budProjReel(p.id)-a.reel;
+    if(Math.abs(dr)>=1){ d.budget.push({nom:p.name,delta:dr}); d.totalBudget+=dr; }
+  });
+  adpMilestones.filter(m=>ids.has(m.project_id)).forEach(m=>{
+    const a=aj[m.id];
+    if(!a){ d.ajoutes.push({quoi:m.title,type:'jalon',ou:nom(m.project_id)}); return; }
+    if(a.status!=='done'&&m.status==='done')
+      d.franchis.push({quoi:m.title,ou:nom(m.project_id),le:m.done_at||'',
+                       tenu:!m.due_date||!m.done_at||m.done_at<=a.due});
+    else if(a.due!==(m.due_date||''))
+      d.glisses.push({quoi:m.title,ou:nom(m.project_id),de:a.due,vers:m.due_date});
+  });
+  const vus=new Set(adpMilestones.map(m=>m.id));
+  Object.keys(aj).forEach(id=>{ if(!vus.has(id))d.retires.push({quoi:'un jalon',type:'jalon'}); });
+  // Décisions et risques : ils sont datés par leur entrée de journal, donc pas
+  // besoin de photo — il suffit de retenir ce qui est postérieur au point.
+  list.forEach(p=>{
+    const n=p.note_id?noteById(p.note_id):null;
+    // Le jour du point est INCLUS : une décision consignée après avoir sorti le
+    // rapport porte la date du jour, et un « strictement après » la ferait
+    // disparaître de tous les rapports suivants. Au pire on répète une ligne
+    // déjà vue une fois ; perdre une décision, jamais.
+    jrItems(n).filter(x=>x.date&&x.date>=pt.date)
+      .forEach(x=>d.jr.push({...x,ou:p.name}));
+  });
+  d.rien=!d.sante.length&&!d.echeance.length&&!d.franchis.length&&!d.glisses.length
+       &&!d.ajoutes.length&&!d.retires.length&&!d.jr.length&&!d.budget.length;
+  return d;
+}
+function rapDeltaHtml(list){
+  const E=tdEsc, d=rapDelta(list);
+  const lbl=h=>(ADP_HEALTH.find(x=>x[0]===h)||['','—'])[1];
+  if(!d)return `<h2>Depuis le dernier point</h2>
+    <p class="rap-vide">Premier rapport sur cette portée : il n'y a rien à comparer. Celui-ci servira de référence au suivant.</p>`;
+  if(d.rien)return `<h2>Depuis le dernier point (${E(d.date)})</h2>
+    <p class="rap-vide">Rien n'a bougé depuis le ${E(d.date)}.</p>`;
+  const bloc=(titre,lignes)=>lignes.length?`<h3>${titre}</h3><ul class="rap-l">${lignes.join('')}</ul>`:'';
+  return `<h2>Depuis le dernier point (${E(d.date)})</h2>`
+    +bloc('Jalons franchis',d.franchis.map(x=>
+      `<li>${E(x.quoi)} <span class="rap-s">${E(x.ou)}${x.le?` · le ${E(x.le)}`:''}${x.tenu?'':' · hors délai'}</span></li>`))
+    +bloc('Jalons repoussés',d.glisses.map(x=>
+      `<li>${E(x.quoi)} <span class="rap-s">${E(x.ou)} · ${E(x.de)||'sans date'} → ${E(x.vers)||'sans date'}</span></li>`))
+    +bloc('Santé',d.sante.map(x=>
+      `<li>${E(x.nom)} <span class="rap-s">${E(lbl(x.de))} → ${E(lbl(x.vers))}</span></li>`))
+    +bloc('Échéances de projet',d.echeance.map(x=>
+      `<li>${E(x.nom)} <span class="rap-s">${E(x.de)||'sans date'} → ${E(x.vers)||'sans date'}</span></li>`))
+    +bloc('Ajouts',d.ajoutes.map(x=>
+      `<li>${E(x.quoi)} <span class="rap-s">${E(x.type)}${x.ou?' · '+E(x.ou):''}</span></li>`))
+    +bloc('Décisions, risques, actions consignés',d.jr.map(x=>{
+      const m=jrMeta(x.type);
+      return `<li>${m[2]} ${E(x.text)} <span class="rap-s">${E(x.ou)} · ${E(x.date)}</span></li>`;}))
+    +bloc('Budget consommé sur la période',d.budget.map(x=>
+      `<li>${E(x.nom)} <span class="rap-s">${x.delta>0?'+':''}${budFmt(x.delta)}</span></li>`)
+      .concat(d.budget.length>1?[`<li><b>Total ${d.totalBudget>0?'+':''}${budFmt(d.totalBudget)}</b></li>`]:[]));
+}
+
 function rapProjets(){
   if(rapPortee.startsWith('prj:'))return adpProjects.filter(p=>p.id===rapPortee.slice(4));
   if(rapPortee.startsWith('dom:'))return adpProjects.filter(p=>p.domaine===rapPortee.slice(4));
@@ -10488,6 +11058,9 @@ function rapHtml(an){
   const tE=list.reduce((s,p)=>s+budProjEst(p.id,'G'),0), tR=list.reduce((s,p)=>s+budProjReel(p.id),0);
   h+=`</tbody><tfoot><tr><td colspan="4">TOTAL</td><td class="r">${budFmt(tE)}</td>
     <td class="r">${budFmt(tR)}</td><td></td><td></td><td></td></tr></tfoot></table>`;
+  // Juste après la synthèse : c'est la question qu'on pose avant même de lire
+  // le détail projet par projet.
+  if(rapSections.has('delta'))h+=rapDeltaHtml(list);
 
   list.forEach(p=>{
     if(list.length>1)h+=`<h2 class="rap-p rap-brk">${E(p.name)}${[p.domaine,p.client].filter(Boolean).length?` <small>${E([p.domaine,p.client].filter(Boolean).join(' · '))}</small>`:''}</h2>`;
@@ -10589,6 +11162,16 @@ function rapApercu(){
 function closeRapPrev(){ modalFerme('rapPrevModal'); }
 function rapImprimer(){
   closeRapPrev();
+  // Le point est posé à l'impression, pas à l'aperçu : regarder un rapport ne
+  // doit pas effacer la référence du suivant. Mais on ne l'ATTEND pas — une
+  // écriture réseau qui traîne bloquerait la boîte d'impression. Les données ne
+  // bougent pas entre les deux, donc la photo est la même, prise juste après.
+  if(rapMarquer){
+    const portee=rapPortee, list=rapProjets();
+    Promise.resolve().then(()=>ptEnregistrer(portee,list)).then(ok=>{
+      if(!ok)toast("Rapport imprimé, mais le point de référence n'a pas pu être enregistré",'err');
+    }).catch(()=>toast("Rapport imprimé, mais le point de référence n'a pas pu être enregistré",'err'));
+  }
   document.getElementById('rapport').innerHTML=document.getElementById('rapPrevBody').innerHTML;
   document.body.classList.add('impression');
   const fin=()=>{ document.body.classList.remove('impression');
@@ -14039,7 +14622,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.54.0';
+const APP_VERSION='v1.55.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
