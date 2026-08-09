@@ -4503,9 +4503,9 @@ try{ noteCollapsed=new Set(JSON.parse(localStorage.getItem(LS_NOTE_FOLD))||[]); 
 
 async function ensureNotesSheet(){
   const sid=cfg.spreadsheetId;
-  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
-  const titles=(meta.sheets||[]).map(s=>s.properties.title);
+  const titles=await sheetTitres();
   if(titles.includes('notes'))return;
+  sheetTitresOublie();
   await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requests:[{addSheet:{properties:{title:'notes'}}}]})});
   const now=td();
@@ -4802,8 +4802,8 @@ let nhist=[], nhistLoaded=false, nhistLast={};
 
 async function ensureHistSheet(){
   const sid=cfg.spreadsheetId;
-  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
-  if(((meta.sheets||[]).map(x=>x.properties.title)).includes('notes_history'))return;
+  if((await sheetTitres()).includes('notes_history'))return;
+  sheetTitresOublie();
   await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requests:[{addSheet:{properties:{title:'notes_history'}}}]})});
   await sheetPut('notes_history!A1',[NHIST_HEADER]);
@@ -6361,7 +6361,10 @@ const BK_TABLES=[
   ['adpBudget',    'Budget',      ()=>adpBudget,     v=>{adpBudget=v;budIdxInvalidate();}],
   ['adpRuns',      'Suivis',      ()=>adpRuns,       v=>{adpRuns=v;}],
   ['autoRegles',   'Automatismes',()=>autoRegles,    v=>{autoRegles=v;}],
-  ['autoJournal',  'Auto, journal',()=>autoJournal,  v=>{autoJournal=v;}]];
+  ['autoJournal',  'Auto, journal',()=>autoJournal,  v=>{autoJournal=v;}],
+  // Ajoute apres coup : l'onglet est arrive en v1.55 sans entrer ici, donc une
+  // restauration rendait tout SAUF la memoire du dernier rapport.
+  ['adpPoints',    'Points de rapport',()=>adpPoints, v=>{adpPoints=v;}]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -6436,7 +6439,7 @@ async function applyBackup(){
   });
   // caches locaux d'abord : même si le réseau échoue, l'état restauré survit
   ['notes','mesDefs','mesVals','adpProjects','adpContacts','adpMilestones',
-   'adpTemplates','adpBudget','adpRuns','autoRegles','autoJournal'].forEach(k=>{
+   'adpTemplates','adpBudget','adpRuns','autoRegles','autoJournal','adpPoints'].forEach(k=>{
     const t=BK_TABLES.find(x=>x[0]===k); if(t)cacheSet(k,t[2]()||[]);
   });
   lsSet(LS_CACHE,JSON.stringify(allTasks));
@@ -6456,6 +6459,7 @@ async function applyBackup(){
       if(adpRuns.length)    ok=await sheetBatchUpsert('adp_runs',adpRuns.map(adpRunRow))&&ok;
       if(autoRegles.length) ok=await sheetBatchUpsert('auto_regles',autoRegles.map(autoRegRow))&&ok;
       if(autoJournal.length)ok=await sheetBatchUpsert('auto_journal',autoJournal.map(autoJrnRow))&&ok;
+      if(adpPoints.length)  ok=await sheetBatchUpsert('adp_points',adpPoints.map(adpPtRow))&&ok;
     }catch(e){ ok=false; }
   }
   showLoad(false);
@@ -6780,12 +6784,11 @@ const mesValOn=(k,date)=>mesVals.find(v=>v.key===k&&v.date===date)||null;
 // ── Feuilles ──────────────────────────────────────────────────────────────
 async function ensureMesSheets(){
   const sid=cfg.spreadsheetId;
-  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{}})
-    .then(r=>r.ok?r.json():{}).catch(()=>({}));
-  const titles=(meta.sheets||[]).map(s=>s.properties.title);
+  const titles=await sheetTitres();
   const want=[['metric_defs',MES_DEF_HEADER],['metrics',MES_VAL_HEADER]];
   const missing=want.filter(([t])=>!titles.includes(t));
   if(!missing.length)return;
+  sheetTitresOublie();
   await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,
     {method:'POST',headers:{'Content-Type':'application/json'},
      body:JSON.stringify({requests:missing.map(([t])=>({addSheet:{properties:{title:t}}}))})});
@@ -6796,13 +6799,7 @@ async function loadMetrics(){
   if(!accessToken)return;
   await ensureMesSheets();
   const sid=cfg.spreadsheetId;
-  const get=async(sheet,range)=>{
-    const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${sheet}!${range}`,{headers:{}})
-      .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
-    const rows=r.values||[];
-    return rows.length<=1?[]:rows.slice(1).filter(x=>x[0]);
-  };
-  const [de,va]=await Promise.all([get('metric_defs','A:J'),get('metrics','A:F')]);
+  const [de,va]=await sheetBatchLignes(['metric_defs!A:J','metrics!A:F']);
   const cell=(x,i)=>String(x[i]==null?'':x[i]).trim();
   const dd={};
   de.forEach(x=>{ dd[cell(x,0)]={key:cell(x,0),label:cell(x,1)||cell(x,0),unit:cell(x,2),
@@ -7201,7 +7198,7 @@ const ADP_BUD_HEADER=['id','project_id','capex','nature','month','amount','updat
 // sorti. C'est LUI qui permet de repondre a « qu'est-ce qui a change depuis la
 // derniere fois ? » — la premiere question de tout comite, et la seule que le
 // rapport ne savait pas traiter, faute de memoire du precedent.
-const ADP_PT_HEADER=['id','portee','date','projets','jalons'];
+const ADP_PT_HEADER=['id','portee','date','projets','jalons','partiel'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
 // Déclarés ici et pas avec le moteur : ADP_SHEETS les référence, et une
@@ -7212,7 +7209,7 @@ const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'Q'],['adp_contacts',ADP_CON
                     ['adp_milestones',ADP_MILE_HEADER,'J'],['adp_templates',ADP_TPL_HEADER,'L'],
                     ['adp_budget',ADP_BUD_HEADER,'H'],['adp_runs',ADP_RUN_HEADER,'H'],
                     ['auto_regles',AUTO_REG_HEADER,'J'],['auto_journal',AUTO_JRN_HEADER,'G'],
-                    ['adp_points',ADP_PT_HEADER,'E']];
+                    ['adp_points',ADP_PT_HEADER,'F']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
 const ADP_HEALTH  = [['vert','Sous contrôle'],['orange','Vigilance'],['rouge','En difficulté']];
@@ -7241,11 +7238,10 @@ const adpId       = p=>p+Date.now().toString(36)+
 // ── Feuilles ──────────────────────────────────────────────────────────────
 async function ensureAdpSheets(){
   const sid=cfg.spreadsheetId;
-  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{}})
-    .then(r=>r.ok?r.json():{}).catch(()=>({}));
-  const titles=(meta.sheets||[]).map(s=>s.properties.title);
+  const titles=await sheetTitres();
   const missing=ADP_SHEETS.filter(([t])=>!titles.includes(t));
   if(!missing.length)return;
+  sheetTitresOublie();          // on s'apprête à en créer : la liste n'est plus à jour
   await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,
     {method:'POST',headers:{'Content-Type':'application/json'},
      body:JSON.stringify({requests:missing.map(([t])=>({addSheet:{properties:{title:t}}}))})});
@@ -7263,22 +7259,14 @@ async function ensureAdpSheets(){
 }
 
 const adpCell=(x,i)=>String(x[i]==null?'':x[i]).trim();
-async function adpFetch(sheet,range){
-  const sid=cfg.spreadsheetId;
-  const r=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/${sheet}!${range}`,{headers:{}})
-    .then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]}));
-  const rows=r.values||[];
-  return rows.length<=1?[]:rows.slice(1).filter(x=>x[0]);
-}
 async function loadAdp(){
   if(!accessToken)return;
   await ensureAdpSheets();
-  const [pr,co,mi,tp,bu,ru,ar,aj,pt]=await Promise.all([
-    adpFetch('adp_projects','A:Q'), adpFetch('adp_contacts','A:N'),
-    adpFetch('adp_milestones','A:J'), adpFetch('adp_templates','A:L'),
-    adpFetch('adp_budget','A:H'), adpFetch('adp_runs','A:H'),
-    adpFetch('auto_regles','A:J'), adpFetch('auto_journal','A:G'),
-    adpFetch('adp_points','A:E')]);
+  // Neuf onglets, une seule requête. C'était neuf allers-retours, soit neuf
+  // fois la latence du réseau — l'essentiel du temps d'ouverture d'ADP.
+  const [pr,co,mi,tp,bu,ru,ar,aj,pt]=await sheetBatchLignes(
+    ['adp_projects!A:Q','adp_contacts!A:N','adp_milestones!A:J','adp_templates!A:L',
+     'adp_budget!A:H','adp_runs!A:H','auto_regles!A:J','auto_journal!A:G','adp_points!A:F']);
   // La dernière ligne gagne. Une ligne vidée est une pierre tombale : la
   // suppression garde la ligne pour ne jamais décaler la feuille sous les
   // écritures en vol, mais l'objet ne doit pas ressusciter au rechargement.
@@ -7313,7 +7301,8 @@ async function loadAdp(){
     status:adpCell(x,9)||'actif',
     procedures:adpCell(x,10),roles:String(x[11]==null?'':x[11])})),'title');
   adpPoints=dedupe(pt.map(x=>({id:adpCell(x,0),portee:adpCell(x,1),date:adpCell(x,2),
-    projets:String(x[3]==null?'':x[3]),jalons:String(x[4]==null?'':x[4])})),'portee');
+    projets:String(x[3]==null?'':x[3]),jalons:String(x[4]==null?'':x[4]),
+    partiel:adpCell(x,5)==='oui'})),'portee');
   const bd={};
   bu.forEach(x=>{ const o={id:adpCell(x,0),project_id:adpCell(x,1),capex:adpCell(x,2),
     nature:adpCell(x,3),month:adpCell(x,4),
@@ -8449,14 +8438,37 @@ async function deleteAdpModal(){
 // répare. Ne rend rien tant que les projets ne sont pas chargés : « aucun
 // projet » n'est pas « tous les projets ont disparu ».
 function adpOrphelins(){
-  if(!adpLoaded)return {miles:[],conts:[],runs:[],budget:[],n:0,eur:0};
+  if(!adpLoaded)return {miles:[],conts:[],runs:[],budget:[],gabs:[],n:0,eur:0};
   const vivant=id=>!id||!!adpProjById(id);
   const miles=adpMilestones.filter(m=>m.project_id&&!vivant(m.project_id));
   const conts=adpContacts.filter(c=>c.project_id&&!vivant(c.project_id));
   const runs=adpRuns.filter(r=>r.project_id&&!vivant(r.project_id));
   const budget=adpBudget.filter(b=>b.project_id&&!vivant(b.project_id));
   const eur=budget.reduce((s,b)=>s+(b.amount||0),0);
-  return {miles,conts,runs,budget,n:miles.length+conts.length+runs.length+budget.length,eur};
+  // Autre sorte de lien mort, arrivée avec les gabarits : une procédure
+  // référencée qui a été supprimée depuis. Elle ne se rattache pas à un projet
+  // — elle se retire, tout simplement.
+  const gabs=adpTemplates.filter(t=>t.kind==='projet')
+    .map(t=>({t,morts:gabProcs(t).filter(id=>!adpTplById(id))}))
+    .filter(x=>x.morts.length);
+  return {miles,conts,runs,budget,gabs,
+          n:miles.length+conts.length+runs.length+budget.length+gabs.length,eur};
+}
+// Retire d'un gabarit les identifiants de procédures qui ne désignent plus rien.
+async function adpNettoyerGabarits(){
+  const gabs=adpOrphelins().gabs;
+  if(!gabs.length)return;
+  closeAdpModal();
+  showLoad(true);
+  let ok=true, n=0;
+  for(const {t,morts} of gabs){
+    t.procedures=gabProcs(t).filter(id=>!!adpTplById(id)).join(',');
+    n+=morts.length;
+    ok=await adpSave('tpl',t)&&ok;
+  }
+  showLoad(false);
+  toast(ok?`${n} référence${n>1?'s':''} morte${n>1?'s':''} retirée${n>1?'s':''}`:"ÉCHEC de l'enregistrement",ok?'ok':'err');
+  renderAdp(); updateHStats();
 }
 let orphCible='';
 function openOrphelins(){
@@ -8476,7 +8488,12 @@ function openOrphelins(){
       ${o.conts.map(c=>ligne('✉',c.name,'contact')).join('')}
       ${o.runs.map(r=>ligne('⚙',r.title,'procédure')).join('')}
       ${o.budget.length?ligne('€',`${o.budget.length} ligne${o.budget.length>1?'s':''} de budget`,budFmt(o.eur)||'0 €'):''}
+      ${o.gabs.map(x=>ligne('▦',x.t.title,
+        `gabarit · ${x.morts.length} procédure${x.morts.length>1?'s':''} supprimée${x.morts.length>1?'s':''}`)).join('')}
     </div>
+    ${o.gabs.length?`<div class="fld-hint">Les gabarits ne se rattachent pas à un projet : leurs
+      références mortes se retirent, et le gabarit continue de servir.
+      <button class="gl-pill" style="margin-top:0.5rem" onclick="adpNettoyerGabarits()">Retirer les références mortes</button></div>`:''}
     <div class="field"><label>Rattacher à</label>
       <select id="orphProj">
         <option value="">— choisir un projet —</option>
@@ -9378,10 +9395,12 @@ async function creerProjetDepuisGabarit(){
   cacheSet('adpMilestones',adpMilestones);
   if(miles.length)ok=await sheetBatchUpsert('adp_milestones',miles.map(adpMileRow))&&ok;
   // Puis les procédures, qui peuvent elles-mêmes créer jalons et tâches.
-  let nProc=0;
+  let nProc=0, nAbsentes=0;
   for(const id of gabProcs(t)){
     const proc=adpTplById(id);
-    if(!proc||!tplSteps(proc).length)continue;
+    // Une procédure supprimée depuis que le gabarit la référence : on lançait
+    // le reste sans rien dire, et le compte annoncé ne collait pas.
+    if(!proc||!tplSteps(proc).length){ nAbsentes++; continue; }
     const r=await runLancer(proc,p,start);
     ok=r.ok&&ok; nProc++;
   }
@@ -9389,6 +9408,7 @@ async function creerProjetDepuisGabarit(){
   showLoad(false);
   if(!ok)toast("Projet créé, mais une écriture a échoué — vérifie la synchro",'err');
   else toast(`Projet créé · ${miles.length} jalon${miles.length>1?'s':''}${nProc?` · ${nProc} procédure${nProc>1?'s':''}`:''}`,'ok');
+  if(nAbsentes)toast(`${nAbsentes} procédure${nAbsentes>1?'s':''} du gabarit n'existe${nAbsentes>1?'nt':''} plus — à retirer du gabarit`,'err');
   adpTplCur=null; setAdpView('projets');
   await openAdpProject(p.id);
   updateHStats();
@@ -10158,6 +10178,11 @@ const AUTO_TRIG=[
  ['jalon.glisse','Jalon repoussé N fois ou plus','fois',2,n=>
    adpMilestones.filter(m=>m.status!=='done'&&(m.slips||0)>=n)
      .map(m=>({id:m.id,lbl:m.title,pid:m.project_id,jours:m.slips,obj:m}))],
+ // Le pendant du precedent, au niveau du projet : l'information n'existait pas
+ // avant que le fil ne la garde, et aucune regle ne s'en servait encore.
+ ['projet.glisse','Échéance du projet repoussée N fois ou plus','fois',2,n=>
+   adpProjects.filter(p=>p.status!=='archive'&&p.status!=='termine'&&(p.slips||0)>=n)
+     .map(p=>({id:p.id,lbl:p.name,pid:p.id,jours:p.slips,obj:p}))],
  ['relance.due','Relance due depuis N jours','jours',0,n=>
    adpContacts.filter(c=>{const d=adpDueDay(c);return !!d&&-dayDiff(d)>=n;})
      .map(c=>({id:c.id,lbl:c.name,pid:c.project_id,jours:-dayDiff(adpDueDay(c)),obj:c,
@@ -10931,13 +10956,25 @@ function rapLire(){
 // qu'on veut, pas depuis un point quelconque.
 const ptId=portee=>'pt~'+portee;
 const ptDe=portee=>adpPoints.find(x=>x.portee===portee)||null;
+// Une cellule Sheets accepte 50 000 caractères. Mesuré : 600 jalons en font
+// 12 500, donc la marge est large — mais au-delà d'environ 2 400 l'écriture
+// échouerait, et comme le point n'est pas attendu à l'impression, l'échec
+// passerait presque inaperçu. On coupe donc à une entrée entière, et on le
+// DIT : une photo partielle ne permet plus d'affirmer qu'un jalon absent est
+// un jalon nouveau, et le rapport doit s'en abstenir plutôt que d'inventer.
+const PT_CELL_MAX=45000;
 function ptPhoto(list){
   const ids=new Set(list.map(p=>p.id));
-  return {
-    projets:list.map(p=>[p.id,p.health||'',p.deadline||'',budProjReel(p.id)].join('~')).join('|'),
-    jalons :adpMilestones.filter(m=>ids.has(m.project_id))
-              .map(m=>[m.id,m.status||'',m.due_date||''].join('~')).join('|')
-  };
+  const projets=list.map(p=>[p.id,p.health||'',p.deadline||'',budProjReel(p.id)].join('~')).join('|');
+  let jalons=adpMilestones.filter(m=>ids.has(m.project_id))
+              .map(m=>[m.id,m.status||'',m.due_date||''].join('~')).join('|');
+  let partiel=false;
+  if(jalons.length>PT_CELL_MAX){
+    const coupe=jalons.lastIndexOf('|',PT_CELL_MAX);
+    jalons=jalons.slice(0,coupe>0?coupe:PT_CELL_MAX);
+    partiel=true;
+  }
+  return {projets,jalons,partiel};
 }
 const ptLireProjets=txt=>{ const m={};
   String(txt||'').split('|').filter(Boolean).forEach(e=>{ const [id,health,deadline,reel]=e.split('~');
@@ -10947,13 +10984,16 @@ const ptLireJalons=txt=>{ const m={};
   String(txt||'').split('|').filter(Boolean).forEach(e=>{ const [id,status,due]=e.split('~');
     m[id]={status:status||'',due:due||''}; });
   return m; };
+const adpPtRow=x=>[x.id,x.portee||'',x.date||'',x.projets||'',x.jalons||'',x.partiel?'oui':''];
 async function ptEnregistrer(portee,list){
   const photo=ptPhoto(list);
-  const pt={id:ptId(portee),portee,date:td(),projets:photo.projets,jalons:photo.jalons};
+  const pt={id:ptId(portee),portee,date:td(),projets:photo.projets,jalons:photo.jalons,
+            partiel:photo.partiel};
+  if(photo.partiel)toast('Portefeuille très volumineux : le point ne retient qu\'une partie des jalons','info');
   const i=adpPoints.findIndex(x=>x.portee===portee);
   if(i>=0)adpPoints[i]=pt; else adpPoints.push(pt);
   cacheSet('adpPoints',adpPoints);
-  return sheetUpsertByKey('adp_points',pt.id,[pt.id,pt.portee,pt.date,pt.projets,pt.jalons]);
+  return sheetUpsertByKey('adp_points',pt.id,adpPtRow(pt));
 }
 // Ce qui a bougé entre la photo et maintenant. Rien n'est deviné : ce qui n'est
 // pas dans la photo est un ajout, ce qui n'est plus là est un retrait.
@@ -10963,8 +11003,8 @@ function rapDelta(list){
   const av=ptLireProjets(pt.projets), aj=ptLireJalons(pt.jalons);
   const ids=new Set(list.map(p=>p.id));
   const nom=id=>(adpProjById(id)||{}).name||'projet supprimé';
-  const d={date:pt.date,sante:[],echeance:[],franchis:[],glisses:[],ajoutes:[],retires:[],
-           jr:[],budget:[],totalBudget:0};
+  const d={date:pt.date,partiel:!!pt.partiel,sante:[],echeance:[],franchis:[],glisses:[],
+           ajoutes:[],retires:[],jr:[],budget:[],totalBudget:0};
   list.forEach(p=>{
     const a=av[p.id];
     if(!a){ d.ajoutes.push({quoi:p.name,type:'projet'}); return; }
@@ -10975,7 +11015,9 @@ function rapDelta(list){
   });
   adpMilestones.filter(m=>ids.has(m.project_id)).forEach(m=>{
     const a=aj[m.id];
-    if(!a){ d.ajoutes.push({quoi:m.title,type:'jalon',ou:nom(m.project_id)}); return; }
+    // Photo partielle : l'absence ne prouve rien, on se tait plutôt que de
+    // présenter un jalon ancien comme un ajout.
+    if(!a){ if(!d.partiel)d.ajoutes.push({quoi:m.title,type:'jalon',ou:nom(m.project_id)}); return; }
     if(a.status!=='done'&&m.status==='done')
       d.franchis.push({quoi:m.title,ou:nom(m.project_id),le:m.done_at||'',
                        tenu:!m.due_date||!m.done_at||m.done_at<=a.due});
@@ -11004,10 +11046,11 @@ function rapDeltaHtml(list){
   const lbl=h=>(ADP_HEALTH.find(x=>x[0]===h)||['','—'])[1];
   if(!d)return `<h2>Depuis le dernier point</h2>
     <p class="rap-vide">Premier rapport sur cette portée : il n'y a rien à comparer. Celui-ci servira de référence au suivant.</p>`;
-  if(d.rien)return `<h2>Depuis le dernier point (${E(d.date)})</h2>
+  const noteP=d.partiel?`<p class="rap-vide">Le portefeuille dépassait ce qu'un point peut retenir : les jalons ajoutés depuis ne sont pas listés.</p>`:'';
+  if(d.rien)return `<h2>Depuis le dernier point (${E(d.date)})</h2>${noteP}
     <p class="rap-vide">Rien n'a bougé depuis le ${E(d.date)}.</p>`;
   const bloc=(titre,lignes)=>lignes.length?`<h3>${titre}</h3><ul class="rap-l">${lignes.join('')}</ul>`:'';
-  return `<h2>Depuis le dernier point (${E(d.date)})</h2>`
+  return `<h2>Depuis le dernier point (${E(d.date)})</h2>`+noteP
     +bloc('Jalons franchis',d.franchis.map(x=>
       `<li>${E(x.quoi)} <span class="rap-s">${E(x.ou)}${x.le?` · le ${E(x.le)}`:''}${x.tenu?'':' · hors délai'}</span></li>`))
     +bloc('Jalons repoussés',d.glisses.map(x=>
@@ -11250,7 +11293,8 @@ function rapFeuilles(an){
   const mois=budMonths(an);
   const f=[];
   f.push({nom:'Synthèse',lignes:[
-    ['Projet','Domaine','Client','Santé','Statut','Échéance','Estimé global','Réalisé total',
+    ['Projet','Domaine','Client','Santé','Santé depuis','Statut','Échéance initiale','Échéance',
+     'Décalages','Glissement (j)','Estimé global','Réalisé total',
      'Réalisé '+an,'Jalons faits','Jalons total','Jalons en retard','Relances dues','Dernière avancée',
      'Prochaine action'],
     ...list.map(p=>{
@@ -11258,8 +11302,10 @@ function rapFeuilles(an){
       const n=p.note_id?noteById(p.note_id):null;
       return [p.name,p.domaine||'',p.client||'',
         (ADP_HEALTH.find(x=>x[0]===p.health)||['','?'])[1],
+        projSanteDepuis(p),
         (ADP_STATUS.find(x=>x[0]===p.status)||['','?'])[1],
-        p.deadline||'',budProjEst(p.id,'G'),budProjReel(p.id),
+        p.baseline||'',p.deadline||'',p.slips||0,projSlipDays(p),
+        budProjEst(p.id,'G'),budProjReel(p.id),
         mois.reduce((s,m)=>s+budProjMonth(p.id,m),0),
         ml.length-ouv.length,ml.length,
         ouv.filter(m=>m.due_date&&dayDiff(m.due_date)<0).length,
@@ -11802,9 +11848,9 @@ function goalProgress(g){
 // ── Sheets I/O (append-only, dernière ligne par id, tombstone) ──
 async function ensureGoalSheet(){
   const sid=cfg.spreadsheetId;
-  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
-  const titles=(meta.sheets||[]).map(s=>s.properties.title);
+  const titles=await sheetTitres();
   if(titles.includes('goals'))return;
+  sheetTitresOublie();
   await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({requests:[{addSheet:{properties:{title:'goals'}}}]})});
   await sportPutValues('goals!A1',[GOAL_HEADER,...GOAL_SEED]);
 }
@@ -11837,6 +11883,45 @@ function goalToRow(g){return [g.id,g.parent_id||'',goalHorizonFromDate(g.target_
 //   • sheetReplaceAll  : réécriture complète d'un onglet, sans fenêtre vide
 const sheetUrl=(path)=>`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}${path}`;
 const authHeaders=()=>({Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'});
+
+// ── La liste des onglets, une fois par session ────────────────────────────
+// Six fonctions ensure* posaient chacune la meme question au demarrage : « quels
+// onglets existent ? ». Mesure : le meme appel, quatre a six fois, pour une
+// information qui ne change QUE lorsque c'est nous qui creons un onglet. On la
+// retient, et on l'oublie a ce moment-la. Un echec reseau n'est pas memorise :
+// une liste vide ferait croire que tout manque et relancerait des creations.
+let sheetTitresCache=null;
+const sheetTitresOublie=()=>{ sheetTitresCache=null; };
+async function sheetTitres(){
+  if(sheetTitresCache)return sheetTitresCache;
+  const meta=await authFetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}?fields=sheets.properties.title`,
+    {headers:{}}).then(r=>r.ok?r.json():null).catch(()=>null);
+  if(!meta||!meta.sheets)return [];
+  sheetTitresCache=meta.sheets.map(x=>x.properties&&x.properties.title).filter(Boolean);
+  return sheetTitresCache;
+}
+
+// ── Lire N plages en UN appel ─────────────────────────────────────────────
+// Charger l'application demandait vingt aller-retours, un par onglet. Sur une
+// liaison mobile ce n'est pas le volume qui coute, c'est la latence multipliee
+// par le nombre d'allers-retours. values:batchGet rend toutes les plages d'un
+// coup, dans l'ordre demande.
+async function sheetBatchGet(ranges){
+  if(!ranges.length)return [];
+  const q=ranges.map(r=>'ranges='+encodeURIComponent(r)).join('&');
+  const r=await authFetch(sheetUrl(`/values:batchGet?${q}`),{headers:{}});
+  if(!r.ok)throw new Error(r.status);
+  const j=await r.json().catch(()=>({}));
+  const vr=j.valueRanges||[];
+  return ranges.map((_,i)=>(vr[i]&&vr[i].values)||[]);
+}
+// Meme chose, mais en retirant l'en-tete et les lignes sans cle — la forme
+// qu'attendent tous les chargeurs.
+async function sheetBatchLignes(ranges){
+  const t=await sheetBatchGet(ranges);
+  return t.map(rows=>rows.length<=1?[]:rows.slice(1).filter(x=>x[0]));
+}
 
 async function sheetPut(range,values,includeValues){
   // includeValuesInResponse renvoie ce que la feuille contient VRAIMENT après
@@ -13808,25 +13893,32 @@ function sportStatusLabel(s){return s==='done'?'Fait':s==='partial'?'Partiel':s=
 async function sportPutValues(range,values){ return sheetPut(range,values); }
 async function ensureSportSheets(){
   const sid=cfg.spreadsheetId;
-  const meta=await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}?fields=sheets.properties.title`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{}).catch(()=>({}));
-  const titles=(meta.sheets||[]).map(s=>s.properties.title);
+  const titles=await sheetTitres();
   const toCreate=[];
   if(!titles.includes('sport_plan'))   toCreate.push({sheet:'sport_plan',rows:[SPORT_PLAN_HEADER]});
   if(!titles.includes('sport_log'))    toCreate.push({sheet:'sport_log', rows:[SPORT_LOG_HEADER]});
   const formatExists=titles.includes('sport_format');
   if(!formatExists) toCreate.push({sheet:'sport_format',rows:SPORT_FORMAT_DOC.map(l=>[l])});
   if(toCreate.length){
+    sheetTitresOublie();        // on crée : la liste mémorisée n'est plus à jour
     await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}:batchUpdate`,{
       method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
       body:JSON.stringify({requests:toCreate.map(t=>({addSheet:{properties:{title:t.sheet}}}))})
     });
     for(const t of toCreate) await sportPutValues(`${t.sheet}!A1`,t.rows);
   }
-  // Resync the spec tab if it pre-existed (propagate the current SPEC version)
-  if(formatExists){
-    // ecriture d'abord, purge du reliquat ensuite
-    await sheetReplaceAll('sport_format','Z',SPORT_FORMAT_DOC.map(l=>[l]));
-  }
+  // La feuille de spec était RÉÉCRITE à chaque chargement : deux appels et tout
+  // son contenu, pour un document qui ne bouge qu'avec l'application. Elle porte
+  // désormais une signature en B1, lue dans le même lot que les données — donc
+  // sans appel de plus — et n'est réécrite que si elle a réellement changé.
+  if(toCreate.some(t=>t.sheet==='sport_format'))await sportFormatEcrire();
+}
+const sportFormatSig=()=>{ const s=SPORT_FORMAT_DOC.join('\n'); let h=5381;
+  for(let i=0;i<s.length;i++)h=((h*33)^s.charCodeAt(i))>>>0;
+  return s.length+':'+h.toString(36); };
+async function sportFormatEcrire(){
+  await sheetReplaceAll('sport_format','Z',SPORT_FORMAT_DOC.map(l=>[l]));
+  await sheetPut('sport_format!B1',[[sportFormatSig()]]);
 }
 // Dedup rows keeping the LAST occurrence per date (append-only sheets,
 // shared with the Claude strategy project which appends plan rows).
@@ -13839,11 +13931,15 @@ async function loadSportData(){
   if(!accessToken)return;
   await ensureSportSheets();
   const sid=cfg.spreadsheetId;
-  const [planR,logR]=await Promise.all([
-    authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_plan!A:F`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
-    authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${sid}/values/sport_log!A:G`,{headers:{Authorization:`Bearer ${accessToken}`}}).then(r=>r.ok?r.json():{values:[]}).catch(()=>({values:[]})),
-  ]);
-  const pr=planR.values||[], lr=logR.values||[];
+  // On garde les lignes BRUTES, en-tête compris : la réconciliation de schéma
+  // ci-dessous en a besoin pour retrouver les colonnes d'un ancien onglet.
+  let pr=[], lr=[], sig=[];
+  try{ [pr,lr,sig]=await sheetBatchGet(['sport_plan!A:F','sport_log!A:G','sport_format!B1']); }catch(e){}
+  // La spec a changé de version depuis la dernière fois : on la remet à jour,
+  // une fois, au lieu de la réécrire à chaque ouverture.
+  if(String(((sig||[])[0]||[])[0]||'')!==sportFormatSig()){
+    try{ await sportFormatEcrire(); }catch(e){}
+  }
   // Reconcile header labels if a tab pre-existed with an older schema (positions unchanged → safe)
   const hdrMatches=(row,hdr)=>hdr.every((h,i)=>String((row||[])[i]||'').trim()===h);
   if(pr.length && !hdrMatches(pr[0],SPORT_PLAN_HEADER)) await sportPutValues('sport_plan!A1',[SPORT_PLAN_HEADER]);
@@ -14622,7 +14718,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.55.0';
+const APP_VERSION='v1.56.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
