@@ -2821,6 +2821,22 @@ function refreshToken(){
 // silence et on rejoue une fois.
 // Declare AVANT authFetch : un const ne se hisse pas.
 const AUTH_RETRY=[500,1500];   // attentes, en ms, entre deux tentatives
+// ── Session expiree ───────────────────────────────────────────────────────
+// Apres quelques jours d'application ouverte, Google finit par refuser le
+// renouvellement silencieux. L'ecran affichait alors « ERREUR SYNC » et
+// « Erreur sauvegarde Sheets » : exactement ce qu'il affiche quand le reseau
+// tombe. Rien ne disait que la session avait expire, et rien ne proposait de
+// se reconnecter — le seul remede etait de recharger la page, ce que personne
+// ne pouvait deviner. On le dit une fois, avec le bouton qui va avec.
+let sessionExpiree=false;
+function signalerSessionExpiree(){
+  if(sessionExpiree)return;
+  sessionExpiree=true;
+  setSyncStatus('error','SESSION EXPIRÉE');
+  annoncer('Session Google expirée — reconnexion nécessaire');
+  offerChoice('Ta session Google a expiré — tes modifications ne partent plus',
+    [['Se reconnecter',()=>{ silentAuthFailed=true; sessionExpiree=false; startAuth(); }]],0,'err');
+}
 async function authFetch(url,opts){
   const build=()=>{
     const o=Object.assign({},opts||{});
@@ -2830,19 +2846,34 @@ async function authFetch(url,opts){
   let r=await fetch(url,build());
   if(r.status===401||r.status===403){
     const tok=await refreshToken();
-    if(tok)r=await fetch(url,build());
+    if(tok){ r=await fetch(url,build()); sessionExpiree=false; }
+    // Le renouvellement silencieux a echoue : la session est finie. Ce n'est
+    // PAS une panne reseau, et c'etait pourtant le meme message — « Erreur
+    // sauvegarde Sheets » — sans jamais dire qu'il suffit de se reconnecter.
+    else signalerSessionExpiree();
   }
-  // 429 « trop de requêtes » et 503 « réessaie plus tard » sont passagers, et
-  // signifient tous deux que la requête n'a PAS été appliquée : on la rejoue,
-  // espacée, plutôt que d'annoncer une erreur qui se serait résolue seule.
-  // On ne rejoue délibérément PAS un 500/502 : sur un :append, l'écriture peut
-  // avoir abouti malgré la réponse, et une seconde tentative ferait un doublon.
+  return reprendre(r,build,url);
+}
+// 429 « trop de requêtes » et 503 « réessaie plus tard » sont passagers, et
+// signifient tous deux que la requête n'a PAS été appliquée : on la rejoue,
+// espacée, plutôt que d'annoncer une erreur qui se serait résolue seule.
+// On ne rejoue délibérément PAS un 500/502 : sur un :append, l'écriture peut
+// avoir abouti malgré la réponse, et une seconde tentative ferait un doublon.
+// Sorti d'authFetch : les cours de crypto partent en fetch nu, vers une API
+// publique qui limite précisément par des 429 — c'est elle qui en avait le
+// plus besoin, et elle n'en profitait pas.
+async function reprendre(r,build,url){
   for(let i=0;i<AUTH_RETRY.length&&(r.status===429||r.status===503);i++){
     if(!navigator.onLine)break;
     await new Promise(f=>setTimeout(f,AUTH_RETRY[i]));
     r=await fetch(url,build());
   }
   return r;
+}
+// Un fetch ordinaire, sans jeton, mais avec la même patience.
+async function fetchRepris(url,opts){
+  const build=()=>Object.assign({},opts||{});
+  return reprendre(await fetch(url,build()),build,url);
 }
 let habDayFilter = 'remaining';
 let habWeekOffset = 0;
@@ -3155,6 +3186,7 @@ function init() {
     render();
   } catch(e){}
   renderProjTags();   // les boutons d'ajout rapide vivent dans l'en-tête, pas dans le board
+  programmeMinuit();  // l'application reste ouverte des jours : le jour doit tourner avec elle
   annonceFile();      // une écriture en attente se voit dès l'ouverture
   // Etat initial : sans lui, le premier Retour tomberait sur un etat vide.
   try{ history.replaceState(navEtat(),'',location.pathname+'#'+navHash()); }catch(e){}
@@ -3543,6 +3575,11 @@ async function rewriteHabitsLog() {
 
 let syncEtat=null;
 function setSyncStatus(state, label) {
+  // Tant que la session est expirée, c'est CETTE information qui doit rester à
+  // l'écran : elle est la seule sur laquelle on peut agir. Les appelants qui
+  // suivent annoncent « ERREUR SYNC », ce qui ne ferait que la masquer derrière
+  // un message indiscernable d'une panne réseau.
+  if(sessionExpiree&&state==='error'&&label!=='SESSION EXPIRÉE')label='SESSION EXPIRÉE';
   const d = document.getElementById('syncDot');
   d.className = 'sync-dot ' + state;
   document.getElementById('syncLabel').textContent = label;
@@ -5970,20 +6007,55 @@ function grBuild(){
   grRender();
 }
 
+// La répulsion comparait chaque nœud à tous les autres, 340 fois : mesuré 32 ms
+// à 50 notes, 121 à 200, 972 à 600 et 2 596 à 1 000 — cinq fois plus de notes
+// coûtaient vingt et une fois plus de temps. Or la force décroît en 1/d² : au
+// delà de quelques centaines de pixels elle ne pèse plus rien. On range donc
+// les nœuds dans des cases de la taille de cette portée, et on ne compare qu'à
+// ceux des huit cases voisines — deux nœuds séparés par plus d'une case sont
+// forcément hors de portée. En dessous d'un certain nombre, la comparaison de
+// tous à tous coûte moins cher que la grille : on la garde.
+const GR_EXACT=150;      // seuil au-delà duquel la grille devient rentable
+const GR_PORTEE=600;     // portée de la répulsion, en pixels
 // force=true : on replace TOUT, meme les noeuds figes (bouton Réorganiser)
 function grLayout(force){
   const free=grNodes.filter(p=>force||!p.fixed);
   if(!free.length)return;
   const REP=Math.max(9000,60000/Math.max(4,grNodes.length));
+  const grille=grNodes.length>GR_EXACT, C=GR_PORTEE, C2=C*C;
+  const pousse=(a,b)=>{
+    if(!force&&a.fixed&&b.fixed)return;
+    let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy||0.01;
+    const f=REP/d2,d=Math.sqrt(d2); dx/=d;dy/=d;
+    if(force||!a.fixed){a.vx-=dx*f;a.vy-=dy*f;}
+    if(force||!b.fixed){b.vx+=dx*f;b.vy+=dy*f;}
+  };
   for(let it=0;it<340;it++){
     const cool=1-it/340;
-    for(let i=0;i<grNodes.length;i++)for(let j=i+1;j<grNodes.length;j++){
-      const a=grNodes[i],b=grNodes[j];
-      if(!force&&a.fixed&&b.fixed)continue;
-      let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy||0.01;
-      const f=REP/d2,d=Math.sqrt(d2); dx/=d;dy/=d;
-      if(force||!a.fixed){a.vx-=dx*f;a.vy-=dy*f;}
-      if(force||!b.fixed){b.vx+=dx*f;b.vy+=dy*f;}
+    if(!grille){
+      for(let i=0;i<grNodes.length;i++)for(let j=i+1;j<grNodes.length;j++)
+        pousse(grNodes[i],grNodes[j]);
+    }else{
+      const cases=new Map();
+      for(let i=0;i<grNodes.length;i++){
+        const p=grNodes[i], k=Math.floor(p.x/C)+'~'+Math.floor(p.y/C);
+        let l=cases.get(k); if(!l)cases.set(k,l=[]);
+        l.push(i);
+      }
+      for(let i=0;i<grNodes.length;i++){
+        const a=grNodes[i], cx=Math.floor(a.x/C), cy=Math.floor(a.y/C);
+        for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){
+          const l=cases.get((cx+ox)+'~'+(cy+oy)); if(!l)continue;
+          for(let z=0;z<l.length;z++){
+            const j=l[z];
+            if(j<=i)continue;                  // chaque paire une seule fois
+            const b=grNodes[j];
+            const dx=b.x-a.x,dy=b.y-a.y;
+            if(dx*dx+dy*dy>C2)continue;        // le coin de la case voisine dépasse la portée
+            pousse(a,b);
+          }
+        }
+      }
     }
     grEdges.forEach(([i,j])=>{
       const a=grNodes[i],b=grNodes[j];
@@ -12434,6 +12506,39 @@ window.addEventListener('popstate',ev=>{
   }finally{ navSilence=false; }
 });
 
+// ── Le passage de minuit ──────────────────────────────────────────────────
+// L'application reste ouverte des jours — c'est meme la raison d'etre du
+// renouvellement de jeton. Mesure a horloge avancee de 24 h sans rechargement :
+// la carte Taches gardait la liste de la veille, les Habitudes affichaient 1/1
+// sur une journee neuve, le badge restait a 0 alors qu'une tache etait devenue
+// due, la Revue gardait sa periode — et surtout autoAuJour(), appele seulement
+// au chargement, ne tournait plus. Rien ne se re-rendait parce que rien ne
+// surveillait le changement de jour.
+let jourCourant=td(), minuitTimer=null;
+async function nouveauJour(){
+  const j=td();
+  if(j===jourCourant)return false;
+  jourCourant=j;
+  refreshActive();     // la colonne d'une tache derive de son echeance
+  render();
+  updateHStats();      // le badge « a faire » compte a partir d'aujourd'hui
+  renderCurrentPage(); // re-rendre la page ouverte, sans en changer
+  if(curPage==='sport'&&typeof renderSportPage==='function')renderSportPage();
+  // La passe d'automatismes est datee par LS_AUTO_RUN : un jour neuf la relance.
+  try{ await autoAuJour(); }catch(e){}
+  return true;
+}
+function programmeMinuit(){
+  clearTimeout(minuitTimer);
+  const d=new Date(); d.setHours(24,0,1,0);          // une seconde apres minuit
+  minuitTimer=setTimeout(()=>{ nouveauJour(); programmeMinuit(); },
+                         Math.max(1000,d.getTime()-Date.now()));
+}
+// Filet : un ordinateur en veille ne declenche pas ses minuteurs a l'heure.
+// Revenir sur l'application suffit alors a rattraper le jour manque.
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden)nouveauJour(); });
+window.addEventListener('focus',()=>{ nouveauJour(); });
+
 function switchPage(name){
   if(name==='omega')name=omegaLast;              // groupe : on ouvre le dernier consulte
   if(inOmega(name)){ omegaLast=name; try{localStorage.setItem(LS_OMEGA,name);}catch(e){} }
@@ -12654,7 +12759,7 @@ async function loadCryptoData() {
 async function fetchCryptoPrices() {
   try {
     const ids = CRYPTOS.map(c => c.gecko).join(',');
-    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+    const r = await fetchRepris(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
     if (!r.ok) return;
     const data = await r.json();
     CRYPTOS.forEach(c => {
@@ -12673,7 +12778,7 @@ async function fetchHodlComparison() {
       if (!firstDate || !cryptoPrices[c.sym]?.price) continue;
       const [y,m,d] = firstDate.split('-');
       const geckoDate = `${d}-${m}-${y}`;
-      const r = await fetch(`https://api.coingecko.com/api/v3/coins/${c.gecko}/history?date=${geckoDate}&localization=false`);
+      const r = await fetchRepris(`https://api.coingecko.com/api/v3/coins/${c.gecko}/history?date=${geckoDate}&localization=false`);
       if (!r.ok) continue;
       const data = await r.json();
       const histPrice = data.market_data?.current_price?.usd;
@@ -14718,7 +14823,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.56.0';
+const APP_VERSION='v1.57.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
