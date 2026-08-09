@@ -12,11 +12,60 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Kanban">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" media="print" onload="this.media='all'"
-      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap"></noscript>
 <style>
+/* ── Les polices sont chez nous ────────────────────────────────────────────
+   Elles arrivaient de fonts.googleapis.com, qui en tirait ensuite les
+   fichiers depuis fonts.gstatic.com : deux requetes vers un tiers a chaque
+   demarrage a froid, et une dependance a ce que ce tiers soit joignable — pas
+   acquis derriere un proxy d'entreprise. « Zero dependance externe » n'etait
+   vrai que du JavaScript. Les 42 fontes (6 familles, latin et latin-ext) sont
+   desormais dans fonts/. unicode-range est conserve tel quel : le navigateur
+   ne telecharge que les fichiers dont il a besoin pour ce qu'il affiche, donc
+   les 1,4 Mo du depot ne coutent rien au chargement. Reste un seul appel
+   sortant : l'identification Google, qui est irremplacable. */
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-mono-400-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-mono-400-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/ibm-plex-mono-500-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/ibm-plex-mono-500-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/ibm-plex-mono-700-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/ibm-plex-mono-700-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 400; font-stretch: 100%; font-display: swap; src: url(fonts/ibm-plex-sans-400-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 400; font-stretch: 100%; font-display: swap; src: url(fonts/ibm-plex-sans-400-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 500; font-stretch: 100%; font-display: swap; src: url(fonts/ibm-plex-sans-500-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 500; font-stretch: 100%; font-display: swap; src: url(fonts/ibm-plex-sans-500-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 600; font-stretch: 100%; font-display: swap; src: url(fonts/ibm-plex-sans-600-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 600; font-stretch: 100%; font-display: swap; src: url(fonts/ibm-plex-sans-600-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 700; font-stretch: 100%; font-display: swap; src: url(fonts/ibm-plex-sans-700-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 700; font-stretch: 100%; font-display: swap; src: url(fonts/ibm-plex-sans-700-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/inter-400-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/inter-400-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/inter-500-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/inter-500-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/inter-600-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/inter-600-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/inter-700-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/inter-700-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 800; font-display: swap; src: url(fonts/inter-800-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 800; font-display: swap; src: url(fonts/inter-800-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/jetbrains-mono-400-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/jetbrains-mono-400-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/jetbrains-mono-500-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/jetbrains-mono-500-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/jetbrains-mono-700-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/jetbrains-mono-700-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/space-mono-400-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/space-mono-400-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/space-mono-700-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/space-mono-700-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/syne-400-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/syne-400-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/syne-600-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/syne-600-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/syne-700-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/syne-700-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 800; font-display: swap; src: url(fonts/syne-800-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 800; font-display: swap; src: url(fonts/syne-800-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+
 :root{
   --bg:#09090e;--surface:#0f0f17;--surface2:#16161f;--surface3:#1c1c28;
   --border:#252535;--border2:#32324a;
@@ -30,6 +79,8 @@
   --font-mono:'Space Mono',var(--sys-mono);
 }
 *{box-sizing:border-box;margin:0;padding:0}
+/* Lisible par un lecteur d'ecran, invisible a l'oeil. */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 /* Au clavier, il faut voir ou l'on est. Une seule regle :focus-visible
    existait dans toute la feuille : partout ailleurs le navigateur posait son
    contour par defaut, souvent invisible sur fond sombre, et une douzaine de
@@ -1802,7 +1853,7 @@ body,body *{font-family:var(--font-body)}
 </div>
 
 <!-- LOADING -->
-<div id="loadOverlay"><div class="spinner"></div><div class="load-text">CHARGEMENT...</div></div>
+<div id="loadOverlay" role="status" aria-live="polite"><div class="spinner"></div><div class="load-text">CHARGEMENT...</div></div>
 
 <!-- HEADER -->
 <header>
@@ -2005,11 +2056,11 @@ body,body *{font-family:var(--font-body)}
       <div class="field"><label>Statut</label><select id="gfStatus"><option value="active">En cours</option><option value="done">Atteint</option><option value="paused">En pause</option></select></div>
     </div>
     <div class="field"><label>Description</label><input type="text" id="gfDesc" placeholder="Détail / pourquoi..." autocomplete="off"></div>
-    <div class="field"><label>Progression % <span style="color:var(--text-dim);font-weight:400">(ignoré si checkpoints)</span></label><input type="number" id="gfProgress" min="0" max="100" placeholder="0"></div>
+    <div class="field"><label>Progression % <span style="color:var(--text-dim);font-weight:400">(ignoré si checkpoints)</span></label><input type="text" inputmode="numeric" id="gfProgress" placeholder="0"></div>
     <div class="field"><label>Icône</label><input type="hidden" id="gfIcon"><div class="gl-emoji-grid" id="gfEmojiGrid"></div></div>
     <div class="field"><label>Récompense 🎁</label><input type="text" id="gfReward" placeholder="Ma récompense en atteignant l'objectif..." autocomplete="off"></div>
     <div class="field"><label>Euro <span style="color:var(--text-dim);text-transform:none;letter-spacing:0">— négatif si l'objectif est un achat</span></label>
-      <input type="number" step="0.01" id="gfEuro" placeholder="0" autocomplete="off"></div>
+      <input type="text" inputmode="decimal" id="gfEuro" placeholder="0" autocomplete="off"></div>
     <div class="field"><label>Checkpoints <span style="color:var(--text-dim);font-weight:400">(un par ligne — coche en préfixant par [x])</span></label>
       <textarea id="gfCheckpoints" class="fit-input" rows="5" style="width:100%" placeholder="[x] Première étape faite&#10;[ ] Étape suivante&#10;[ ] Dernière étape | récompense étape"></textarea></div>
     <div style="display:flex;gap:0.5rem;justify-content:space-between;margin-top:0.5rem">
@@ -2094,7 +2145,7 @@ body,body *{font-family:var(--font-body)}
           <option value="Autre">Autre</option>
         </select>
       </div>
-      <div class="field"><label>Durée (min)</label><input type="number" id="spfDuration" placeholder="45"></div>
+      <div class="field"><label>Durée (min)</label><input type="text" inputmode="numeric" id="spfDuration" placeholder="45"></div>
     </div>
     <div class="field"><label>Titre</label><input type="text" id="spfTitle" placeholder="ex : Push + Squat" autocomplete="off"></div>
     <div class="field"><label>Programme détaillé (Markdown supporté)</label>
@@ -2376,7 +2427,7 @@ body,body *{font-family:var(--font-body)}
       <div class="cat-row" id="catRow"></div>
     </div>
     <div class="field"><label>Récompense (€)</label>
-      <input type="number" id="hfReward" min="0" step="0.5" placeholder="Ex: 2.00"/>
+      <input type="text" inputmode="decimal" id="hfReward" placeholder="Ex: 2,00"/>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeHabitModal()">Annuler</button>
@@ -2386,7 +2437,11 @@ body,body *{font-family:var(--font-body)}
   </div>
 </div>
 
-<div class="toasts" id="toasts"></div>
+<!-- Les messages sont lus a voix haute : sans region vivante, « ECHEC de
+     l'enregistrement » passait en silence complet. -->
+<div class="toasts" id="toasts" role="log" aria-live="polite" aria-relevant="additions"></div>
+<!-- Ce que l'application veut faire entendre sans l'afficher deux fois. -->
+<div id="annonce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 // ════════════════════════════════════════════════════
@@ -2567,6 +2622,39 @@ const LS_CACHE = 'kanban_cache_v3';
 // ── Cache local generique ─────────────────────────────────────────────────
 // Seules les taches etaient mises en cache : hors ligne, HABITUDES, OBJECTIFS
 // et SPORT s'ouvraient vides, ce qui rendait le PWA a moitie utile.
+// ── Identifiants numériques ───────────────────────────────────────────────
+// Ils valaient Date.now() tout nu. Mesuré : quarante tours de boucle donnent
+// UNE seule valeur. En pratique ça tenait, parce qu'un appel réseau sépare
+// toujours deux créations — la sûreté reposait donc sur la présence d'un await
+// dans la boucle. C'est exactement le défaut qui avait fait disparaître deux
+// règles d'automatisme en silence ; deux appels s'étaient déjà bricolé un
+// « +index » et un « +aléatoire » pour s'en sortir. Horloge monotone : la
+// valeur ne recule jamais, ne se répète jamais, et garde l'ordre de création.
+let idDernier=0;
+function uid(){ const t=Date.now(); idDernier = t>idDernier ? t : idDernier+1; return idDernier; }
+// Declare ici, et pas a cote d'annoncer() : setSyncStatus est appele bien plus
+// haut dans le fichier, et un let ne se hisse pas.
+let annonceDerniere='';
+
+// ── Nombres à la française ────────────────────────────────────────────────
+// Un <input type="number"> REFUSE la virgule et la supprime sans rien dire :
+// « 12,5 » devenait « 125 ». Mesuré sur les seize champs numériques de
+// l'application, tous concernés — une pesée à 82,4 kg s'enregistrait à 824. Et
+// sur téléphone c'était pire : le clavier proposait la virgule que le champ
+// avalait ensuite. La conversion existait déjà, recopiée à quinze endroits et
+// absente partout ailleurs ; elle est désormais ici, une seule fois. Les
+// champs passent en type="text" : c'est le seul moyen de laisser la virgule
+// entrer. inputmode conserve le bon clavier sur téléphone.
+const nbFr=(v,def=null)=>{
+  const s=String(v==null?'':v).replace(/[\s  ]/g,'').replace(',','.');
+  if(!s)return def;
+  const n=parseFloat(s);
+  return Number.isFinite(n)?n:def;
+};
+const entFr=(v,def=null)=>{ const n=nbFr(v,null); return n===null?def:Math.round(n); };
+const CHAMP_DEC='type="text" inputmode="decimal"';
+const CHAMP_ENT='type="text" inputmode="numeric"';
+
 const LS_DATA = 'kanban_data_';
 // ── Le quota local n'a pas le droit de faire perdre un enregistrement ─────
 // Mesuré : le plafond de localStorage est d'environ 4,9 Mo, et trois ans de
@@ -3001,7 +3089,7 @@ function intentDue(v){
 
 async function quickAddTask(o){
   const due=intentDue(o.due);
-  const nt={id:Date.now(),title:o.title,column:taskColumnFromDate(due),importance:o.imp||3,
+  const nt={id:uid(),title:o.title,column:taskColumnFromDate(due),importance:o.imp||3,
             due_date:due,created_at:td(),completed_at:'',notes:'',project:o.proj||'',
             recurrence:'',checklist:'',snoozes:0};
   allTasks.push(nt);refreshActive();
@@ -3197,7 +3285,7 @@ async function loadFromSheets() {
     const data = await r.json();
     const rows = data.values || [];
     allTasks = rows.length <= 1 ? [] : rows.slice(1).map(p => ({
-      id: parseInt(p[0])||Date.now(), title:p[1]||'', column:p[2]||'BackLog',
+      id: parseInt(p[0])||uid(), title:p[1]||'', column:p[2]||'BackLog',
       importance:parseInt(p[3])||3, due_date:p[4]||'', created_at:p[5]||td(),
       completed_at:p[6]||'', notes:p[7]||'', project:(p[8]||'').trim(),
       recurrence:(p[9]||'').trim(), checklist:p[10]||'', snoozes:parseInt(p[11],10)||0,
@@ -3221,6 +3309,9 @@ async function loadFromSheets() {
     // l'onglet correspond ligne à ligne. Le prochain enregistrement réécrira
     // tout, et ce n'est qu'ensuite que le ciblage reprend.
     tasksEcrites = null;
+    // Idem pour le jeton : le premier enregistrement de la session relira
+    // l'onglet en entier — une fois — puis posera le sien.
+    jetonLocal = null;
     if(migrated) persist();
     lsSet(LS_CACHE, JSON.stringify(allTasks));
     setSyncStatus('ok','SYNCED');
@@ -3270,6 +3361,39 @@ async function sheetWriteRows(sheet,items){
   if(!r.ok)throw new Error(r.status);
   return true;
 }
+// ── Jeton de concurrence ──────────────────────────────────────────────────
+// Le contrôle « quelqu'un a-t-il écrit depuis ma dernière lecture ? » relisait
+// l'onglet entier avant CHAQUE enregistrement : 450 Ko descendus toutes les
+// 700 ms de frappe apaisée, à trois ans de données. On écrit désormais un
+// jeton dans une cellule à part, hors des colonnes de données (A:M), et c'est
+// lui seul qu'on relit : environ 200 octets. Le jeton change à chaque écriture,
+// d'où qu'elle vienne — donc s'il est resté le nôtre, personne n'a touché à
+// l'onglet et il n'y a rien à comparer. S'il a changé, alors seulement on
+// relit tout et on compare les empreintes, exactement comme avant : une
+// écriture concurrente qui produit un contenu identique n'est toujours pas un
+// conflit.
+const TASK_JETON_CELL = 'O1';
+let jetonLocal = null;
+const nouveauJeton = ()=>uid().toString(36)+'-'+Math.random().toString(36).slice(2,8);
+// Le jeton ne dit qu'une chose : « aucune autre INSTANCE DE CETTE APP n'a
+// ecrit ». Une modification faite a la main dans l'interface de Sheets, elle,
+// ne le met pas a jour et passerait donc au travers du chemin court. On le
+// perime des que l'application revient au premier plan ou retrouve le reseau —
+// les seuls moments ou une telle modification a pu se produire sans nous. Le
+// prochain enregistrement relit alors l'onglet en entier, une fois, et compare
+// les empreintes comme avant. Cout : une relecture complete par retour dans
+// l'app, au lieu d'une par frappe apaisee.
+function jetonPerimer(){ jetonLocal=null; }
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden)jetonPerimer(); });
+window.addEventListener('online',jetonPerimer);
+window.addEventListener('focus',jetonPerimer);
+async function lireJeton(){
+  const r=await authFetch(sheetUrl(`/values/${encodeURIComponent(cfg.sheetName+'!'+TASK_JETON_CELL)}`),
+    {headers:authHeaders()});
+  if(!r.ok)throw new Error(r.status);
+  const j=await r.json();
+  return String((((j.values||[])[0])||[])[0]||'');
+}
 async function fetchRemoteRows(){
   const r=await authFetch(`${sheetsBase()}/values/${cfg.sheetName}!A:${TASK_LAST_COL}`,{headers:{Authorization:`Bearer ${accessToken}`}});
   if(!r.ok)throw new Error(r.status);
@@ -3290,8 +3414,9 @@ async function saveToSheets(force) {
   if (!navigator.onLine) {
     await sheetReplaceAll(cfg.sheetName,TASK_LAST_COL,[SHEET_HEADER,...allTasks.map(taskToRow)]);
     // La file rejouera l'état complet : on ne sait plus ce que contient
-    // l'onglet, donc plus d'écriture ciblée tant qu'on n'a pas réécrit en entier.
-    tasksEcrites=null;
+    // l'onglet, donc plus d'écriture ciblée tant qu'on n'a pas réécrit en
+    // entier, ni de chemin court sur le jeton.
+    tasksEcrites=null; jetonLocal=null;
     return;
   }
   if (conflictPending && !force) return;                    // ne pas re-crier à chaque frappe
@@ -3300,8 +3425,12 @@ async function saveToSheets(force) {
     // Quelqu'un a-t-il écrit depuis notre dernière lecture ? Si oui, on n'écrase pas.
     let verifie=false;
     if (!force && remoteFingerprint !== null) {
-      const remote = await fetchRemoteRows();
-      if (fingerprint(remote) !== remoteFingerprint) {
+      // Chemin court : le jeton est toujours le nôtre, donc personne d'autre
+      // n'a écrit. Une lecture d'une cellule au lieu de tout l'onglet.
+      let intact=false;
+      if(jetonLocal){ try{ intact = (await lireJeton())===jetonLocal; }catch(e){ intact=false; } }
+      const remote = intact ? null : await fetchRemoteRows();
+      if (remote && fingerprint(remote) !== remoteFingerprint) {
         conflictPending=true;
         setSyncStatus('error','CONFLIT');
         offerChoice('Modifié depuis un autre appareil — tes changements locaux ne sont PAS enregistrés',[
@@ -3317,13 +3446,24 @@ async function saveToSheets(force) {
     // l'onglet est mot pour mot celui qu'on a écrit : les numéros de ligne
     // n'ont de sens que dans ce cas.
     const diff = verifie ? rowsDiff(tasksEcrites,values) : null;
+    const jeton = nouveauJeton();
     if (diff && diff.length) {
+      // Le jeton voyage dans le même lot que les lignes : aucun appel de plus.
       await sheetWriteRows(cfg.sheetName,
-        diff.map(i=>({range:`${cfg.sheetName}!A${i+1}`,values:[values[i]]})));
+        diff.map(i=>({range:`${cfg.sheetName}!A${i+1}`,values:[values[i]]}))
+            .concat([{range:`${cfg.sheetName}!${TASK_JETON_CELL}`,values:[[jeton]]}]));
+      jetonLocal = jeton;
     } else if (!diff) {
       await sheetReplaceAll(cfg.sheetName,TASK_LAST_COL,values);
+      // Réécriture complète : le jeton part à part. Posé APRÈS les données —
+      // s'il échoue, on repart d'une relecture complète, jamais d'un jeton qui
+      // affirmerait à tort que l'onglet est à jour.
+      jetonLocal = null;
+      await sheetPut(`${cfg.sheetName}!${TASK_JETON_CELL}`,[[jeton]]);
+      jetonLocal = jeton;
     }
-    // diff vide = rien n'a bougé depuis la dernière écriture : rien à envoyer.
+    // diff vide = rien n'a bougé depuis la dernière écriture : rien à envoyer,
+    // et le jeton reste valable puisque la feuille n'a pas changé.
     tasksEcrites = values;
     remoteFingerprint = fingerprint(values);
     conflictPending=false;
@@ -3342,7 +3482,7 @@ async function loadHabits() {
     const data = await r.json();
     const rows = data.values || [];
     habits = rows.length <= 1 ? [] : rows.slice(1).map(p => ({
-      id: parseInt(p[0])||Date.now(), title:p[1]||'',
+      id: parseInt(p[0])||uid(), title:p[1]||'',
       frequency:p[2]||'daily', reward_eur:parseFloat(p[3])||0,
       category:p[4]||'Productivité', active:p[5]!=='FALSE'
     }));
@@ -3394,10 +3534,18 @@ async function rewriteHabitsLog() {
   } catch(e) { toast('Erreur sync log — historique NON enregistre','err'); return false; }
 }
 
+let syncEtat=null;
 function setSyncStatus(state, label) {
   const d = document.getElementById('syncDot');
   d.className = 'sync-dot ' + state;
   document.getElementById('syncLabel').textContent = label;
+  // « SAVING » puis « SYNCED » a chaque frappe apaisee serait insupportable a
+  // l'oreille : on n'annonce que l'entree en erreur et le retour a la normale.
+  if(state!==syncEtat){
+    if(state==='error')annoncer('Synchronisation : '+label);
+    else if(syncEtat==='error')annoncer('Synchronisation rétablie');
+    syncEtat=state;
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -3684,7 +3832,7 @@ async function toggleHabit(habitId, dateStr) {
     await rewriteHabitsLog();
   } else {
     // Check — append to log
-    const entry = { id: Date.now(), habit_id: habitId, date: day, reward_eur: h.reward_eur, category: h.category };
+    const entry = { id: uid(), habit_id: habitId, date: day, reward_eur: h.reward_eur, category: h.category };
     habitsLog.push(entry);
     renderHabitsPage();if(curPage==='today')renderTodayPage();updateHStats();
     await appendHabitsLog(entry);
@@ -3704,7 +3852,7 @@ function openHabitModal(id) {
   document.getElementById('hfId').value = '';
   document.getElementById('hfTitle').value = '';
   document.getElementById('hfFreq').value = 'daily';
-  document.getElementById('hfReward').value = '1.00';
+  document.getElementById('hfReward').value = '1,00';
   setCat('Finance');
   document.getElementById('hbtnDel').style.display = 'none';
   document.getElementById('habitModalTitle').textContent = 'NOUVELLE HABITUDE';
@@ -3715,7 +3863,7 @@ function openHabitModal(id) {
     document.getElementById('hfId').value = h.id;
     document.getElementById('hfTitle').value = h.title;
     document.getElementById('hfFreq').value = h.frequency;
-    document.getElementById('hfReward').value = h.reward_eur.toFixed(2);
+    document.getElementById('hfReward').value = h.reward_eur.toFixed(2).replace('.',',');
     setCat(h.category);
     document.getElementById('hbtnDel').style.display = 'block';
     document.getElementById('habitModalTitle').textContent = 'ÉDITER L\'HABITUDE';
@@ -3740,14 +3888,14 @@ async function saveHabit() {
   const editId = document.getElementById('hfId').value;
   const data = {
     title, frequency: document.getElementById('hfFreq').value,
-    reward_eur: parseFloat(document.getElementById('hfReward').value)||0,
+    reward_eur: nbFr(document.getElementById('hfReward').value,0),
     category: selCat, active: true
   };
   if (editId) {
     const h = habits.find(h => h.id === parseInt(editId));
     if (h) Object.assign(h, data);
   } else {
-    habits.push({ id: Date.now(), ...data });
+    habits.push({ id: uid(), ...data });
   }
   closeHabitModal();
   await saveHabits();
@@ -4002,7 +4150,7 @@ async function completeTask(id){
     const nd=nextDueAfter(t.due_date||td(),t.recurrence);
     if(nd){
       const cps=taskChecklist(t).map(c=>({t:c.t,d:false})); // la checklist repart vierge
-      spawned={...t,id:Date.now(),created_at:td(),completed_at:'',due_date:nd,snoozes:0,
+      spawned={...t,id:uid(),created_at:td(),completed_at:'',due_date:nd,snoozes:0,
                column:taskColumnFromDate(nd),checklist:cps.length?JSON.stringify(cps):''};
       allTasks.push(spawned);
     }
@@ -5553,7 +5701,7 @@ async function dailyNote(){
   const t=dailyTitle();
   let n=noteByTitle(t);
   if(n)return n;
-  n={id:'n'+Date.now(),title:t,content:'',tags:'journal',parent_id:'',icon:'📆',
+  n={id:'n'+uid(),title:t,content:'',tags:'journal',parent_id:'',icon:'📆',
      pinned:false,status:'active',created_at:td(),updated_at:td(),gx:null,gy:null};
   notes.push(n); noteIndexInvalidate(); cacheSet('notes',notes);
   await noteUpsert(n);
@@ -5646,7 +5794,7 @@ function openNote(id){
   renderNoteTree();renderNoteMain();renderNoteMeta();
 }
 async function newNote(parentId,title){
-  const n={id:'n'+Date.now(),title:title||'Nouvelle note',content:'',tags:'',
+  const n={id:'n'+uid(),title:title||'Nouvelle note',content:'',tags:'',
            parent_id:parentId||'',icon:'📄',pinned:false,status:'active',
            created_at:td(),updated_at:td()};
   notes.push(n); noteIndexInvalidate();
@@ -6334,14 +6482,14 @@ const SIG_CHAMPS=[
 function openSigCfg(){
   document.getElementById('sigCfgBody').innerHTML=SIG_CHAMPS.map(([k,lbl,u])=>
     `<div class="field sig-f"><label>${lbl}</label>
-      <span class="sig-in"><input type="number" min="1" id="sc_${k}" value="${sigCfg[k]}"><em>${u}</em></span></div>`).join('')
+      <span class="sig-in"><input ${CHAMP_ENT} id="sc_${k}" value="${sigCfg[k]}"><em>${u}</em></span></div>`).join('')
     +`<div class="fld-hint">Un seuil trop bas transforme le signal en bruit, et un bruit se masque sans le lire.</div>`;
   modalOuvre('sigCfgModal');
 }
 function closeSigCfg(){ modalFerme('sigCfgModal'); }
 function saveSigCfg(){
   const c={};
-  SIG_CHAMPS.forEach(([k])=>{ const v=parseInt(document.getElementById('sc_'+k).value,10); c[k]=v>0?v:SIG_DEFAUTS[k]; });
+  SIG_CHAMPS.forEach(([k])=>{ const v=entFr(document.getElementById('sc_'+k).value); c[k]=v>0?v:SIG_DEFAUTS[k]; });
   sigCfg=c;
   try{ localStorage.setItem(LS_SIG_CFG,JSON.stringify(c)); }catch(e){}
   closeSigCfg(); renderSignals();
@@ -6488,7 +6636,7 @@ async function makeProjectPoint(){
     n.content=i>=0?corps+n.content.slice(i):corps+RV_SEP+n.content;
   }else{
     cree=true;
-    n={id:'n'+Date.now(),title:titre,content:corps+RV_SEP+'\n## Commentaire\n\n- \n',
+    n={id:'n'+uid(),title:titre,content:corps+RV_SEP+'\n## Commentaire\n\n- \n',
        tags:'point',parent_id:p.note_id||'',icon:'📌',pinned:false,status:'active',
        created_at:td(),updated_at:td(),gx:null,gy:null};
     notes.push(n);
@@ -6764,7 +6912,7 @@ async function renderMetricsPage(){
       <div class="adp-sec">À saisir aujourd'hui <span class="adp-badge">${manquantes.length}</span></div>
       <div class="mes-qrow">${manquantes.map(d=>`
         <label class="mes-qf"><span>${tdEsc(d.icon)} ${tdEsc(d.label)}</span>
-          <input type="number" step="any" inputmode="decimal" placeholder="${tdEsc(d.unit||'valeur')}"
+          <input ${CHAMP_DEC} placeholder="${tdEsc(d.unit||'valeur')}"
                  onkeydown="if(event.key==='Enter'){mesQuick('${d.key}',this.value);this.value='';}"
                  onblur="if(this.value){mesQuick('${d.key}',this.value);this.value='';}"></label>`).join('')}</div>
     </div>`:'')+
@@ -6845,13 +6993,13 @@ function mesMissingToday(){
   });
 }
 async function mesQuick(key,raw){
-  const val=parseFloat(String(raw).replace(',','.'));
-  if(isNaN(val))return;
+  const val=nbFr(raw);
+  if(val===null)return;
   const d=mesDefByKey(key); if(!d)return;
   const day=td();
   const ex=mesValOn(key,day);
   const v=ex?{...ex,value:val}
-            :{id:'v'+Date.now().toString(36)+key.slice(0,3),date:day,key,value:val,note:''};
+            :{id:'v'+uid().toString(36)+key.slice(0,3),date:day,key,value:val,note:''};
   const ok=await mesSaveVal(v);
   if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
   // La pesée circulait de Sport vers Mesures, jamais l'inverse : le bandeau
@@ -6916,7 +7064,7 @@ function openMesDefModal(key){
     <div class="field"><label>Sens</label><select id="mdDir">
       ${MES_DIR.map(([v,l])=>`<option value="${v}"${d&&d.direction===v?' selected':''}>${l}</option>`).join('')}</select>
       <div class="fld-hint">Décide si une hausse s'affiche en vert ou en rouge.</div></div>
-    <div class="field"><label>Cible</label><input type="number" step="any" id="mdTarget" value="${d&&d.target!=null?d.target:''}" placeholder="facultatif">
+    <div class="field"><label>Cible</label><input ${CHAMP_DEC} id="mdTarget" value="${d&&d.target!=null?d.target:''}" placeholder="facultatif">
       <div class="fld-hint">Tracée en pointillés sur la courbe.</div></div>
     <div class="field"><label>Rythme</label><select id="mdCad">
       ${MES_CAD.map(([v,l])=>`<option value="${v}"${d&&d.cadence===v?' selected':''}>${l}</option>`).join('')}</select>
@@ -6943,7 +7091,7 @@ async function saveMesDef(){
   if(!old){ let n=1,base=key; while(mesDefByKey(key))key=base+'_'+(++n); }
   const t=g('mdTarget');
   const d={key,label,unit:g('mdUnit'),color:old?old.color:'',
-    target:t===''?null:parseFloat(t.replace(',','.')),
+    target:nbFr(t),
     direction:g('mdDir'),cadence:g('mdCad'),
     icon:document.getElementById('mdIcon').textContent.trim()||'📈',
     active:old?g('mdActive')==='1':true};
@@ -6960,7 +7108,7 @@ function openMesValModal(key,id){
   document.getElementById('mesValFields').innerHTML=`
     <div class="field"><label>Date</label><input type="date" id="mvDate" value="${v?v.date:td()}"></div>
     <div class="field"><label>Valeur${d&&d.unit?` (${tdEsc(d.unit)})`:''}</label>
-      <input type="number" step="any" inputmode="decimal" id="mvValue" value="${v?v.value:''}"></div>
+      <input ${CHAMP_DEC} id="mvValue" value="${v?v.value:''}"></div>
     <div class="field"><label>Note</label><input type="text" id="mvNote" value="${tdEsc(v?v.note:'')}" placeholder="Contexte, facultatif"></div>`;
   document.getElementById('mesValDel').style.display=v?'':'none';
   modalOuvre('mesValModal');
@@ -6970,12 +7118,12 @@ function closeMesValModal(){ modalFerme('mesValModal'); }
 async function saveMesVal(){
   const date=document.getElementById('mvDate').value;
   const raw=document.getElementById('mvValue').value;
-  const val=parseFloat(String(raw).replace(',','.'));
-  if(!date||isNaN(val)){ toast('Date et valeur sont obligatoires','err'); return; }
+  const val=nbFr(raw);
+  if(!date||val===null){ toast('Date et valeur sont obligatoires','err'); return; }
   // une seule valeur par jour et par série : ressaisir corrige
   const ex=mesEditVal?mesVals.find(x=>x.id===mesEditVal):mesValOn(mesEditKey,date);
   const v=ex?{...ex,date,value:val,note:document.getElementById('mvNote').value.trim()}
-            :{id:'v'+Date.now().toString(36)+mesEditKey.slice(0,3),date,key:mesEditKey,value:val,
+            :{id:'v'+uid().toString(36)+mesEditKey.slice(0,3),date,key:mesEditKey,value:val,
               note:document.getElementById('mvNote').value.trim()};
   closeMesValModal();
   showLoad(true);
@@ -7373,7 +7521,7 @@ async function openAdpProject(id){
   // le journal est une note : on la crée à la première ouverture, pas avant
   if(p&&!p.note_id&&accessToken){
     if(!notesLoaded)await loadNotes();
-    const n={id:'n'+Date.now(),title:`Projet — ${p.name}`,
+    const n={id:'n'+uid(),title:`Projet — ${p.name}`,
       content:`# ${p.name}\n\n${p.client?`Client : **${p.client}**\n\n`:''}## Avancées\n\n`,
       tags:'projet',parent_id:'',icon:'📁',pinned:false,status:'active',
       created_at:td(),updated_at:td(),gx:null,gy:null};
@@ -7916,7 +8064,7 @@ async function adpAfterSend(c,p,t,subject){
   if(!fu||!on||!on.checked)return;
   on.checked=false;
   const due=plusDaysFrom(td(),fu);
-  const nt={id:Date.now(),title:`Relancer ${c?c.name:'le destinataire'}${subject?` — ${subject}`:''}`,
+  const nt={id:uid(),title:`Relancer ${c?c.name:'le destinataire'}${subject?` — ${subject}`:''}`,
     column:taskColumnFromDate(due),importance:3,due_date:due,created_at:td(),completed_at:'',
     notes:`Sans réponse à « ${t.title} » envoyé le ${td()}.`,project:p?p.client||'':'',
     recurrence:'',checklist:'',snoozes:0};
@@ -8751,7 +8899,7 @@ async function runAdvance(r){
     if(state[s.key]!=='active')continue;
     if(!s.due){ s.due=plusDaysFrom(avail[s.key]||r.start_date,s.off); bouge=true; }
     if(s.type==='tache'&&!s.ref){
-      const nt={id:Date.now()+nouvelles.length,title:s.label,column:taskColumnFromDate(s.due),
+      const nt={id:uid(),title:s.label,column:taskColumnFromDate(s.due),
         importance:3,due_date:s.due,created_at:td(),completed_at:'',
         notes:`Étape de « ${r.title} »`,project:p?p.client||'':'',
         recurrence:'',checklist:'',snoozes:0};
@@ -8976,7 +9124,7 @@ function renderTplSteps(t){
           </select>
           <input class="run-f run-lbl" value="${adpEsc(s.label)}" placeholder="Intitulé"
                  onchange="tplStepSet(${i},'label',this.value)">
-          <label class="run-off">J+<input class="run-f" type="number" value="${s.off}"
+          <label class="run-off">J+<input class="run-f" ${CHAMP_ENT} value="${s.off}"
                  onchange="tplStepSet(${i},'off',this.value)" title="Jours après le déblocage de l'étape"></label>
           ${s.type==='mail'?`<select class="run-f" onchange="tplStepSet(${i},'extra',this.value)">
             <option value="">— modèle —</option>
@@ -9035,7 +9183,7 @@ function tplAddStep(){
 function tplStepSet(i,champ,val){
   const t=adpTplById(adpTplCur); if(!t)return;
   const st=tplSteps(t); if(!st[i])return;
-  st[i][champ]=champ==='off'?(parseInt(val,10)||0):String(val).replace(/~|\n/g,' ').trim();
+  st[i][champ]=champ==='off'?entFr(val,0):String(val).replace(/~|\n/g,' ').trim();
   if(champ==='label'&&!st[i].label)st[i].label='Étape';
   if(champ==='type'&&val!=='choix'){
     // l'étape cesse d'être un aiguillage : les conditions qui s'y référaient
@@ -9549,7 +9697,7 @@ try{ autoOn=localStorage.getItem(LS_AUTO_ON)==='1'; }catch(e){}
 // Chacun rend [{id, lbl, pid, jours}] : l'identité de la cible sert
 // d'empreinte, le reste alimente le gabarit du message.
 // `unite` et `defaut` ne servent qu'au formulaire.
-const autoNum=(v,d)=>{ const n=parseInt(v,10); return isNaN(n)?d:n; };
+const autoNum=(v,d)=>entFr(v,d);
 const AUTO_TRIG=[
  ['jalon.proche','Jalon ouvert à moins de N jours','jours',7,n=>
    adpMilestones.filter(m=>m.status!=='done'&&m.due_date&&dayDiff(m.due_date)>=0&&dayDiff(m.due_date)<=n)
@@ -9773,7 +9921,7 @@ async function autoExec(e){
   const g=autoFill(r.gabarit,c,proj);
   try{
     if(r.action==='tache'){
-      const nt={id:Date.now()+Math.floor(Math.random()*1000),title:g||c.lbl,
+      const nt={id:uid(),title:g||c.lbl,
         column:taskColumnFromDate(plusDays(autoNum(r.cible,0))),importance:3,
         due_date:plusDays(autoNum(r.cible,0)),created_at:td(),completed_at:'',
         notes:`Créée automatiquement · ${r.nom}`,project:(proj&&proj.client)||'',
@@ -10108,7 +10256,7 @@ function autoFormParam(r){
   const pb=document.getElementById('auParamBox');
   pb.innerHTML=t[2]==='—'
     ?'<div class="fld-hint">Ce déclencheur n\'a pas de réglage.</div>'
-    :`<label class="run-off">${adpEsc(t[2])} <input class="run-f" type="number" id="auParam"
+    :`<label class="run-off">${adpEsc(t[2])} <input class="run-f" ${CHAMP_ENT} id="auParam"
         value="${cur&&cur.trigger===t[0]?cur.param:t[3]}"></label>`;
 }
 function autoFormCible(r){
@@ -10127,7 +10275,7 @@ function autoFormCible(r){
       :`<div class="fld-hint">Aucune procédure active. Crée-en une dans « Procédures ».</div>`;
   }
   else if(a==='tache'||a==='jalon')cb.innerHTML=`<label class="run-off">Échéance J+
-    <input class="run-f" type="number" id="auCible" value="${val!==''&&val!=null?adpEsc(val):(a==='jalon'?7:0)}"></label>`;
+    <input class="run-f" ${CHAMP_ENT} id="auCible" value="${val!==''&&val!=null?adpEsc(val):(a==='jalon'?7:0)}"></label>`;
   else cb.innerHTML='<div class="fld-hint">Rien à préciser : la trace au journal suffit.</div>';
 }
 async function saveAutoModal(){
@@ -10874,7 +11022,7 @@ async function openReviewNote(){
                    :rvKpiBlock(r,rvPeriod)+RV_SEP+n.content);
   }else{
     created=true;
-    n={id:'n'+Date.now(),title,content:rvKpiBlock(r,rvPeriod)+RV_SEP+rvProsePrompts(rvPeriod),
+    n={id:'n'+uid(),title,content:rvKpiBlock(r,rvPeriod)+RV_SEP+rvProsePrompts(rvPeriod),
        tags:'revue',parent_id:'',icon:'🧭',pinned:false,status:'active',
        created_at:td(),updated_at:td(),gx:null,gy:null};
     notes.push(n);
@@ -10956,7 +11104,7 @@ async function saveTask(){
     const t=tasks.find(t=>t.id===parseInt(editId));if(t)Object.assign(t,data);
     const at=allTasks.find(t=>t.id===parseInt(editId));if(at)Object.assign(at,data);
   } else {
-    const nt={id:Date.now(),created_at:td(),completed_at:'',snoozes:0,...data};tasks.push(nt);allTasks.push(nt);
+    const nt={id:uid(),created_at:td(),completed_at:'',snoozes:0,...data};tasks.push(nt);allTasks.push(nt);
   }
   closeModal();render();if(curPage==='objectifs')renderObjectifs();await persist();
 }
@@ -11460,7 +11608,7 @@ function closeGoalModal(){modalFerme('goalModal');}
 async function saveGoal(){
   const title=document.getElementById('gfTitle').value.trim();
   if(!title){document.getElementById('gfTitle').focus();return;}
-  const id=document.getElementById('gfId').value||('g'+Date.now());
+  const id=document.getElementById('gfId').value||('g'+uid());
   const cps=goalParseCheckpointsText(document.getElementById('gfCheckpoints').value);
   const target=document.getElementById('gfTarget').value;
   const parentId=document.getElementById('gfParent').value;
@@ -11471,9 +11619,9 @@ async function saveGoal(){
     category:document.getElementById('gfCategory').value.trim()||'Autre',
     title,
     description:document.getElementById('gfDesc').value.trim(),
-    progress:parseInt(document.getElementById('gfProgress').value)||0,
+    progress:entFr(document.getElementById('gfProgress').value,0),
     reward:document.getElementById('gfReward').value.trim(),
-    reward_eur:parseFloat(document.getElementById('gfEuro').value)||0,
+    reward_eur:nbFr(document.getElementById('gfEuro').value,0),
     status:document.getElementById('gfStatus').value,
     target_date:document.getElementById('gfTarget').value,
     icon:document.getElementById('gfIcon').value.trim(),
@@ -11651,9 +11799,20 @@ function switchPage(name){
 function td(){ return ymd(new Date()); }
 function plusDays(n){ const d=new Date();d.setDate(d.getDate()+n);return ymd(d); }
 function showLoad(v){ document.getElementById('loadOverlay').style.display=v?'flex':'none'; }
+// Un echec doit interrompre la lecture en cours ; une confirmation attend son
+// tour. C'est toute la difference entre role=alert et role=status.
 function toast(msg,type='ok'){
   const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;
+  t.setAttribute('role',type==='err'?'alert':'status');
   document.getElementById('toasts').appendChild(t);setTimeout(()=>t.remove(),3200);
+}
+// Region vivante dediee, pour ce qui se voit a l'ecran sans etre un message :
+// le passage en erreur de synchro, la perte du reseau.
+function annoncer(txt){
+  const el=document.getElementById('annonce'); if(!el||!txt)return;
+  // aria-live ignore un texte identique au precedent : on le rend different.
+  el.textContent = txt===annonceDerniere ? txt+' ' : txt;
+  annonceDerniere=el.textContent;
 }
 
 // ── Undo ──────────────────────────────────────────────────────────────────
@@ -11674,6 +11833,8 @@ function offerUndo(msg,fn,ms=7000){
 // Toast avec un ou plusieurs boutons. Renvoie l'élément pour pouvoir le retirer.
 function offerChoice(msg,actions,ms=7000,type='info'){
   const t=document.createElement('div');t.className=`toast ${type} act`;
+  // Il y a un bouton a actionner : on ne peut pas attendre une pause.
+  t.setAttribute('role','alert');
   const s=document.createElement('span');s.textContent=msg;t.appendChild(s);
   actions.forEach(([label,fn])=>{
     const b=document.createElement('button');b.className='toast-undo';b.textContent=label;
@@ -13526,7 +13687,7 @@ function renderSportLogger(){
     <div class="sp-field"><label class="fit-form-lbl">Ressenti</label>
       <div class="sp-feeling">${FEELINGS.map((e,i)=>`<button class="sp-feel-btn${feel===i+1?' sel':''}" onclick="sportPickFeeling(${i+1})">${e}</button>`).join('')}</div></div>
     <div class="sp-field"><label class="fit-form-lbl">Poids corporel (kg)</label>
-      <input class="fit-input" id="spWeight" type="number" step="0.1" style="width:100%" placeholder="opt." value="${sportEsc(weight)}"></div>
+      <input class="fit-input" id="spWeight" ${CHAMP_DEC} style="width:100%" placeholder="opt." value="${sportEsc(weight)}"></div>
     <div class="sp-field"><label class="fit-form-lbl">Commentaire global de la séance</label>
       <textarea class="fit-input" id="spComment" rows="3" style="width:100%" placeholder="Comment ça s'est passé ? énergie, douleurs, contexte...">${sportEsc(comment)}</textarea></div>
     <button class="fit-btn" style="margin-top:0.4rem;width:100%;color:var(--accent);border-color:var(--accent);padding:0.55rem" onclick="saveSportLog()">${ex?'Mettre à jour':'Enregistrer mon retour'}</button>
@@ -13562,7 +13723,7 @@ async function saveSportLog(){
   const log={date:today,status,
     exercises:exercises.length?JSON.stringify(exercises):'',
     feeling:(sportDraft.feeling??ex?.feeling)||0,
-    weight:parseFloat(sportDraft.weight??(ex?ex.weight:''))||0,
+    weight:nbFr(sportDraft.weight??(ex?ex.weight:''),0),
     comment:(sportDraft.comment??ex?.comment)||'',
     bonusDone:!!(ex&&ex.bonusDone)};
   showLoad(true);
@@ -13722,7 +13883,7 @@ async function saveSportPlan(){
   if(!date){alert('Choisis une date.');return;}
   const plan={date,
     type:document.getElementById('spfType').value,
-    duration:parseInt(document.getElementById('spfDuration').value)||0,
+    duration:entFr(document.getElementById('spfDuration').value,0),
     title:document.getElementById('spfTitle').value.trim(),
     content:document.getElementById('spfContent').value,
     bonus:document.getElementById('spfBonus').value.trim()};
@@ -13878,7 +14039,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.53.0';
+const APP_VERSION='v1.54.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

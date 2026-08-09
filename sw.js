@@ -3,7 +3,7 @@
 // Règle absolue : on n'intercepte JAMAIS les appels authentifiés à Google
 // (Sheets, identité). Ce sont des données vivantes et personnelles ; les servir
 // depuis un cache afficherait un état périmé, ou pire, après déconnexion.
-const VERSION = 'v1.53.0';
+const VERSION = 'v1.54.0';
 const SHELL   = 'kanban-shell-' + VERSION;
 const ASSETS  = 'kanban-assets-' + VERSION;
 
@@ -13,9 +13,12 @@ const SHELL_FILES = [
   './sc-task.png', './sc-mic.png', './sc-note.png', './sc-newnote.png'
 ];
 
-// Tiers immuables et versionnés : sûrs à mettre en cache, indispensables au
-// rendu hors ligne (polices, Chart.js utilisé par Cryptobot).
-const CACHEABLE_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com'];
+// Plus aucun tiers n'est mis en cache, parce que plus aucun n'est appelé : les
+// polices sont hébergées dans fonts/ depuis la v1.54, et cdnjs ne servait qu'à
+// Chart.js, supprimé en v1.44 — l'entrée traînait depuis, avec un commentaire
+// qui affirmait le contraire. Les seuls appels sortants restants sont l'API
+// Sheets et l'identification Google, qu'on n'intercepte jamais.
+const CACHEABLE_HOSTS = [];
 
 self.addEventListener('install', e => {
   e.waitUntil(
