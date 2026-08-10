@@ -11727,6 +11727,12 @@ const BRS_SOURCES=[
 // Un fil de cotation de produit derive n'est pas une nouvelle : il porte un
 // ISIN, un type d'instrument, ou le mot « cotation ». On les ecarte partout,
 // quelle que soit la source — Marketaux en charrie aussi.
+// Du plus frais au plus ancien : ce qui n'a pas de date passe en dernier.
+const brsPlusFrais=(a,b)=>{
+  const x=a&&a.quand?new Date(a.quand):null, y=b&&b.quand?new Date(b.quand):null;
+  if(!x||isNaN(x))return 1; if(!y||isNaN(y))return -1;
+  return y-x;
+};
 const BRS_BRUIT=/\b(warrant|turbo|certificat|leverage|factor|call|put)\b|cotation|\b(?:DE|FR|NL|LU)[0-9A-Z]{10}\b|\d+TCIOPENS|\bOPENS\b/i;
 const brsVraieInfo=a=>{
   const t=String(a&&a.titre||'');
@@ -11734,8 +11740,39 @@ const brsVraieInfo=a=>{
   if(BRS_BRUIT.test(t))return false;
   // Un titre qui n'est qu'une suite de codes n'apprend rien non plus.
   const lettres=(t.match(/[A-Za-zÀ-ÿ]/g)||[]).length;
-  return lettres/t.length>0.55;
+  if(lettres/t.length<=0.55)return false;
+  if(brsTropVieux(a))return false;
+  return !brsRediffusion(a);
 };
+// ── La fraîcheur ──────────────────────────────────────────────────────────
+// « when:1d » n'est qu'une indication donnée à Google : rien ne garantit
+// qu'elle soit suivie, et le flux a rendu des chroniques de l'an dernier. On
+// vérifie donc la date NOUS-MÊMES, comme on filtre le bruit nous-mêmes plutôt
+// que de faire confiance aux opérateurs de la requête.
+const BRS_AGE_MAX=48*3600*1000;
+const brsQuand=a=>{ const d=a&&a.quand?new Date(a.quand):null;
+                    return d&&!isNaN(d)?d:null; };
+function brsTropVieux(a){
+  const d=brsQuand(a);
+  if(!d)return false;                       // sans date, on ne juge pas
+  return Date.now()-d.getTime()>BRS_AGE_MAX;
+}
+// Une chronique rediffusée porte sa date d'origine à la fin de son titre —
+// « … — 28/10 », « … - 15/01 » — alors que le flux la date d'hier. Quand les
+// deux se contredisent de plus d'un mois, c'est le titre qui dit vrai.
+function brsRediffusion(a){
+  const m=/[—–-]\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*$/.exec(String(a&&a.titre||''));
+  if(!m)return false;
+  const pub=brsQuand(a); if(!pub)return false;
+  const an=m[3]?(+m[3]<100?2000+(+m[3]):+m[3]):pub.getFullYear();
+  const jour=+m[1], mois=+m[2]-1;
+  if(mois<0||mois>11||jour<1||jour>31)return false;
+  // Le titre ne dit pas toujours son année : on retient la lecture la plus
+  // proche de la publication, et c'est l'écart restant qui tranche.
+  const ecart=Math.min(...[an-1,an,an+1]
+    .map(y=>Math.abs(pub-new Date(y,mois,jour))));
+  return ecart>31*86400000;
+}
 const BRS_NEWS=[
  // Aucun flux d'actualite n'autorise l'appel navigateur en direct : le RSS est
  // un format de serveur a serveur, il n'a jamais porte d'en-tete CORS. Le
@@ -11769,9 +11806,12 @@ const BRS_NEWS=[
       return {titre:suffixe?brut.slice(0,coupe):brut,
               source:t('source')||(suffixe?media:'Google Actualités'),
               url:t('link'),quand:t('pubDate'),resume:''};
-    }).filter(x=>x.titre).filter(brsVraieInfo);
-    if(!lis.length)throw new Error('aucun titre exploitable dans le flux');
-    return lis;
+    }).filter(x=>x.titre);
+    const gardes=lis.filter(brsVraieInfo).sort(brsPlusFrais);
+    if(!gardes.length)throw new Error(lis.length
+      ? `${lis.length} titres reçus, aucun récent ni exploitable`
+      : 'aucun titre dans le flux');
+    return gardes;
   }},
  {id:'marketaux', nom:'Marketaux', cle:'marketaux',
   info:'Clé gratuite (100 appels/jour). Sources françaises, filtre par langue.',
@@ -11781,7 +11821,7 @@ const BRS_NEWS=[
     if(!r||!r.ok)throw new Error('HTTP '+(r?r.status:'?'));
     const j=await r.json();
     return (j&&j.data||[]).map(a=>({titre:a.title,source:a.source,url:a.url,
-      quand:a.published_at,resume:a.description||''})).filter(brsVraieInfo);
+      quand:a.published_at,resume:a.description||''})).filter(brsVraieInfo).sort(brsPlusFrais);
   }},
  {id:'finnhub', nom:'Finnhub', cle:'finnhub',
   info:'Clé gratuite (60 appels/minute). Actualité générale, surtout anglophone.',
@@ -11878,6 +11918,24 @@ const brsVal=(v,d)=>v==null?'—':v.toLocaleString('fr-FR',{minimumFractionDigit
 const brsSens=v=>v==null?'':v>0?'up':v<0?'down':'flat';
 const brsHeure=t=>{ if(!t)return ''; const d=new Date(t);
   return isNaN(d)?'':d.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); };
+// « 09/08 15:21 » ne disait pas l'année, donc rien sur la fraîcheur. L'âge en
+// clair rend une rediffusion impossible à confondre avec une nouvelle du jour.
+function brsAge(t){
+  const d=t?new Date(t):null;
+  if(!d||isNaN(d))return '';
+  const min=Math.round((Date.now()-d.getTime())/60000);
+  if(min<0)return brsHeure(t);
+  if(min<60)return `il y a ${Math.max(1,min)} min`;
+  if(min<24*60)return `il y a ${Math.round(min/60)} h`;
+  // « Hier » se compte en jours du calendrier, pas en tranches de 24 heures :
+  // trente heures en arrière peuvent tomber avant-hier.
+  const j0=new Date(); j0.setHours(0,0,0,0);
+  const jd=new Date(d); jd.setHours(0,0,0,0);
+  if(Math.round((j0-jd)/86400000)===1)
+    return `hier ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+  // Au-delà, la date complète AVEC l'année : c'est elle qui manquait.
+  return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
 // Position dans les douze derniers mois : un chiffre plus parlant qu'un cours.
 function brsRange(q){
   if(q.haut52==null||q.bas52==null||q.haut52<=q.bas52)return null;
@@ -11962,7 +12020,7 @@ async function renderBourse(){
   const news=(d&&d.news||[]).length?`<div class="brs-news">${(d.news||[]).slice(0,10).map(a=>
       `<a class="brs-new" href="${MD_ATT(a.url||'#')}" target="_blank" rel="noopener">
         <span class="brs-new-t">${E(a.titre||'')}</span>
-        <span class="brs-new-s">${E(a.source||'')}${a.quand?' · '+E(brsHeure(a.quand)):''}</span>
+        <span class="brs-new-s">${E(a.source||'')}${a.quand?' · '+E(brsAge(a.quand)):''}</span>
       </a>`).join('')}</div>`
     :`<div class="sb-none">Aucune actualité. Sans clé, elle passe par un relais : vérifie qu'il est actif dans « ⚙ Sources ».</div>`;
 
@@ -15519,7 +15577,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.58.2';
+const APP_VERSION='v1.58.3';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
