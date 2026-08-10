@@ -11622,20 +11622,35 @@ const BRS_RELAIS=[
   {id:'codetabs',nom:'CodeTabs',
    url:u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`}];
 const brsRelaisActif=()=>(brsLignes.find(x=>x.type==='cfg'&&x.code==='relais')||{}).valeur!=='non';
+// Délais courts : mesuré, un chargement complet prenait 26 secondes en salle
+// d'essai et près d'une minute en vrai, parce que chaque source payait le
+// délai plein, l'une après l'autre, relais après relais. Une source qui n'a
+// pas répondu en quatre secondes en direct ne répondra pas.
+const BRS_MS_DIRECT=4000, BRS_MS_RELAIS=7000;
+// Mémoire de session : une voie qui vient d'échouer n'est pas réessayée avant
+// cinq minutes. Sans elle, chaque « Actualiser » repayait le prix fort pour
+// réapprendre ce qu'on savait déjà.
+const BRS_OUBLI=5*60*1000;
+let brsVoies={};
+const brsMorte=id=>{ const v=brsVoies[id];
+  return !!v&&!v.ok&&Date.now()-v.quand<BRS_OUBLI; };
+const brsNote=(id,ok,via)=>{ brsVoies[id]={ok,via:via||'',quand:Date.now()}; };
 // Rend {r,via} : `via` est vide quand l'appel direct a suffi.
 async function brsFetchVia(url,ms){
   let direct='';
-  try{ const r=await brsFetch(url,ms); if(r&&r.ok)return {r,via:''}; direct='HTTP '+r.status; }
+  try{ const r=await brsFetch(url,ms||BRS_MS_DIRECT); if(r&&r.ok)return {r,via:''};
+       direct='HTTP '+r.status; }
   catch(e){ direct=brsMsg(e); }
-  if(!brsRelaisActif())throw new Error(direct+' — relais désactivé');
+  if(!brsRelaisActif())throw new Error(direct+' ; relais désactivé');
+  // Les relais en PARALLÈLE : ils sont indépendants, les essayer l'un après
+  // l'autre doublait l'attente pour rien.
   const raisons=[];
-  for(const p of BRS_RELAIS){
-    try{ const r=await brsFetch(p.url(url),(ms||9000)+4000);
-         if(r&&r.ok)return {r,via:p.nom};
-         raisons.push(`${p.nom} HTTP ${r.status}`); }
-    catch(e){ raisons.push(`${p.nom} ${brsMsg(e)}`); }
-  }
-  throw new Error(`direct : ${direct} ; relais : ${raisons.join(', ')}`);
+  const essais=BRS_RELAIS.map(p=>brsFetch(p.url(url),BRS_MS_RELAIS).then(r=>{
+    if(r&&r.ok)return {r,via:p.nom};
+    raisons.push(`${p.nom} HTTP ${r.status}`); throw new Error(p.nom);
+  },e=>{ raisons.push(`${p.nom} ${brsMsg(e)}`); throw e; }));
+  try{ return await Promise.any(essais); }
+  catch(e){ throw new Error(`direct : ${direct} ; relais : ${raisons.join(' ; ')}`); }
 }
 
 // ── Les sources ───────────────────────────────────────────────────────────
@@ -11709,6 +11724,18 @@ const BRS_SOURCES=[
     }).filter(Boolean);
   }}];
 
+// Un fil de cotation de produit derive n'est pas une nouvelle : il porte un
+// ISIN, un type d'instrument, ou le mot « cotation ». On les ecarte partout,
+// quelle que soit la source — Marketaux en charrie aussi.
+const BRS_BRUIT=/\b(warrant|turbo|certificat|leverage|factor|call|put)\b|cotation|\b(?:DE|FR|NL|LU)[0-9A-Z]{10}\b|\d+TCIOPENS|\bOPENS\b/i;
+const brsVraieInfo=a=>{
+  const t=String(a&&a.titre||'');
+  if(!t||t.length<15)return false;
+  if(BRS_BRUIT.test(t))return false;
+  // Un titre qui n'est qu'une suite de codes n'apprend rien non plus.
+  const lettres=(t.match(/[A-Za-zÀ-ÿ]/g)||[]).length;
+  return lettres/t.length>0.55;
+};
 const BRS_NEWS=[
  // Aucun flux d'actualite n'autorise l'appel navigateur en direct : le RSS est
  // un format de serveur a serveur, il n'a jamais porte d'en-tete CORS. Le
@@ -11717,8 +11744,15 @@ const BRS_NEWS=[
  {id:'gnews', nom:'Google Actualités', cle:null,
   info:'Sans clé, par relais obligatoirement. Presse économique française, dernières 24 heures.',
   async news(){
+    // La premiere requete ramenait surtout des cotations de warrants et de
+    // turbos — « actualites CAC 40 DWRT 9700C 0327 (MR4Y6U) - Warrant | ISIN
+    // DE000... - Cotation BOERSE STUTTGART ». Ce sont des fils automatiques de
+    // courtiers, pas de l'information. On restreint la requete ET on filtre :
+    // les operateurs de Google ne sont pas fiables a eux seuls.
     const u='https://news.google.com/rss/search?q='+
-      encodeURIComponent('bourse OR CAC 40 OR Euronext when:1d')+'&hl=fr&gl=FR&ceid=FR:fr';
+      encodeURIComponent('("CAC 40" OR "Bourse de Paris" OR Euronext) '+
+                         '-warrant -turbo -certificat -cotation when:1d')+
+      '&hl=fr&gl=FR&ceid=FR:fr';
     const {r,via}=await brsFetchVia(u,11000);
     this.via=via;
     const txt=await r.text();
@@ -11735,8 +11769,8 @@ const BRS_NEWS=[
       return {titre:suffixe?brut.slice(0,coupe):brut,
               source:t('source')||(suffixe?media:'Google Actualités'),
               url:t('link'),quand:t('pubDate'),resume:''};
-    }).filter(x=>x.titre);
-    if(!lis.length)throw new Error('aucun titre dans le flux');
+    }).filter(x=>x.titre).filter(brsVraieInfo);
+    if(!lis.length)throw new Error('aucun titre exploitable dans le flux');
     return lis;
   }},
  {id:'marketaux', nom:'Marketaux', cle:'marketaux',
@@ -11747,7 +11781,7 @@ const BRS_NEWS=[
     if(!r||!r.ok)throw new Error('HTTP '+(r?r.status:'?'));
     const j=await r.json();
     return (j&&j.data||[]).map(a=>({titre:a.title,source:a.source,url:a.url,
-      quand:a.published_at,resume:a.description||''}));
+      quand:a.published_at,resume:a.description||''})).filter(brsVraieInfo);
   }},
  {id:'finnhub', nom:'Finnhub', cle:'finnhub',
   info:'Clé gratuite (60 appels/minute). Actualité générale, surtout anglophone.',
@@ -11770,20 +11804,28 @@ async function brsCharger(forcer){
   if(!forcer&&cache&&Date.now()-cache.quand<BRS_FRAIS)return cache;
   brsErreurs=[];
   const list=brsTitres().concat(BRS_CONTEXTE.map(([code,nom])=>({code,nom,contexte:true})));
-  let cours=null, source=null;
-  for(const s of BRS_SOURCES){
-    s.via='';
-    try{ const r=await s.cours(list);
-         if(r&&r.length){ cours=r; source=s.nom+(s.via?` via ${s.via}`:''); break; } }
-    catch(e){ brsErreurs.push({quoi:s.nom,err:brsMsg(e)}); }
-  }
-  let news=null, srcNews=null;
-  for(const s of BRS_NEWS){
-    s.via='';
-    try{ const r=await s.news();
-         if(r&&r.length){ news=r; srcNews=s.nom+(s.via?` via ${s.via}`:''); break; } }
-    catch(e){ brsErreurs.push({quoi:s.nom,err:brsMsg(e)}); }
-  }
+  // Les sources sont indépendantes : on les lance ENSEMBLE et on retient la
+  // première dans l'ordre de préférence qui a répondu. En série, une source
+  // muette faisait attendre toutes les suivantes.
+  const tenter=async(liste,appel)=>{
+    const res=await Promise.all(liste.map(async s=>{
+      s.via='';
+      if(brsMorte(s.id)){ brsErreurs.push({quoi:s.nom,err:'écartée : muette il y a moins de 5 min'});
+                          return null; }
+      try{ const r=await appel(s);
+           if(r&&r.length){ brsNote(s.id,true,s.via); return {s,r}; }
+           brsNote(s.id,false); brsErreurs.push({quoi:s.nom,err:'répond sans donnée'}); }
+      catch(e){ brsNote(s.id,false); brsErreurs.push({quoi:s.nom,err:brsMsg(e)}); }
+      return null;
+    }));
+    return res.find(Boolean);
+  };
+  const gagnantC=await tenter(BRS_SOURCES,s=>s.cours(list));
+  const cours=gagnantC?gagnantC.r:null;
+  const source=gagnantC?gagnantC.s.nom+(gagnantC.s.via?` via ${gagnantC.s.via}`:''):null;
+  const gagnantN=await tenter(BRS_NEWS,s=>s.news());
+  const news=gagnantN?gagnantN.r:null;
+  const srcNews=gagnantN?gagnantN.s.nom+(gagnantN.s.via?` via ${gagnantN.s.via}`:''):null;
   if(!cours&&!news)return cache;                   // rien de neuf : on garde l'ancien
   const d={quand:Date.now(),source,srcNews,cours:cours||(cache&&cache.cours)||[],
            news:news||(cache&&cache.news)||[]};
@@ -11798,7 +11840,7 @@ const brsMsg=e=>{
   if(/abort/i.test(m))return 'délai dépassé';
   if(/Failed to fetch|NetworkError|Load failed/i.test(m))
     return 'refusé par le navigateur (CORS) ou injoignable';
-  return m.slice(0,90);
+  return m.slice(0,200);
 };
 function brsLireCache(){
   if(brsData)return brsData;
@@ -11808,25 +11850,25 @@ function brsLireCache(){
 
 // ── Le diagnostic : ce que je n'ai pas pu mesurer, ton navigateur le dira ──
 async function brsTester(){
+  brsVoies={};                 // un diagnostic ne doit rien tenir pour acquis
   brsDiag=[{nom:'…',etat:'essai en cours'}];
   renderBourse();
-  const res=[];
   const un=[{code:'^FCHI',nom:'CAC 40'}];
-  for(const s of BRS_SOURCES){
+  const essai=async(s,appel,quoi)=>{
     const t=Date.now(); s.via='';
-    try{ const r=await s.cours(un);
-         res.push({nom:s.nom,via:s.via,etat:(r&&r.length&&r[0].dernier!=null)?'ok':'répond mais sans cours',
-                   ms:Date.now()-t,detail:r&&r[0]?`${r[0].dernier}`:'',info:s.info,cle:s.cle}); }
-    catch(e){ res.push({nom:s.nom,via:'',etat:'échec',ms:Date.now()-t,detail:brsMsg(e),info:s.info,cle:s.cle}); }
-  }
-  for(const s of BRS_NEWS){
-    const t=Date.now(); s.via='';
-    try{ const r=await s.news();
-         res.push({nom:s.nom,via:s.via,etat:r&&r.length?'ok':'répond mais sans titre',
-                   ms:Date.now()-t,detail:r&&r.length?`${r.length} titres`:'',info:s.info,cle:s.cle}); }
-    catch(e){ res.push({nom:s.nom,via:'',etat:'échec',ms:Date.now()-t,detail:brsMsg(e),info:s.info,cle:s.cle}); }
-  }
-  brsDiag=res;
+    try{ const r=await appel();
+         const bon=quoi==='cours'?(r&&r.length&&r[0].dernier!=null):(r&&r.length);
+         brsNote(s.id,!!bon,s.via);
+         return {nom:s.nom,via:s.via,etat:bon?'ok':'répond mais sans donnée',ms:Date.now()-t,
+                 detail:quoi==='cours'?(r&&r[0]?`${r[0].dernier}`:''):(r?`${r.length} titres`:''),
+                 info:s.info,cle:s.cle}; }
+    catch(e){ brsNote(s.id,false);
+      return {nom:s.nom,via:'',etat:'échec',ms:Date.now()-t,detail:brsMsg(e),info:s.info,cle:s.cle}; }
+  };
+  // Tout en parallèle : le diagnostic doit rendre la main vite, lui aussi.
+  brsDiag=await Promise.all([
+    ...BRS_SOURCES.map(s=>essai(s,()=>s.cours(un),'cours')),
+    ...BRS_NEWS.map(s=>essai(s,()=>s.news(),'news'))]);
   renderBourse();
 }
 
@@ -11936,7 +11978,7 @@ async function renderBourse(){
 
   el.innerHTML=`
     <div class="brs-tools">
-      <button class="gl-pill" onclick="brsRafraichir()">⟳ Actualiser</button>
+      <button class="gl-pill" onclick="brsRafraichir()"${brsEnCours?' disabled':''}>${brsEnCours?'⟳ Interrogation…':'⟳ Actualiser'}</button>
       <button class="gl-pill" onclick="openBrsListe()">✎ Ma liste</button>
       <button class="gl-pill" onclick="openBrsCles()">⚙ Sources</button>
       <button class="gl-pill" onclick="brsTester()" title="Essayer chaque source depuis ce navigateur">🔎 Tester les sources</button>
@@ -11961,10 +12003,12 @@ async function renderBourse(){
     ${d?`<div class="adp-sec">Actualité</div>${news}`:''}
     ${diag}`;
 }
+let brsEnCours=false;
 async function brsRafraichir(){
-  showLoad(true);
+  if(brsEnCours)return;
+  brsEnCours=true; renderBourse();          // l'écran dit qu'il travaille
   try{ await brsCharger(true); }catch(e){ brsErreurs.push({quoi:'chargement',err:brsMsg(e)}); }
-  showLoad(false);
+  brsEnCours=false;
   renderBourse();
 }
 
@@ -15475,7 +15519,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.58.1';
+const APP_VERSION='v1.58.2';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
