@@ -1173,6 +1173,113 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
   .adp-edit{flex:0 0 auto;min-height:0;height:56vh}
 }
 
+/* ── 日本語 ────────────────────────────────────────────────────────────────
+   Le japonais s'affiche avec les polices du systeme : Hiragino sur Mac, Yu
+   Gothic sur Windows, Noto sur Android et Linux. Embarquer une fonte
+   japonaise complete couterait plusieurs megaoctets pour une poignee de
+   caracteres — le systeme le fait mieux, et gratuitement. */
+:root{--font-jp:'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP','Songti SC',serif;
+      --font-jp-s:'Hiragino Sans','Yu Gothic','Noto Sans JP','Meiryo',sans-serif}
+.jp-wrap{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:1.25rem 1.5rem 3rem;
+  gap:0.9rem;position:relative;z-index:1}
+.jp-hdr{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+.jp-titre{display:flex;align-items:baseline;gap:0.7rem}
+.jp-kanji{font-family:var(--font-jp);font-size:1.8rem;font-weight:700;letter-spacing:0.08em;
+  color:var(--accent);line-height:1}
+.jp-sous{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--text-dim)}
+.jp-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.5rem}
+.jp-kpi{background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  padding:0.55rem 0.75rem}
+.jp-kpi-l{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--text-dim)}
+.jp-kpi-v{font-family:var(--font-mono);font-size:1.25rem;font-weight:700;margin-top:0.15rem}
+.jp-grid{display:grid;grid-template-columns:1fr 320px;gap:1rem;align-items:start}
+.jp-sec{font-family:var(--font-jp-s);font-size:0.74rem;letter-spacing:0.1em;color:var(--accent);
+  margin:0.7rem 0 0.45rem;display:flex;align-items:center;gap:0.5rem}
+.jp-sec.petit{font-size:0.66rem;color:var(--text-mid)}
+.jp-sec-r{margin-left:auto;font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim)}
+.jp-blocs{display:flex;flex-direction:column;gap:0.35rem}
+.jp-bloc{display:flex;align-items:flex-start;gap:0.7rem;width:100%;text-align:left;
+  background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  padding:0.6rem 0.8rem;cursor:pointer;color:inherit;font:inherit;transition:all 0.12s}
+.jp-bloc:hover{border-color:var(--accent);transform:translateX(2px)}
+.jp-bloc.fait{opacity:0.5;border-color:var(--green)}
+.jp-bloc.fait .jp-b-t{text-decoration:line-through}
+.jp-check{flex-shrink:0;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;
+  color:var(--bg);margin-top:1px}
+.jp-bloc.fait .jp-check{background:var(--green);border-color:var(--green)}
+.jp-b-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.jp-b-t{font-size:0.85rem;font-weight:700}
+.jp-n{font-family:var(--font-mono);font-size:0.62rem;color:var(--accent);font-weight:700}
+.jp-b-d{font-size:0.7rem;color:var(--text-dim);line-height:1.4}
+.jp-b-min{flex-shrink:0;font-family:var(--font-mono);font-size:0.66rem;color:var(--text-mid)}
+.jp-avant{background:var(--accent-dim);border:1px solid var(--border2);border-radius:9px;
+  padding:0.55rem 0.8rem;font-size:0.76rem;line-height:1.5;margin-bottom:0.5rem}
+.jp-reprise{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);
+  border-radius:9px;padding:0.6rem 0.8rem;font-size:0.76rem;line-height:1.5;margin-bottom:0.5rem}
+.jp-ecarte{margin-top:0.5rem;font-size:0.7rem;line-height:1.5;color:var(--text-dim);
+  border-left:2px solid var(--border2);padding-left:0.6rem}
+.jp-pied{display:flex;align-items:center;justify-content:space-between;gap:0.6rem;
+  margin-top:0.6rem;font-size:0.74rem;color:var(--text-mid);flex-wrap:wrap}
+.jp-ressenti{display:flex;align-items:center;gap:0.25rem;font-size:0.68rem;color:var(--text-dim)}
+.jp-r{background:none;border:none;color:var(--border2);cursor:pointer;font-size:0.7rem;padding:0 1px}
+.jp-r.on{color:var(--accent)}
+.jp-phase{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:0 9px 9px 0;padding:0.7rem 0.85rem}
+.jp-ph-t{font-weight:700;font-size:0.86rem}
+.jp-ph-d{font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim);margin:0.15rem 0 0.4rem}
+.jp-ph-r{font-size:0.76rem;line-height:1.5}
+.jp-ph-n{font-size:0.72rem;color:var(--text-mid);font-style:italic;margin-top:0.4rem}
+.jp-rep{display:flex;flex-direction:column;gap:0.1rem}
+.jp-rep-l{display:flex;justify-content:space-between;font-size:0.75rem;padding:0.22rem 0;
+  border-bottom:1px solid rgba(255,255,255,0.04)}
+.jp-rep-l b{font-family:var(--font-mono)}
+.jp-liens{display:flex;flex-wrap:wrap;gap:0.35rem}
+.jp-lien{font-size:0.7rem;padding:0.25rem 0.6rem;border:1px solid var(--border);border-radius:99px;
+  color:var(--text-mid);text-decoration:none}
+.jp-lien:hover{border-color:var(--accent);color:var(--text)}
+.jp-pil{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0.6rem}
+.jp-p{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--border2);
+  border-radius:9px;padding:0.7rem 0.85rem}
+.jp-p.e-vert{border-top-color:var(--green)}
+.jp-p.e-orange{border-top-color:var(--warn)}
+.jp-p.e-rouge{border-top-color:var(--danger)}
+.jp-p-h{display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap}
+.jp-p-jp{font-family:var(--font-jp);font-size:1.15rem;color:var(--accent)}
+.jp-p-l{font-weight:700;font-size:0.8rem}
+.jp-p-e{margin-left:auto;font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--text-dim)}
+.jp-p-q{font-size:0.72rem;color:var(--text-dim);line-height:1.45;margin:0.3rem 0 0.5rem}
+.jp-p-m{display:flex;align-items:baseline;gap:0.45rem;font-size:0.74rem;padding:0.18rem 0;
+  border-top:1px solid rgba(255,255,255,0.04)}
+.jp-p-m span:first-child{flex:1;color:var(--text-dim)}
+.jp-p-m b{font-family:var(--font-mono)}
+.jp-delta{font-family:var(--font-mono);font-size:0.66rem}
+.jp-t{width:100%;border-collapse:collapse;font-size:0.76rem}
+.jp-t th{text-align:left;font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--text-dim);padding:0.3rem 0.5rem;
+  border-bottom:1px solid var(--border)}
+.jp-t td{padding:0.35rem 0.5rem;border-bottom:1px solid rgba(255,255,255,0.04)}
+.jp-t tbody tr{cursor:pointer}
+.jp-t tbody tr:hover{background:var(--surface2)}
+.jp-t-n{color:var(--text-dim);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jp-pt{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--border2)}
+.jp-pt.vert{background:var(--green)}.jp-pt.orange{background:var(--warn)}
+.jp-pt.rouge{background:var(--danger)}
+.jp-cal{display:grid;grid-template-columns:repeat(28,1fr);gap:3px;max-width:520px}
+.jp-c{aspect-ratio:1;border-radius:2px;background:var(--surface2)}
+.jp-c.on{background:var(--accent)}
+.jp-codes{font-family:var(--font-mono);font-size:0.66rem}
+.fld-u{color:var(--text-dim);font-weight:400}
+@media(max-width:900px){
+  .jp-grid{grid-template-columns:1fr}
+  .jp-wrap{padding:0.9rem 0.7rem 4rem}
+  .jp-cal{grid-template-columns:repeat(14,1fr)}
+  .jp-t-n{max-width:120px}
+}
+
 /* ── Bourse ────────────────────────────────────────────────────────────────
    Un ecran a lire en trente secondes : gros chiffre en tete, contexte en une
    ligne, tableau dense, actualite en liste. */
@@ -1589,6 +1696,32 @@ html[data-theme="tokyo"]{
 html[data-theme="tokyo"] body{background:var(--bg)}
 
 /* ═══════════════════════════════
+   THEME — 墨 SUMI (encre)
+   Fond d'encre delave, indigo japonais (ai), vermillon des torii (shu). Les
+   titres passent en serif : c'est la seule famille dont les variantes
+   japonaises du systeme s'accordent vraiment avec les kanji affiches ailleurs.
+═══════════════════════════════ */
+html[data-theme="sumi"]{
+  --bg:#12110f;--surface:#1c1a17;--surface2:#242119;--surface3:#2e2a20;
+  --border:#3a352b;--border2:#544c3c;
+  --accent:#c9573f;--accent-dim:rgba(201,87,63,0.16);
+  --text:#ece5d8;--text-dim:#8b8271;--text-mid:#bdb3a0;
+  --green:#7d9a6b;--warn:#d9a441;--danger:#c05646;
+  --font-body:'IBM Plex Sans',var(--sys-sans);
+  --font-mono:'IBM Plex Mono',var(--sys-mono);
+}
+html[data-theme="sumi"] body{background:var(--bg)}
+/* Le papier a du grain : une trame tres legere, jamais lisible en tant que telle. */
+html[data-theme="sumi"] body::after{opacity:0.05}
+html[data-theme="sumi"] .logo,
+html[data-theme="sumi"] .jp-kanji,
+html[data-theme="sumi"] .jp-p-jp{font-family:var(--font-jp)}
+html[data-theme="sumi"] .card,
+html[data-theme="sumi"] .jp-bloc,
+html[data-theme="sumi"] .jp-kpi{border-radius:3px}
+html[data-theme="sumi"] .nav-tab.active{color:var(--accent);border-color:var(--accent)}
+
+/* ═══════════════════════════════
    THEME — ③ CARBON (IBM)
 ═══════════════════════════════ */
 html[data-theme="carbon"]{
@@ -1956,6 +2089,7 @@ body,body *{font-family:var(--font-body)}
           <button class="om-i" onclick="setTheme('default');renderMoreMenu()"><span class="om-d" data-theme-id="default"></span>Cyber Default</button>
           <button class="om-i" onclick="setTheme('brutalist');renderMoreMenu()"><span class="om-d" data-theme-id="brutalist"></span>① Brutalist</button>
           <button class="om-i" onclick="setTheme('tokyo');renderMoreMenu()"><span class="om-d" data-theme-id="tokyo"></span>② Tokyo Night</button>
+          <button class="om-i" onclick="setTheme('sumi');renderMoreMenu()"><span class="om-d" data-theme-id="sumi"></span>墨 Sumi — encre</button>
           <button class="om-i" onclick="setTheme('carbon');renderMoreMenu()"><span class="om-d" data-theme-id="carbon"></span>③ Carbon IBM</button>
           <button class="om-i" onclick="setTheme('neon');renderMoreMenu()"><span class="om-d" data-theme-id="neon"></span>④ Cyber Neon</button>
           <button class="om-i" onclick="setTheme('solarized');renderMoreMenu()"><span class="om-d" data-theme-id="solarized"></span>⑤ Solarized Night</button>
@@ -2189,6 +2323,22 @@ body,body *{font-family:var(--font-body)}
 </div>
 
 <!-- SPORT PAGE -->
+<!-- 日本語 — le cockpit JLPT N3. Meme esprit que Sport : un plan, une seance
+     generee, un journal. L'outil decide, on execute. -->
+<div class="page" id="pagejp">
+  <div class="pg-bg" id="jpBg"></div>
+  <div class="jp-wrap">
+    <div id="jpBanner"></div>
+    <div class="jp-grid">
+      <section id="jpSeance"></section>
+      <section id="jpCote"></section>
+    </div>
+    <div id="jpPiliers"></div>
+    <div id="jpCheckpoints"></div>
+    <div id="jpJournalVue"></div>
+  </div>
+</div>
+
 <div class="page" id="pagesport">
   <div id="sportBanner"></div>
   <div id="sportWeek"></div>
@@ -3243,6 +3393,7 @@ function renderCurrentPage(){
   else if(curPage==='brain')renderBrain();
   else if(curPage==='adp')renderAdp();
   else if(curPage==='metrics')renderMetricsPage();
+  else if(curPage==='jp')renderJp();
 }
 
 function init() {
@@ -5045,6 +5196,7 @@ function setNoteOrder(o){
 // Neuf onglets ne tenaient plus. Les cinq pages de pilotage passent en
 // sous-onglets d'une seule entree ; les pages elles-memes sont inchangees.
 const OMEGA=[['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],
+             ['jp','日本語'],
              ['metrics','Mesures'],['finances','Finances'],['crypto','Cryptobot']];
 const LS_OMEGA='kanban_omega_last';
 let omegaLast=localStorage.getItem(LS_OMEGA)||'objectifs';
@@ -6505,7 +6657,15 @@ const BK_TABLES=[
   ['autoJournal',  'Auto, journal',()=>autoJournal,  v=>{autoJournal=v;}],
   // Ajoute apres coup : l'onglet est arrive en v1.55 sans entrer ici, donc une
   // restauration rendait tout SAUF la memoire du dernier rapport.
-  ['adpPoints',    'Points de rapport',()=>adpPoints, v=>{adpPoints=v;}]];
+  ['adpPoints',    'Points de rapport',()=>adpPoints, v=>{adpPoints=v;}],
+  // Meme oubli, deux fois de plus : la bourse (v1.58) et le japonais (v1.59)
+  // etaient absents d'ici. Une table qui n'entre pas dans cette liste se perd
+  // silencieusement a la restauration — c'est le pire genre de perte.
+  ['brsLignes',    'Bourse',      ()=>brsLignes,     v=>{brsLignes=v;}],
+  ['jpPlan',       'JLPT, plan',  ()=>jpPlan,        v=>{jpPlan=v;}],
+  ['jpJournal',    'JLPT, journal',()=>jpJournal,    v=>{jpJournal=v;}],
+  ['jpMesures',    'JLPT, compteurs',()=>jpMesures,  v=>{jpMesures=v;}],
+  ['jpCheck',      'JLPT, points', ()=>jpCheck,      v=>{jpCheck=v;}]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -6562,7 +6722,10 @@ function closeBackupModal(){ modalFerme('backupModal'); bkData=null; }
 
 // Fusion par identifiant : deux enregistrements de même clé ne peuvent pas
 // coexister, et l'existant l'emporte en mode « compléter ».
-const bkKey=(k,o)=>k==='mesDefs'?o.key:(k==='sportPlans'||k==='sportLogs')?o.date:o.id;
+const bkKey=(k,o)=>k==='mesDefs'?o.key
+  :(k==='sportPlans'||k==='sportLogs'||k==='jpJournal')?o.date   // une journée par date
+  :k==='jpMesures'?o.cle                                          // un compteur par clé
+  :o.id;
 async function applyBackup(){
   if(!bkData)return;
   const mode=document.getElementById('bkMode').value;
@@ -6580,7 +6743,8 @@ async function applyBackup(){
   });
   // caches locaux d'abord : même si le réseau échoue, l'état restauré survit
   ['notes','mesDefs','mesVals','adpProjects','adpContacts','adpMilestones',
-   'adpTemplates','adpBudget','adpRuns','autoRegles','autoJournal','adpPoints'].forEach(k=>{
+   'adpTemplates','adpBudget','adpRuns','autoRegles','autoJournal','adpPoints',
+   'brsLignes','jpPlan','jpJournal','jpMesures','jpCheck'].forEach(k=>{
     const t=BK_TABLES.find(x=>x[0]===k); if(t)cacheSet(k,t[2]()||[]);
   });
   lsSet(LS_CACHE,JSON.stringify(allTasks));
@@ -6601,6 +6765,11 @@ async function applyBackup(){
       if(autoRegles.length) ok=await sheetBatchUpsert('auto_regles',autoRegles.map(autoRegRow))&&ok;
       if(autoJournal.length)ok=await sheetBatchUpsert('auto_journal',autoJournal.map(autoJrnRow))&&ok;
       if(adpPoints.length)  ok=await sheetBatchUpsert('adp_points',adpPoints.map(adpPtRow))&&ok;
+      if(brsLignes.length)  ok=await brsEcrire(brsLignes)&&ok;
+      if(jpPlan.length)     ok=await jpSauverPlan()&&ok;
+      if(jpJournal.length)  ok=await sheetBatchUpsert('jp_journal',jpJournal.map(jpJourRow))&&ok;
+      if(jpMesures.length)  ok=await sheetBatchUpsert('jp_mesures',jpMesures.map(jpMesRow))&&ok;
+      if(jpCheck.length)    ok=await sheetBatchUpsert('jp_check',jpCheck.map(jpChkRow))&&ok;
     }catch(e){ ok=false; }
   }
   showLoad(false);
@@ -7348,6 +7517,18 @@ const ADP_PT_HEADER=['id','portee','date','projets','jalons','partiel'];
 //   type='indice' code='^FCHI'      valeur='CAC 40' ordre=0
 //   type='cle'    code='twelvedata' valeur='<cle>'  ordre=0
 const BRS_HEADER=['id','type','code','valeur','ordre'];
+// ── Japonais / JLPT N3 ────────────────────────────────────────────────────
+// Quatre onglets, quatre roles nets. Le PLAN est en base et non dans le code :
+// c'est lui que la revue mensuelle fait bouger, et il doit pouvoir changer sans
+// qu'on retouche l'application.
+//   jp_plan    : les phases, leurs dates, ce qu'on y fait
+//   jp_journal : une ligne par jour — ce qui a ete fait, en combien de temps
+//   jp_mesures : les compteurs de progression, par pilier
+//   jp_check   : les rendez-vous mensuels, avec un vert/rouge par section
+const JP_PLAN_HEADER=['id','ordre','debut','fin','titre','resume','blocs','cartes','note','updated_at'];
+const JP_JOUR_HEADER=['date','minutes','blocs','ressenti','note','updated_at'];
+const JP_MES_HEADER =['id','date','cle','valeur','note','updated_at'];
+const JP_CHK_HEADER =['id','date','phase','decision','grammaire','vocab','ecoute','lecture','note','updated_at'];
 const ADP_CAPEX =[['R','CAPEX .R'],['I','CAPEX .I']];
 const ADP_NATURE=[['bdc','Bon de commande'],['nxt','Heure NxT'],['autres','Heure autres']];
 // Déclarés ici et pas avec le moteur : ADP_SHEETS les référence, et une
@@ -7358,7 +7539,9 @@ const ADP_SHEETS = [['adp_projects',ADP_PROJ_HEADER,'Q'],['adp_contacts',ADP_CON
                     ['adp_milestones',ADP_MILE_HEADER,'J'],['adp_templates',ADP_TPL_HEADER,'L'],
                     ['adp_budget',ADP_BUD_HEADER,'H'],['adp_runs',ADP_RUN_HEADER,'H'],
                     ['auto_regles',AUTO_REG_HEADER,'J'],['auto_journal',AUTO_JRN_HEADER,'G'],
-                    ['adp_points',ADP_PT_HEADER,'F'],['bourse',BRS_HEADER,'E']];
+                    ['adp_points',ADP_PT_HEADER,'F'],['bourse',BRS_HEADER,'E'],
+                    ['jp_plan',JP_PLAN_HEADER,'J'],['jp_journal',JP_JOUR_HEADER,'F'],
+                    ['jp_mesures',JP_MES_HEADER,'F'],['jp_check',JP_CHK_HEADER,'J']];
 
 const ADP_STATUS  = [['actif','Actif'],['attente','En attente'],['termine','Terminé'],['archive','Archivé']];
 const ADP_HEALTH  = [['vert','Sous contrôle'],['orange','Vigilance'],['rouge','En difficulté']];
@@ -7368,6 +7551,7 @@ const ADP_VIEWS   = [['projets','Projets'],['budget','Budget'],['suivi','Suivi']
 const ADP_PALETTE = ['#7c6aff','#38bdf8','#fcd34d','#6ee7b7','#f472b6','#fb923c','#a78bfa','#4ade80'];
 
 let adpProjects=[], adpContacts=[], adpMilestones=[], adpTemplates=[], adpPoints=[], brsLignes=[];
+let jpPlan=[], jpJournal=[], jpMesures=[], jpCheck=[];
 let adpLoaded=false, adpView='projets', adpProjCur=null, adpTplCur=null;
 let adpSearch='', adpShowArchived=false;
 const LS_ADP_VIEW='kanban_adp_view';
@@ -7413,10 +7597,10 @@ async function loadAdp(){
   await ensureAdpSheets();
   // Neuf onglets, une seule requête. C'était neuf allers-retours, soit neuf
   // fois la latence du réseau — l'essentiel du temps d'ouverture d'ADP.
-  const [pr,co,mi,tp,bu,ru,ar,aj,pt,br]=await sheetBatchLignes(
+  const [pr,co,mi,tp,bu,ru,ar,aj,pt,br,jpl,jpj,jpm,jpc]=await sheetBatchLignes(
     ['adp_projects!A:Q','adp_contacts!A:N','adp_milestones!A:J','adp_templates!A:L',
      'adp_budget!A:H','adp_runs!A:H','auto_regles!A:J','auto_journal!A:G','adp_points!A:F',
-     'bourse!A:E']);
+     'bourse!A:E','jp_plan!A:J','jp_journal!A:F','jp_mesures!A:F','jp_check!A:J']);
   // La dernière ligne gagne. Une ligne vidée est une pierre tombale : la
   // suppression garde la ligne pour ne jamais décaler la feuille sous les
   // écritures en vol, mais l'objet ne doit pas ressusciter au rechargement.
@@ -7456,6 +7640,25 @@ async function loadAdp(){
   brsLignes=dedupe(br.map(x=>({id:adpCell(x,0),type:adpCell(x,1),code:adpCell(x,2),
     valeur:String(x[3]==null?'':x[3]),ordre:parseInt(adpCell(x,4),10)||0})),'type');
   cacheSet('brsLignes',brsLignes);
+  jpPlan=dedupe(jpl.map(x=>({id:adpCell(x,0),ordre:parseInt(adpCell(x,1),10)||0,
+    debut:adpCell(x,2),fin:adpCell(x,3),titre:adpCell(x,4),resume:String(x[5]==null?'':x[5]),
+    blocs:adpCell(x,6),cartes:parseInt(adpCell(x,7),10)||0,note:String(x[8]==null?'':x[8]),
+    updated_at:adpCell(x,9)})),'titre').sort((a,b)=>a.ordre-b.ordre);
+  jpJournal=dedupe(jpj.map(x=>({id:adpCell(x,0),date:adpCell(x,0),
+    minutes:parseInt(adpCell(x,1),10)||0,blocs:adpCell(x,2),
+    ressenti:parseInt(adpCell(x,3),10)||0,note:String(x[4]==null?'':x[4]),
+    updated_at:adpCell(x,5)})),'date');
+  jpMesures=dedupe(jpm.map(x=>({id:adpCell(x,0),date:adpCell(x,1),cle:adpCell(x,2),
+    valeur:nbFr(adpCell(x,3),0),note:String(x[4]==null?'':x[4]),updated_at:adpCell(x,5)})),'cle');
+  jpCheck=dedupe(jpc.map(x=>({id:adpCell(x,0),date:adpCell(x,1),phase:adpCell(x,2),
+    decision:adpCell(x,3),grammaire:adpCell(x,4),vocab:adpCell(x,5),ecoute:adpCell(x,6),
+    lecture:adpCell(x,7),note:String(x[8]==null?'':x[8]),updated_at:adpCell(x,9)})),'date')
+    .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  ['jpPlan','jpJournal','jpMesures','jpCheck'].forEach((k,i)=>
+    cacheSet(k,[jpPlan,jpJournal,jpMesures,jpCheck][i]));
+  // Le plan ne se sème PAS ici : écrire quatre phases dans le classeur de
+  // quelqu'un qui n'ouvrira peut-être jamais la page serait présomptueux, et
+  // ça coûterait un appel réseau à chaque démarrage. On sème à la première visite.
   const bd={};
   bu.forEach(x=>{ const o={id:adpCell(x,0),project_id:adpCell(x,1),capex:adpCell(x,2),
     nature:adpCell(x,3),month:adpCell(x,4),
@@ -7499,6 +7702,8 @@ function adpRestoreCache(){
   adpBudget=cacheGet('adpBudget',[]); budIdxInvalidate(); adpRuns=cacheGet('adpRuns',[]);
   autoRegles=cacheGet('autoRegles',[]); autoJournal=cacheGet('autoJournal',[]);
   adpPoints=cacheGet('adpPoints',[]); brsLignes=cacheGet('brsLignes',[]);
+  jpPlan=cacheGet('jpPlan',[]); jpJournal=cacheGet('jpJournal',[]);
+  jpMesures=cacheGet('jpMesures',[]); jpCheck=cacheGet('jpCheck',[]);
   projTagsInvalidate();
 }
 // ── Le fil du projet ──────────────────────────────────────────────────────
@@ -8462,6 +8667,9 @@ async function saveAdpModal(){
   let obj=null,kind=adpEditKind;
   if(kind==='auto')return saveAutoModal();
   if(kind==='gab') return creerProjetDepuisGabarit();
+  if(kind==='jpCheck')  return saveJpCheck();
+  if(kind==='jpMesures')return saveJpMesures();
+  if(kind==='jpPlan')   return saveJpPlan();
   if(kind==='brsListe') return saveBrsListe();
   if(kind==='brsCles')  return saveBrsCles();
   if(kind==='orph'){ closeAdpModal(); return; }   // ce formulaire a ses propres boutons
@@ -8568,6 +8776,7 @@ async function deleteAdpModal(){
   if(!adpEditId)return;
   const kind=adpEditKind;
   if(kind==='auto'){ closeAdpModal(); return autoDeleteRegle(adpEditId); }
+  if(kind==='jpCheck')return supprimerJpCheck();
   const src={proj:adpProjects,cont:adpContacts,mile:adpMilestones,tpl:adpTemplates}[kind];
   const snap={...src.find(x=>x.id===adpEditId)};
   const id=adpEditId;
@@ -11549,6 +11758,919 @@ const RV_PERIODS=[['week','Cette semaine'],['lastweek','Semaine dernière'],
 const rvEstBourse=()=>rvPeriod==='bourse';
 
 // ════════════════════════════════════════════════════
+// 日本語 — JLPT N3
+// ════════════════════════════════════════════════════
+// Le pendant du Sport pour l'étude du japonais : un plan par phases, une séance
+// générée chaque jour, un journal, et des rendez-vous mensuels. Les principes
+// du projet dictent la forme, et ils sont peu nombreux :
+//   · l'outil décide, on exécute — aucune planification quotidienne à faire ;
+//   · moins de trente secondes par jour ;
+//   · le total de nouvelles cartes Anki est PLAFONNÉ, tous decks confondus —
+//     c'est l'empilement des révisions qui fait abandonner vers le quinzième
+//     jour, pas la difficulté ;
+//   · trois jours d'absence ne se rattrapent pas : on revient à dose réduite ;
+//   · les checkpoints mensuels remplacent la date d'examen, trop lointaine pour
+//     tenir lieu d'échéance.
+// Le plan vit en base et non dans le code : c'est lui que la revue mensuelle
+// fait bouger, et il doit changer sans qu'on retouche l'application.
+
+const JP_EXAMEN='2027-07-04';               // JLPT, session de juillet
+const JP_INSCRIPTION='2027-03-01';          // ouverture des inscriptions (Inalco)
+const JP_DECISION='2027-02-28';             // checkpoint qui tranche N3 ou N4
+
+// Les quatre piliers, menés de front. Jamais l'un après l'autre : c'est en
+// série qu'on se retrouve avec trois ans de retard sur trois d'entre eux.
+const JP_PILIERS=[
+  ['grammaire','Grammaire','文法','Le vrai chantier : la grammaire active est le point faible.'],
+  ['vocab','Vocabulaire et lectures','語彙','Les lectures des kanji s\'apprennent ICI, dans le vocabulaire, pas dans RTK.'],
+  ['ecoute','Écoute','聴解','Une heure de trajet par jour : le seul créneau qui ne coûte rien.'],
+  ['lecture','Lecture','読解','Todaii filtre par niveau et donne le dico au tap.']];
+const jpPilier=k=>JP_PILIERS.find(p=>p[0]===k)||JP_PILIERS[0];
+
+// Le catalogue des blocs. `ou` distingue ce qui se fait le soir, au calme, de
+// ce qui se fait en voiture — ce sont deux budgets de temps différents et il ne
+// faut jamais les additionner.
+//   essentiel : ce qui subsiste quand on revient d'une absence
+const JP_BLOCS=[
+ {code:'kana',   pilier:'vocab',    ou:'soir',   min:5,  essentiel:true,
+  titre:'Kana — Tofugu',        detail:'Prérequis bloquant : tant qu\'ils hésitent, tout le reste coûte double.'},
+ {code:'anki_g', pilier:'grammaire',ou:'soir',   min:5,  essentiel:true,
+  titre:'Anki grammaire',       detail:'Jtest4you — 3 nouvelles cartes, révisions comprises.'},
+ {code:'anki_v', pilier:'vocab',    ou:'soir',   min:10, essentiel:true,
+  titre:'Anki vocabulaire',     detail:'Kaishi 1.5k puis Tango. Audio natif, phrase, furigana : les lectures viennent avec.'},
+ {code:'anki_k', pilier:'vocab',    ou:'soir',   min:5,  essentiel:false,
+  titre:'Anki kanji (RTK)',     detail:'Conservé pour le plaisir et le gist. Ne pas chercher à le finir.'},
+ {code:'gram',   pilier:'grammaire',ou:'soir',   min:10, essentiel:false,
+  titre:'Grammaire expliquée',  detail:'Tae Kim ou manuel : Anki mémorise, il n\'enseigne pas.'},
+ {code:'ecoute', pilier:'ecoute',   ou:'trajet', min:30, essentiel:true,
+  titre:'Écoute en trajet',     detail:'Comprehensible input. Rien à cocher, rien à comprendre entièrement.'},
+ {code:'serie',  pilier:'ecoute',   ou:'soir',   min:20, essentiel:false,
+  titre:'Série en VO',          detail:'CrunchyRoll, audio japonais. Sous-titres japonais à partir de la phase 2.'},
+ {code:'lecture',pilier:'lecture',  ou:'soir',   min:10, essentiel:false,
+  titre:'Lecture Todaii',       detail:'Un article au filtre du niveau courant, dico au tap.'},
+ {code:'annales',pilier:'lecture',  ou:'soir',   min:15, essentiel:false,
+  titre:'Annales chronométrées',detail:'UNE section officielle, au chronomètre — pas l\'épreuve entière. jlpt.jp et Todaii.'},
+ {code:'mock',   pilier:'lecture',  ou:'soir',   min:60, essentiel:false,
+  titre:'Examen blanc complet', detail:'Conditions réelles, puis revue des erreurs — la revue vaut l\'examen.'}];
+const jpBloc=c=>JP_BLOCS.find(b=>b.code===c)||null;
+
+// Les phases du plan, semées au premier lancement puis modifiables — y compris
+// par la revue mensuelle, qui les relit depuis Drive.
+const JP_PLAN_SEED=[
+ {ordre:1,debut:'2026-09-01',fin:'2026-11-30',titre:'Phase 1 — Fondations',
+  resume:'Kana solides, lancement Kaishi, grammaire N5→N4 et premier tiers N3. Écoute lente, lecture au filtre N5.',
+  blocs:'kana,anki_g,anki_v,anki_k,gram,ecoute,lecture',cartes:12,
+  note:'Objectifs de sortie : 1 500 à 2 000 mots lus, kana sans hésitation.'},
+ {ordre:2,debut:'2026-12-01',fin:'2027-02-28',titre:'Phase 2 — Le gros de N3',
+  resume:'Grammaire N3 quasi complète, écoute à vitesse naturelle, sous-titres japonais, lecture N3.',
+  blocs:'anki_g,anki_v,anki_k,gram,ecoute,serie,lecture',cartes:15,
+  note:'Se termine sur LE checkpoint : c\'est là qu\'on tranche entre N3 et N4.'},
+ {ordre:3,debut:'2027-03-01',fin:'2027-05-31',titre:'Phase 3 — Inscription et annales',
+  resume:'Inscription en mars. Annales, lecture chronométrée, ciblage de la section la plus faible.',
+  blocs:'anki_g,anki_v,gram,ecoute,serie,lecture,annales',cartes:12,
+  note:'Sortie visée : au moins 95 sur 180, et aucune section sous 19.'},
+ {ordre:4,debut:'2027-06-01',fin:'2027-07-04',titre:'Phase 4 — Rodage',
+  resume:'Examens blancs chronométrés, revue des erreurs, allègement progressif.',
+  blocs:'anki_g,anki_v,ecoute,annales,mock',cartes:6,
+  note:'On n\'apprend plus rien de neuf : on consolide et on se repose.'}];
+
+// ── Lecture du plan ───────────────────────────────────────────────────────
+const jpPhaseAu=(d)=>{
+  const j=d||td();
+  return jpPlan.find(p=>(!p.debut||p.debut<=j)&&(!p.fin||j<=p.fin))
+      || jpPlan.filter(p=>p.debut&&p.debut>j).sort((a,b)=>a.debut.localeCompare(b.debut))[0]
+      || jpPlan[jpPlan.length-1] || null;
+};
+const jpPhaseCour=()=>jpPhaseAu(td());
+// Vrai quand la phase retenue n'a pas encore commencé : on la propose quand
+// même — prendre de l'avance ne se refuse pas — mais on ne prétend pas y être.
+const jpAvantDebut=()=>{ const p=jpPhaseCour(); return !!(p&&p.debut&&p.debut>td()); };
+const jpBlocsDe=p=>String(p&&p.blocs||'').split(',').map(x=>x.trim()).filter(Boolean)
+  .map(jpBloc).filter(Boolean);
+const jpJour=d=>jpJournal.find(x=>x.date===d)||null;
+const jpFaits=d=>{ const l=jpJour(d); return String(l&&l.blocs||'').split(',').filter(Boolean); };
+
+// ── La règle des trois jours ──────────────────────────────────────────────
+// Revenir après une coupure et se voir présenter le rattrapage complet, c'est
+// la deuxième chance de décrocher. On revient donc à dose réduite : les blocs
+// essentiels seulement, et le plafond de cartes divisé par deux.
+const JP_REPRISE_SEUIL=3;
+function jpJoursSansRien(){
+  // Un démarrage n'est pas une reprise. Sans aucune journée derrière soi, il
+  // n'y a rien à reprendre — et accueillir quelqu'un le premier jour par
+  // « soixante jours sans rien » serait absurde autant que décourageant.
+  if(!jpJournal.some(x=>String(x.blocs||'').length))return 0;
+  let n=0;
+  for(let i=1;i<=60;i++){
+    const d=plusDaysFrom(td(),-i);
+    if(jpFaits(d).length)break;
+    n++;
+  }
+  return n;
+}
+// ── Le budget du soir ─────────────────────────────────────────────────────
+// Deux budgets, jamais additionnés : le soir est actif et court, le trajet est
+// passif et long. Le soir tient en 20 à 30 minutes — c'est la contrainte de
+// départ, pas un souhait. Une phase qui liste sept blocs le soir en réclame
+// quarante-cinq : empiler tout tous les soirs, c'est reconstruire exactement le
+// pile-up qui fait décrocher vers J14. On tient donc le budget en faisant
+// TOURNER les blocs optionnels d'un jour à l'autre, jamais en les cumulant.
+const JP_SOIR=30;              // un soir de semaine
+const JP_SOIR_LONG=90;         // le dimanche : le seul jour où un blanc tient
+const JP_SOIR_REPRISE=15;      // au retour d'une absence
+const JP_JOUR_LONG=0;          // dimanche
+// Rang du jour dans le calendrier : la rotation est déterministe, donc la
+// séance d'un jour donné ne change pas si on rouvre la page à minuit moins dix.
+const jpRangJour=d=>Math.floor(Date.parse((d||td())+'T00:00:00Z')/864e5);
+const jpJourLong=d=>new Date((d||td())+'T00:00:00Z').getUTCDay()===JP_JOUR_LONG;
+
+// Choisit les blocs du soir : les essentiels d'abord, puis on remplit le reste
+// du budget en démarrant la rotation là où le jour la place. Sur un cycle, tous
+// les blocs optionnels passent ; un soir donné, aucun ne fait déborder.
+function jpBlocsSoir(p,jour,reprise){
+  const soir=jpBlocsDe(p).filter(b=>b.ou==='soir');
+  const budget=reprise?JP_SOIR_REPRISE:(jpJourLong(jour)?JP_SOIR_LONG:JP_SOIR);
+  const opt=soir.filter(b=>!b.essentiel);
+  const pris=[]; let t=0;
+  soir.filter(b=>b.essentiel).forEach(b=>{
+    // Un essentiel entre même s'il déborde seul : sans lui il n'y a plus de séance.
+    if(t+b.min<=budget||!pris.length){ pris.push(b); t+=b.min; }
+  });
+  if(!reprise&&opt.length){
+    // Le jour long sert précisément à loger ce qui ne tient nulle part ailleurs :
+    // on y sert le plus gros d'abord, sinon l'examen blanc ne passerait jamais.
+    const ordre=jpJourLong(jour)
+      ? opt.slice().sort((a,b)=>b.min-a.min)
+      : (()=>{ const d=jpRangJour(jour)%opt.length;
+               return opt.map((_,i)=>opt[(d+i)%opt.length]); })();
+    ordre.forEach(b=>{ if(t+b.min<=budget){ pris.push(b); t+=b.min; } });
+  }
+  const rang=b=>JP_BLOCS.findIndex(x=>x.code===b.code);
+  return pris.sort((a,b)=>rang(a)-rang(b));
+}
+function jpSeance(jour){
+  const j=jour||td();
+  const p=jpPhaseAu(j);
+  if(!p)return {phase:null,blocs:[],minutes:0,trajet:0,cartes:0,reprise:false,absent:0,
+                budget:JP_SOIR,ecartes:[]};
+  const absent=jpJoursSansRien();
+  const reprise=absent>=JP_REPRISE_SEUIL;
+  const soirPris=jpBlocsSoir(p,j,reprise);
+  let trajetPris=jpBlocsDe(p).filter(b=>b.ou==='trajet');
+  if(reprise)trajetPris=trajetPris.filter(b=>b.essentiel);
+  const blocs=soirPris.concat(trajetPris);
+  // Ce qui a été écarté aujourd'hui : on le dit, pour qu'écarter ne ressemble
+  // pas à oublier — et pour qu'on sache que ça revient d'ici quelques jours.
+  const ecartes=jpBlocsDe(p).filter(b=>b.ou==='soir'&&!soirPris.some(x=>x.code===b.code));
+  const soir=soirPris.reduce((s,b)=>s+b.min,0);
+  const trajet=trajetPris.reduce((s,b)=>s+b.min,0);
+  return {phase:p,blocs,minutes:soir,trajet,
+          cartes:reprise?Math.ceil((p.cartes||0)/2):(p.cartes||0),
+          reprise,absent,ecartes,
+          budget:reprise?JP_SOIR_REPRISE:(jpJourLong(j)?JP_SOIR_LONG:JP_SOIR)};
+}
+// Le plafond se répartit entre les decks présents dans la séance. Une seule
+// valeur à régler, jamais trois : trois réglages, c'est trois occasions de se
+// retrouver avec quarante nouvelles cartes un mardi soir.
+function jpRepartition(s){
+  // On lit la PHASE, pas la séance du jour : une limite de nouvelles cartes est
+  // un réglage de deck Anki, posé une fois pour la phase. Le faire varier au
+  // gré de la rotation quotidienne, ce serait de la friction pure.
+  const cat=s.phase?jpBlocsDe(s.phase):(s.blocs||[]);
+  const decks=[['anki_v','Vocabulaire',0.6],['anki_g','Grammaire',0.25],['anki_k','Kanji (RTK)',0.15]]
+    .filter(([c])=>cat.some(b=>b.code===c));
+  const poids=decks.reduce((t,d)=>t+d[2],0)||1;
+  let reste=s.cartes, out=[];
+  decks.forEach(([c,l,w],i)=>{
+    const n=i===decks.length-1?reste:Math.round(s.cartes*w/poids);
+    reste-=n; out.push({code:c,label:l,n:Math.max(0,n)});
+  });
+  return out;
+}
+
+// ── La série ──────────────────────────────────────────────────────────────
+// Elle compte les jours consécutifs où QUELQUE CHOSE a été fait, si peu que ce
+// soit. C'est le seul chiffre qui compte au quotidien : pas les minutes.
+function jpSerie(){
+  let n=0;
+  for(let i=0;i<400;i++){
+    const d=plusDaysFrom(td(),-i);
+    if(jpFaits(d).length){ n++; continue; }
+    if(i===0)continue;                 // la journée en cours n'a pas encore eu lieu
+    break;
+  }
+  return n;
+}
+const jpRecord=()=>{
+  const jours=jpJournal.filter(x=>String(x.blocs||'').length).map(x=>x.date).sort();
+  let best=0,cur=0,prec='';
+  jours.forEach(d=>{ cur=(prec&&plusDaysFrom(prec,1)===d)?cur+1:1; best=Math.max(best,cur); prec=d; });
+  return best;
+};
+const jpMinutes=(depuis)=>jpJournal.filter(x=>!depuis||x.date>=depuis)
+  .reduce((s,x)=>s+(x.minutes||0),0);
+
+// ── Les mesures de progression ────────────────────────────────────────────
+// Un compteur par pilier, saisi à la main au checkpoint. On ne cherche pas à
+// tout instrumenter : ce qui compte, c'est de pouvoir comparer d'un mois sur
+// l'autre.
+const JP_MESURES=[
+ ['vocab_connus','Mots sus (Anki mûrs)','vocab','mots'],
+ ['gram_points','Points de grammaire vus','grammaire','points'],
+ ['ecoute_min','Écoute cumulée','ecoute','min'],
+ ['lecture_art','Articles lus','lecture','articles'],
+ ['rtk','RTK','vocab','kanji']];
+const jpMesure=k=>jpMesures.filter(m=>m.cle===k).sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0]||null;
+const jpMesureAvant=(k,d)=>jpMesures.filter(m=>m.cle===k&&m.date<d)
+  .sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0]||null;
+
+// ── Écriture ──────────────────────────────────────────────────────────────
+const jpPlanRow=p=>[p.id,String(p.ordre||0),p.debut||'',p.fin||'',p.titre||'',p.resume||'',
+  p.blocs||'',String(p.cartes||0),p.note||'',td()];
+const jpJourRow=j=>[j.date,String(j.minutes||0),j.blocs||'',String(j.ressenti||0),j.note||'',td()];
+const jpMesRow =m=>[m.id,m.date||'',m.cle||'',String(m.valeur==null?'':m.valeur),m.note||'',td()];
+const jpChkRow =c=>[c.id,c.date||'',c.phase||'',c.decision||'',c.grammaire||'',c.vocab||'',
+  c.ecoute||'',c.lecture||'',c.note||'',td()];
+
+async function jpSauverJour(j){
+  const i=jpJournal.findIndex(x=>x.date===j.date);
+  if(i>=0)jpJournal[i]=j; else jpJournal.push(j);
+  cacheSet('jpJournal',jpJournal);
+  return sheetUpsertByKey('jp_journal',j.date,jpJourRow(j));
+}
+async function jpSauverMesure(m){
+  const i=jpMesures.findIndex(x=>x.id===m.id);
+  if(i>=0)jpMesures[i]=m; else jpMesures.push(m);
+  cacheSet('jpMesures',jpMesures);
+  return sheetUpsertByKey('jp_mesures',m.id,jpMesRow(m));
+}
+async function jpSauverCheck(c){
+  const i=jpCheck.findIndex(x=>x.id===c.id);
+  if(i>=0)jpCheck[i]=c; else jpCheck.push(c);
+  jpCheck.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  cacheSet('jpCheck',jpCheck);
+  return sheetUpsertByKey('jp_check',c.id,jpChkRow(c));
+}
+async function jpSauverPlan(){
+  cacheSet('jpPlan',jpPlan);
+  return sheetReplaceAll('jp_plan','J',[JP_PLAN_HEADER,...jpPlan.map(jpPlanRow)]);
+}
+// Le plan de départ n'est semé QUE si la feuille est vide : on n'écrase jamais
+// un plan que la revue mensuelle aurait déjà fait évoluer.
+function jpSemerSiVide(){
+  if(jpPlan.length)return false;
+  jpPlan=JP_PLAN_SEED.map(p=>({...p,id:'ph'+p.ordre,updated_at:td()}));
+  cacheSet('jpPlan',jpPlan);
+  // On n'écrit dans le classeur que si on l'a vraiment lu : semer avant d'avoir
+  // lu, ce serait risquer d'écraser un plan qu'on n'a pas encore vu.
+  if(accessToken&&navigator.onLine&&adpLoaded)jpSauverPlan().catch(()=>{});
+  return true;
+}
+
+// ── Cocher un bloc ────────────────────────────────────────────────────────
+// Un clic, rien d'autre. Les minutes s'additionnent depuis le catalogue : on
+// ne demande jamais à quelqu'un de saisir une durée le soir.
+async function jpBasculer(code){
+  const d=td();
+  const faits=new Set(jpFaits(d));
+  faits.has(code)?faits.delete(code):faits.add(code);
+  const codes=[...faits];
+  const j=jpJour(d)||{date:d,minutes:0,blocs:'',ressenti:0,note:''};
+  j.blocs=codes.join(',');
+  j.minutes=codes.map(jpBloc).filter(Boolean).reduce((s,b)=>s+b.min,0);
+  renderJp();                                   // l'écran répond tout de suite
+  const ok=await jpSauverJour(j);
+  if(!ok)toast("ÉCHEC de l'enregistrement",'err');
+  else if(codes.length===1)toast('お疲れさま — la série continue','ok');
+  renderJp(); updateHStats();
+}
+async function jpRessenti(v){
+  const d=td();
+  const j=jpJour(d)||{date:d,minutes:0,blocs:'',ressenti:0,note:''};
+  j.ressenti=j.ressenti===v?0:v;
+  renderJp();
+  if(!(await jpSauverJour(j)))toast("ÉCHEC de l'enregistrement",'err');
+}
+
+// ── Rendu ─────────────────────────────────────────────────────────────────
+const jpJ = d=>Math.round((new Date(d)-new Date(td()))/86400000);
+function renderJp(){
+  const el=document.getElementById('jpBanner'); if(!el)return;
+  jpSemerSiVide();       // première visite : on pose le plan, une seule fois
+  const E=tdEsc;
+  const s=jpSeance(), p=s.phase, serie=jpSerie();
+  const jExam=jpJ(JP_EXAMEN), jDec=jpJ(JP_DECISION), jIns=jpJ(JP_INSCRIPTION);
+  const prochain=jpProchainCheck();
+  el.innerHTML=`
+    <div class="jp-hdr">
+      <div class="jp-titre"><span class="jp-kanji">日本語</span>
+        <span class="jp-sous">JLPT N3 · ${E(p?p.titre:'plan non chargé')}</span></div>
+      <div style="flex:1"></div>
+      <button class="gl-pill" onclick="openJpMesures()">✎ Mes compteurs</button>
+      <button class="gl-pill" onclick="openJpCheck()">◈ Checkpoint</button>
+      <button class="gl-pill" onclick="openJpPlan()">▤ Le plan</button>
+      <button class="gl-pill" onclick="jpExporter()" title="Écrire les fichiers de suivi sur Google Drive">⬆ Drive</button>
+    </div>
+    <div class="jp-kpis">
+      ${jpKpi('Série',serie+' j',serie>=7?'var(--green)':serie>0?'':'var(--text-dim)',
+              'Record : '+jpRecord()+' j')}
+      ${jpKpi('Examen','J-'+jExam,jExam<120?'var(--warn)':'',JP_EXAMEN)}
+      ${jpKpi('Décision N3/N4','J-'+jDec,jDec<60?'var(--warn)':'','Checkpoint de février')}
+      ${jpKpi('Inscription','J-'+jIns,'', 'Ouverture ~mars 2027')}
+      ${prochain?jpKpi('Prochain point','J-'+jpJ(prochain),jpJ(prochain)<=7?'var(--accent)':'',prochain):''}
+      ${jpKpi('Ce mois',jpMinutes(td().slice(0,8)+'01')+' min','', 'Temps actif cumulé')}
+    </div>`;
+  renderJpSeance(); renderJpCote(); renderJpPiliers();
+  renderJpCheckpoints(); renderJpJournal();
+}
+const jpKpi=(l,v,c,t)=>`<div class="jp-kpi"${t?` title="${tdEsc(t)}"`:''}>
+  <div class="jp-kpi-l">${tdEsc(l)}</div>
+  <div class="jp-kpi-v"${c?` style="color:${c}"`:''}>${tdEsc(v)}</div></div>`;
+
+function renderJpSeance(){
+  const el=document.getElementById('jpSeance'); if(!el)return;
+  const E=tdEsc, s=jpSeance(), faits=new Set(jpFaits(td()));
+  if(!s.phase){ el.innerHTML='<div class="gl-empty">Aucune phase pour aujourd\'hui. Ouvre « ▤ Le plan ».</div>'; return; }
+  const rep=jpRepartition(s);
+  const ligne=b=>{
+    const fait=faits.has(b.code);
+    const n=(rep.find(r=>r.code===b.code)||{}).n;
+    return `<button class="jp-bloc${fait?' fait':''}" onclick="jpBasculer('${b.code}')"
+      title="${E(b.detail)}">
+      <span class="jp-check">${fait?'✓':''}</span>
+      <span class="jp-b-txt">
+        <span class="jp-b-t">${E(b.titre)}${n!=null?` <b class="jp-n">${n} nouvelles</b>`:''}</span>
+        <span class="jp-b-d">${E(b.detail)}</span></span>
+      <span class="jp-b-min">${b.min} min</span></button>`;
+  };
+  const soir=s.blocs.filter(b=>b.ou==='soir'), trajet=s.blocs.filter(b=>b.ou==='trajet');
+  const restant=soir.filter(b=>!faits.has(b.code)).reduce((t,b)=>t+b.min,0);
+  el.innerHTML=`
+    <div class="jp-sec">今日 · La séance du jour
+      <span class="jp-sec-r">${s.minutes} min · ${faits.size}/${s.blocs.length}</span></div>
+    ${jpAvantDebut()?`<div class="jp-avant">La phase démarre le <b>${E(s.phase.debut)}</b>
+      — dans ${jpJ(s.phase.debut)} jours. Rien n'empêche de commencer avant : ce qui est fait
+      compte pour la série.</div>`:''}
+    ${s.reprise?`<div class="jp-reprise"><b>Reprise en douceur.</b>
+      ${s.absent} jours sans rien : on ne rattrape pas, on redémarre. Les blocs essentiels
+      seulement, et le plafond de cartes divisé par deux. Le retard d'Anki se résorbe tout seul.</div>`:''}
+    <div class="jp-blocs">${soir.map(ligne).join('')}</div>
+    ${s.ecartes&&s.ecartes.length?`<div class="jp-ecarte">Pas ce soir :
+      ${s.ecartes.map(b=>E(b.titre)).join(' · ')}. Le soir tient en ${s.budget} min
+      ${jpJourLong(td())?'(dimanche : la séance longue)':''} — les blocs tournent d'un jour
+      à l'autre plutôt que de s'empiler. Ce qui est écarté revient de lui-même.</div>`:''}
+    ${trajet.length?`<div class="jp-sec petit">車 · En trajet — rien à cocher le soir</div>
+      <div class="jp-blocs">${trajet.map(ligne).join('')}</div>`:''}
+    <div class="jp-pied">
+      <span>${restant?`Il reste ${restant} min ce soir`:'Séance terminée お疲れさま'}</span>
+      <span class="jp-ressenti">Ressenti
+        ${[1,2,3,4,5].map(v=>`<button class="jp-r${(jpJour(td())||{}).ressenti>=v?' on':''}"
+          onclick="jpRessenti(${v})" title="${v}/5">●</button>`).join('')}</span>
+    </div>`;
+}
+
+function renderJpCote(){
+  const el=document.getElementById('jpCote'); if(!el)return;
+  const E=tdEsc, s=jpSeance(), p=s.phase;
+  const rep=jpRepartition(s);
+  el.innerHTML=`
+    <div class="jp-sec">Le cap</div>
+    ${p?`<div class="jp-phase">
+      <div class="jp-ph-t">${E(p.titre)}</div>
+      <div class="jp-ph-d">${E(p.debut)} → ${E(p.fin)}</div>
+      <div class="jp-ph-r">${E(p.resume)}</div>
+      ${p.note?`<div class="jp-ph-n">${E(p.note)}</div>`:''}
+    </div>`:''}
+    <div class="jp-sec petit">Plafond de cartes · ${s.cartes}/jour</div>
+    <div class="fld-hint">Tous decks confondus. C'est l'empilement des révisions qui fait
+      abandonner, pas la difficulté.</div>
+    <div class="jp-rep">${rep.map(r=>`<div class="jp-rep-l"><span>${E(r.label)}</span><b>${r.n}</b></div>`).join('')
+      ||'<div class="sb-none">Aucun deck dans cette phase.</div>'}</div>
+    <div class="jp-sec petit">Les outils</div>
+    <div class="jp-liens">
+      ${[['Anki','https://apps.ankiweb.net/'],['Todaii','https://easyjapanese.net/'],
+         ['Tae Kim','https://guidetojapanese.org/learn/grammar'],['JLPT officiel','https://www.jlpt.jp/']]
+        .map(([l,u])=>`<a class="jp-lien" href="${MD_ATT(u)}" target="_blank" rel="noopener">${E(l)} ↗</a>`).join('')}
+    </div>`;
+}
+
+function renderJpPiliers(){
+  const el=document.getElementById('jpPiliers'); if(!el)return;
+  const E=tdEsc;
+  const der=jpCheck.length?jpCheck[jpCheck.length-1]:null;
+  el.innerHTML=`<div class="jp-sec">四本柱 · Les quatre piliers</div>
+    <div class="jp-pil">${JP_PILIERS.map(([k,l,jp,quoi])=>{
+      const mes=JP_MESURES.filter(m=>m[2]===k);
+      const etat=der?der[k]:'';
+      return `<div class="jp-p${etat?' e-'+etat:''}">
+        <div class="jp-p-h"><span class="jp-p-jp">${E(jp)}</span><span class="jp-p-l">${E(l)}</span>
+          ${etat?`<span class="jp-p-e">${etat==='vert'?'au vert':etat==='orange'?'à surveiller':'au rouge'}</span>`:''}</div>
+        <div class="jp-p-q">${E(quoi)}</div>
+        ${mes.map(([mk,ml,,unite])=>{ const m=jpMesure(mk);
+          const av=m?jpMesureAvant(mk,m.date):null;
+          const delta=m&&av?m.valeur-av.valeur:null;
+          return `<div class="jp-p-m"><span>${E(ml)}</span>
+            <b>${m?brsVal(m.valeur,0):'—'} ${E(unite)}</b>
+            ${delta?`<span class="jp-delta ${delta>0?'up':'down'}">${delta>0?'+':''}${brsVal(delta,0)}</span>`:''}</div>`;
+        }).join('')}
+      </div>`;}).join('')}</div>`;
+}
+
+// ── Les checkpoints ───────────────────────────────────────────────────────
+// Ils remplacent la date d'examen : à onze mois, une échéance ne tient pas
+// lieu de contrainte. Un point par mois, vert/orange/rouge par pilier, et une
+// décision explicite à celui de février.
+function jpProchainCheck(){
+  const fins=jpPlan.map(p=>p.fin).filter(Boolean).sort();
+  const j=td();
+  const parMois=[];
+  for(let i=0;i<14;i++){
+    const d=new Date(); d.setMonth(d.getMonth()+i+1,0);   // dernier jour du mois
+    const s=ymd(d);
+    if(s>j)parMois.push(s);
+  }
+  const faits=new Set(jpCheck.map(c=>String(c.date).slice(0,7)));
+  return parMois.find(d=>!faits.has(d.slice(0,7)))||fins.find(f=>f>j)||null;
+}
+function renderJpCheckpoints(){
+  const el=document.getElementById('jpCheckpoints'); if(!el)return;
+  const E=tdEsc;
+  const pastille=v=>`<span class="jp-pt ${v||'vide'}" title="${v||'non renseigné'}"></span>`;
+  el.innerHTML=`<div class="jp-sec">節目 · Les rendez-vous mensuels
+      <button class="adp-mini" onclick="openJpCheck()" title="Poser un point">+</button></div>
+    <div class="fld-hint">Une échéance à onze mois ne tient pas lieu de contrainte : ce sont ces
+      points-là qui en font office. Celui de <b>février 2027</b> tranche entre N3 et N4.</div>
+    ${jpCheck.length?`<table class="jp-t"><thead><tr><th>Date</th><th>Phase</th>
+      <th>文法</th><th>語彙</th><th>聴解</th><th>読解</th><th>Décision</th><th>Note</th></tr></thead>
+      <tbody>${jpCheck.slice().reverse().map(c=>`<tr onclick="openJpCheck('${c.id}')">
+        <td>${E(c.date)}</td><td>${E(c.phase)}</td>
+        <td>${pastille(c.grammaire)}</td><td>${pastille(c.vocab)}</td>
+        <td>${pastille(c.ecoute)}</td><td>${pastille(c.lecture)}</td>
+        <td>${E(c.decision)||'—'}</td><td class="jp-t-n">${E(c.note)}</td></tr>`).join('')}
+      </tbody></table>`
+      :'<div class="sb-none">Aucun point posé. Le premier est prévu fin novembre.</div>'}`;
+}
+
+function renderJpJournal(){
+  const el=document.getElementById('jpJournalVue'); if(!el)return;
+  const E=tdEsc;
+  // Huit semaines de fond : on voit la régularité, pas la performance.
+  const jours=[];
+  for(let i=55;i>=0;i--){ const d=plusDaysFrom(td(),-i);
+    jours.push({d,n:jpFaits(d).length,min:(jpJour(d)||{}).minutes||0}); }
+  const max=Math.max(1,...jours.map(j=>j.min));
+  el.innerHTML=`<div class="jp-sec">記録 · Huit semaines</div>
+    <div class="jp-cal">${jours.map(j=>`<span class="jp-c${j.n?' on':''}"
+      style="${j.n?`opacity:${0.35+0.65*Math.min(1,j.min/max)}`:''}"
+      title="${E(j.d)} · ${j.n?`${j.n} blocs, ${j.min} min`:'rien'}"></span>`).join('')}</div>
+    <div class="fld-hint">Chaque carré est un jour. La couleur suit le temps passé ;
+      ce qui compte est qu'il y en ait un, pas qu'il soit foncé.</div>`;
+}
+
+// ── Les formulaires ───────────────────────────────────────────────────────
+function openJpCheck(id){
+  const c=id?jpCheck.find(x=>x.id===id):null;
+  adpEditKind='jpCheck'; adpEditId=id||null;
+  document.getElementById('adpModalTitle').textContent=c?'POINT MENSUEL':'NOUVEAU POINT';
+  const feu=(k,l)=>`<div class="field"><label>${l}</label>
+    <select id="jc_${k}">${[['','—'],['vert','Vert — tenu'],['orange','Orange — à surveiller'],
+      ['rouge','Rouge — en retard']].map(([v,t])=>
+      `<option value="${v}"${c&&c[k]===v?' selected':''}>${t}</option>`).join('')}</select></div>`;
+  const p=jpPhaseAu(c?c.date:td());
+  document.getElementById('adpFields').innerHTML=`
+    <div class="fld-hint">Un point par mois. On juge chaque pilier au feu, pas au chiffre :
+      la question est « est-ce que ça avance », pas « de combien ».</div>
+    <div class="field"><label>Date</label><input type="date" id="jc_date"
+      value="${adpEsc(c?c.date:td())}"></div>
+    <div class="field"><label>Phase</label><input type="text" id="jc_phase"
+      value="${adpEsc(c?c.phase:(p?p.titre:''))}"></div>
+    ${feu('grammaire','文法 · Grammaire')}
+    ${feu('vocab','語彙 · Vocabulaire et lectures')}
+    ${feu('ecoute','聴解 · Écoute')}
+    ${feu('lecture','読解 · Lecture')}
+    <div class="field"><label>Décision</label><input type="text" id="jc_decision"
+      value="${adpEsc(c?c.decision:'')}" placeholder="ex. : on maintient N3 / on bascule N4">
+      <div class="fld-hint">Le point de <b>février 2027</b> est celui qui tranche entre N3 et N4.</div></div>
+    <div class="field"><label>Ce qu'on en retient</label>
+      <textarea class="fit-input" id="jc_note" style="width:100%;min-height:110px">${adpEsc(c?c.note:'')}</textarea></div>`;
+  document.getElementById('adpDel').style.display=c?'':'none';
+  modalOuvre('adpModal');
+}
+async function saveJpCheck(){
+  const v=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+  const date=v('jc_date'); if(!date){ toast('La date est obligatoire','err'); return; }
+  const c={id:adpEditId||('ck'+uid().toString(36)),date,phase:v('jc_phase'),
+    decision:v('jc_decision'),grammaire:v('jc_grammaire'),vocab:v('jc_vocab'),
+    ecoute:v('jc_ecoute'),lecture:v('jc_lecture'),note:v('jc_note')};
+  closeAdpModal(); showLoad(true);
+  const ok=await jpSauverCheck(c);
+  showLoad(false);
+  toast(ok?'Point enregistré':"ÉCHEC de l'enregistrement",ok?'ok':'err');
+  renderJp();
+}
+async function supprimerJpCheck(){
+  if(!adpEditId)return;
+  const c=jpCheck.find(x=>x.id===adpEditId);
+  jpCheck=jpCheck.filter(x=>x.id!==adpEditId);
+  cacheSet('jpCheck',jpCheck);
+  closeAdpModal(); showLoad(true);
+  const ok=await sheetUpsertByKey('jp_check',adpEditId,[adpEditId,'','','','','','','','',td()]);
+  showLoad(false);
+  offerUndo('Point supprimé',async()=>{ if(c)await jpSauverCheck(c); renderJp(); });
+  renderJp();
+}
+
+function openJpMesures(){
+  adpEditKind='jpMesures'; adpEditId=null;
+  document.getElementById('adpModalTitle').textContent='MES COMPTEURS';
+  document.getElementById('adpFields').innerHTML=`
+    <div class="fld-hint">À remplir au moment du point mensuel, pas tous les jours. Ce qui compte
+      n'est pas la valeur mais l'écart avec le mois précédent.</div>
+    <div class="field"><label>Date du relevé</label><input type="date" id="jm_date" value="${td()}"></div>
+    ${JP_MESURES.map(([k,l,pil,u])=>{ const m=jpMesure(k);
+      return `<div class="field"><label>${adpEsc(l)} <span class="fld-u">(${adpEsc(u)})</span></label>
+        <input ${CHAMP_DEC} id="jm_${k}" value="${m?adpEsc(String(m.valeur)):''}"
+          placeholder="${m?`précédent : ${m.valeur} au ${m.date}`:'jamais relevé'}"></div>`;}).join('')}`;
+  document.getElementById('adpDel').style.display='none';
+  modalOuvre('adpModal');
+}
+async function saveJpMesures(){
+  const date=(document.getElementById('jm_date')||{}).value||td();
+  const nouvelles=[];
+  JP_MESURES.forEach(([k])=>{
+    const e=document.getElementById('jm_'+k); if(!e)return;
+    const v=nbFr(e.value,null); if(v===null)return;
+    const m=jpMesure(k);
+    // Rien de neuf : on ne crée pas une ligne pour redire la même chose.
+    if(m&&m.date===date&&m.valeur===v)return;
+    nouvelles.push({id:'m'+uid().toString(36),date,cle:k,valeur:v,note:''});
+  });
+  closeAdpModal();
+  if(!nouvelles.length){ toast('Aucun changement','info'); return; }
+  showLoad(true);
+  let ok=true;
+  for(const m of nouvelles)ok=await jpSauverMesure(m)&&ok;
+  showLoad(false);
+  toast(ok?`${nouvelles.length} compteur${nouvelles.length>1?'s':''} relevé${nouvelles.length>1?'s':''}`
+          :"ÉCHEC de l'enregistrement",ok?'ok':'err');
+  renderJp();
+}
+
+// Le plan s'édite en texte : c'est la forme la plus proche de ce que la revue
+// mensuelle renvoie, et la plus facile à relire.
+function openJpPlan(){
+  adpEditKind='jpPlan'; adpEditId=null;
+  document.getElementById('adpModalTitle').textContent='LE PLAN';
+  const codes=JP_BLOCS.map(b=>b.code).join(' · ');
+  document.getElementById('adpFields').innerHTML=`
+    <div class="fld-hint">Une phase par bloc, séparées par une ligne vide. L'ordre des lignes est
+      fixe : <b>titre</b>, <b>début → fin</b>, <b>blocs</b>, <b>cartes/jour</b>, puis le résumé et
+      la note. Blocs disponibles : <span class="jp-codes">${adpEsc(codes)}</span>.</div>
+    <div class="field"><textarea class="fit-input" id="jp_plan_txt" spellcheck="false"
+      style="width:100%;min-height:300px;font-family:var(--font-mono);font-size:0.72rem">${adpEsc(jpPlanTexte())}</textarea></div>
+    <div class="fld-hint">C'est ce plan qui part sur Drive, et c'est lui que la revue mensuelle
+      relit et fait évoluer. « ⬆ Drive » l'y écrit, « Relire depuis Drive » le reprend.</div>
+    <div style="display:flex;gap:0.5rem;margin-top:0.6rem">
+      <button class="gl-pill" onclick="jpImporter()">⬇ Relire depuis Drive</button>
+    </div>`;
+  document.getElementById('adpDel').style.display='none';
+  modalOuvre('adpModal');
+}
+const jpPlanTexte=()=>jpPlan.map(p=>
+  `${p.titre}\n${p.debut} → ${p.fin}\nblocs: ${p.blocs}\ncartes: ${p.cartes}\n${p.resume}${p.note?'\n> '+p.note:''}`
+).join('\n\n');
+function jpPlanParse(txt){
+  return String(txt||'').split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map((b,i)=>{
+    const l=b.split('\n').map(x=>x.trim());
+    const d=/(\d{4}-\d{2}-\d{2})\s*(?:→|->|à)\s*(\d{4}-\d{2}-\d{2})/.exec(l[1]||'');
+    const blocs=(/blocs\s*:\s*(.+)/i.exec(b)||[])[1]||'';
+    const cartes=(/cartes\s*:\s*(\d+)/i.exec(b)||[])[1]||'0';
+    const corps=l.filter(x=>x&&x!==l[0]&&!/^blocs\s*:/i.test(x)&&!/^cartes\s*:/i.test(x)
+      &&!/\d{4}-\d{2}-\d{2}/.test(x));
+    return {id:'ph'+(i+1),ordre:i+1,debut:d?d[1]:'',fin:d?d[2]:'',titre:l[0]||('Phase '+(i+1)),
+      resume:corps.filter(x=>!x.startsWith('>')).join(' '),
+      blocs:blocs.split(',').map(x=>x.trim()).filter(c=>jpBloc(c)).join(','),
+      cartes:parseInt(cartes,10)||0,
+      note:corps.filter(x=>x.startsWith('>')).map(x=>x.slice(1).trim()).join(' ')};
+  }).filter(p=>p.titre);
+}
+async function saveJpPlan(){
+  const txt=(document.getElementById('jp_plan_txt')||{}).value||'';
+  const p=jpPlanParse(txt);
+  if(!p.length){ toast('Plan illisible — au moins une phase est attendue','err'); return; }
+  closeAdpModal(); showLoad(true);
+  jpPlan=p;
+  const ok=await jpSauverPlan();
+  showLoad(false);
+  toast(ok?`${p.length} phases enregistrées`:"ÉCHEC de l'enregistrement",ok?'ok':'err');
+  renderJp();
+}
+
+// ── Google Drive : ce que la revue mensuelle vient lire ───────────────────
+// Le projet Claude qui relit le plan n'a pas accès au classeur : il lit un
+// dossier Drive. On y écrit donc des fichiers stables, en markdown pour ce qui
+// se lit et en JSON pour ce qui se recalcule — et on les MET À JOUR au lieu
+// d'en empiler des copies, sinon la revue lira une version au hasard.
+const JP_DOSSIER='Kanban — JLPT N3';
+async function jpDossier(){
+  const q=encodeURIComponent(
+    `mimeType='application/vnd.google-apps.folder' and name='${JP_DOSSIER}' and trashed=false`);
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,
+    {headers:{}}).then(x=>x.ok?x.json():null).catch(()=>null);
+  if(r&&r.files&&r.files.length)return r.files[0].id;
+  const c=await authFetch('https://www.googleapis.com/drive/v3/files?fields=id',
+    {method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({name:JP_DOSSIER,mimeType:'application/vnd.google-apps.folder'})})
+    .then(x=>x.ok?x.json():null).catch(()=>null);
+  return c?c.id:null;
+}
+async function jpFichierId(dossier,nom){
+  const q=encodeURIComponent(`name='${nom}' and '${dossier}' in parents and trashed=false`);
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,
+    {headers:{}}).then(x=>x.ok?x.json():null).catch(()=>null);
+  return r&&r.files&&r.files.length?r.files[0].id:null;
+}
+// Écrit ou remplace. Le nom du fichier est l'identité : la revue doit pouvoir
+// pointer « le » CLAUDE.md, pas « celui de mardi ».
+async function jpEcrireFichier(dossier,nom,contenu,type){
+  const mime=type||'text/markdown';
+  const blob=new Blob([contenu],{type:mime});
+  const id=await jpFichierId(dossier,nom);
+  if(id){
+    const r=await authFetch(
+      `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=media&fields=id`,
+      {method:'PATCH',headers:{'Content-Type':mime},body:blob});
+    return r.ok;
+  }
+  const up=await authFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=media&fields=id',
+    {method:'POST',headers:{'Content-Type':mime},body:blob});
+  if(!up.ok)return false;
+  const j=await up.json();
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files/${j.id}?fields=id`+
+    (dossier?`&addParents=${dossier}`:''),
+    {method:'PATCH',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({name:nom})});
+  return r.ok;
+}
+async function jpLireFichier(dossier,nom){
+  const id=await jpFichierId(dossier,nom);
+  if(!id)return null;
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`,{headers:{}})
+    .catch(()=>null);
+  if(!r||!r.ok)return null;
+  return r.text();
+}
+
+async function jpExporter(){
+  if(!accessToken){ toast('Connexion Google requise','err'); return; }
+  showLoad(true);
+  try{
+    const d=await jpDossier();
+    if(!d){ showLoad(false); toast("Dossier Drive impossible à créer",'err'); return; }
+    const fichiers=[
+      ['CLAUDE.md',            jpMdProjet(),      'text/markdown'],
+      ['etat.md',              jpMdEtat(),        'text/markdown'],
+      ['journal.md',           jpMdJournal(),     'text/markdown'],
+      ['knowledge/decisions.md', jpMdDecisions(), 'text/markdown'],
+      ['knowledge/resources.md', jpMdRessources(),'text/markdown'],
+      ['plan.json',            JSON.stringify(jpJsonPlan(),null,2),  'application/json'],
+      ['progress.json',        JSON.stringify(jpJsonProgres(),null,2),'application/json']];
+    let ok=true;
+    for(const [nom,contenu,type] of fichiers)
+      ok=await jpEcrireFichier(d,nom.replace('/','_'),contenu,type)&&ok;
+    showLoad(false);
+    toast(ok?`${fichiers.length} fichiers écrits dans « ${JP_DOSSIER} »`
+            :"Écriture Drive partielle — vérifie l'autorisation",ok?'ok':'err');
+  }catch(e){ showLoad(false); toast("Échec de l'écriture sur Drive",'err'); }
+}
+async function jpImporter(){
+  if(!accessToken){ toast('Connexion Google requise','err'); return; }
+  showLoad(true);
+  try{
+    const d=await jpDossier();
+    const txt=d?await jpLireFichier(d,'plan.json'):null;
+    if(!txt){ showLoad(false); toast('Aucun plan.json sur Drive — exporte d\'abord','info'); return; }
+    const j=JSON.parse(txt);
+    const ph=(j&&j.phases||[]).filter(p=>p&&p.titre).map((p,i)=>({
+      id:'ph'+(i+1),ordre:p.ordre||i+1,debut:p.debut||'',fin:p.fin||'',titre:p.titre,
+      resume:p.resume||'',
+      blocs:String(p.blocs||'').split(',').map(x=>x.trim()).filter(c=>jpBloc(c)).join(','),
+      cartes:parseInt(p.cartes,10)||0,note:p.note||''}));
+    if(!ph.length){ showLoad(false); toast('plan.json ne contient aucune phase exploitable','err'); return; }
+    jpPlan=ph;
+    const ok=await jpSauverPlan();
+    showLoad(false);
+    closeAdpModal();
+    toast(ok?`Plan relu : ${ph.length} phases`:"Plan relu, mais l'enregistrement a échoué",ok?'ok':'err');
+    renderJp();
+  }catch(e){ showLoad(false); toast('plan.json illisible','err'); }
+}
+
+// ── Ce qu'on écrit ────────────────────────────────────────────────────────
+const jpMdEnTete=()=>`<!-- Écrit par Kanban ${APP_VERSION} le ${td()}. Ne pas éditer à la main
+     ce que l'application réécrit : seuls plan.json et les fichiers knowledge/ sont
+     faits pour être modifiés depuis l'extérieur. -->\n\n`;
+
+function jpMdProjet(){
+  const p=jpPhaseCour(), s=jpSeance();
+  return jpMdEnTete()+`# CLAUDE.md — Projet « JLPT N3 »
+
+> Source de vérité du projet. L'outil de suivi est la page 日本語 de Kanban ;
+> ce fichier et \`plan.json\` sont ce qu'il expose à la revue mensuelle.
+
+## Objectif
+- Réussir le **JLPT N3** à la session du **${JP_EXAMEN}**.
+- **N3 visé, N4 plancher.** Le niveau réellement inscrit se décide au checkpoint
+  de février (${JP_DECISION}). Inscription vers ${JP_INSCRIPTION}.
+
+## Où en est-on
+- Phase courante : **${p?p.titre:'—'}** (${p?p.debut+' → '+p.fin:'—'})
+- Série en cours : **${jpSerie()} jours** (record ${jpRecord()})
+- Temps actif cumulé : **${jpMinutes()} min**
+- Plafond de cartes de la phase : **${s.cartes}/jour**, tous decks confondus
+${s.reprise?`- ⚠️ En reprise : ${s.absent} jours sans rien, dose réduite en cours.\n`:''}
+## Contraintes qui dictent le design
+- ~20-30 min le soir en actif, ~1 h de trajet en passif.
+- **Le décrochage arrive vers deux semaines** : c'est le risque numéro un.
+- Répond mieux aux échéances externes qu'à celles qu'il s'impose.
+- Préfère greffer sur l'existant que créer une routine de plus.
+- Un outil aimé est un outil suivi : le plaisir prime sur l'efficacité pure.
+
+## Principes non négociables
+1. L'outil décide, l'utilisateur exécute.
+2. Moins de trente secondes par jour.
+3. **Plafonner le total de nouvelles cartes, tous decks confondus.**
+4. Réutiliser une surface déjà ouverte quotidiennement.
+5. Les checkpoints mensuels tiennent lieu d'échéance.
+
+## Les quatre piliers
+${JP_PILIERS.map(([k,l,jp,q])=>`- \`${k}\` **${l}** (${jp}) — ${q}`).join('\n')}
+
+## Le plan
+${jpPlan.map(p2=>`### ${p2.titre}\n- ${p2.debut} → ${p2.fin}\n- Blocs : ${p2.blocs}\n- Cartes/jour : ${p2.cartes}\n- ${p2.resume}${p2.note?`\n- _${p2.note}_`:''}`).join('\n\n')}
+
+## Comment les blocs d'une phase deviennent une séance
+Les blocs listés par une phase forment son **catalogue**, pas sa journée type.
+Chaque soir, l'outil sert les blocs **essentiels**, puis remplit le reste d'un
+budget de **${JP_SOIR} min** (**${JP_SOIR_LONG} min le dimanche**, ${JP_SOIR_REPRISE} min en reprise) avec les
+blocs optionnels, **par rotation**. Sur un cycle tout passe ; un soir donné,
+rien ne déborde. Le trajet est un budget séparé et ne s'y additionne jamais.
+
+> Conséquence pour la revue : **ajouter un bloc à une phase n'allonge pas la
+> soirée**, il entre dans la rotation. Pour rendre un bloc quotidien, il faut le
+> vouloir essentiel. Et allonger la liste dilue la fréquence de chacun — c'est le
+> seul arbitrage réel. Aujourd'hui : ${s.minutes} min servies sur ${s.budget} de budget.
+
+## Comment ce projet est piloté
+- **Quotidien** : la page 日本語 seule, une trentaine de secondes.
+- **Mensuel** : le checkpoint. Les données de cette page partent sur Drive, la
+  revue les lit, ajuste \`plan.json\`, et l'outil le relit.
+- La revue est **épisodique** : elle n'est jamais une béquille quotidienne.
+
+## Ce que la revue peut modifier
+- \`plan.json\` — les phases, leurs dates, leurs blocs, le plafond de cartes.
+  L'application le relit avec « Relire depuis Drive ».
+- \`knowledge/decisions.md\` et \`knowledge/resources.md\` — libres.
+- Les autres fichiers sont réécrits à chaque export : les modifier ne sert à rien.
+`;
+}
+
+function jpMdEtat(){
+  const s=jpSeance(), p=s.phase;
+  const der=jpCheck.length?jpCheck[jpCheck.length-1]:null;
+  return jpMdEnTete()+`# État au ${td()}
+
+## En un coup d'œil
+| | |
+|---|---|
+| Phase | ${p?p.titre:'—'} |
+| Jours avant l'examen | ${jpJ(JP_EXAMEN)} |
+| Jours avant la décision N3/N4 | ${jpJ(JP_DECISION)} |
+| Série | ${jpSerie()} jours (record ${jpRecord()}) |
+| Jours sans rien | ${s.absent} |
+| Minutes ce mois | ${jpMinutes(td().slice(0,8)+'01')} |
+| Minutes en tout | ${jpMinutes()} |
+
+## Compteurs par pilier
+| Pilier | Compteur | Valeur | Relevé le | Écart avec le précédent |
+|---|---|---|---|---|
+${JP_MESURES.map(([k,l,pil,u])=>{ const m=jpMesure(k); const av=m?jpMesureAvant(k,m.date):null;
+  const dd=m&&av?(m.valeur-av.valeur):null;
+  return `| ${jpPilier(pil)[1]} | ${l} | ${m?m.valeur+' '+u:'—'} | ${m?m.date:'—'} | ${dd==null?'—':(dd>0?'+':'')+dd} |`;
+}).join('\n')}
+
+## Dernier point mensuel
+${der?`- Date : ${der.date} — phase : ${der.phase}
+- 文法 grammaire : **${der.grammaire||'non renseigné'}**
+- 語彙 vocabulaire : **${der.vocab||'non renseigné'}**
+- 聴解 écoute : **${der.ecoute||'non renseigné'}**
+- 読解 lecture : **${der.lecture||'non renseigné'}**
+- Décision : ${der.decision||'—'}
+${der.note?`\n> ${der.note}\n`:''}`:'Aucun point posé pour l\'instant.'}
+
+## Séance générée aujourd'hui
+${s.blocs.length?s.blocs.map(b=>`- [${jpFaits(td()).includes(b.code)?'x':' '}] **${b.titre}** — ${b.min} min · ${b.ou==='trajet'?'en trajet':'le soir'}`).join('\n')
+  :'Aucune phase active.'}
+${s.reprise?`\n> Reprise en douceur : ${s.absent} jours d'absence. Blocs essentiels seulement, plafond de cartes divisé par deux.\n`:''}`;
+}
+
+function jpMdJournal(){
+  const l=jpJournal.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,180);
+  return jpMdEnTete()+`# Journal — 180 derniers jours
+
+Une ligne par jour où quelque chose a été fait. \`blocs\` reprend les codes du
+catalogue ; \`ressenti\` va de 1 à 5 et vaut 0 quand il n'a pas été renseigné.
+
+| Date | Minutes | Blocs | Ressenti | Note |
+|---|---|---|---|---|
+${l.map(x=>`| ${x.date} | ${x.minutes||0} | ${x.blocs||''} | ${x.ressenti||''} | ${String(x.note||'').replace(/\|/g,'/')} |`).join('\n')}
+`;
+}
+
+function jpMdDecisions(){
+  return `# Décisions du projet
+
+> Fichier **libre** : la revue mensuelle peut l'enrichir, l'application ne le
+> réécrit jamais après sa création.
+
+- Cible **juillet 2027**, pas décembre 2026 : il faut du temps de piste, et
+  l'inscription n'ouvre qu'en mars.
+- **N3 visé, N4 plancher** ; on tranche au point de février.
+- L'ancien deck de 10 000 mots était un deck non fini, pas un vocabulaire
+  acquis : mesuré, puis remis à zéro.
+- **RTK conservé** malgré son inefficacité partielle pour le JLPT — il n'apprend
+  pas les lectures — parce qu'il plaît et que ce qui plaît se poursuit. Il aide
+  aussi à saisir le sens général en lecture. Ne pas chercher à le finir.
+- Les lectures des kanji s'apprennent **dans le vocabulaire** (Kaishi), pas dans RTK.
+- **Kaishi 1.5k** comme colonne vertébrale du vocabulaire : ordonné, audio natif,
+  furigana. L'ancien deck ne sert plus, au mieux, que de réserve d'audio.
+- **NHK Easy** n'a pas disparu mais a été renommé ; abandonné au profit de
+  **Todaii**, qui filtre par niveau et donne le dictionnaire au tap.
+- L'application **plafonne les nouvelles cartes tous decks confondus** : c'est
+  l'empilement des révisions, pas la difficulté, qui fait abandonner.
+- **Règle des trois jours** : après une coupure, on ne rattrape pas. On reprend
+  à dose réduite et le retard d'Anki se résorbe de lui-même.
+`;
+}
+function jpMdRessources(){
+  return `# Ressources
+
+> Fichier **libre** : la revue mensuelle peut l'enrichir, l'application ne le
+> réécrit jamais après sa création.
+
+## Couche Anki — mémoriser
+| Usage | Deck | Note |
+|---|---|---|
+| Vocabulaire | **Kaishi 1.5k** puis **Tango N4/N3** | audio natif, phrase, furigana |
+| Kanji | **RTK** | conservé, débit modéré |
+| Kana | decks **Tofugu** | prérequis bloquant |
+| Grammaire | **JLPT Grammar from Jtest4you** | 3 cartes/jour |
+
+Réglage : **FSRS activé** — moins de révisions à rétention égale.
+
+## Couche immersion — comprendre
+| Usage | Outil |
+|---|---|
+| Lecture et tests blancs | **Todaii** (filtre N5→N1, dico au tap, audio) |
+| Écoute | podcast *comprehensible input*, **CrunchyRoll** en audio japonais |
+| Grammaire expliquée | **Tae Kim** (gratuit) ou un manuel |
+| Épreuves officielles | **jlpt.jp** |
+
+> Anki mémorise. Il n'enseigne pas et n'immerge pas. Les deux couches sont
+> complémentaires, jamais concurrentes.
+`;
+}
+
+const jpJsonPlan=()=>({
+  genere_le:td(), examen:JP_EXAMEN, decision:JP_DECISION, inscription:JP_INSCRIPTION,
+  // Le budget est exposé pour que la revue sache que les blocs d'une phase sont
+  // un catalogue en rotation, et non une soirée à additionner.
+  budget_soir:{semaine:JP_SOIR,dimanche:JP_SOIR_LONG,reprise:JP_SOIR_REPRISE,
+    regle:'Essentiels tous les soirs, optionnels en rotation dans la limite du budget. Le trajet est un budget distinct.'},
+  blocs_disponibles:JP_BLOCS.map(b=>({code:b.code,pilier:b.pilier,ou:b.ou,minutes:b.min,
+    essentiel:!!b.essentiel,titre:b.titre})),
+  phases:jpPlan.map(p=>({ordre:p.ordre,titre:p.titre,debut:p.debut,fin:p.fin,
+    resume:p.resume,blocs:p.blocs,cartes:p.cartes,note:p.note}))});
+
+const jpJsonProgres=()=>{
+  const s=jpSeance();
+  return {genere_le:td(),
+    phase:s.phase?s.phase.titre:null,
+    jours_avant_examen:jpJ(JP_EXAMEN), jours_avant_decision:jpJ(JP_DECISION),
+    serie:jpSerie(), record:jpRecord(), jours_sans_rien:s.absent, en_reprise:s.reprise,
+    minutes_total:jpMinutes(), minutes_30j:jpMinutes(plusDaysFrom(td(),-30)),
+    plafond_cartes:s.cartes,
+    compteurs:JP_MESURES.map(([k,l,pil,u])=>{ const m=jpMesure(k);
+      return {cle:k,libelle:l,pilier:pil,unite:u,valeur:m?m.valeur:null,releve_le:m?m.date:null};}),
+    checkpoints:jpCheck.map(c=>({date:c.date,phase:c.phase,decision:c.decision,
+      grammaire:c.grammaire,vocab:c.vocab,ecoute:c.ecoute,lecture:c.lecture,note:c.note})),
+    journal_90j:jpJournal.filter(x=>x.date>=plusDaysFrom(td(),-90))
+      .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+      .map(x=>({date:x.date,minutes:x.minutes,blocs:String(x.blocs||'').split(',').filter(Boolean),
+                ressenti:x.ressenti||null}))};
+};
+
+// ════════════════════════════════════════════════════
 // BOURSE — LE POINT DE MARCHÉ
 // ════════════════════════════════════════════════════
 // Un tableau de bord à lire en trente secondes, le matin ou le soir : où en est
@@ -13315,6 +14437,7 @@ function switchPage(name){
   if(name==='crypto')renderCryptoBot();
   if(name==='finances')renderFinancesPage();
   if(name==='sport')renderSportPage();
+  if(name==='jp'){applyPageWallpaper('jpBg',randomWallpaper());renderJp();}
   if(name==='adp'){applyPageWallpaper('adpBg',randomWallpaper());renderAdp();}
   if(name==='metrics'){applyPageWallpaper('mesBg',randomWallpaper());renderMetricsPage();}
   navPush();
@@ -15577,7 +16700,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.58.3';
+const APP_VERSION='v1.59.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
