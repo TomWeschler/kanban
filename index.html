@@ -1283,6 +1283,13 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ia-fil.on{border-color:var(--accent)}
 .ia-fil-t{display:block;font-size:0.78rem}
 .ia-fil-d{display:block;font-size:0.66rem;color:var(--text-dim);font-family:var(--font-mono)}
+.ia-avert{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.4);
+  border-radius:9px;padding:0.55rem 0.7rem;font-size:0.74rem;line-height:1.55;margin-bottom:0.6rem}
+.ia-test{font-size:0.74rem;line-height:1.5;padding:0.3rem 0.5rem;border-radius:7px;margin-top:0.3rem;
+  border-left:3px solid var(--border2)}
+.ia-test.ok{border-left-color:#22c55e}
+.ia-test.ko{border-left-color:#ef4444}
+.ia-test.note{color:var(--text-dim)}
 .ia-cfg-mem{margin-top:0.7rem;border-top:1px solid var(--border);padding-top:0.5rem}
 .ia-cfg-b{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.4rem}
 @media(max-width:900px){.ia-panel{width:100vw}.ia-fab{bottom:4.6rem}}
@@ -12852,6 +12859,31 @@ const iaMemRow=m=>[m.id,m.portee||'global',m.cle,m.valeur||'',m.source||'claude'
 const iaFilRow=f=>[f.id,f.sujet||'',f.titre||'',f.resume||'',f.maj||td()];
 const iaCle=()=>brsCle('anthropic');
 
+// ── Ce que coûte l'assistant, et à qui ────────────────────────────────────
+// À LIRE AVANT DE CHERCHER SON QUOTA D'ABONNEMENT ICI.
+// Ce module parle à l'API (api.anthropic.com, clé « sk-ant- »). L'API est
+// FACTURÉE À PART de l'abonnement Claude Pro : autre compte, autre facture,
+// autres limites. Les limites de session (5 h) et hebdomadaire du forfait Pro
+// s'appliquent à claude.ai et à Claude Code — jamais à une clé d'API.
+// Donc : le compteur ci-dessous ne reflète RIEN de ton forfait. C'est un frein
+// que l'application s'impose, en dollars réellement dépensés, en plus de
+// l'abonnement. Le confondre avec un quota inclus coûterait cher.
+// La seule limite réelle que l'API expose, ce sont ses en-têtes de débit —
+// lus ci-dessous quand le navigateur veut bien les laisser passer.
+let iaQuota=null;
+function iaLireQuota(r){
+  try{
+    const g=n=>r.headers.get('anthropic-ratelimit-'+n);
+    const q={rDispo:g('requests-remaining'),rMax:g('requests-limit'),
+             rReset:g('requests-reset'),
+             eDispo:g('input-tokens-remaining'),eMax:g('input-tokens-limit'),
+             sDispo:g('output-tokens-remaining'),sMax:g('output-tokens-limit')};
+    // Le navigateur ne montre un en-tête que si le serveur l'y autorise. Absents,
+    // on n'invente pas : on n'affiche rien.
+    iaQuota=Object.values(q).some(v=>v!=null)?q:null;
+  }catch(e){ iaQuota=null; }
+}
+
 // ── Le compteur de dépense ────────────────────────────────────────────────
 // Remis à zéro chaque jour. Ce n'est pas de la comptabilité, c'est un frein :
 // une boucle d'outils qui s'emballe coûte de l'argent réel.
@@ -13263,6 +13295,11 @@ function iaRepondreConfirmation(ok){
   iaJournal({type:ok?'ecrit':'refuse',texte:(ok?'Confirmé — ':'Refusé — ')+IA_LIB[a.nom]});
   a.res(ok);
 }
+// Changer de fil ou fermer le panneau pendant qu'une confirmation attend
+// laissait une promesse que plus personne ne résolvait : la boucle restait en
+// cours pour toujours, et le panneau ne répondait plus jusqu'au rechargement.
+// Partir, c'est refuser.
+function iaAbandonner(){ if(iaAttente)iaRepondreConfirmation(false); }
 const IA_LIB={creer_tache:'créer une tâche',creer_note:'créer une note',
               creer_jalon:'créer un jalon',maj_projet:'mettre à jour un projet'};
 
@@ -13309,6 +13346,43 @@ RÉSUMÉ DES ÉCHANGES PRÉCÉDENTS DE CE FIL
 ${iaFilCour().resume}`:''}`;
 }
 
+// ── Remettre le fil d'aplomb avant de l'envoyer ───────────────────────────
+// Trois façons de laisser un fil dans un état que l'API refuse : une erreur au
+// milieu d'une boucle d'outils (le fil se termine alors sur des résultats sans
+// question qui suive), la troncature locale à quarante messages (qui peut faire
+// commencer le fil par une réponse), et un appel d'outil dont le résultat n'est
+// jamais revenu. Chacun donne un 400 sec au message SUIVANT — c'est-à-dire un
+// fil définitivement mort, longtemps après la vraie cause.
+function iaNormaliser(msgs){
+  const m=msgs.map(x=>({role:x.role,content:(x.content||[]).slice()}));
+  // 1. Tout appel d'outil doit avoir sa réponse, sinon on en fabrique une.
+  for(let i=0;i<m.length;i++){
+    if(m[i].role!=='assistant')continue;
+    const app=m[i].content.filter(c=>c.type==='tool_use');
+    if(!app.length)continue;
+    const suiv=m[i+1];
+    const rendus=new Set(suiv&&suiv.role==='user'
+      ? suiv.content.filter(c=>c.type==='tool_result').map(c=>c.tool_use_id) : []);
+    const manquants=app.filter(c=>!rendus.has(c.id)).map(c=>({type:'tool_result',
+      tool_use_id:c.id,content:JSON.stringify({erreur:'interrompu avant la réponse'})}));
+    if(!manquants.length)continue;
+    if(suiv&&suiv.role==='user')suiv.content=manquants.concat(suiv.content);
+    else m.splice(i+1,0,{role:'user',content:manquants});
+  }
+  // 2. Le fil commence par une question, jamais par une réponse.
+  while(m.length&&m[0].role!=='user')m.shift();
+  // 3. Les rôles alternent : deux messages de suite du même côté fusionnent.
+  const out=[];
+  m.forEach(x=>{
+    const d=out[out.length-1];
+    if(d&&d.role===x.role)d.content=d.content.concat(x.content);
+    else out.push(x);
+  });
+  // 4. Un fil qui ne finit pas sur une question n'a rien à demander.
+  while(out.length&&out[out.length-1].role!=='user')out.pop();
+  return out;
+}
+
 // ── L'appel, en flux ──────────────────────────────────────────────────────
 // Le flux n'est pas un confort : sans lui, une réponse longue ressemble à une
 // panne pendant trente secondes, et finit parfois en délai dépassé.
@@ -13318,12 +13392,13 @@ async function iaAppel(){
   const corps={model:IA_MODELE,max_tokens:IA_MAX_TOKENS,stream:true,
     system:iaSysteme(),tools:IA_OUTILS,
     thinking:{type:'adaptive'},
-    messages:iaMsgs.map(m=>({role:m.role,content:m.content}))};
+    messages:iaNormaliser(iaMsgs)};
   const r=await fetch(IA_URL,{method:'POST',headers:{
       'content-type':'application/json','x-api-key':cle,
       'anthropic-version':IA_API_VERSION,
       'anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify(corps)});
+  iaLireQuota(r);
   if(!r.ok){
     let d=''; try{ d=(await r.json()).error.message; }catch(e){}
     if(r.status===401)throw new Error('Clé refusée (401). Vérifie-la dans les réglages.');
@@ -13375,6 +13450,64 @@ async function iaAppel(){
   // Les blocs de réflexion repartent tels quels au tour suivant : c'est la
   // condition pour enchaîner des appels d'outils sur le même modèle.
   return {contenu:blocs.filter(Boolean),stop};
+}
+
+// ── La compaction ─────────────────────────────────────────────────────────
+// Sans elle, un fil grossit à chaque tour et chaque tour renvoie tout : le coût
+// monte au carré de la conversation. Le champ « résumé » existait, était injecté
+// dans le contexte — et n'était jamais écrit. Il l'est maintenant.
+// La coupe ne tombe JAMAIS entre un appel d'outil et sa réponse : on remonte
+// jusqu'à une vraie question.
+const IA_COMPACT_SEUIL=24;      // messages bruts avant de résumer
+const IA_COMPACT_GARDE=8;       // ce qu'on garde intact derrière soi
+function iaPointDeCoupe(msgs,cible){
+  for(let i=Math.min(cible,msgs.length-1);i>0;i--)
+    if(msgs[i].role==='user'&&!(msgs[i].content||[]).some(c=>c.type==='tool_result'))return i;
+  return 0;
+}
+async function iaCompacter(){
+  if(iaMsgs.length<IA_COMPACT_SEUIL)return false;
+  const coupe=iaPointDeCoupe(iaMsgs,iaMsgs.length-IA_COMPACT_GARDE);
+  if(coupe<=0)return false;
+  const vieux=iaMsgs.slice(0,coupe);
+  const precedent=(iaFilCour()||{}).resume||'';
+  // Un appel dédié, sans outils et à effort réduit : résumer coûte peu, et ce
+  // qu'on économise ensuite le rembourse largement.
+  const texte=vieux.map(m=>`${m.role==='user'?'MOI':'TOI'} : `+
+    (m.content||[]).map(c=>c.type==='text'?c.text
+      :c.type==='tool_use'?`[outil ${c.name} ${JSON.stringify(c.input||{}).slice(0,200)}]`
+      :c.type==='tool_result'?`[résultat ${String(c.content||'').slice(0,300)}]`:'')
+      .filter(Boolean).join(' ')).join('\n').slice(0,60000);
+  const r=await iaAppelSimple(
+    `Résume cet échange pour que la suite de la conversation reste compréhensible sans lui.
+Garde : les décisions prises, les chiffres cités, ce qui a été écrit dans l'outil, ce qui reste en suspens.
+Jette : les formules de politesse, les détails déjà périmés.
+Écris en français, à la deuxième personne, moins de 250 mots, sans préambule.
+${precedent?`\nRésumé des échanges ENCORE PLUS anciens, à intégrer :\n${precedent}\n`:''}
+--- ÉCHANGE À RÉSUMER ---
+${texte}`,1200);
+  if(!r)return false;
+  iaMsgs=iaMsgs.slice(coupe);
+  await iaNoterFil(null,r);
+  iaSauverFil();
+  iaJournal({type:'memoire',texte:`Conversation résumée — ${vieux.length} messages compactés.`});
+  return true;
+}
+// Un appel court, sans outils ni flux : sert au résumé et au test de connexion.
+async function iaAppelSimple(invite,maxTokens){
+  const cle=iaCle(); if(!cle)return null;
+  const r=await fetch(IA_URL,{method:'POST',headers:{
+      'content-type':'application/json','x-api-key':cle,
+      'anthropic-version':IA_API_VERSION,
+      'anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:IA_MODELE,max_tokens:maxTokens||512,
+      output_config:{effort:'low'},
+      messages:[{role:'user',content:[{type:'text',text:invite}]}]})});
+  if(!r.ok)return null;
+  const j=await r.json();
+  iaLireQuota(r);
+  iaCoutAjoute((j.usage||{}).input_tokens||0,(j.usage||{}).output_tokens||0);
+  return (j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim()||null;
 }
 
 // ── Ce qui doit être chargé avant de parler ───────────────────────────────
@@ -13434,6 +13567,8 @@ async function iaEnvoyer(texte){
   }
   iaEnCours=false; iaEtape=''; iaFluxTexte='';
   iaSauverFil(); iaRendreFil();
+  try{ await iaCompacter(); }catch(e){}
+  iaRendreFil();
 }
 // Les entrées de journal sont des messages d'interface, pas de conversation :
 // elles s'affichent, elles ne repartent pas dans le contexte.
@@ -13452,12 +13587,13 @@ function iaBasculer(){
     setTimeout(()=>{ const s=document.getElementById('iaSaisie'); if(s)s.focus(); },80);
   }
 }
-function iaFermer(){ if(iaOuvert)iaBasculer(); }
+function iaFermer(){ iaAbandonner(); if(iaOuvert)iaBasculer(); }
 function iaNouveauFil(){
+  iaAbandonner();
   iaTrace=[]; iaChargerFil(''); iaRendre();
   const s=document.getElementById('iaSaisie'); if(s)s.focus();
 }
-function iaOuvrirFil(id){ iaTrace=[]; iaChargerFil(id); iaRendre(); }
+function iaOuvrirFil(id){ iaAbandonner(); iaTrace=[]; iaChargerFil(id); iaRendre(); }
 
 function iaRendre(){ iaRendreEntete(); iaRendreFil(); }
 function iaRendreEntete(){
@@ -13465,9 +13601,10 @@ function iaRendreEntete(){
   const u=iaCout();
   el.innerHTML=`
     <div class="ia-titre">✦ Assistant</div>
-    <div class="ia-cout" title="Dépense du jour, plafond ${IA_PLAFOND_JOUR} $">
-      ${u.toFixed(2)} $ / ${IA_PLAFOND_JOUR} $</div>
+    <div class="ia-cout" title="Dépense d'API du jour — facturée à part de l'abonnement Claude Pro. Plafond que s'impose l'application : ${IA_PLAFOND_JOUR} $.">
+      API ${u.toFixed(2)} $ / ${IA_PLAFOND_JOUR} $</div>
     <button class="ia-mini" onclick="iaNouveauFil()" title="Nouveau fil">＋</button>
+    <button class="ia-mini" onclick="iaExporterMd()" title="Exporter en markdown, pour reprendre ailleurs">⬇</button>
     <button class="ia-mini" onclick="iaOuvrirFils()" title="Fils enregistrés">☰</button>
     <button class="ia-mini" onclick="iaOuvrirReglages()" title="Réglages">⚙</button>
     <button class="ia-mini" onclick="iaFermer()" aria-label="Fermer l'assistant">✕</button>`;
@@ -13545,6 +13682,97 @@ function iaSaisieTouche(e){
   }
 }
 
+// ── L'export markdown ─────────────────────────────────────────────────────
+// Pour reprendre une conversation ailleurs — dans un projet claude.ai, où le
+// forfait paie à la place de l'API. On exporte donc de quoi REPRENDRE, pas une
+// transcription : l'état de l'outil, la mémoire, le résumé, puis l'échange.
+// Les appels d'outils sont rendus lisibles plutôt que recopiés en JSON : ce qui
+// compte, c'est ce qui a été consulté et ce qui a été écrit.
+function iaMdConversation(fil){
+  const f=fil||iaFilCour();
+  const faits=iaFaitsDe(null);
+  const lignes=[];
+  lignes.push(`# ${(f&&f.titre)||'Conversation'} — Kanban`);
+  lignes.push('');
+  lignes.push(`> Exporté le ${td()} depuis Kanban ${APP_VERSION}.`);
+  lignes.push('> Colle ce fichier dans un projet Claude pour reprendre la conversation là où elle en est.');
+  lignes.push('');
+  lignes.push('## Où en est l\'outil');
+  lignes.push('');
+  lignes.push(`- ${allTasks.filter(t=>!t.completed_at).length} tâches ouvertes, dont `+
+    `${allTasks.filter(t=>!t.completed_at&&t.due_date&&t.due_date<td()).length} en retard.`);
+  lignes.push(`- ${adpProjects.length} projets, ${adpMilestones.length} jalons dont `+
+    `${adpMilestones.filter(m=>m.status!=='done'&&(m.slips||0)>0).length} ayant glissé.`);
+  lignes.push(`- ${notes.length} notes.`);
+  const derive=adpProjects.filter(p=>p.status!=='clos'&&((p.slips||0)>0||p.health==='rouge'));
+  if(derive.length){
+    lignes.push('');
+    lignes.push('### Ce qui dérive');
+    lignes.push('');
+    derive.forEach(p=>lignes.push(`- **${p.name}** (${p.client||'—'}) — santé ${p.health}, `+
+      `${p.slips||0} glissement(s), échéance ${p.deadline||'—'}`+
+      (p.baseline&&p.baseline!==p.deadline?` (initialement ${p.baseline})`:'')+'.'));
+  }
+  if(faits.length){
+    lignes.push('');
+    lignes.push('## Ce qu\'il faut savoir de moi');
+    lignes.push('');
+    faits.forEach(x=>lignes.push(`- **[${x.portee}] ${x.cle}** — ${x.valeur}`));
+  }
+  if(f&&f.resume){
+    lignes.push('');
+    lignes.push('## Résumé des échanges plus anciens');
+    lignes.push('');
+    lignes.push(f.resume);
+  }
+  lignes.push('');
+  lignes.push('## La conversation');
+  lignes.push('');
+  iaMsgs.forEach(m=>{
+    const txt=iaTexteDe(m.content);
+    const outils=(m.content||[]).filter(c=>c.type==='tool_use');
+    if(m.role==='user'){
+      if(txt){ lignes.push(`### Moi`); lignes.push(''); lignes.push(txt); lignes.push(''); }
+      return;
+    }
+    if(txt||outils.length){ lignes.push(`### Claude`); lignes.push(''); }
+    outils.forEach(o=>lignes.push(`_${iaResume(o).replace(/^↳ /,'')}_`));
+    if(outils.length)lignes.push('');
+    if(txt){ lignes.push(txt); lignes.push(''); }
+  });
+  return lignes.join('\n');
+}
+function iaNomFichier(f){
+  const t=((f&&f.titre)||'conversation').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50)||'conversation';
+  return `kanban-${t}-${td()}.md`;
+}
+function iaExporterMd(){
+  if(!iaMsgs.length){ toast('Rien à exporter dans ce fil','info'); return; }
+  const f=iaFilCour();
+  const blob=new Blob([iaMdConversation(f)],{type:'text/markdown'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=iaNomFichier(f);
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast('Conversation exportée','ok');
+}
+// La même chose, mais posée sur Drive : c'est de là qu'un projet Claude la lit
+// sans qu'on ait à téléverser quoi que ce soit à la main.
+async function iaExporterMdDrive(){
+  if(!iaMsgs.length){ toast('Rien à exporter dans ce fil','info'); return; }
+  if(!accessToken){ toast('Connexion Google requise','err'); return; }
+  const f=iaFilCour();
+  showLoad(true);
+  try{
+    const d=await drvDossier(IA_DOSSIER);
+    const ok=d&&await drvEcrire(d,iaNomFichier(f),iaMdConversation(f),'text/markdown');
+    showLoad(false);
+    toast(ok?`Écrit dans « ${IA_DOSSIER} »`:'Écriture Drive refusée',ok?'ok':'err');
+  }catch(e){ showLoad(false); toast("Échec de l'écriture sur Drive",'err'); }
+}
+
 // ── Les fils enregistrés ──────────────────────────────────────────────────
 function iaOuvrirFils(){
   const E=tdEsc;
@@ -13567,8 +13795,23 @@ function iaOuvrirReglages(){
       <b>Elle reste visible dans ce navigateur</b> : c'est le prix d'une application sans serveur.</div>
     <div class="field"><label for="iaCfgCle">Clé d'API Anthropic</label>
       <input type="password" id="iaCfgCle" value="${E(c)}" placeholder="sk-ant-…" autocomplete="off"></div>
-    <div class="fld-hint">Modèle : <code>${IA_MODELE}</code> · plafond ${IA_PLAFOND_JOUR} $/jour
-      (${iaCout().toFixed(2)} $ dépensés aujourd'hui).</div>
+    <div class="ia-avert"><b>Ceci n'est pas ton forfait Claude Pro.</b>
+      L'assistant parle à l'API, qui est <b>facturée séparément</b> de l'abonnement :
+      autre compte, autre facture. Les limites du forfait — la session de 5 h et la
+      limite hebdomadaire — valent pour claude.ai et Claude Code, et ne s'appliquent
+      pas à une clé d'API. Ce qui suit est donc de l'argent dépensé <b>en plus</b>
+      de ton abonnement, et le plafond est un frein que l'application s'impose.</div>
+    <div class="fld-hint">Modèle : <code>${IA_MODELE}</code> · ${IA_PRIX.entree*1e6} $ par million
+      de jetons en entrée, ${IA_PRIX.sortie*1e6} $ en sortie · plafond ${IA_PLAFOND_JOUR} $/jour
+      (<b>${iaCout().toFixed(2)} $ dépensés aujourd'hui</b>).</div>
+    ${iaQuota?`<div class="fld-hint">Débit restant, tel que l'API le déclare :
+      ${E(iaQuota.rDispo||'?')}/${E(iaQuota.rMax||'?')} requêtes,
+      ${E(iaQuota.eDispo||'?')} jetons d'entrée${iaQuota.rReset?` · remise à zéro ${E(String(iaQuota.rReset).slice(0,16))}`:''}.</div>`
+      :'<div class="fld-hint">Le débit restant n\'est pas lisible depuis le navigateur : l\'API n\'expose pas ses en-têtes de limite au JavaScript de page.</div>'}
+    <div class="ia-cfg-b">
+      <button class="gl-pill" onclick="iaTesterConnexion()">◈ Tester la connexion</button>
+    </div>
+    <div id="iaTestRes"></div>
     <div class="ia-cfg-mem">
       <div class="mh-sec">Mémoire</div>
       <div class="fld-hint">${iaMemoire.filter(f=>f.cle).length} fait(s) retenu(s).
@@ -13578,10 +13821,69 @@ function iaOuvrirReglages(){
         <button class="gl-pill" onclick="iaExporterMemoire()">↑ Publier sur Drive</button>
         <button class="gl-pill" onclick="iaImporterMemoire()">↓ Relire depuis Drive</button>
       </div>
+      <div class="mh-sec" style="margin-top:0.6rem">Reprendre ailleurs</div>
+      <div class="fld-hint">Le fil courant, en markdown : état de l'outil, mémoire, résumé,
+        puis l'échange. À déposer dans un projet claude.ai — où c'est ton abonnement qui paie,
+        et non l'API.</div>
+      <div class="ia-cfg-b">
+        <button class="gl-pill" onclick="iaExporterMd()">⬇ Télécharger</button>
+        <button class="gl-pill" onclick="iaExporterMdDrive()">↑ Déposer sur Drive</button>
+      </div>
     </div>`;
   modalOuvre('iaCfgModal');
 }
 function closeIaCfg(){ modalFerme('iaCfgModal'); }
+
+// ── Tester la connexion ───────────────────────────────────────────────────
+// Trois choses ne peuvent être vérifiées que depuis TON navigateur, et depuis
+// TON origine : que la clé est bonne, que le navigateur laisse passer l'appel
+// (CORS), et que le modèle répond. Aucun test écrit ailleurs ne peut y répondre
+// à ta place — d'où ce bouton, qui le fait en un aller-retour minuscule.
+async function iaTesterConnexion(){
+  const el=document.getElementById('iaTestRes'); if(!el)return;
+  const E=tdEsc;
+  if(!iaCle()){ el.innerHTML='<div class="ia-test ko">Aucune clé saisie.</div>'; return; }
+  el.innerHTML='<div class="ia-test">Essai en cours…</div>';
+  const t0=Date.now();
+  const lignes=[];
+  try{
+    const r=await fetch(IA_URL,{method:'POST',headers:{
+        'content-type':'application/json','x-api-key':iaCle(),
+        'anthropic-version':IA_API_VERSION,
+        'anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:IA_MODELE,max_tokens:16,
+        messages:[{role:'user',content:[{type:'text',text:'Réponds exactement : OK'}]}]})});
+    const ms=Date.now()-t0;
+    iaLireQuota(r);
+    if(r.ok){
+      const j=await r.json();
+      const txt=(j.content||[]).map(b=>b.text||'').join('').trim();
+      const u=j.usage||{};
+      iaCoutAjoute(u.input_tokens||0,u.output_tokens||0);
+      lignes.push(['ok',`Le navigateur laisse passer l'appel — CORS accepté.`]);
+      lignes.push(['ok',`Clé acceptée, modèle ${IA_MODELE} joignable en ${ms} ms.`]);
+      lignes.push(['ok',`Réponse reçue : « ${txt.slice(0,40)} » (${u.input_tokens||0} jetons entrée, ${u.output_tokens||0} sortie).`]);
+      lignes.push([iaQuota?'ok':'note',iaQuota
+        ? `Limites de débit lisibles : ${iaQuota.rDispo||'?'}/${iaQuota.rMax||'?'} requêtes restantes.`
+        : `Limites de débit non lisibles depuis la page — sans conséquence, l'API les applique quand même.`]);
+      lignes.push(['note','Rappel : ceci est facturé sur ton compte API, pas sur ton abonnement Pro.']);
+    } else {
+      let d=''; try{ d=(await r.json()).error.message; }catch(e){}
+      lignes.push(['ok','Le navigateur laisse passer l\'appel — CORS accepté.']);
+      lignes.push(['ko',r.status===401?`Clé refusée (401). Vérifie-la, ou vérifie qu'elle a du crédit.`
+        :r.status===400?`Requête refusée (400) : ${E(d||'—')}`
+        :r.status===429?`Limite de débit atteinte (429). Réessaie dans une minute.`
+        :`Erreur ${r.status} : ${E(d||'—')}`]);
+    }
+  }catch(e){
+    // Une exception ici, et non un code d'erreur, signe presque toujours le
+    // refus du navigateur : la réponse n'a jamais été lisible.
+    lignes.push(['ko','Appel bloqué par le navigateur — CORS refusé, ou réseau injoignable.']);
+    lignes.push(['note',`Détail : ${E(String(e&&e.message||e))}`]);
+  }
+  el.innerHTML=lignes.map(([c,t])=>`<div class="ia-test ${c}">${t}</div>`).join('');
+  iaRendreEntete();
+}
 async function iaSauverCle(){
   const v=document.getElementById('iaCfgCle').value.trim();
   const autres=brsLignes.filter(x=>!(x.type==='cle'&&x.code==='anthropic'));
@@ -17629,7 +17931,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.60.0';
+const APP_VERSION='v1.60.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
