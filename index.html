@@ -299,7 +299,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sb-umb:hover{color:var(--accent);border-color:var(--accent)}
 
 #pagebrain{overflow:hidden;flex-direction:column}
-.sb-layout{display:grid;grid-template-columns:250px 1fr 260px;height:100%;overflow:hidden}
+.sb-layout{display:grid;grid-template-columns:320px 1fr 260px;height:100%;overflow:hidden}
 .sb-side,.sb-meta{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 .sb-meta{border-right:none;border-left:1px solid var(--border);padding:0.9rem;overflow-y:auto}
 .sb-side-top{display:flex;gap:0.35rem;padding:0.6rem;border-bottom:1px solid var(--border)}
@@ -409,7 +409,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 @media (max-width:700px){.gr-bar{top:auto;bottom:0.8rem;right:0.8rem;left:0.8rem;justify-content:center}
   .gr-b{height:2.6rem;min-width:2.6rem}.gr-info{display:none}}
 @media (max-width:1100px){
-  .sb-layout{grid-template-columns:200px 1fr}
+  .sb-layout{grid-template-columns:250px 1fr}
   .sb-meta{display:none}
 }
 @media (max-width:760px){
@@ -2141,6 +2141,7 @@ body,body *{font-family:var(--font-body)}
       <div class="sb-tree" id="sbTree"></div>
       <div class="sb-side-foot">
         <button class="sb-foot-btn" onclick="openDailyNote()" title="Note du jour — boîte de réception">📆 Jour</button>
+        <button class="sb-foot-btn" onclick="openWeeklyNote()" title="Revue de la semaine et planification de la suivante">🗓 Sem</button>
         <button class="sb-foot-btn" onclick="openGraph()" title="Vue graphe des liens">◍ Graphe</button>
         <button class="sb-foot-btn" onclick="exportNotesMarkdown()" title="Exporter toutes les notes en .md (ouvrable dans Obsidian)">⬇ .md</button>
         <span class="sb-count" id="sbCount"></span>
@@ -4976,7 +4977,11 @@ function mdRender(src){
       } else out+=`<blockquote>${mdInline(m[1])}</blockquote>`;
       return; }
     // case a cocher, cliquable : elle modifie la source
-    if((m=/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/.exec(l))){
+    // `\s*` et non `\s+` : les espaces de fin de ligne sont retirés plus haut,
+    // donc une case VIDE (« - [ ] ») n'avait plus rien après le crochet et
+    // retombait en puce ordinaire, affichant « [ ] » en toutes lettres. Une
+    // case vide est le cas normal quand on prépare une liste à remplir.
+    if((m=/^\s*[-*]\s+\[([ xX])\]\s*(.*)$/.exec(l))){
       flushP();flushT();
       openLi('ul',indOf(raw));
       const done=m[1].toLowerCase()==='x';
@@ -5990,6 +5995,117 @@ async function openDailyNote(){
   renderNoteTree();
 }
 
+// ── Revue hebdomadaire ────────────────────────────────────────────────────
+// Le pendant de la note du jour, à l'échelle de la semaine : on regarde
+// derrière, puis on pose ce qui vient. Deux précautions dans le calcul.
+//
+// La semaine est celle de la norme ISO — lundi au dimanche, et la semaine 1
+// est celle qui contient le premier jeudi de l'année. C'est ce que dit un
+// calendrier professionnel quand il annonce « S34 ».
+//
+// L'ANNÉE EST CELLE DE LA SEMAINE, PAS CELLE DU JOUR. Le 31 décembre 2025
+// appartient à la semaine 1 de 2026 : titrer « Revue 2025 01 » créerait une
+// collision avec la vraie première semaine de 2025, onze mois plus tôt. On
+// prend donc l'année du jeudi de la semaine, qui est la définition ISO.
+function isoSemaine(d){
+  const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const j=t.getUTCDay()||7;                    // lundi=1 … dimanche=7
+  t.setUTCDate(t.getUTCDate()+4-j);            // le jeudi décide de tout
+  const an=t.getUTCFullYear();
+  const debut=new Date(Date.UTC(an,0,1));
+  return {an,n:Math.ceil(((t-debut)/86400000+1)/7)};
+}
+const lundiDe=d=>{ const x=new Date(d); x.setHours(0,0,0,0);
+                   x.setDate(x.getDate()-((x.getDay()||7)-1)); return x; };
+// Le numéro est complété à deux chiffres : sans cela « Revue 2026 9 » se
+// classerait après « Revue 2026 10 » dans l'arbre, et la liste deviendrait
+// illisible à partir de septembre.
+const weeklyTitle=(d)=>{ const {an,n}=isoSemaine(d||new Date());
+                         return `Revue ${an} ${String(n).padStart(2,'0')}`; };
+
+// Le gabarit. Deux principes : ce que l'outil SAIT est séparé de ce que tu
+// écris — sinon on ne distingue plus le constat du commentaire ; et on ne
+// remplit que depuis les tâches, qui sont chargées dès le démarrage. Y mettre
+// des données ADP, chargées seulement à la visite de leur page, ferait
+// annoncer « aucun projet » avec aplomb un jour sur deux.
+function weeklyTemplate(d){
+  const base=d||new Date();
+  const {an,n}=isoSemaine(base);
+  const lun=lundiDe(base), dim=new Date(lun); dim.setDate(dim.getDate()+6);
+  const suiv=new Date(lun); suiv.setDate(suiv.getDate()+7);
+  const sN=isoSemaine(suiv);
+  const dl=ymd(lun), dd=ymd(dim);
+  const faites=allTasks.filter(t=>t.completed_at&&t.completed_at>=dl&&t.completed_at<=dd);
+  const retard=allTasks.filter(t=>!t.completed_at&&t.due_date&&t.due_date<td())
+    .sort((a,b)=>String(a.due_date).localeCompare(String(b.due_date)));
+  // Le repli HTML (<details>) est écarté : le rendu markdown échappe le HTML,
+  // à raison — il s'afficherait en toutes lettres. La liste reste donc dépliée,
+  // et c'est le plafond qui la garde lisible.
+  const liste=(a,f)=>a.length?a.slice(0,8).map(f).join('\n')+
+    (a.length>8?`\n- _…et ${a.length-8} autres_`:''):'- _(rien)_';
+  return `#revuehebdo
+
+**Semaine ${n} de ${an}** — du ${dl} au ${dd}
+
+## Ce que l'outil sait
+
+**${faites.length} tâche(s) terminée(s) cette semaine**
+${liste(faites,t=>`- ${t.title}${t.project?` · ${t.project}`:''}`)}
+
+**${retard.length} tâche(s) encore en retard**
+${liste(retard,t=>`- ${t.title} · échue le ${t.due_date}${t.snoozes?` · reportée ${t.snoozes} fois`:''}`)}
+
+---
+
+## La semaine qui s'achève
+
+### Ce qui a avancé
+
+
+### Ce qui a coincé, et pourquoi
+
+
+### Décisions prises
+
+
+### Ce que j'ai appris
+
+
+## La semaine ${sN.n}
+
+### Les trois choses qui comptent
+- [ ] 
+- [ ] 
+- [ ] 
+
+### Échéances et rendez-vous
+
+
+### Ce que je laisse tomber
+> Une semaine où l'on n'abandonne rien est une semaine qu'on n'a pas arbitrée.
+
+
+## À trancher
+
+`;
+}
+async function weeklyNote(){
+  const t=weeklyTitle();
+  let n=noteByTitle(t);
+  if(n)return n;                       // jamais deux fois, jamais écrasée
+  n={id:'n'+uid(),title:t,content:weeklyTemplate(),tags:'',parent_id:'',icon:'🗓',
+     pinned:false,status:'active',created_at:td(),updated_at:td(),gx:null,gy:null};
+  notes.push(n); noteIndexInvalidate(); cacheSet('notes',notes);
+  await noteUpsert(n);
+  return n;
+}
+async function openWeeklyNote(){
+  if(curPage!=='brain')switchPage('brain');
+  const n=await weeklyNote();
+  openNote(n.id);
+  renderNoteTree();
+}
+
 // ── Actions ───────────────────────────────────────────────────────────────
 let noteSaveTimer=null;
 function noteQueueSave(){
@@ -6538,6 +6654,7 @@ const CMD_ACTIONS=[
   ['+ Nouvelle tâche',        'creer ajouter nouveau todo',      ()=>{switchPage('board');openModal(null);}],
   ['+ Nouvelle note',         'creer ajouter nouveau brain',     ()=>{switchPage('brain');newNote(null);}],
   ['Journal du jour',         'note quotidien capture aujourd',  ()=>openDailyNote()],
+  ['Revue de la semaine',     'note hebdo semaine revue bilan planification', ()=>openWeeklyNote()],
   ['+ Nouveau projet',        'adp creer chantier',              ()=>{switchPage('adp');setAdpView('projets');openAdpProjModal(null);}],
   ['+ Nouveau contact',       'adp crm carnet annuaire',         ()=>{switchPage('adp');setAdpView('suivi');openAdpContModal(null);}],
   ['Relances du jour',        'adp contacts relancer suivi',     ()=>{switchPage('adp');setAdpView('suivi');}],
@@ -16700,7 +16817,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.59.0';
+const APP_VERSION='v1.60.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
