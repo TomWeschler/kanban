@@ -246,6 +246,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sr-e{font-size:0.68rem;line-height:1.4;color:var(--text-dim);margin-top:0.2rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sr mark,.sr-n mark{background:rgba(251,191,36,0.3);color:var(--text);padding:0 1px;border-radius:2px}
 
+.md td.num,.md th.num{text-align:right;font-variant-numeric:tabular-nums}
+.md td.calc{text-align:right;font-variant-numeric:tabular-nums;background:var(--accent-dim);
+  font-weight:600;cursor:help}
+.md td.calc.err{background:rgba(239,68,68,0.14);color:var(--red,#ef4444);font-weight:600}
 .md-tools{display:flex;flex-wrap:wrap;align-items:center;gap:0.2rem;padding-bottom:0.6rem;margin-bottom:0.6rem;border-bottom:1px solid var(--border)}
 .md-t{min-width:1.9rem;height:1.8rem;padding:0 0.4rem;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);
   font-family:var(--font-mono);font-size:0.65rem;border-radius:4px;cursor:pointer}
@@ -2543,7 +2547,7 @@ body,body *{font-family:var(--font-body)}
   <div class="modal" style="width:min(660px,94vw)">
     <div class="modal-hdr">AIDE-MÉMOIRE DU FORMAT</div>
     <button class="modal-close" onclick="closeMdHelp()">✕</button>
-    <div class="mh-wrap"><table class="mh-tbl"><tbody><tr><td><code>**gras**</code></td><td>gras</td><td class="mh-k">Ctrl+B</td></tr><tr><td><code>*italique*</code></td><td>italique</td><td class="mh-k">Ctrl+I</td></tr><tr><td><code>__souligné__</code></td><td>souligné</td><td class="mh-k">Ctrl+U</td></tr><tr><td><code>~~barré~~</code></td><td>barré</td><td class="mh-k"></td></tr><tr><td><code>==surligné==</code></td><td>surligné</td><td class="mh-k"></td></tr><tr><td><code>{rouge:texte}</code></td><td>texte en couleur — <span class="mc-rouge">rouge</span>, <span class="mc-orange">orange</span>, <span class="mc-jaune">jaune</span>, <span class="mc-vert">vert</span>, <span class="mc-bleu">bleu</span>, <span class="mc-violet">violet</span>, <span class="mc-rose">rose</span>, <span class="mc-gris">gris</span></td><td class="mh-k"></td></tr><tr><td><code>`code`</code></td><td>code</td><td class="mh-k">Ctrl+E</td></tr><tr><td><code># Titre 1</code></td><td>le plus grand</td><td class="mh-k"></td></tr><tr><td><code>## Titre 2</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>### Titre 3</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>###### Titre 6</code></td><td>le plus petit</td><td class="mh-k"></td></tr><tr><td><code>- puce</code></td><td>liste à puces</td><td class="mh-k"></td></tr><tr><td><code>&nbsp;&nbsp;- sous-puce</code></td><td>indenter de 2 espaces</td><td class="mh-k"></td></tr><tr><td><code>1. élément</code></td><td>liste numérotée</td><td class="mh-k"></td></tr><tr><td><code>- [ ] à faire</code></td><td>case à cocher, cliquable en lecture</td><td class="mh-k"></td></tr><tr><td><code>&gt; citation</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>---</code></td><td>trait de séparation</td><td class="mh-k"></td></tr><tr><td><code>[[Autre note]]</code></td><td>lien interne — suggestions dès la frappe</td><td class="mh-k"></td></tr><tr><td><code>[[Autre note|nom affiché]]</code></td><td>lien avec un autre libellé</td><td class="mh-k"></td></tr><tr><td><code>#montag</code></td><td>tag, cliquable</td><td class="mh-k"></td></tr><tr><td><code>:cafe</code></td><td>emoji — suggestions dès la 2ᵉ lettre (☕). Ou le bouton 😀 de la barre</td><td class="mh-k"></td></tr><tr><td><code>[texte](https://…)</code></td><td>lien externe</td><td class="mh-k"></td></tr><tr><td><code>![légende](https://…)</code></td><td>image distante</td><td class="mh-k"></td></tr><tr><td><code>| a | b |</code></td><td>tableau (une ligne |---|---| sous l'en-tête)</td><td class="mh-k"></td></tr><tr><td><code>```</code></td><td>bloc de code (ouvrir et fermer)</td><td class="mh-k"></td></tr></tbody></table></div>
+    <div class="mh-wrap"><table class="mh-tbl"><tbody><tr><td><code>**gras**</code></td><td>gras</td><td class="mh-k">Ctrl+B</td></tr><tr><td><code>*italique*</code></td><td>italique</td><td class="mh-k">Ctrl+I</td></tr><tr><td><code>__souligné__</code></td><td>souligné</td><td class="mh-k">Ctrl+U</td></tr><tr><td><code>~~barré~~</code></td><td>barré</td><td class="mh-k"></td></tr><tr><td><code>==surligné==</code></td><td>surligné</td><td class="mh-k"></td></tr><tr><td><code>{rouge:texte}</code></td><td>texte en couleur — <span class="mc-rouge">rouge</span>, <span class="mc-orange">orange</span>, <span class="mc-jaune">jaune</span>, <span class="mc-vert">vert</span>, <span class="mc-bleu">bleu</span>, <span class="mc-violet">violet</span>, <span class="mc-rose">rose</span>, <span class="mc-gris">gris</span></td><td class="mh-k"></td></tr><tr><td><code>`code`</code></td><td>code</td><td class="mh-k">Ctrl+E</td></tr><tr><td><code># Titre 1</code></td><td>le plus grand</td><td class="mh-k"></td></tr><tr><td><code>## Titre 2</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>### Titre 3</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>###### Titre 6</code></td><td>le plus petit</td><td class="mh-k"></td></tr><tr><td><code>- puce</code></td><td>liste à puces</td><td class="mh-k"></td></tr><tr><td><code>&nbsp;&nbsp;- sous-puce</code></td><td>indenter de 2 espaces</td><td class="mh-k"></td></tr><tr><td><code>1. élément</code></td><td>liste numérotée</td><td class="mh-k"></td></tr><tr><td><code>- [ ] à faire</code></td><td>case à cocher, cliquable en lecture</td><td class="mh-k"></td></tr><tr><td><code>&gt; citation</code></td><td></td><td class="mh-k"></td></tr><tr><td><code>---</code></td><td>trait de séparation</td><td class="mh-k"></td></tr><tr><td><code>[[Autre note]]</code></td><td>lien interne — suggestions dès la frappe</td><td class="mh-k"></td></tr><tr><td><code>[[Autre note|nom affiché]]</code></td><td>lien avec un autre libellé</td><td class="mh-k"></td></tr><tr><td><code>#montag</code></td><td>tag, cliquable</td><td class="mh-k"></td></tr><tr><td><code>:cafe</code></td><td>emoji — suggestions dès la 2ᵉ lettre (☕). Ou le bouton 😀 de la barre</td><td class="mh-k"></td></tr><tr><td><code>[texte](https://…)</code></td><td>lien externe</td><td class="mh-k"></td></tr><tr><td><code>![légende](https://…)</code></td><td>image distante</td><td class="mh-k"></td></tr><tr><td><code>| a | b |</code></td><td>tableau (une ligne |---|---| sous l'en-tête)</td><td class="mh-k"></td></tr><tr><td><code>=SOMME(haut)</code></td><td>total d'un tableau — <code>haut</code>, <code>bas</code>, <code>gauche</code>, <code>droite</code></td><td class="mh-k"></td></tr><tr><td><code>=B2*C2</code></td><td>calcul sur des cellules — <b>A1 est la 1<sup>re</sup> ligne de données</b>, l'en-tête ne compte pas</td><td class="mh-k"></td></tr><tr><td><code>=MOYENNE(C1:C9)</code></td><td>aussi : <code>MIN</code>, <code>MAX</code>, <code>NB</code>, <code>PRODUIT</code></td><td class="mh-k"></td></tr><tr><td><code>```</code></td><td>bloc de code (ouvrir et fermer)</td><td class="mh-k"></td></tr></tbody></table></div>
     <div class="mh-note">La couleur s'écrit <code>{couleur:texte}</code> et s'applique aussi au gras : <code>{bleu:**important**}</code>. À l'export, elle devient du HTML standard, lisible par Obsidian. Le texte s'écrit en markdown. La barre au-dessus de l'éditeur applique ces marqueurs à la sélection ; appuyer une seconde fois les retire.</div>
   </div>
 </div>
@@ -4922,6 +4926,189 @@ function mdTaskNote(src){
     .join('<br>');
 }
 
+// ── Tableaux : les formules ───────────────────────────────────────────────
+// Un tableau markdown qui sait faire ses totaux. Le stockage ne change pas :
+// c'est toujours du texte, donc toujours exportable, éditable à la main, et
+// tenable dans une cellule du classeur. Une formule est simplement une cellule
+// qui commence par « = ».
+//
+// AUCUN `eval`, ET CE N'EST PAS NÉGOCIABLE. Le contenu d'une note peut venir
+// d'un import, d'une sauvegarde, d'une feuille partagée. L'évaluer avec le
+// moteur JavaScript, ce serait offrir l'exécution de code à tout ce qui sait
+// écrire dans une note. D'où l'analyseur ci-dessous : il ne connaît que des
+// nombres, des références, quatre opérateurs et une poignée de fonctions.
+//
+// Références : A1 est la PREMIÈRE LIGNE DE DONNÉES, l'en-tête ne compte pas —
+// c'est ce à quoi on s'attend en regardant le tableau, et non ce que ferait un
+// tableur qui compterait ses lignes physiques.
+const TAB_SOMME=v=>v.reduce((a,b)=>a+b,0);
+const TAB_FN={
+  SOMME:TAB_SOMME, SUM:TAB_SOMME, TOTAL:TAB_SOMME,
+  MOYENNE:v=>v.length?TAB_SOMME(v)/v.length:0, MOY:v=>v.length?TAB_SOMME(v)/v.length:0,
+  AVG:v=>v.length?TAB_SOMME(v)/v.length:0, MOYENNE_:v=>v.length?TAB_SOMME(v)/v.length:0,
+  MIN:v=>v.length?Math.min(...v):0, MAX:v=>v.length?Math.max(...v):0,
+  NB:v=>v.length, COUNT:v=>v.length, NOMBRE:v=>v.length,
+  PRODUIT:v=>v.reduce((a,b)=>a*b,1),
+};
+const TAB_DIRS=['HAUT','BAS','GAUCHE','DROITE'];
+// Un numéro de colonne à partir de ses lettres : A→0, B→1, … AA→26.
+const tabCol=l=>[...l].reduce((n,c)=>n*26+(c.charCodeAt(0)-64),0)-1;
+
+function tabTokens(src){
+  const s=String(src).toUpperCase(); const out=[]; let i=0;
+  while(i<s.length){
+    const c=s[i];
+    if(/\s/.test(c)&&!/^\d/.test(s.slice(i+1))){ i++; continue; }
+    if('+-*/()'.indexOf(c)>=0){ out.push({k:c}); i++; continue; }
+    if(c===';'||c===','){ out.push({k:','}); i++; continue; }
+    const r=s.slice(i);
+    let m=/^([A-Z]{1,2})(\d+)\s*:\s*([A-Z]{1,2})(\d+)/.exec(r);
+    if(m){ out.push({k:'plage',c1:tabCol(m[1]),l1:+m[2]-1,c2:tabCol(m[3]),l2:+m[4]-1});
+           i+=m[0].length; continue; }
+    m=/^([A-Z]{1,2})(\d+)/.exec(r);
+    if(m){ out.push({k:'ref',c:tabCol(m[1]),l:+m[2]-1}); i+=m[0].length; continue; }
+    // Nombre à la française : l'espace sépare les milliers, la virgule décime.
+    m=/^\d[\d\u00a0\u202f ]*(?:[.,]\d+)?/.exec(r);
+    if(m){ out.push({k:'nb',v:nbFr(m[0],0)}); i+=m[0].length; continue; }
+    m=/^[A-Z_]+/.exec(r);
+    if(m){ out.push({k:'id',v:m[0]}); i+=m[0].length; continue; }
+    if(/\s/.test(c)){ i++; continue; }
+    return null;                        // caractère inconnu : on ne devine pas
+  }
+  return out;
+}
+
+// Le calcul d'un tableau entier. `tbl` est [en-tête, ...lignes].
+function tabCalculer(tbl){
+  const corps=tbl.slice(1);
+  const memo=new Map(), enCours=new Set();
+  const brut=(l,c)=>(corps[l]&&corps[l][c]!=null)?String(corps[l][c]).trim():'';
+  const PANNE=e=>{ const x=new Error(e); x.tab=e; return x; };
+
+  function valeur(l,c){
+    if(l<0||c<0||l>=corps.length)return null;
+    const cle=l+','+c;
+    if(memo.has(cle))return memo.get(cle);
+    const v=brut(l,c);
+    if(v[0]!=='='){ const n=nbFr(v,null); memo.set(cle,n); return n; }
+    // Une formule qui se cite elle-même, directement ou par ricochet, tournerait
+    // sans fin : on coupe et on le dit.
+    if(enCours.has(cle))throw PANNE('#CYCLE');
+    enCours.add(cle);
+    let r;
+    try{ r=evaluer(v.slice(1),l,c); }
+    finally{ enCours.delete(cle); }
+    memo.set(cle,r);
+    return r;
+  }
+  const zone=(l1,c1,l2,c2)=>{ const o=[];
+    for(let l=Math.min(l1,l2);l<=Math.max(l1,l2);l++)
+      for(let c=Math.min(c1,c2);c<=Math.max(c1,c2);c++){
+        const v=valeur(l,c); if(Number.isFinite(v))o.push(v); }
+    return o; };
+
+  function evaluer(src,li,co){
+    const t=tabTokens(src);
+    if(!t||!t.length)throw PANNE('#FORMULE');
+    let p=0;
+    const voir=()=>t[p];
+    const nombre=x=>{ if(Array.isArray(x))throw PANNE('#PLAGE');
+                      return Number.isFinite(x)?x:0; };
+    // `zone` normalise ses bornes, ce qui est juste pour une plage écrite à
+    // l'envers (A5:A1) — mais désastreux pour une direction VIDE : « haut »
+    // depuis la première ligne demandait la plage 0→-1, que la normalisation
+    // retournait en 0→0, c'est-à-dire la formule elle-même. Résultat : un
+    // #CYCLE là où la bonne réponse est zéro. On borne donc avant d'appeler.
+    const largeur=(corps[li]||[]).length;
+    const direction=n=>{
+      if(n==='HAUT')  return li>0 ? zone(0,co,li-1,co) : [];
+      if(n==='BAS')   return li<corps.length-1 ? zone(li+1,co,corps.length-1,co) : [];
+      if(n==='GAUCHE')return co>0 ? zone(li,0,li,co-1) : [];
+      if(n==='DROITE')return co<largeur-1 ? zone(li,co+1,li,largeur-1) : [];
+      return null;
+    };
+    function facteur(){
+      const x=voir();
+      if(!x)throw PANNE('#FORMULE');
+      if(x.k==='-'){ p++; return -nombre(facteur()); }
+      if(x.k==='+'){ p++; return nombre(facteur()); }
+      if(x.k==='('){ p++; const v=expr();
+        if(voir()&&voir().k===')')p++; else throw PANNE('#FORMULE');
+        return v; }
+      if(x.k==='nb'){ p++; return x.v; }
+      if(x.k==='plage'){ p++; return zone(x.l1,x.c1,x.l2,x.c2); }
+      if(x.k==='ref'){ p++;
+        if(x.l>=corps.length||x.c>=Math.max(...corps.map(r=>r.length),0))throw PANNE('#REF');
+        const v=valeur(x.l,x.c); return Number.isFinite(v)?v:0; }
+      if(x.k==='id'){
+        const nom=x.v; p++;
+        if(voir()&&voir().k==='('){
+          p++;
+          const args=[];
+          if(voir()&&voir().k!==')'){ args.push(expr());
+            while(voir()&&voir().k===','){ p++; args.push(expr()); } }
+          if(voir()&&voir().k===')')p++; else throw PANNE('#FORMULE');
+          const f=TAB_FN[nom];
+          if(!f)throw PANNE('#FONCTION');
+          const plats=[];
+          args.forEach(a=>Array.isArray(a)?plats.push(...a):plats.push(a));
+          return f(plats.filter(Number.isFinite));
+        }
+        const d=direction(nom);
+        if(d)return d;
+        if(TAB_DIRS.includes(nom))return [];      // direction vide, pas une erreur
+        throw PANNE('#FORMULE');
+      }
+      throw PANNE('#FORMULE');
+    }
+    // Une PLAGE n'est pas un nombre : c'est un argument de fonction. Elle n'a
+    // le droit de remonter que si elle constitue l'argument à elle seule —
+    // « SOMME(A1:A5) » oui, « A1:A5 + 2 » non, qui n'aurait aucun sens.
+    const plageSeule=()=>{
+      const a=voir(); if(!a)return false;
+      const estPlage=a.k==='plage'||(a.k==='id'&&TAB_DIRS.includes(a.v)&&(!t[p+1]||t[p+1].k!=='('));
+      if(!estPlage)return false;
+      const suite=t[p+1];
+      return !suite||suite.k===','||suite.k===')';
+    };
+    function terme(){ let v=nombre(facteur());
+      while(voir()&&(voir().k==='*'||voir().k==='/')){
+        const o=t[p++].k, d=nombre(facteur());
+        if(o==='/'&&d===0)throw PANNE('#DIV0');
+        v=o==='*'?v*d:v/d; }
+      return v; }
+    function expr(){
+      if(plageSeule())return facteur();
+      let v=terme();
+      while(voir()&&(voir().k==='+'||voir().k==='-')){
+        const o=t[p++].k, r=terme();
+        v=o==='+'?v+r:v-r; }
+      return v; }
+    p=0;
+    const v=expr();
+    if(voir())throw PANNE('#FORMULE');    // du texte traîne après la formule
+    return v;
+  }
+
+  // Le rendu : ce qu'on affiche pour chaque cellule du corps.
+  return corps.map((ligne,l)=>ligne.map((_,c)=>{
+    const v=brut(l,c);
+    if(v[0]!=='=')return {texte:v,calc:false,nombre:nbFr(v,null)!==null&&v!==''};
+    try{
+      const r=valeur(l,c);
+      if(Array.isArray(r))return {texte:'#PLAGE',calc:true,err:true,src:v};
+      if(!Number.isFinite(r))return {texte:'#VALEUR',calc:true,err:true,src:v};
+      return {texte:tabNb(r),calc:true,nombre:true,src:v};
+    }catch(e){ return {texte:e&&e.tab||'#FORMULE',calc:true,err:true,src:v}; }
+  }));
+}
+// Au plus deux décimales, et à la française : un tableau de chiffres se lit
+// dans la langue de celui qui l'écrit.
+const tabNb=n=>{
+  const r=Math.round(n*1e6)/1e6;
+  return r.toLocaleString('fr-FR',{maximumFractionDigits:2});
+};
+
 function mdRender(src){
   const blocks=[];
   // les blocs de code sont mis de cote : rien ne doit y etre interprete
@@ -4952,8 +5139,21 @@ function mdRender(src){
   const flushT=()=>{
     if(!tbl)return;
     const [head,...body]=tbl;
+    // Les formules sont calculées sur le tableau ENTIER avant d'écrire quoi que
+    // ce soit : une cellule peut en citer une autre, y compris plus bas.
+    const calc=tabCalculer(tbl);
     out+='<table><thead><tr>'+head.map(c=>`<th>${mdInline(c)}</th>`).join('')+'</tr></thead><tbody>'
-       +body.map(r=>'<tr>'+r.map(c=>`<td>${mdInline(c)}</td>`).join('')+'</tr>').join('')+'</tbody></table>';
+       +body.map((r,li)=>'<tr>'+r.map((c,co)=>{
+           const v=(calc[li]||[])[co]||{texte:c,calc:false};
+           // Les chiffres se lisent alignés à droite ; c'est ce qui distingue
+           // un tableau de comptes d'une grille de texte.
+           const cls=(v.nombre?' class="num':'')+(v.calc?(v.nombre?' calc':' class="calc'):'')
+                     +(v.err?' err':'')+((v.nombre||v.calc)?'"':'');
+           if(!v.calc)return `<td${cls}>${mdInline(c)}</td>`;
+           // La formule reste lisible au survol : sans cela, un total faux est
+           // indébogable une fois la source repliée.
+           return `<td${cls} title="${MD_ATT(v.src||'')}">${MD_ESC(v.texte)}</td>`;
+         }).join('')+'</tr>').join('')+'</tbody></table>';
     tbl=null;
   };
   const flushAll=()=>{flushP();flushL();flushT();};
@@ -5776,6 +5976,7 @@ function mdToolbar(){
     `<button class="md-t" title="Liste numérotée" onclick="mdPrefix('1. ')">1.</button>`+
     `<button class="md-t" title="Case à cocher" onclick="mdPrefix('- [ ] ')">☐</button>`+
     `<button class="md-t" title="Citation" onclick="mdPrefix('&gt; ')">❝</button>`+
+    `<button class="md-t" title="Insérer un tableau, avec sa ligne de total" onclick="mdTableau()">⊞</button>`+
     `<span class="md-sep"></span>`+
     MD_COLORS.map(([nom,hex])=>
       `<button class="md-c" style="background:${hex}" title="Texte en ${nom}" onclick="mdWrap('{${nom}:','}','texte')"></button>`).join('')+
@@ -5784,6 +5985,16 @@ function mdToolbar(){
     `<button class="md-t" title="Lien vers une note" onclick="mdWrap('[[',']]','Note')">[[ ]]</button>`+
     `<button class="md-t" title="Aide-mémoire du format" onclick="openMdHelp()">?</button>`+
     `</div>`;
+}
+// Un squelette prêt à remplir, ligne de total comprise : personne n'a envie
+// d'aligner des barres verticales à la main pour faire une addition.
+function mdTableau(){
+  mdInsert('\n| Poste | Quantité | Prix unitaire | Total |\n'+
+           '|---|---|---|---|\n'+
+           '|  |  |  | =B1*C1 |\n'+
+           '|  |  |  | =B2*C2 |\n'+
+           '|  |  |  | =B3*C3 |\n'+
+           '| **Total** |  |  | =SOMME(haut) |\n');
 }
 function openMdHelp(){ modalOuvre('mdHelpModal'); }
 function closeMdHelp(){ modalFerme('mdHelpModal'); }
@@ -16824,7 +17035,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.60.1';
+const APP_VERSION='v1.61.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
