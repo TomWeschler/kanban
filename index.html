@@ -4932,7 +4932,14 @@ function mdRender(src){
   t=MD_ESC(t);
   const lines=t.split('\n');
   let out='',stack=[],para=[],tbl=null,cbNo=0;   // stack : listes ouvertes, pour l'imbrication
-  const flushP=()=>{ if(para.length){ out+=`<p>${mdInline(para.join(' '))}</p>`; para=[]; } };
+  // Les lignes d'un même paragraphe sont recollées par un SAUT, pas par une
+  // espace. Le markdown d'origine fond les retours simples dans le paragraphe —
+  // règle héritée de l'écriture d'articles, où l'on coupe ses lignes à 80
+  // colonnes sans vouloir couper le texte. Dans un carnet, c'est l'inverse :
+  // on appuie sur Entrée parce qu'on veut aller à la ligne, et voir sa mise en
+  // forme disparaître à la relecture est déroutant. C'est aussi ce que fait
+  // Obsidian par défaut. Le double saut reste un paragraphe neuf.
+  const flushP=()=>{ if(para.length){ out+=`<p>${mdInline(para.join('<br>'))}</p>`; para=[]; } };
   const flushL=()=>{ while(stack.length)out+=`</${stack.pop().tag}>`; };
   // ouvre/ferme les niveaux selon l'indentation, pour des listes imbriquees
   const openLi=(tag,ind)=>{
@@ -16817,7 +16824,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.60.0';
+const APP_VERSION='v1.60.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
