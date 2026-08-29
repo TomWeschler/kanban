@@ -246,6 +246,40 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sr-e{font-size:0.68rem;line-height:1.4;color:var(--text-dim);margin-top:0.2rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sr mark,.sr-n mark{background:rgba(251,191,36,0.3);color:var(--text);padding:0 1px;border-radius:2px}
 
+/* ── L'éditeur de grille ─────────────────────────────────────────────────── */
+.modal.wide{width:min(980px,96vw);max-width:96vw}
+.md-tw{position:relative}
+.md-tedit{position:absolute;top:-0.4rem;right:0;z-index:2;background:var(--surface);
+  border:1px solid var(--border2);border-radius:7px;color:var(--text-dim);cursor:pointer;
+  font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.06em;padding:0.18rem 0.42rem;
+  opacity:0;transition:opacity 0.12s}
+.md-tw:hover .md-tedit,.md-tedit:focus{opacity:1}
+.md-tedit:hover{color:var(--text);border-color:var(--accent)}
+.tab-aide{font-size:0.72rem;line-height:1.5;color:var(--text-mid);margin-bottom:0.6rem}
+.tab-lab{font-size:0.62rem;letter-spacing:0.09em;text-transform:uppercase;color:var(--text-dim);
+  margin:0.8rem 0 0.35rem}
+.tab-scroll{overflow-x:auto;max-height:46vh;overflow-y:auto}
+.tab-grille{border-collapse:collapse;font-size:0.75rem}
+.tab-grille th{font-family:var(--font-mono);font-size:0.58rem;color:var(--text-dim);
+  font-weight:500;padding:0.15rem 0.3rem;text-align:center;white-space:nowrap}
+.tab-grille th.tab-rn{text-align:right;padding-right:0.45rem}
+.tab-grille td{padding:0}
+.tab-grille input{width:11rem;min-width:6rem;background:var(--bg);color:var(--text);
+  border:1px solid var(--border);font-family:inherit;font-size:0.75rem;padding:0.32rem 0.45rem;
+  outline:none}
+.tab-grille input:focus{border-color:var(--accent);position:relative;z-index:1}
+.tab-grille tr:first-child input{font-weight:600;background:var(--surface2,var(--surface))}
+.tab-grille input.f{font-family:var(--font-mono);color:var(--accent)}
+.tab-x{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.6rem;
+  padding:0 0.15rem;opacity:0.55}
+.tab-x:hover{opacity:1;color:var(--red,#ef4444)}
+.tab-plus{background:none;border:1px dashed var(--border2);border-radius:6px;color:var(--text-dim);
+  cursor:pointer;font-size:0.66rem;padding:0.18rem 0.5rem;font-family:inherit}
+.tab-plus:hover{border-color:var(--accent);color:var(--text)}
+.tab-apercu{border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;
+  max-height:26vh;overflow:auto}
+.tab-apercu table{margin:0}
+@media(max-width:700px){.tab-grille input{width:7.5rem;min-width:5rem}}
 .md td.num,.md th.num{text-align:right;font-variant-numeric:tabular-nums}
 .md td.calc{text-align:right;font-variant-numeric:tabular-nums;background:var(--accent-dim);
   font-weight:600;cursor:help}
@@ -2543,6 +2577,17 @@ body,body *{font-family:var(--font-body)}
   </div>
 </div>
 
+<div class="modal-bg" id="tabModal">
+  <div class="modal wide">
+    <div class="modal-hdr">MODIFIER LE TABLEAU
+      <button class="modal-close" onclick="closeTabEd()">✕</button></div>
+    <div class="modal-body" id="tabBody"></div>
+    <div class="modal-foot">
+      <button class="gl-pill" onclick="closeTabEd()">Annuler</button>
+      <button class="btn-primary" onclick="tabEnregistrer()">Enregistrer</button></div>
+  </div>
+</div>
+
 <div class="modal-bg" id="mdHelpModal">
   <div class="modal" style="width:min(660px,94vw)">
     <div class="modal-hdr">AIDE-MÉMOIRE DU FORMAT</div>
@@ -2692,7 +2737,7 @@ const MODAL_FERME={
   rapModal:'closeRapport', rapPrevModal:'closeRapPrev', backupModal:'closeBackupModal',
   sigCfgModal:'closeSigCfg', runLaunchModal:'closeRunLaunch', composeModal:'closeAdpCompose',
   mdHelpModal:'closeMdHelp', emojiModal:'closeEmojiPicker', histModal:'closeHist',
-  doneModal:'closeDoneModal'
+  doneModal:'closeDoneModal', tabModal:'closeTabEd'
 };
 let modalPile=[];
 function modalOuvre(id){
@@ -4941,6 +4986,41 @@ function mdTaskNote(src){
 // Références : A1 est la PREMIÈRE LIGNE DE DONNÉES, l'en-tête ne compte pas —
 // c'est ce à quoi on s'attend en regardant le tableau, et non ce que ferait un
 // tableur qui compterait ses lignes physiques.
+// Une cellule peut contenir une barre verticale : « \| » l'échappe. On ne peut
+// donc pas découper avec split('|'), et une expression régulière à rétro-regard
+// n'est pas garantie partout. On parcourt, c'est six lignes et c'est sûr.
+function tabDecoupe(ligne){
+  const s=String(ligne).trim().replace(/^\|/,'').replace(/\|\s*$/,'');
+  const out=[]; let cur='';
+  for(let i=0;i<s.length;i++){
+    if(s[i]==='\\'&&s[i+1]==='|'){ cur+='|'; i++; continue; }
+    if(s[i]==='|'){ out.push(cur.trim()); cur=''; continue; }
+    cur+=s[i];
+  }
+  out.push(cur.trim());
+  return out;
+}
+const tabEchappe=c=>String(c==null?'':c).replace(/\|/g,'\\|').replace(/\n/g,' ').trim();
+
+// Où sont les tableaux dans la SOURCE. On repère par index d'apparition plutôt
+// que par numéro de ligne : le rendu replie les blocs de code en une seule
+// ligne, et tout décompte de lignes fait sur le texte rendu serait décalé.
+// Les blocs de code sont sautés — une barre verticale y est du texte.
+function tabBlocs(src){
+  const l=String(src||'').split('\n');
+  const out=[]; let dans=false, debut=-1;
+  for(let i=0;i<l.length;i++){
+    if(/^\s*```/.test(l[i])){ dans=!dans; if(debut>=0){ out.push([debut,i-1]); debut=-1; } continue; }
+    if(dans)continue;
+    const estTab=/^\s*\|.*\|\s*$/.test(l[i]);
+    if(estTab&&debut<0)debut=i;
+    else if(!estTab&&debut>=0){ out.push([debut,i-1]); debut=-1; }
+  }
+  if(debut>=0)out.push([debut,l.length-1]);
+  // Un tableau digne de ce nom a au moins un en-tête et sa ligne de séparation.
+  return out.filter(([a2,z])=>z>a2);
+}
+
 const TAB_SOMME=v=>v.reduce((a,b)=>a+b,0);
 const TAB_FN={
   SOMME:TAB_SOMME, SUM:TAB_SOMME, TOTAL:TAB_SOMME,
@@ -5109,7 +5189,9 @@ const tabNb=n=>{
   return r.toLocaleString('fr-FR',{maximumFractionDigits:2});
 };
 
-function mdRender(src){
+function mdRender(src,opts){
+  const editable=!!(opts&&opts.editable);
+  let tabNo=0;
   const blocks=[];
   // les blocs de code sont mis de cote : rien ne doit y etre interprete
   let t=String(src||'').replace(/```([\w-]*)\n?([\s\S]*?)```/g,(m,lang,code)=>{
@@ -5142,7 +5224,13 @@ function mdRender(src){
     // Les formules sont calculées sur le tableau ENTIER avant d'écrire quoi que
     // ce soit : une cellule peut en citer une autre, y compris plus bas.
     const calc=tabCalculer(tbl);
-    out+='<table><thead><tr>'+head.map(c=>`<th>${mdInline(c)}</th>`).join('')+'</tr></thead><tbody>'
+    // Le bouton d'édition n'apparaît QUE là où l'on peut réécrire la source :
+    // la lecture d'une note. Ailleurs (aperçu de gabarit, rapport), il n'aurait
+    // rien à modifier et mentirait sur ce qu'il fait.
+    const no=tabNo++;
+    out+=(editable?`<div class="md-tw"><button class="md-tedit" title="Modifier ce tableau"
+        onclick="tabEditer(${no})">⊞ Modifier</button>`:'')
+       +'<table><thead><tr>'+head.map(c=>`<th>${mdInline(c)}</th>`).join('')+'</tr></thead><tbody>'
        +body.map((r,li)=>'<tr>'+r.map((c,co)=>{
            const v=(calc[li]||[])[co]||{texte:c,calc:false};
            // Les chiffres se lisent alignés à droite ; c'est ce qui distingue
@@ -5153,7 +5241,7 @@ function mdRender(src){
            // La formule reste lisible au survol : sans cela, un total faux est
            // indébogable une fois la source repliée.
            return `<td${cls} title="${MD_ATT(v.src||'')}">${MD_ESC(v.texte)}</td>`;
-         }).join('')+'</tr>').join('')+'</tbody></table>';
+         }).join('')+'</tr>').join('')+'</tbody></table>'+(editable?'</div>':'');
     tbl=null;
   };
   const flushAll=()=>{flushP();flushL();flushT();};
@@ -5163,7 +5251,7 @@ function mdRender(src){
     if(!l.trim()){ flushAll(); return; }
     // tableau : | a | b |
     if(/^\s*\|.*\|\s*$/.test(l)){
-      const cells=l.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+      const cells=tabDecoupe(l);
       if(/^[\s|:-]+$/.test(l))return;              // ligne de separation
       flushP();flushL();
       (tbl=tbl||[]).push(cells);
@@ -5594,7 +5682,7 @@ function renderNoteBody(){
     ta.value=n.content||'';
     ta.focus();
   } else {
-    body.innerHTML=`<div class="md" id="sbRead">${mdRender(n.content)}</div>`;
+    body.innerHTML=`<div class="md" id="sbRead">${mdRender(n.content,{editable:true})}</div>`;
     resolveDriveMedia(document.getElementById('sbRead'));
   }
 }
@@ -5996,6 +6084,136 @@ function mdTableau(){
            '|  |  |  | =B3*C3 |\n'+
            '| **Total** |  |  | =SOMME(haut) |\n');
 }
+// ── L'éditeur de grille ───────────────────────────────────────────────────
+// Écrire un tableau à la barre verticale est pénible ; le relire l'est encore
+// plus. Cet éditeur donne une grille de saisie, et réécrit le markdown à la
+// sortie — le stockage ne change pas d'un octet, on n'édite que la vue.
+//
+// Le tableau est repéré par son RANG dans la note (le premier, le deuxième…),
+// pas par ses numéros de ligne : le rendu replie les blocs de code, et tout
+// décompte de lignes calculé sur le rendu serait décalé par rapport à la source.
+let tabEd=null;     // {note, rang, debut, fin, grille}
+
+function tabEditer(rang){
+  const n=noteById(noteCurId);
+  if(!n){ toast('Aucune note ouverte','err'); return; }
+  const blocs=tabBlocs(n.content);
+  const b=blocs[rang];
+  if(!b){ toast('Tableau introuvable','err'); return; }
+  const lignes=n.content.split('\n').slice(b[0],b[1]+1)
+    .filter(l=>!/^[\s|:-]+$/.test(l))
+    .map(tabDecoupe);
+  if(!lignes.length){ toast('Tableau vide','err'); return; }
+  // Toutes les lignes sont ramenées à la largeur de la plus large : une grille
+  // en dents de scie ne se manipule pas.
+  const large=Math.max(...lignes.map(l=>l.length));
+  tabEd={noteId:n.id,rang,debut:b[0],fin:b[1],
+         grille:lignes.map(l=>{ const c=l.slice(); while(c.length<large)c.push(''); return c; })};
+  tabRendreEd();
+  modalOuvre('tabModal');
+  setTimeout(()=>{ const c=document.querySelector('#tabGrille input'); if(c)c.focus(); },90);
+}
+function closeTabEd(){ modalFerme('tabModal'); tabEd=null; }
+
+function tabRendreEd(){
+  const el=document.getElementById('tabBody'); if(!el||!tabEd)return;
+  const g=tabEd.grille, E=tdEsc;
+  const cols=g[0].length;
+  // La lettre de colonne est rappelée en tête : c'est elle qu'on écrit dans
+  // une formule, et la deviner en comptant serait une source d'erreur.
+  const lettre=i=>String.fromCharCode(65+i%26);
+  el.innerHTML=`
+    <div class="tab-aide">Une cellule qui commence par <code>=</code> est une formule :
+      <code>=SOMME(haut)</code>, <code>=B1*C1</code>. La première ligne est l'en-tête ;
+      <b>A1 est la première ligne de données</b>.</div>
+    <div class="tab-scroll"><table class="tab-grille" id="tabGrille">
+      <thead><tr><th></th>${g[0].map((_,c)=>
+        `<th>${lettre(c)}<button class="tab-x" title="Supprimer la colonne ${lettre(c)}"
+           onclick="tabSuppCol(${c})">✕</button></th>`).join('')}
+        <th><button class="tab-plus" title="Ajouter une colonne" onclick="tabAddCol()">+</button></th></tr></thead>
+      <tbody>${g.map((ligne,r)=>`<tr>
+        <th class="tab-rn">${r===0?'en-tête':r}</th>
+        ${ligne.map((v,c)=>`<td><input value="${MD_ATT(E(v))}" data-r="${r}" data-c="${c}"
+            oninput="tabSaisie(${r},${c},this.value)" onkeydown="tabTouche(event,${r},${c})"
+            ${/^=/.test(v)?'class="f"':''}></td>`).join('')}
+        <td class="tab-rx">${r>0?`<button class="tab-x" title="Supprimer la ligne"
+             onclick="tabSuppLigne(${r})">✕</button>`:''}</td></tr>`).join('')}
+      <tr><th></th><td colspan="${cols+1}">
+        <button class="tab-plus" onclick="tabAddLigne()">+ ligne</button></td></tr></tbody>
+    </table></div>
+    <div class="tab-lab">Aperçu</div>
+    <div class="md tab-apercu">${mdRender(tabMarkdown())}</div>`;
+}
+// La saisie ne redessine PAS la grille : on perdrait le curseur à chaque
+// frappe. Seul l'aperçu se rafraîchit.
+function tabSaisie(r,c,v){
+  if(!tabEd)return;
+  tabEd.grille[r][c]=v;
+  const ap=document.querySelector('.tab-apercu');
+  if(ap)ap.innerHTML=mdRender(tabMarkdown());
+}
+function tabTouche(e,r,c){
+  if(!tabEd)return;
+  const bouge=(dr,dc)=>{
+    const cible=document.querySelector(`#tabGrille input[data-r="${r+dr}"][data-c="${c+dc}"]`);
+    if(cible){ e.preventDefault(); cible.focus(); cible.select(); }
+  };
+  if(e.key==='Enter'&&!e.shiftKey)bouge(1,0);
+  else if(e.key==='Enter'&&e.shiftKey)bouge(-1,0);
+  else if(e.key==='ArrowDown')bouge(1,0);
+  else if(e.key==='ArrowUp')bouge(-1,0);
+}
+// Une ligne s'ajoute à la fin — SAUF si la dernière porte une formule. Une
+// ligne de total est faite pour rester en bas : ajouter après elle mettrait la
+// nouvelle ligne hors du total, ce qui est exactement l'inverse de l'intention.
+function tabAddLigne(){ if(!tabEd)return;
+  const g=tabEd.grille;
+  const derniereEstTotal=g.length>1&&g[g.length-1].some(c=>/^=/.test(String(c||'').trim()));
+  const ou=derniereEstTotal?g.length-1:g.length;
+  g.splice(ou,0,g[0].map(()=>''));
+  tabRendreEd();
+  setTimeout(()=>{
+    const c=document.querySelector(`#tabGrille input[data-r="${ou}"][data-c="0"]`);
+    if(c)c.focus(); },50);
+}
+function tabAddCol(){ if(!tabEd)return;
+  tabEd.grille.forEach(l=>l.push('')); tabRendreEd(); }
+function tabSuppLigne(r){ if(!tabEd||r===0||tabEd.grille.length<=2)return;
+  tabEd.grille.splice(r,1); tabRendreEd(); }
+function tabSuppCol(c){ if(!tabEd||tabEd.grille[0].length<=1)return;
+  tabEd.grille.forEach(l=>l.splice(c,1)); tabRendreEd(); }
+
+// La grille redevient du markdown. Les barres verticales saisies sont
+// échappées : sans quoi une cellule couperait le tableau en deux.
+function tabMarkdown(){
+  if(!tabEd)return '';
+  const g=tabEd.grille;
+  return [ '| '+g[0].map(tabEchappe).join(' | ')+' |',
+           '|'+g[0].map(()=>'---').join('|')+'|' ]
+    .concat(g.slice(1).map(l=>'| '+l.map(tabEchappe).join(' | ')+' |')).join('\n');
+}
+async function tabEnregistrer(){
+  if(!tabEd)return;
+  const n=noteById(tabEd.noteId);
+  if(!n){ closeTabEd(); return; }
+  // On relit les blocs au moment d'écrire : la note a pu changer entre-temps,
+  // et réécrire des lignes d'après un repérage périmé détruirait autre chose.
+  const blocs=tabBlocs(n.content);
+  const b=blocs[tabEd.rang];
+  if(!b){ toast("Le tableau n'est plus là — rien n'a été modifié",'err'); closeTabEd(); return; }
+  // L'historique enregistre l'état PRÉCÉDENT : il faut le prendre avant
+  // d'écrire, sinon « annuler » ramènerait la version qu'on vient de poser.
+  const avant=n.content;
+  const l=n.content.split('\n');
+  l.splice(b[0],b[1]-b[0]+1,...tabMarkdown().split('\n'));
+  n.content=l.join('\n');
+  noteSnapshot(n.title,avant,n.id);
+  closeTabEd();
+  await noteUpsert(n);
+  if(curPage==='brain')renderBrain();
+  toast('Tableau enregistré','ok');
+}
+
 function openMdHelp(){ modalOuvre('mdHelpModal'); }
 function closeMdHelp(){ modalFerme('mdHelpModal'); }
 
@@ -6184,12 +6402,41 @@ function onEditorDrop(e){
 // ── Note du jour : la boite de reception ──────────────────────────────────
 // Toute la capture mobile creait des TACHES : une idee notee en marchant
 // finissait sur le board. Elle a maintenant son propre reservoir.
-const dailyTitle=()=>'Journal '+td();
+// Le trigramme du jour dans le titre : « 2026-08-25 mar ». La date d'abord,
+// pour que le tri alphabétique reste chronologique ; le jour ensuite, parce
+// qu'une liste de dates nues ne dit pas où sont les week-ends.
+const JOURS_TRI=['dim','lun','mar','mer','jeu','ven','sam'];
+const dailyTitle=(d)=>{ const x=d||new Date();
+  return `${ymd(x)} ${JOURS_TRI[x.getDay()]}`; };
+
+// Un journal léger : trois priorités, puis le fil de la journée. La capture
+// mobile ajoute ses lignes À LA FIN — la dernière section est donc celle qui
+// doit les accueillir, sinon elles atterriraient sous un titre qui ne les
+// concerne pas.
+function dailyTemplate(){
+  return `#journal
+
+## Trois choses aujourd'hui
+- [ ] 
+- [ ] 
+- [ ] 
+
+## Au fil du jour
+`;
+}
 async function dailyNote(){
   const t=dailyTitle();
   let n=noteByTitle(t);
   if(n)return n;
-  n={id:'n'+uid(),title:t,content:'',tags:'journal',parent_id:'',icon:'📆',
+  // Les journaux d'avant s'appelaient « Journal <date> ». Les ignorer créerait
+  // un doublon par jour déjà écrit : on récupère et on renomme.
+  const ancien=noteByTitle('Journal '+td());
+  if(ancien){
+    ancien.title=t; noteIndexInvalidate();
+    cacheSet('notes',notes); await noteUpsert(ancien);
+    return ancien;
+  }
+  n={id:'n'+uid(),title:t,content:dailyTemplate(),tags:'',parent_id:'',icon:'📆',
      pinned:false,status:'active',created_at:td(),updated_at:td(),gx:null,gy:null};
   notes.push(n); noteIndexInvalidate(); cacheSet('notes',notes);
   await noteUpsert(n);
@@ -17035,7 +17282,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.61.0';
+const APP_VERSION='v1.62.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
