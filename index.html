@@ -360,7 +360,12 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sb-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sb-pin{color:var(--gld);font-size:0.55rem}
 .sb-kids{margin-left:0.75rem;border-left:1px solid var(--border)}
-.sb-side-foot{display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.6rem;border-top:1px solid var(--border)}
+.sb-side-foot{display:flex;align-items:center;gap:0.35rem;padding:0.5rem 0.6rem;border-top:1px solid var(--border);flex-wrap:wrap}
+/* Cinq raccourcis ne tiennent plus sur une ligne dans un panneau étroit. On
+   les laisse passer à la ligne plutôt que de les rogner : un bouton coupé à
+   moitié ne se clique pas, et une barre qui défile latéralement se découvre
+   par hasard. */
+.sb-side-foot .sb-count{margin-left:auto}
 .sb-foot-btn{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:var(--font-mono);font-size:0.53rem;padding:0.25rem 0.5rem;border-radius:4px;cursor:pointer}
 .sb-foot-btn:hover{color:var(--accent);border-color:var(--accent)}
 .sb-count{font-family:var(--font-mono);font-size:0.5rem;color:var(--text-dim);margin-left:auto}
@@ -2180,6 +2185,7 @@ body,body *{font-family:var(--font-body)}
       <div class="sb-side-foot">
         <button class="sb-foot-btn" onclick="openDailyNote()" title="Note du jour — boîte de réception">📆 Jour</button>
         <button class="sb-foot-btn" onclick="openWeeklyNote()" title="Revue de la semaine et planification de la suivante">🗓 Sem</button>
+        <button class="sb-foot-btn" onclick="openMonthlyNote()" title="Revue du mois : ce qui a bougé, ce qui vient">🗒 Mois</button>
         <button class="sb-foot-btn" onclick="openGraph()" title="Vue graphe des liens">◍ Graphe</button>
         <button class="sb-foot-btn" onclick="exportNotesMarkdown()" title="Exporter toutes les notes en .md (ouvrable dans Obsidian)">⬇ .md</button>
         <span class="sb-count" id="sbCount"></span>
@@ -6571,6 +6577,174 @@ async function openWeeklyNote(){
   renderNoteTree();
 }
 
+// ── Revue mensuelle ───────────────────────────────────────────────────────
+// Un cran au-dessus de la semaine : on ne regarde plus ce qui s'est fait, mais
+// ce qui a bougé. D'où des faits que la revue hebdomadaire n'a pas — la santé
+// des projets, les jalons tenus ou manqués, la dérive des compteurs.
+const MOIS_FR=['janvier','février','mars','avril','mai','juin','juillet','août',
+               'septembre','octobre','novembre','décembre'];
+// « Revue 2026-08 août ». La partie machine d'abord, pour que le tri
+// alphabétique reste chronologique ; le nom du mois ensuite, parce que
+// personne ne lit « 08 » comme « août » du premier coup d'œil.
+const monthlyTitle=(d)=>{ const x=d||new Date();
+  return `Revue ${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')} ${MOIS_FR[x.getMonth()]}`; };
+
+// Les revues hebdomadaires que ce mois recouvre. Le lien vers une note qui
+// n'existe pas s'affiche en jaune et se crée d'un clic : la revue du mois
+// devient donc le sommaire de ses semaines, qu'elles soient écrites ou non.
+function moisSemaines(d){
+  const x=d||new Date();
+  const prem=new Date(x.getFullYear(),x.getMonth(),1);
+  const dern=new Date(x.getFullYear(),x.getMonth()+1,0);
+  const out=[], vus=new Set();
+  for(let c=lundiDe(prem); c<=dern; c.setDate(c.getDate()+7)){
+    const t=weeklyTitle(c);
+    if(!vus.has(t)){ vus.add(t); out.push(t); }
+  }
+  return out;
+}
+
+// Les données ADP, objectifs et mesures n'arrivent qu'à la visite de leur page.
+// Une revue mensuelle qui annoncerait « aucun projet » parce qu'on l'a ouverte
+// depuis les Notes serait pire qu'inutile : elle serait crue. On charge donc
+// avant d'écrire — c'est une action mensuelle, l'attente est acceptable.
+async function moisCharger(){
+  if(!accessToken||!navigator.onLine)return;
+  const a=[[()=>!adpLoaded,()=>loadAdp()],[()=>!mesLoaded,()=>loadMetrics()],
+           [()=>!goalsLoaded,()=>loadGoals()],[()=>!sportLoaded,()=>loadSportData()]]
+    .filter(([q])=>q());
+  if(!a.length)return;
+  showLoad(true);
+  await Promise.all(a.map(([,f])=>f().catch(()=>{})));
+  showLoad(false);
+}
+
+function monthlyTemplate(d){
+  const x=d||new Date();
+  const an=x.getFullYear(), mo=x.getMonth();
+  const prem=ymd(new Date(an,mo,1)), dern=ymd(new Date(an,mo+1,0));
+  const dans=v=>!!v&&v>=prem&&v<=dern;
+  const liste=(a,f,max=10)=>a.length
+    ? a.slice(0,max).map(f).join('\n')+(a.length>max?`\n- _…et ${a.length-max} autres_`:'')
+    : '- _(rien)_';
+  const tab=(en,l)=>l.length
+    ? ['| '+en.join(' | ')+' |','|'+en.map(()=>'---').join('|')+'|']
+        .concat(l.map(r=>'| '+r.map(c=>String(c==null?'':c).replace(/\|/g,'/')).join(' | ')+' |')).join('\n')
+    : '_(rien)_';
+
+  const faites=allTasks.filter(t=>dans(t.completed_at));
+  const retard=allTasks.filter(t=>!t.completed_at&&t.due_date&&t.due_date<td())
+    .sort((a,b)=>String(a.due_date).localeCompare(String(b.due_date)));
+  // Par projet : au bout d'un mois, la liste nominative ne dit plus rien, la
+  // répartition si.
+  const parProjet=Object.entries(faites.reduce((m,t)=>{
+    const k=t.project||'—'; m[k]=(m[k]||0)+1; return m; },{}))
+    .sort((a,b)=>b[1]-a[1]);
+
+  let bProjets, bJalons, bCompteurs;
+  if(adpLoaded){
+    const vifs=adpProjects.filter(p=>p.status!=='clos'&&p.status!=='supprime');
+    bProjets=tab(['Projet','Client','Santé','Échéance','Initiale','Glissements'],
+      vifs.map(p=>[p.name,p.client||'—',p.health||'—',p.deadline||'—',
+                   p.baseline||'—',p.slips||0]));
+    const duMois=adpMilestones.filter(m=>dans(m.due_date));
+    const tenus=duMois.filter(m=>m.status==='done');
+    const manques=duMois.filter(m=>m.status!=='done');
+    const nomP=id=>{ const p=adpProjects.find(y=>y.id===id); return p?p.name:'—'; };
+    bJalons=`**${tenus.length} tenu(s), ${manques.length} manqué(s)** sur ${duMois.length} attendu(s) ce mois.\n\n`+
+      (manques.length?liste(manques,m=>`- ${m.title} · ${nomP(m.project_id)} · attendu le ${m.due_date}`+
+        (m.slips?` · ${m.slips} glissement(s)`:'')):'- _tout est tenu_');
+  } else {
+    bProjets=bJalons='_Données ADP non chargées : ouvre la page ADP puis relance la revue._';
+  }
+  if(mesLoaded){
+    bCompteurs=tab(['Compteur','Début de mois','Aujourd\'hui','Écart'],
+      mesDefs.filter(m=>m.active).map(m=>{
+        const h=mesVals.filter(v=>v.key===m.key).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+        const av=h.filter(v=>v.date<prem).pop(), ap=h[h.length-1];
+        const e=(av&&ap)?ap.value-av.value:null;
+        return [m.label,av?av.value:'—',ap?ap.value:'—',
+                e==null?'—':(e>0?'+':'')+Math.round(e*100)/100];
+      }));
+  } else bCompteurs='_Mesures non chargées._';
+
+  const sem=moisSemaines(x);
+  return `#revuemois
+
+**${MOIS_FR[mo].charAt(0).toUpperCase()+MOIS_FR[mo].slice(1)} ${an}** — du ${prem} au ${dern}
+
+## Ce que l'outil sait
+
+**${faites.length} tâche(s) terminée(s) ce mois**
+${parProjet.length?parProjet.map(([p,n])=>`- ${p} : ${n}`).join('\n'):'- _(rien)_'}
+
+**${retard.length} tâche(s) encore en retard**
+${liste(retard,t=>`- ${t.title} · échue le ${t.due_date}${t.snoozes?` · reportée ${t.snoozes} fois`:''}`,6)}
+
+### Projets
+${bProjets}
+
+### Jalons du mois
+${bJalons}
+
+### Compteurs
+${bCompteurs}
+
+### Les semaines de ce mois
+${sem.map(t=>`- [[${t}]]`).join('\n')}
+
+---
+
+## Le mois écoulé
+
+### Ce qui a vraiment avancé
+
+
+### Ce qui n'a pas bougé, et pourquoi
+
+
+### Décisions prises
+
+
+### Ce que j'ai appris, ou compris trop tard
+
+
+## Le mois qui vient
+
+### Les trois chantiers
+- [ ] 
+- [ ] 
+- [ ] 
+
+### Échéances qui tombent
+
+
+### Ce que j'arrête
+> Un mois sans rien arrêter est un mois où la charge n'a fait que monter.
+
+
+## À trancher
+
+`;
+}
+async function monthlyNote(){
+  const t=monthlyTitle();
+  let n=noteByTitle(t);
+  if(n)return n;
+  n={id:'n'+uid(),title:t,content:monthlyTemplate(),tags:'',parent_id:'',icon:'🗒',
+     pinned:false,status:'active',created_at:td(),updated_at:td(),gx:null,gy:null};
+  notes.push(n); noteIndexInvalidate(); cacheSet('notes',notes);
+  await noteUpsert(n);
+  return n;
+}
+async function openMonthlyNote(){
+  if(curPage!=='brain')switchPage('brain');
+  await moisCharger();            // les faits d'abord, la note ensuite
+  const n=await monthlyNote();
+  openNote(n.id);
+  renderNoteTree();
+}
+
 // ── Actions ───────────────────────────────────────────────────────────────
 let noteSaveTimer=null;
 function noteQueueSave(){
@@ -7120,6 +7294,7 @@ const CMD_ACTIONS=[
   ['+ Nouvelle note',         'creer ajouter nouveau brain',     ()=>{switchPage('brain');newNote(null);}],
   ['Journal du jour',         'note quotidien capture aujourd',  ()=>openDailyNote()],
   ['Revue de la semaine',     'note hebdo semaine revue bilan planification', ()=>openWeeklyNote()],
+  ['Revue du mois',           'note mensuel mois revue bilan projets jalons', ()=>openMonthlyNote()],
   ['+ Nouveau projet',        'adp creer chantier',              ()=>{switchPage('adp');setAdpView('projets');openAdpProjModal(null);}],
   ['+ Nouveau contact',       'adp crm carnet annuaire',         ()=>{switchPage('adp');setAdpView('suivi');openAdpContModal(null);}],
   ['Relances du jour',        'adp contacts relancer suivi',     ()=>{switchPage('adp');setAdpView('suivi');}],
@@ -17282,7 +17457,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.62.0';
+const APP_VERSION='v1.63.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
