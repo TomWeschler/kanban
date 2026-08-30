@@ -4862,7 +4862,19 @@ async function noteUpsert(n){
   const i=notes.findIndex(x=>x.id===n.id);
   if(i>=0)notes[i]=n;else notes.push(n);
   cacheSet('notes',notes);
-  return sheetUpsertByKey('notes',n.id,noteToRow(n));
+  const ok=await sheetUpsertByKey('notes',n.id,noteToRow(n));
+  // LA RÉFÉRENCE ANTI-CONFLIT AVANCE AVEC NOS PROPRES ÉCRITURES.
+  // `noteBase` retient l'état de la note à son ouverture, pour repérer une
+  // modification venue d'ailleurs. Mais quand c'est NOUS qui écrivons — un
+  // tableau enregistré, une case cochée, un lien créé —, la feuille cesse de
+  // correspondre à cette référence sans que personne d'autre soit intervenu.
+  // La frappe suivante dans l'éditeur concluait alors « modifiée ailleurs » et
+  // proposait de recharger, c'est-à-dire de jeter la saisie en cours.
+  // Le faire ici plutôt qu'à chaque appelant : il y en a vingt-cinq, et le
+  // prochain oubli serait invisible jusqu'à la perte suivante.
+  if(ok&&noteCurId===n.id)
+    noteBase={id:n.id,content:n.content,updated_at:n.updated_at};
+  return ok;
 }
 async function noteDeleteById(id){
   notes=notes.filter(n=>n.id!==id);
@@ -5594,6 +5606,12 @@ async function renderBrain(){
   if(!noteCurId||!noteById(noteCurId)){
     const first=notes.slice().sort(noteSort)[0];
     noteCurId=first?first.id:null;
+    // Sélectionner une note sans poser sa référence anti-conflit laissait celle
+    // de la PRÉCÉDENTE : la première frappe comparait alors la feuille à un
+    // texte qui n'avait jamais été celui de cette note-ci, concluait « modifiée
+    // ailleurs », et proposait de recharger. Un faux conflit garanti, à chaque
+    // fois que l'application choisit la note elle-même.
+    noteTakeBase(noteById(noteCurId));
   }
   renderNoteTree();renderNoteMain();renderNoteMeta();
 }
@@ -17457,7 +17475,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.63.0';
+const APP_VERSION='v1.63.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
