@@ -3,7 +3,7 @@
 // Règle absolue : on n'intercepte JAMAIS les appels authentifiés à Google
 // (Sheets, identité). Ce sont des données vivantes et personnelles ; les servir
 // depuis un cache afficherait un état périmé, ou pire, après déconnexion.
-const VERSION = 'v1.65.1';
+const VERSION = 'v1.66.0';
 const SHELL   = 'kanban-shell-' + VERSION;
 const ASSETS  = 'kanban-assets-' + VERSION;
 

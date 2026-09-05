@@ -419,6 +419,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .md ul ul,.md ol ol,.md ul ol,.md ol ul{margin:0.15rem 0 0.15rem 1.1rem}
 .md h2{font-size:1.22rem}.md h3{font-size:1.05rem}.md h4{font-size:0.92rem;color:var(--text-mid)}
 .md p{margin:0.65rem 0}
+/* Le blanc voulu : sa hauteur est posee par le rendu, en lignes. */
+.md-vide{margin:0;pointer-events:none}
 .md ul,.md ol{margin:0.6rem 0 0.6rem 1.3rem}
 .md li{margin:0.2rem 0}
 .md blockquote{border-left:3px solid var(--accent);background:var(--surface2);padding:0.5rem 0.9rem;margin:0.8rem 0;color:var(--text-mid)}
@@ -5381,10 +5383,31 @@ function mdRender(src,opts){
     tbl=null;
   };
   const flushAll=()=>{flushP();flushL();flushT();};
+  // LES LIGNES VIDES SONT DU TEXTE, ELLES AUSSI. Le markdown d'origine réduit
+  // toute suite de lignes vides à une seule coupure de paragraphe : cinq
+  // touches Entrée n'en donnaient qu'une à la lecture. Règle d'imprimeur, pas
+  // règle de carnet — on aère un compte rendu exprès, et voir cet air disparaître
+  // à la relecture est le même désagrément que les retours simples effacés.
+  // La PREMIÈRE ligne vide reste la coupure de paragraphe habituelle (rien ne
+  // change pour les notes déjà écrites) ; chacune des suivantes rend une ligne
+  // de blanc. Elles sont posées au moment où du contenu revient : un blanc en
+  // fin de note n'ajoute donc pas de vide au bas de l'écran.
+  // La hauteur est en lignes de lecture (1.7em, la hauteur de ligne du rendu).
+  // Le bloc empêche au passage les marges des deux paragraphes de fusionner,
+  // ce qui ajoute une marge de paragraphe au blanc obtenu : on l'accepte plutôt
+  // que de bricoler des marges négatives, fragiles selon ce qui suit (un titre
+  // n'a pas les marges d'un paragraphe). L'écart obtenu est donc toujours au
+  // moins celui demandé, et jamais une ligne de plus.
+  let vides=0;
+  const flushVides=()=>{
+    if(vides>1)out+=`<div class="md-vide" style="height:${((vides-1)*1.7).toFixed(2)}em"></div>`;
+    vides=0;
+  };
 
   lines.forEach(raw=>{
     const l=raw.replace(/\s+$/,'');
-    if(!l.trim()){ flushAll(); return; }
+    if(!l.trim()){ flushAll(); vides++; return; }
+    flushVides();
     // tableau : | a | b |
     if(/^\s*\|.*\|\s*$/.test(l)){
       const cells=tabDecoupe(l);
@@ -17763,7 +17786,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.65.1';
+const APP_VERSION='v1.66.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
