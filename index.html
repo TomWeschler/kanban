@@ -5790,9 +5790,30 @@ function renderNoteTree(){
   el.innerHTML=roots.map(node).join('')||'<div class="sb-none" style="padding:0.6rem">Aucun résultat.</div>';
 }
 
+// ── Le curseur ne doit plus sauter a la fin de la note ────────────────────
+// Poser la valeur d'un <textarea> place le caret a la fin. Or l'editeur etait
+// reconstruit a chaque retour sur l'onglet du navigateur (relecture de
+// fraicheur -> renderBrain), a chaque retour sur la page Notes et a chaque
+// enregistrement : la saisie en cours se retrouvait rejetee en fin de texte.
+// On memorise donc la position juste avant de detruire le champ, et on la
+// restitue ; et quand rien n'a change, on ne reconstruit tout simplement pas.
+let sbEditNote=null, sbMainNote=null;      // note affichee par le corps / par l'entete
+const sbCaret=new Map();                   // id de note -> {a,z,h}
+function sbCaretGarder(){
+  const ta=document.getElementById('sbEdit');
+  if(!ta||!sbEditNote)return;
+  sbCaret.set(sbEditNote,{a:ta.selectionStart,z:ta.selectionEnd,h:ta.scrollTop});
+}
 function renderNoteMain(){
+  sbCaretGarder();                         // le champ va disparaitre : on note ou en etait le curseur
   const el=document.getElementById('sbMain');
   const n=noteById(noteCurId);
+  // Le titre souffrait du meme mal que le corps : le champ etait recree, donc
+  // le curseur repartait a la fin d'un titre qu'on etait en train de corriger.
+  const ttl=document.getElementById('sbTitle');
+  const gardeTitre=ttl&&sbMainNote===noteCurId&&document.activeElement===ttl
+    ?{a:ttl.selectionStart,z:ttl.selectionEnd}:null;
+  sbMainNote=noteCurId;
   if(!n){ el.innerHTML='<div class="sb-empty"><div>Aucune note sélectionnée</div><button class="sb-btn" onclick="newNote(null)">+ Créer une note</button></div>'; return; }
   el.innerHTML=`
     <div class="sb-bar">
@@ -5808,22 +5829,44 @@ function renderNoteMain(){
       <span class="sb-len" id="sbLen"></span>
     </div>
     <div class="sb-body" id="sbBody"></div>`;
+  if(gardeTitre){
+    const t2=document.getElementById('sbTitle'), max=t2.value.length;
+    t2.focus(); t2.setSelectionRange(Math.min(gardeTitre.a,max),Math.min(gardeTitre.z,max));
+  }
   renderNoteBody();
 }
 function renderNoteBody(){
   const n=noteById(noteCurId); if(!n)return;
   const body=document.getElementById('sbBody');
   if(noteMode==='edit'){
+    const anc=document.getElementById('sbEdit');
+    const meme=!!anc&&sbEditNote===n.id;
+    if(meme)sbCaretGarder();
+    mdBind('sbEdit',onNoteContent);
+    // Meme note, meme texte : ne rien refaire. C'est le seul moyen de garder
+    // aussi le defilement et l'historique d'annulation du navigateur.
+    if(meme&&anc.value===(n.content||''))return;
+    const actif=meme&&document.activeElement===anc;
     body.innerHTML=mdToolbar()+`<textarea class="sb-edit" id="sbEdit" spellcheck="true"
       placeholder="Écris en markdown. [[Double crochets]] pour relier une note, #tag pour classer."
       oninput="onNoteContent(this.value);acOpen()" onkeydown="if(acKey(event))return;if(mdEditorKey(event))return;" onclick="acOpen()" onblur="setTimeout(acClose,120)"
       onpaste="onEditorPaste(event)" ondragover="event.preventDefault();this.classList.add('drop')"
       ondragleave="this.classList.remove('drop')" ondrop="onEditorDrop(event)"></textarea>`;
-    mdBind('sbEdit',onNoteContent);
     const ta=document.getElementById('sbEdit');
     ta.value=n.content||'';
-    ta.focus();
+    sbEditNote=n.id;
+    const p=sbCaret.get(n.id);
+    if(p){
+      const max=ta.value.length;
+      ta.setSelectionRange(Math.min(p.a,max),Math.min(p.z,max));
+      ta.scrollTop=p.h;
+    }
+    // Ne pas voler le focus a un champ reconstruit en arriere-plan : on ne le
+    // reprend que si on l'avait deja, ou si l'editeur vient d'etre ouvert —
+    // et jamais au titre, qu'on est peut-etre en train de corriger.
+    if((actif||!meme)&&document.activeElement!==document.getElementById('sbTitle'))ta.focus();
   } else {
+    sbEditNote=null;
     body.innerHTML=`<div class="md" id="sbRead">${mdRender(n.content,{editable:true})}</div>`;
     resolveDriveMedia(document.getElementById('sbRead'));
   }
@@ -7045,7 +7088,10 @@ function noteCount(){
   el.style.color=pct>0.95?'var(--danger)':pct>0.8?'var(--warn)':'var(--text-dim)';
   el.title=`${L.toLocaleString('fr-FR')} / ${NOTE_MAX.toLocaleString('fr-FR')} caractères`;
 }
-function setNoteMode(m){ noteMode=m; renderNoteMain(); }
+// Choisir « Écrire » est un geste explicite : il donne la main a l'editeur,
+// meme si le titre l'avait. Le rendu, lui, ne prend plus le focus de force.
+function setNoteMode(m){ noteMode=m; renderNoteMain();
+  if(m==='edit'){ const ta=document.getElementById('sbEdit'); if(ta)ta.focus(); } }
 function setNoteSearch(v){ noteSearch=v; renderNoteTree(); }
 function setNoteTag(t){
   noteTag = noteTag===t ? '' : t;
@@ -17717,7 +17763,7 @@ document.addEventListener('keydown',e=>{
 let swReloading=false, swLastCheck=0;
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.65.0';
+const APP_VERSION='v1.65.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

@@ -9,7 +9,15 @@ vérifie ce que le code **doit** faire, pas ce qu'il fait.
 python3 -m http.server 8899 --bind 127.0.0.1 &   # depuis la racine du dépôt
 npm install playwright --no-audit --no-fund       # une fois
 node tests/lienweb.js
+node tests/curseur.js
 ```
+
+## Les suites
+
+| Fichier | Sujet |
+|---|---|
+| `lienweb.js` | Poser et rendre un lien vers une page web. |
+| `curseur.js` | La position du curseur dans l'éditeur de notes, à travers les reconstructions de l'interface. |
 
 Le navigateur est cherché dans `/opt/pw-browsers/chromium-1194/…` ; sur une
 autre machine, indiquer le sien : `PW_CHROME=/chemin/vers/chrome node tests/…`.
