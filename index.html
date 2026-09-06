@@ -17783,10 +17783,29 @@ document.addEventListener('keydown',e=>{
 //   2. une verification a chaque retour au premier plan, au plus une par minute
 //   3. rechargement automatique quand un nouveau SW prend la main, differe tant
 //      qu'un formulaire est ouvert ou qu'une saisie n'est pas enregistree
-let swReloading=false, swLastCheck=0;
+let swReloading=false, swLastCheck=0, swAttente=0, swDitFaite=false;
+// UN RECHARGEMENT QUI NE CHANGE RIEN EST UNE PANNE, PAS UNE ATTENTE.
+// La sonde ci-dessous savait detecter qu'une version plus recente existe, et
+// appelait un rechargement ordinaire. Mais un rechargement ordinaire repasse
+// par le service worker et par le cache HTTP : si l'un des deux sert un vieux
+// document, la version ne bouge pas, la sonde le redetecte, et l'application
+// recommence — sans jamais rien dire. C'est ainsi qu'un poste est reste
+// QUARANTE VERSIONS en arriere en silence, alors que le moyen de s'en sortir
+// (hardReset) etait dans le menu depuis le debut.
+// Trois paliers desormais : rechargement ordinaire, puis purge complete, puis
+// on le DIT. On ne boucle plus, et on ne se tait plus.
+const SW_ESSAIS='kanbanMajEssais';
+const swEssais=v=>{ try{ const j=JSON.parse(sessionStorage.getItem(SW_ESSAIS)||'{}');
+                         return j.v===v?(j.n|0):0; }catch(e){ return 0; } };
+const swEssaisPoser=(v,n)=>{ try{ sessionStorage.setItem(SW_ESSAIS,JSON.stringify({v,n})); }catch(e){} };
+const swEssaisRaz=()=>{ try{ sessionStorage.removeItem(SW_ESSAIS); }catch(e){} };
+// Indirections, en `let` pour qu'une épreuve puisse les remplacer : on ne peut
+// pas éprouver une escalade de rechargements si chaque essai quitte la page.
+let swRecharger=()=>location.reload();
+let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.66.0';
+const APP_VERSION='v1.66.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
@@ -17803,17 +17822,49 @@ async function swCheck(force){
     const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
     if(!r.ok)return;
     const j=await r.json();
-    if(j&&j.v&&j.v!==APP_VERSION)swReload();
+    if(!j||!j.v)return;
+    // À jour : on efface la trace, sinon un incident ancien ferait escalader
+    // la prochaine mise à jour dès le premier essai.
+    if(j.v===APP_VERSION){ swEssaisRaz(); return; }
+    swMettreAJour(j.v);
   }catch(e){}
+}
+// Une saisie ne doit jamais être coupée par un rechargement — mais l'attendre
+// SANS FIN revient à ne jamais se mettre à jour. Deux minutes, puis on le dit.
+const swOccupe=()=>!!(document.querySelector('.modal-bg.open')
+  ||(typeof notePending!=='undefined'&&notePending)
+  ||(document.getElementById('voiceOverlay')||{classList:{contains:()=>false}}).classList.contains('open'));
+function swMettreAJour(cible){
+  if(swReloading)return;
+  const n=swEssais(cible);
+  if(n>=2){ swDire(cible); return; }               // la purge n'a pas suffi : on le dit
+  if(swOccupe()){
+    if(swAttente++<30){ setTimeout(()=>swMettreAJour(cible),4000); return; }
+    swDire(cible); return;
+  }
+  swAttente=0;
+  swEssaisPoser(cible,n+1);
+  if(n===0){ swReloading=true; swRecharger(); return; }
+  // Le rechargement ordinaire n'a rien changé : quelque chose sert un vieux
+  // document. On purge caches et service worker. Hors ligne, s'en priver
+  // rendrait l'app incapable de se charger : on le dit plutôt que de la casser.
+  if(navigator.onLine){ swReloading=true; hardReset(); }
+  else swDire(cible);
+}
+function swDire(cible){
+  if(swDitFaite)return; swDitFaite=true;
+  offerChoice(`Version ${cible} disponible, mais le rechargement ne l'a pas ramenée — le cache sert une vieille page.`,
+    [['Vider le cache et recharger',hardReset]],0,'err');
 }
 function swReload(){
   if(swReloading)return;
-  const busy=document.querySelector('.modal-bg.open')
-    ||(typeof notePending!=='undefined'&&notePending)
-    ||(document.getElementById('voiceOverlay')||{classList:{contains:()=>false}}).classList.contains('open');
-  if(busy){ setTimeout(swReload,4000); return; }   // ne jamais couper une saisie
+  if(swOccupe()){                                  // ne jamais couper une saisie
+    if(swAttente++<30){ setTimeout(swReload,4000); return; }
+    swAttente=0; return;
+  }
+  swAttente=0;
   swReloading=true;
-  location.reload();
+  swRecharger();
 }
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
@@ -17829,7 +17880,7 @@ if('serviceWorker' in navigator){
         w.addEventListener('statechange',()=>{
           // controller déjà présent = ce n'est pas la première installation
           if(w.state==='installed'&&navigator.serviceWorker.controller)
-            offerChoice('Nouvelle version disponible',[['Recharger',()=>{swReloading=true;location.reload();}]],0,'info');
+            offerChoice('Nouvelle version disponible',[['Recharger',()=>{swReloading=true;swRecharger();}]],0,'info');
         });
       });
     }).catch(()=>{});
@@ -17867,7 +17918,7 @@ async function hardReset(){
   }catch(e){}
   // URL differente a chaque fois : force une relecture reseau du HTML, sans
   // passer par le cache du navigateur. readStartIntent nettoie ensuite l'URL.
-  location.replace(location.pathname+'?v='+Date.now());
+  swRemplacer(location.pathname+'?v='+Date.now());
 }
 // L'état de synchro doit dire la vérité quand il n'y a pas de réseau, plutôt
 // que d'afficher une erreur de sauvegarde.

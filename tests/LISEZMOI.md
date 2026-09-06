@@ -11,6 +11,7 @@ npm install playwright --no-audit --no-fund       # une fois
 node tests/lienweb.js
 node tests/curseur.js
 node tests/lignesvides.js
+node tests/maj.js
 ```
 
 ## Les suites
@@ -20,6 +21,7 @@ node tests/lignesvides.js
 | `lienweb.js` | Poser et rendre un lien vers une page web. |
 | `curseur.js` | La position du curseur dans l'éditeur de notes, à travers les reconstructions de l'interface. |
 | `lignesvides.js` | Les lignes vides voulues, rendues à la lecture. |
+| `maj.js` | La mise à jour de l'application : les trois paliers, et le refus de boucler en silence. |
 
 Le navigateur est cherché dans `/opt/pw-browsers/chromium-1194/…` ; sur une
 autre machine, indiquer le sien : `PW_CHROME=/chemin/vers/chrome node tests/…`.
