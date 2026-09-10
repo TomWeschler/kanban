@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADN — Correction et analyse de séquence</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2309090e'/%3E%3Cpath d='M11 4c0 6 10 6 10 12s-10 6-10 12' fill='none' stroke='%234ade80' stroke-width='1.6'/%3E%3Cpath d='M21 4c0 6-10 6-10 12s10 6 10 12' fill='none' stroke='%2338bdf8' stroke-width='1.6'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#09090e">
+<style>
+/* Les polices sont celles du dépôt, servies depuis fonts/ : aucun appel
+   sortant, l'outil fonctionne hors ligne comme le reste de l'application. */
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/syne-400-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/syne-600-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/syne-700-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Syne'; font-style: normal; font-weight: 800; font-display: swap; src: url(fonts/syne-800-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/space-mono-400-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/space-mono-700-latin.woff2) format('woff2'); }
+
+:root{
+  --bg:#09090e;--surface:#0f0f17;--surface2:#16161f;--surface3:#1c1c28;
+  --border:#252535;--border2:#32324a;
+  --accent:#7c6aff;--accent-dim:rgba(124,106,255,0.12);
+  --text:#e4e4f0;--text-dim:#60607a;--text-mid:#9898b8;
+  --green:#4ade80;--warn:#fbbf24;--danger:#f87171;--blue:#38bdf8;--purple:#c084fc;
+  --bA:#4ade80;--bC:#38bdf8;--bG:#fbbf24;--bT:#f87171;--bN:#c084fc;
+  --font-body:'Syne',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);
+     font-size:15px;line-height:1.5;padding:0 0 4rem}
+a{color:var(--accent)}
+
+header{border-bottom:1px solid var(--border);background:var(--surface);
+       padding:1.1rem 1rem;position:sticky;top:0;z-index:20}
+.wrap{max-width:1100px;margin:0 auto}
+h1{font-size:1.15rem;font-weight:800;letter-spacing:0.02em}
+h1 small{display:block;font-size:0.72rem;font-weight:400;color:var(--text-dim);
+         letter-spacing:0.12em;text-transform:uppercase;margin-top:0.25rem}
+nav{display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.85rem}
+nav a{font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.1em;
+      text-transform:uppercase;color:var(--text-mid);text-decoration:none;
+      border:1px solid var(--border);border-radius:5px;padding:0.3rem 0.6rem}
+nav a:hover{border-color:var(--accent);color:var(--text)}
+
+main{max-width:1100px;margin:0 auto;padding:1.4rem 1rem 0}
+section{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+        padding:1.1rem 1.15rem;margin-bottom:1.1rem;scroll-margin-top:5.5rem}
+h2{font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.16em;
+   text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:0.9rem}
+h3{font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.14em;
+   text-transform:uppercase;color:var(--text-mid);font-weight:700;margin:1rem 0 0.5rem}
+p.note{font-size:0.78rem;color:var(--text-dim);margin-top:0.5rem;line-height:1.55}
+
+textarea{width:100%;min-height:190px;background:var(--bg);color:var(--text);
+         border:1px solid var(--border2);border-radius:8px;padding:0.75rem 0.85rem;
+         font-family:var(--font-mono);font-size:0.82rem;line-height:1.6;resize:vertical}
+textarea:focus{outline:none;border-color:var(--accent)}
+input[type=text],input[type=number],select{background:var(--bg);color:var(--text);
+  border:1px solid var(--border2);border-radius:6px;padding:0.4rem 0.55rem;
+  font-family:var(--font-mono);font-size:0.78rem}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+button{background:var(--surface3);color:var(--text);border:1px solid var(--border2);
+       border-radius:6px;padding:0.45rem 0.85rem;font-family:var(--font-mono);
+       font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer}
+button:hover{border-color:var(--accent);color:#fff}
+button.primary{background:var(--accent);border-color:var(--accent);color:#0b0b12;font-weight:700}
+.barre{display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;margin-top:0.75rem}
+.champ{display:flex;align-items:center;gap:0.4rem;font-size:0.76rem;color:var(--text-mid)}
+label.case{display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;
+           color:var(--text-mid);cursor:pointer}
+label.case input{accent-color:var(--accent);width:15px;height:15px}
+.options{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+         gap:0.5rem 1rem;margin-top:0.9rem;padding-top:0.9rem;border-top:1px solid var(--border)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.7rem}
+.kpi{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.75rem 0.85rem}
+.klbl{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;
+      text-transform:uppercase;color:var(--text-dim);margin-bottom:0.45rem}
+.kval{font-family:var(--font-mono);font-size:1.35rem;font-weight:700;line-height:1.1}
+.ksub{font-size:0.72rem;color:var(--text-dim);margin-top:0.3rem}
+
+table{width:100%;border-collapse:collapse;font-size:0.8rem}
+th{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.12em;
+   text-transform:uppercase;color:var(--text-dim);text-align:left;font-weight:700;
+   padding:0.4rem 0.5rem;border-bottom:1px solid var(--border2)}
+td{padding:0.42rem 0.5rem;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.mono,th.mono{font-family:var(--font-mono);font-size:0.76rem}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+.seqvue{font-family:var(--font-mono);font-size:0.78rem;line-height:1.75;
+        background:var(--bg);border:1px solid var(--border);border-radius:8px;
+        padding:0.8rem;overflow-x:auto;white-space:pre;letter-spacing:0.04em}
+.seqvue .num{color:var(--text-dim)}
+.b-A{color:var(--bA)}.b-C{color:var(--bC)}.b-G{color:var(--bG)}.b-T{color:var(--bT)}
+.b-N{color:var(--bN)}
+.marq{background:var(--accent-dim);border-bottom:2px solid var(--accent)}
+.repar{background:rgba(251,191,36,0.16);border-bottom:2px solid var(--warn)}
+
+.pastille{display:inline-block;font-family:var(--font-mono);font-size:0.6rem;
+          letter-spacing:0.1em;text-transform:uppercase;padding:2px 7px;border-radius:4px;
+          border:1px solid var(--border2);color:var(--text-mid)}
+.pastille.ok{border-color:var(--green);color:var(--green)}
+.pastille.warn{border-color:var(--warn);color:var(--warn)}
+.pastille.bad{border-color:var(--danger);color:var(--danger)}
+.vide{font-size:0.82rem;color:var(--text-dim);font-style:italic}
+.err{color:var(--danger);font-size:0.82rem;margin-top:0.5rem}
+.graphe{width:100%;height:130px;display:block;margin-top:0.6rem}
+.copiable{display:flex;gap:0.5rem;align-items:flex-start;margin-top:0.5rem}
+.copiable .seqvue{flex:1;min-width:0;max-height:190px;overflow:auto}
+.frames{display:grid;gap:0.7rem}
+.frame{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.7rem}
+.frame .t{font-family:var(--font-mono);font-size:0.64rem;letter-spacing:0.12em;
+          text-transform:uppercase;color:var(--text-dim);margin-bottom:0.35rem}
+.frame .p{font-family:var(--font-mono);font-size:0.76rem;word-break:break-all;line-height:1.6}
+.frame .p .stop{color:var(--danger)}
+.frame .p .met{color:var(--green)}
+@media (max-width:640px){
+  body{font-size:14px}
+  section{padding:0.9rem}
+  .kval{font-size:1.15rem}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>ADN <small>Correction et analyse de séquence</small></h1>
+    <nav>
+      <a href="#entree">Séquence</a>
+      <a href="#rapport">Corrections</a>
+      <a href="#composition">Composition</a>
+      <a href="#proprietes">Propriétés</a>
+      <a href="#vue">Séquence corrigée</a>
+      <a href="#cadres">Cadres &amp; ORF</a>
+      <a href="#motifs">Motifs</a>
+      <a href="#enzymes">Enzymes</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section id="entree">
+  <h2>1 — Séquence à traiter</h2>
+  <textarea id="brut" spellcheck="false" placeholder="Collez une séquence brute ou un fichier FASTA (plusieurs enregistrements acceptés).&#10;Les espaces, retours à la ligne et numérotations sont ignorés."></textarea>
+  <div class="barre">
+    <button class="primary" id="btn-analyser">Analyser</button>
+    <button id="btn-exemple">Exemple</button>
+    <button id="btn-fichier">Fichier…</button>
+    <input type="file" id="fichier" accept=".fa,.fasta,.fas,.fna,.txt,.seq" hidden>
+    <button id="btn-vider">Vider</button>
+    <span class="champ" id="choix-enr" hidden>
+      <label for="enr">Enregistrement</label>
+      <select id="enr"></select>
+    </span>
+  </div>
+  <div class="options">
+    <label class="case"><input type="checkbox" id="opt-uracile" checked> Convertir U en T (ARN → ADN)</label>
+    <label class="case"><input type="checkbox" id="opt-lacunes" checked> Retirer les lacunes d'alignement (- .)</label>
+    <label class="case"><input type="checkbox" id="opt-ambigus"> Remplacer les codes ambigus (R, Y, N…) par N</label>
+    <label class="case"><input type="checkbox" id="opt-invalides" checked> Retirer les caractères invalides (sinon → N)</label>
+  </div>
+  <p class="note">Tout se passe dans le navigateur : aucune séquence n'est envoyée nulle part.</p>
+  <div class="err" id="erreur" hidden></div>
+</section>
+
+<section id="rapport">
+  <h2>2 — Rapport de correction</h2>
+  <div id="rapport-resume"></div>
+  <div id="rapport-detail"></div>
+</section>
+
+<section id="composition">
+  <h2>3 — Composition</h2>
+  <div class="kpis" id="compo-kpis"></div>
+  <h3>GC en fenêtre glissante</h3>
+  <div class="champ" style="margin-bottom:0.3rem">
+    <label for="fenetre">Fenêtre (nt)</label>
+    <input type="number" id="fenetre" min="10" max="10000" step="10" value="50" style="width:90px">
+  </div>
+  <div id="gc-graphe"></div>
+  <h3>Détail des bases</h3>
+  <div class="tbl-scroll"><table id="compo-table"></table></div>
+</section>
+
+<section id="proprietes">
+  <h2>4 — Propriétés physico-chimiques</h2>
+  <div class="barre" style="margin-top:0">
+    <span class="champ"><label for="conc-oligo">[oligo] nM</label>
+      <input type="number" id="conc-oligo" min="1" max="10000" step="1" value="500" style="width:90px"></span>
+    <span class="champ"><label for="conc-sel">[Na⁺] mM</label>
+      <input type="number" id="conc-sel" min="1" max="1000" step="1" value="50" style="width:90px"></span>
+  </div>
+  <div class="kpis" id="prop-kpis" style="margin-top:0.9rem"></div>
+  <p class="note" id="prop-note"></p>
+</section>
+
+<section id="vue">
+  <h2>5 — Séquence corrigée</h2>
+  <div class="barre" style="margin-top:0">
+    <button id="btn-copier">Copier</button>
+    <button id="btn-fasta">Télécharger le FASTA</button>
+    <button id="btn-rapport-fichier">Télécharger le rapport</button>
+    <button id="btn-tout">Afficher toute la séquence</button>
+  </div>
+  <div id="seq-vue" style="margin-top:0.8rem"></div>
+  <h3>Brin complémentaire et transcrit</h3>
+  <div class="tbl-scroll"><table id="derives"></table></div>
+</section>
+
+<section id="cadres">
+  <h2>6 — Cadres de lecture et ORF</h2>
+  <div class="barre" style="margin-top:0">
+    <span class="champ"><label for="orf-min">ORF minimal (acides aminés)</label>
+      <input type="number" id="orf-min" min="1" max="10000" step="1" value="30" style="width:90px"></span>
+    <label class="case"><input type="checkbox" id="orf-inverse" checked> Chercher aussi sur le brin inverse</label>
+  </div>
+  <h3>Cadres ouverts</h3>
+  <div class="tbl-scroll"><table id="orf-table"></table></div>
+  <h3>Traduction des six cadres</h3>
+  <div class="frames" id="cadres-six"></div>
+</section>
+
+<section id="motifs">
+  <h2>7 — Recherche de motif</h2>
+  <div class="barre" style="margin-top:0">
+    <span class="champ"><label for="motif">Motif</label>
+      <input type="text" id="motif" placeholder="ex. GAATTC, GGNCC, TATAAA" style="width:220px" spellcheck="false"></span>
+    <label class="case"><input type="checkbox" id="motif-inverse" checked> Brin inverse aussi</label>
+  </div>
+  <p class="note">Les codes IUPAC sont acceptés dans le motif (R = A/G, N = tout, W = A/T…). Les occurrences chevauchantes sont comptées.</p>
+  <div id="motif-res" style="margin-top:0.7rem"></div>
+</section>
+
+<section id="enzymes">
+  <h2>8 — Sites de restriction</h2>
+  <label class="case"><input type="checkbox" id="enz-uniques"> N'afficher que les coupeurs uniques</label>
+  <div class="tbl-scroll" style="margin-top:0.7rem"><table id="enz-table"></table></div>
+  <p class="note" id="enz-note"></p>
+</section>
+
+</main>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   LE FOND — des fonctions pures, sans DOM, éprouvables une par une.
+   Elles sont exposées dans window.ADN pour que les épreuves les appellent
+   directement (tests/adn.js).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+// Les quatre bases, puis les codes IUPAC d'ambiguïté : une position qui peut
+// être plusieurs bases. On les garde par défaut, parce qu'un séquençage qui
+// hésite dit quelque chose ; les écraser en N perd cette information.
+const IUPAC = {
+  A:'A', C:'C', G:'G', T:'T',
+  R:'AG', Y:'CT', S:'CG', W:'AT', K:'GT', M:'AC',
+  B:'CGT', D:'AGT', H:'ACT', V:'ACG', N:'ACGT'
+};
+const BASES = ['A','C','G','T'];
+const AMBIGUS = ['R','Y','S','W','K','M','B','D','H','V','N'];
+const COMPLEMENT = {A:'T',T:'A',C:'G',G:'C',R:'Y',Y:'R',S:'S',W:'W',K:'M',M:'K',
+                   B:'V',V:'B',D:'H',H:'D',N:'N','-':'-','.':'.'};
+
+// ── Lecture du FASTA ──────────────────────────────────────────────────────
+// Un texte sans '>' est une séquence unique ; sinon, chaque '>' ouvre un
+// enregistrement. Ce qui précède le premier '>' n'est pas perdu en silence :
+// il devient un enregistrement à part, parce que c'est souvent une séquence
+// collée au-dessus d'un fichier.
+function lireFasta(texte){
+  const lignes = String(texte||'').split(/\r\n|\r|\n/);
+  const enrs = [];
+  let courant = null;
+  for(const ligne of lignes){
+    if(ligne.startsWith('>')){
+      courant = {nom: ligne.slice(1).trim() || 'sans nom', brut: ''};
+      enrs.push(courant);
+    } else {
+      if(!courant){
+        if(!ligne.trim()) continue;
+        courant = {nom: 'Séquence', brut: ''};
+        enrs.push(courant);
+      }
+      courant.brut += ligne + '\n';
+    }
+  }
+  return enrs.filter(e => e.brut.trim() !== '' || e.nom !== 'Séquence');
+}
+
+// ── La correction ─────────────────────────────────────────────────────────
+// Elle rend la séquence propre ET le journal de ce qu'elle a touché : une
+// correction muette est une falsification. Chaque entrée porte la position
+// dans la séquence corrigée (1-based) quand le caractère y survit, la
+// position source sinon.
+function corriger(brut, opts){
+  opts = Object.assign({uracile:true, lacunes:true, ambigusEnN:false,
+                        retirerInvalides:true}, opts||{});
+  const src = String(brut||'');
+  const sortie = [];
+  const journal = [];
+  const comptes = {miseEnForme:0, numerotation:0, casse:0, uracile:0,
+                   lacunes:0, ambigus:0, invalides:0};
+  const reparees = new Set();   // positions (0-based) touchées dans la sortie
+
+  for(let i=0;i<src.length;i++){
+    const c = src[i];
+    if(/\s/.test(c)){ comptes.miseEnForme++; continue; }
+    if(/[0-9]/.test(c)){ comptes.numerotation++; continue; }
+
+    const h = c.toUpperCase();
+    if(h !== c && /[A-Z]/.test(h)) comptes.casse++;
+
+    if(h === 'U'){
+      comptes.uracile++;
+      reparees.add(sortie.length);
+      journal.push({pos: sortie.length+1, avant: c, apres: opts.uracile?'T':'U',
+                    type:'uracile',
+                    quoi: opts.uracile ? 'U d’ARN converti en T' : 'U d’ARN laissé tel quel'});
+      sortie.push(opts.uracile ? 'T' : 'U');
+      continue;
+    }
+    if(c === '-' || c === '.'){
+      comptes.lacunes++;
+      if(opts.lacunes){
+        journal.push({pos: sortie.length+1, avant:c, apres:'', type:'lacune',
+                      quoi:'lacune d’alignement retirée'});
+      } else {
+        reparees.add(sortie.length);
+        sortie.push(c);
+      }
+      continue;
+    }
+    if(BASES.indexOf(h) >= 0){ sortie.push(h); continue; }
+    if(AMBIGUS.indexOf(h) >= 0){
+      comptes.ambigus++;
+      reparees.add(sortie.length);
+      if(opts.ambigusEnN && h !== 'N'){
+        journal.push({pos: sortie.length+1, avant:c, apres:'N', type:'ambigu',
+                      quoi:'code ambigu ' + h + ' (' + IUPAC[h] + ') ramené à N'});
+        sortie.push('N');
+      } else {
+        journal.push({pos: sortie.length+1, avant:c, apres:h, type:'ambigu',
+                      quoi:'code ambigu ' + h + ' = ' + IUPAC[h].split('').join('/')});
+        sortie.push(h);
+      }
+      continue;
+    }
+    // Tout le reste : une lettre qui n'est pas une base, une ponctuation, un
+    // caractère invisible. On ne devine pas ce que l'auteur voulait dire.
+    comptes.invalides++;
+    if(opts.retirerInvalides){
+      journal.push({pos: sortie.length+1, avant:c, apres:'', type:'invalide',
+                    quoi:'caractère invalide retiré (position source ' + (i+1) + ')'});
+    } else {
+      reparees.add(sortie.length);
+      journal.push({pos: sortie.length+1, avant:c, apres:'N', type:'invalide',
+                    quoi:'caractère invalide remplacé par N (position source ' + (i+1) + ')'});
+      sortie.push('N');
+    }
+  }
+  const seq = sortie.join('');
+  const propre = comptes.uracile===0 && comptes.lacunes===0 &&
+                 comptes.ambigus===0 && comptes.invalides===0 && comptes.casse===0;
+  return {seq, journal, comptes, reparees, propre};
+}
+
+// ── Composition ───────────────────────────────────────────────────────────
+function composition(seq){
+  const n = {A:0,C:0,G:0,T:0};
+  const amb = {};
+  let autres = 0;
+  for(const c of seq){
+    if(c in n) n[c]++;
+    else { amb[c] = (amb[c]||0)+1; autres++; }
+  }
+  const definies = n.A+n.C+n.G+n.T;
+  const gc = definies ? (n.G+n.C)/definies*100 : 0;
+  const skewGC = (n.G+n.C) ? (n.G-n.C)/(n.G+n.C) : 0;
+  const skewAT = (n.A+n.T) ? (n.A-n.T)/(n.A+n.T) : 0;
+  return {longueur: seq.length, n, amb, autres, definies,
+          gc, at: definies ? 100-gc : 0, skewGC, skewAT};
+}
+
+// GC en fenêtre glissante : une somme courante, pas un recomptage par fenêtre —
+// sur un chromosome entier la différence est celle entre instantané et minute.
+function gcGlissant(seq, fenetre){
+  const L = seq.length;
+  fenetre = Math.max(2, Math.min(fenetre|0 || 50, L));
+  if(L < 2) return [];
+  const estGC = c => c==='G'||c==='C'||c==='S';
+  const estDef = c => 'ACGT'.indexOf(c) >= 0;
+  const points = [];
+  let gc = 0, def = 0;
+  for(let i=0;i<L;i++){
+    if(estGC(seq[i])) gc++;
+    if(estDef(seq[i])) def++;
+    if(i >= fenetre){
+      if(estGC(seq[i-fenetre])) gc--;
+      if(estDef(seq[i-fenetre])) def--;
+    }
+    if(i >= fenetre-1) points.push({pos: i-fenetre+2, gc: def ? gc/def*100 : 0});
+  }
+  return points;
+}
+
+// ── Brins dérivés ─────────────────────────────────────────────────────────
+function complement(seq){
+  let out = '';
+  for(const c of seq) out += (COMPLEMENT[c] || 'N');
+  return out;
+}
+function inverser(seq){ return seq.split('').reverse().join(''); }
+function complementInverse(seq){ return inverser(complement(seq)); }
+function transcrire(seq){ return seq.replace(/T/g,'U'); }
+
+// ── Températures de fusion ────────────────────────────────────────────────
+// Trois calculs, parce qu'aucun ne vaut partout : Wallace pour les très
+// courts, le GC% pour les longs, et le plus proche voisin (SantaLucia 1998,
+// paramètres unifiés) pour les amorces, seul à tenir compte de la séquence.
+const NN = {
+  AA:[-7.9,-22.2], TT:[-7.9,-22.2], AT:[-7.2,-20.4], TA:[-7.2,-21.3],
+  CA:[-8.5,-22.7], TG:[-8.5,-22.7], GT:[-8.4,-22.4], AC:[-8.4,-22.4],
+  CT:[-7.8,-21.0], AG:[-7.8,-21.0], GA:[-8.2,-22.2], TC:[-8.2,-22.2],
+  CG:[-10.6,-27.2], GC:[-9.8,-24.4], GG:[-8.0,-19.9], CC:[-8.0,-19.9]
+};
+function tmWallace(seq){
+  const c = composition(seq);
+  return 2*(c.n.A+c.n.T) + 4*(c.n.G+c.n.C);
+}
+function tmGC(seq){
+  const c = composition(seq);
+  if(c.definies < 1) return null;
+  return 64.9 + 41*(c.n.G + c.n.C - 16.4)/c.definies;
+}
+function tmPlusProcheVoisin(seq, oligoNM, selMM){
+  if(!/^[ACGT]+$/.test(seq) || seq.length < 8) return null;
+  const CT = (oligoNM || 500) * 1e-9;      // concentration totale de brin
+  const Na = (selMM || 50) / 1000;
+  let dH = 0, dS = 0;
+  for(let i=0;i<seq.length-1;i++){
+    const p = NN[seq.substr(i,2)];
+    if(!p) return null;
+    dH += p[0]; dS += p[1];
+  }
+  // Initiations : une par extrémité, selon la base terminale.
+  for(const bout of [seq[0], seq[seq.length-1]]){
+    if(bout==='G'||bout==='C'){ dH += 0.1; dS += -2.8; }
+    else { dH += 2.3; dS += 4.1; }
+  }
+  const R = 1.987;
+  const autoComp = seq === complementInverse(seq);
+  const dSsel = dS + 0.368*(seq.length-1)*Math.log(Na);
+  const tm = (dH*1000)/(dSsel + R*Math.log(autoComp ? CT : CT/4)) - 273.15;
+  return isFinite(tm) ? tm : null;
+}
+
+// Masse molaire d'un oligonucléotide linéaire à 5'-OH (mono-brin), puis du
+// duplex en ajoutant le brin complémentaire.
+const MASSES = {A:313.21, C:289.18, G:329.21, T:304.20};
+function masse(seq){
+  let m = 0, connues = 0;
+  for(const c of seq){ if(c in MASSES){ m += MASSES[c]; connues++; } }
+  if(!connues) return null;
+  return m - 61.96;
+}
+
+// ── Code génétique standard ───────────────────────────────────────────────
+// Table 1 du NCBI, dans l'ordre T,C,A,G des trois positions.
+const CODE = 'FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG';
+const ORDRE = 'TCAG';
+const CODONS = (() => {
+  const t = {};
+  let k = 0;
+  for(const a of ORDRE) for(const b of ORDRE) for(const c of ORDRE) t[a+b+c] = CODE[k++];
+  return t;
+})();
+const AA3 = {A:'Ala',R:'Arg',N:'Asn',D:'Asp',C:'Cys',Q:'Gln',E:'Glu',G:'Gly',H:'His',
+             I:'Ile',L:'Leu',K:'Lys',M:'Met',F:'Phe',P:'Pro',S:'Ser',T:'Thr',W:'Trp',
+             Y:'Tyr',V:'Val','*':'Stop',X:'???'};
+
+// Un codon dont une position est ambiguë n'est traduit que si toutes les
+// combinaisons donnent le même acide aminé — sinon X. Traduire GGN en Gly est
+// juste ; traduire NNN au hasard ne l'est pas.
+function traduireCodon(codon){
+  if(codon.length !== 3) return 'X';
+  if(codon in CODONS) return CODONS[codon];
+  const choix = [IUPAC[codon[0]], IUPAC[codon[1]], IUPAC[codon[2]]];
+  if(choix.some(c => !c)) return 'X';
+  if(choix[0].length*choix[1].length*choix[2].length > 64) return 'X';
+  let vu = null;
+  for(const a of choix[0]) for(const b of choix[1]) for(const c of choix[2]){
+    const aa = CODONS[a+b+c];
+    if(vu === null) vu = aa;
+    else if(vu !== aa) return 'X';
+  }
+  return vu === null ? 'X' : vu;
+}
+function traduire(seq, cadre){
+  cadre = cadre || 0;
+  let out = '';
+  for(let i=cadre;i+3<=seq.length;i+=3) out += traduireCodon(seq.substr(i,3));
+  return out;
+}
+
+// ── Cadres ouverts ────────────────────────────────────────────────────────
+// Un ORF par région entre deux stops : on retient le premier ATG, donc le plus
+// long produit possible. Les coordonnées sont toujours données sur le brin
+// direct, pour qu'on puisse les reporter sur une carte sans les retourner.
+function orfs(seq, opts){
+  opts = Object.assign({minAA:30, inverse:true}, opts||{});
+  const L = seq.length;
+  const trouves = [];
+  const balayer = (s, brin) => {
+    for(let cadre=0; cadre<3; cadre++){
+      let debut = null;
+      for(let i=cadre; i+3<=s.length; i+=3){
+        const codon = s.substr(i,3);
+        const aa = traduireCodon(codon);
+        if(aa === '*'){
+          if(debut !== null){
+            enregistrer(s, brin, debut, i+3, cadre, true);
+            debut = null;
+          }
+        } else if(codon === 'ATG' && debut === null){
+          debut = i;
+        }
+      }
+      if(debut !== null){
+        const fin = debut + Math.floor((s.length-debut)/3)*3;
+        enregistrer(s, brin, debut, fin, cadre, false);
+      }
+    }
+  };
+  const enregistrer = (s, brin, i, j, cadre, avecStop) => {
+    const nt = s.slice(i, j);
+    const prot = traduire(nt);
+    const aaUtiles = avecStop ? prot.length-1 : prot.length;
+    if(aaUtiles < opts.minAA) return;
+    // i..j-1 sur le brin lu ; sur le brin inverse on repasse en coordonnées
+    // du brin direct (la base s[k] est la base seq[L-1-k]).
+    const debut = brin === '+' ? i+1 : L - (j-1);
+    const fin   = brin === '+' ? j   : L - i;
+    trouves.push({brin, cadre: (brin==='+'?'+':'−') + (cadre+1),
+                  debut, fin, longueurNt: nt.length, longueurAA: aaUtiles,
+                  avecStop, nt, prot});
+  };
+  balayer(seq, '+');
+  if(opts.inverse) balayer(complementInverse(seq), '−');
+  trouves.sort((a,b) => b.longueurAA - a.longueurAA || a.debut - b.debut);
+  return trouves;
+}
+
+// ── Motifs IUPAC ──────────────────────────────────────────────────────────
+// Le motif est traduit en classes de caractères ; on cherche les occurrences
+// chevauchantes en avançant d'une base après chaque trouvaille, ce qu'un
+// simple /g ne fait pas (TATATA contient deux TATA, pas une).
+function motifEnRegex(motif){
+  let src = '';
+  for(const c of String(motif||'').toUpperCase()){
+    if(/\s/.test(c)) continue;
+    const cls = IUPAC[c];
+    if(!cls) return null;
+    src += cls.length === 1 ? cls : '[' + cls + ']';
+  }
+  return src ? new RegExp(src) : null;
+}
+function chercherMotif(seq, motif, aussiInverse){
+  const re = motifEnRegex(motif);
+  if(!re) return null;
+  const taille = String(motif).replace(/\s/g,'').length;
+  const hits = [];
+  const balayer = (s, brin) => {
+    for(let i=0; i+taille<=s.length; i++){
+      if(re.test(s.substr(i, taille))){
+        const debut = brin === '+' ? i+1 : seq.length - (i+taille-1);
+        hits.push({brin, debut, fin: debut+taille-1, extrait: seq.substr(debut-1, taille)});
+      }
+    }
+  };
+  balayer(seq, '+');
+  if(aussiInverse){
+    const rc = complementInverse(seq);
+    // Un motif palindromique se retrouverait deux fois au même endroit : on ne
+    // le compte qu'une fois par position et par brin réellement distinct.
+    const vus = new Set(hits.map(h => h.debut));
+    const avant = hits.length;
+    balayer(rc, '−');
+    for(let k=hits.length-1; k>=avant; k--){
+      if(vus.has(hits[k].debut)) hits.splice(k,1);
+    }
+  }
+  hits.sort((a,b) => a.debut - b.debut || (a.brin < b.brin ? -1 : 1));
+  return hits;
+}
+
+// ── Enzymes de restriction ────────────────────────────────────────────────
+// Un choix d'enzymes courantes de clonage. `coupe` est la position de coupure
+// dans le site sur le brin direct (0 = juste avant le site).
+const ENZYMES = [
+  {nom:'AatII',   site:'GACGTC',   coupe:5}, {nom:'AluI',    site:'AGCT',     coupe:2},
+  {nom:'ApaI',    site:'GGGCCC',   coupe:5}, {nom:'AvaI',    site:'CYCGRG',   coupe:1},
+  {nom:'BamHI',   site:'GGATCC',   coupe:1}, {nom:'BglII',   site:'AGATCT',   coupe:1},
+  {nom:'ClaI',    site:'ATCGAT',   coupe:2}, {nom:'DraI',    site:'TTTAAA',   coupe:3},
+  {nom:'EcoRI',   site:'GAATTC',   coupe:1}, {nom:'EcoRV',   site:'GATATC',   coupe:3},
+  {nom:'HaeIII',  site:'GGCC',     coupe:2}, {nom:'HincII',  site:'GTYRAC',   coupe:3},
+  {nom:'HindIII', site:'AAGCTT',   coupe:1}, {nom:'HpaI',    site:'GTTAAC',   coupe:3},
+  {nom:'KpnI',    site:'GGTACC',   coupe:5}, {nom:'MluI',    site:'ACGCGT',   coupe:1},
+  {nom:'MspI',    site:'CCGG',     coupe:1}, {nom:'NcoI',    site:'CCATGG',   coupe:1},
+  {nom:'NdeI',    site:'CATATG',   coupe:2}, {nom:'NheI',    site:'GCTAGC',   coupe:1},
+  {nom:'NotI',    site:'GCGGCCGC', coupe:2}, {nom:'PstI',    site:'CTGCAG',   coupe:5},
+  {nom:'SacI',    site:'GAGCTC',   coupe:5}, {nom:'SalI',    site:'GTCGAC',   coupe:1},
+  {nom:'SmaI',    site:'CCCGGG',   coupe:3}, {nom:'SpeI',    site:'ACTAGT',   coupe:1},
+  {nom:'SphI',    site:'GCATGC',   coupe:5}, {nom:'TaqI',    site:'TCGA',     coupe:1},
+  {nom:'XbaI',    site:'TCTAGA',   coupe:1}, {nom:'XhoI',    site:'CTCGAG',   coupe:1}
+];
+function sitesRestriction(seq){
+  const out = [];
+  for(const e of ENZYMES){
+    const hits = chercherMotif(seq, e.site, false) || [];
+    // Les sites de ces enzymes sont palindromiques : les chercher sur le brin
+    // direct suffit, l'inverse donnerait exactement les mêmes positions.
+    if(!hits.length) { out.push({nom:e.nom, site:e.site, coupe:e.coupe, positions:[], n:0}); continue; }
+    out.push({nom:e.nom, site:e.site, coupe:e.coupe, n:hits.length,
+              positions: hits.map(h => h.debut + e.coupe)});
+  }
+  return out;
+}
+
+window.ADN = {IUPAC, BASES, AMBIGUS, COMPLEMENT, ENZYMES, CODONS, AA3,
+              lireFasta, corriger, composition, gcGlissant, complement, inverser,
+              complementInverse, transcrire, tmWallace, tmGC, tmPlusProcheVoisin,
+              masse, traduireCodon, traduire, orfs, motifEnRegex, chercherMotif,
+              sitesRestriction};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LA SURFACE — tout ce qui touche à la page.
+   ═══════════════════════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const ech = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nb = (v, d) => Number(v).toLocaleString('fr-FR', {minimumFractionDigits:d||0, maximumFractionDigits:d||0});
+const PAS_DE_VUE = 3000;   // au-delà, on n'affiche pas tout sans qu'on le demande
+
+const etat = {enrs:[], idx:0, corr:null, seq:'', marques:new Set(), tout:false};
+
+const EXEMPLE =
+'>exemple | fragment fabriqué, volontairement sale\n' +
+'  1  atg gcg aat tcg gua ccu agc  \n' +
+'  21 GGATCCAAGCTTNNNRYGACGTCTAGC-\n' +
+'  41 atgaaacgcattagcaccattaccaccaccatcaccattaccacaggtaacggtgcgggctga\n' +
+'  101 CTCGAGxyzTTTAAAGAATTCGGGCCCTATAAAGGGTCGACCCatgcatcatcatcatcatcattaa\n';
+
+function options(){
+  return {uracile: $('opt-uracile').checked,
+          lacunes: $('opt-lacunes').checked,
+          ambigusEnN: $('opt-ambigus').checked,
+          retirerInvalides: $('opt-invalides').checked};
+}
+
+function analyser(){
+  const brut = $('brut').value;
+  const enrs = ADN.lireFasta(brut);
+  etat.enrs = enrs;
+  if(etat.idx >= enrs.length) etat.idx = 0;
+
+  const sel = $('enr');
+  $('choix-enr').hidden = enrs.length < 2;
+  if(enrs.length >= 2){
+    sel.innerHTML = enrs.map((e,i) =>
+      '<option value="'+i+'"'+(i===etat.idx?' selected':'')+'>'+ech(e.nom.slice(0,60))+'</option>').join('');
+  }
+
+  const err = $('erreur');
+  if(!enrs.length){
+    err.hidden = false;
+    err.textContent = 'Rien à analyser : la zone de saisie est vide.';
+    etat.seq = ''; etat.corr = null;
+    tout();
+    return;
+  }
+  err.hidden = true;
+
+  etat.corr = ADN.corriger(enrs[etat.idx].brut, options());
+  etat.seq = etat.corr.seq;
+  if(!etat.seq.length){
+    err.hidden = false;
+    err.textContent = 'Aucune base exploitable dans cet enregistrement après correction.';
+  }
+  tout();
+}
+
+function tout(){
+  rendreRapport(); rendreCompo(); rendreProps();
+  rendreMotif();   // avant la vue : elle pose les marques à surligner
+  rendreVue();     rendreCadres(); rendreEnzymes();
+}
+
+// ── 2. Rapport ────────────────────────────────────────────────────────────
+const LIBELLES = {
+  miseEnForme:'espaces et retours à la ligne ignorés',
+  numerotation:'chiffres de numérotation retirés',
+  casse:'bases en minuscules passées en majuscules',
+  uracile:'uraciles (U) rencontrés',
+  lacunes:'lacunes d’alignement (- .)',
+  ambigus:'codes IUPAC ambigus',
+  invalides:'caractères invalides'
+};
+function rendreRapport(){
+  const res = $('rapport-resume'), det = $('rapport-detail');
+  if(!etat.corr){ res.innerHTML = '<p class="vide">En attente d’une séquence.</p>'; det.innerHTML=''; return; }
+  const c = etat.corr.comptes;
+  const dur = c.invalides > 0;
+  const rien = etat.corr.propre && c.miseEnForme===0 && c.numerotation===0;
+  res.innerHTML =
+    '<p><span class="pastille '+(dur?'bad':(etat.corr.propre?'ok':'warn'))+'">'+
+    (dur ? 'séquence douteuse' : (etat.corr.propre ? 'séquence propre' : 'séquence corrigée'))+
+    '</span> &nbsp;'+
+    (rien ? 'Rien à corriger : ' : 'Retenues : ')+
+    '<strong>'+nb(etat.seq.length)+'</strong> bases sur '+
+    nb(etat.enrs[etat.idx].brut.replace(/\s/g,'').length)+' caractères non blancs.</p>';
+
+  const lignes = Object.keys(LIBELLES)
+    .filter(k => c[k] > 0)
+    .map(k => '<tr><td class="mono">'+nb(c[k])+'</td><td>'+LIBELLES[k]+'</td></tr>').join('');
+  let html = lignes
+    ? '<h3>Ce qui a été touché</h3><div class="tbl-scroll"><table><thead><tr><th>Nombre</th><th>Nature</th></tr></thead><tbody>'+lignes+'</tbody></table></div>'
+    : '';
+
+  const j = etat.corr.journal;
+  if(j.length){
+    const montrees = j.slice(0, 200);
+    html += '<h3>Détail ('+nb(j.length)+' correction'+(j.length>1?'s':'')+
+            (j.length>200 ? ', 200 premières affichées' : '')+')</h3>'+
+      '<div class="tbl-scroll"><table><thead><tr><th>Position</th><th>Lu</th><th>Écrit</th><th>Explication</th></tr></thead><tbody>'+
+      montrees.map(e => '<tr><td class="mono">'+nb(e.pos)+'</td><td class="mono">'+
+        ech(e.avant === ' ' ? '␠' : e.avant)+'</td><td class="mono">'+
+        (e.apres ? ech(e.apres) : '<span style="color:var(--text-dim)">—</span>')+
+        '</td><td>'+ech(e.quoi)+'</td></tr>').join('')+
+      '</tbody></table></div>';
+  }
+  det.innerHTML = html;
+}
+
+// ── 3. Composition ────────────────────────────────────────────────────────
+function rendreCompo(){
+  const k = $('compo-kpis'), t = $('compo-table'), g = $('gc-graphe');
+  if(!etat.seq){ k.innerHTML = '<p class="vide">En attente d’une séquence.</p>'; t.innerHTML=''; g.innerHTML=''; return; }
+  const c = ADN.composition(etat.seq);
+  k.innerHTML = [
+    ['Longueur', nb(c.longueur)+' <span style="font-size:0.8rem;color:var(--text-dim)">nt</span>', c.autres ? nb(c.autres)+' position'+(c.autres>1?'s':'')+' ambiguë'+(c.autres>1?'s':'') : 'aucune ambiguïté'],
+    ['GC', nb(c.gc,1)+' %', 'AT ' + nb(c.at,1) + ' %'],
+    ['Biais GC', (c.skewGC>=0?'+':'')+nb(c.skewGC,3), '(G−C)/(G+C)'],
+    ['Biais AT', (c.skewAT>=0?'+':'')+nb(c.skewAT,3), '(A−T)/(A+T)']
+  ].map(([l,v,s]) => '<div class="kpi"><div class="klbl">'+l+'</div><div class="kval">'+v+'</div><div class="ksub">'+s+'</div></div>').join('');
+
+  const total = c.longueur || 1;
+  const lignes = ADN.BASES.map(b =>
+    '<tr><td class="mono b-'+b+'"><strong>'+b+'</strong></td><td>'+
+    ({A:'adénine',C:'cytosine',G:'guanine',T:'thymine'})[b]+'</td><td class="mono">'+
+    nb(c.n[b])+'</td><td class="mono">'+nb(c.n[b]/total*100,2)+' %</td></tr>');
+  Object.keys(c.amb).sort().forEach(a => {
+    lignes.push('<tr><td class="mono b-N"><strong>'+ech(a)+'</strong></td><td>'+
+      (ADN.IUPAC[a] ? 'ambigu : '+ADN.IUPAC[a].split('').join(' ou ') : 'inconnu')+
+      '</td><td class="mono">'+nb(c.amb[a])+'</td><td class="mono">'+nb(c.amb[a]/total*100,2)+' %</td></tr>');
+  });
+  t.innerHTML = '<thead><tr><th>Code</th><th>Base</th><th>Nombre</th><th>Part</th></tr></thead><tbody>'+lignes.join('')+'</tbody>';
+  rendreGraphe();
+}
+
+function rendreGraphe(){
+  const g = $('gc-graphe');
+  if(!etat.seq){ g.innerHTML=''; return; }
+  const f = Math.max(10, parseInt($('fenetre').value,10) || 50);
+  const pts = ADN.gcGlissant(etat.seq, f);
+  if(pts.length < 2){
+    g.innerHTML = '<p class="vide">Séquence trop courte pour une fenêtre de '+nb(f)+' nt.</p>';
+    return;
+  }
+  // On échantillonne : tracer un point par base sur 100 kb ne dit rien de plus
+  // et fige le navigateur.
+  const MAX = 1200;
+  const pas = Math.max(1, Math.ceil(pts.length/MAX));
+  const vus = pts.filter((_,i) => i % pas === 0);
+  const W = 1000, H = 120, m = 14;
+  const x = i => m + (W-2*m) * (vus.length===1 ? 0 : i/(vus.length-1));
+  const y = v => H - m - (H-2*m) * (v/100);
+  const d = vus.map((p,i) => (i?'L':'M') + x(i).toFixed(1) + ' ' + y(p.gc).toFixed(1)).join(' ');
+  const moy = ADN.composition(etat.seq).gc;
+  g.innerHTML =
+    '<svg class="graphe" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="GC en fenêtre glissante">'+
+    [0,25,50,75,100].map(v => '<line x1="'+m+'" x2="'+(W-m)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#252535" stroke-width="1"/>').join('')+
+    '<line x1="'+m+'" x2="'+(W-m)+'" y1="'+y(moy)+'" y2="'+y(moy)+'" stroke="#60607a" stroke-width="1" stroke-dasharray="4 4"/>'+
+    '<path d="'+d+'" fill="none" stroke="#38bdf8" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'+
+    '</svg>'+
+    '<p class="note">Fenêtre de '+nb(f)+' nt, '+nb(pts.length)+' positions calculées. '+
+    'Pointillé : moyenne de '+nb(moy,1)+' %. Échelle verticale 0–100 %.</p>';
+}
+
+// ── 4. Propriétés ─────────────────────────────────────────────────────────
+function rendreProps(){
+  const k = $('prop-kpis'), note = $('prop-note');
+  if(!etat.seq){ k.innerHTML = '<p class="vide">En attente d’une séquence.</p>'; note.textContent=''; return; }
+  const seq = etat.seq;
+  const oligo = parseFloat($('conc-oligo').value) || 500;
+  const sel = parseFloat($('conc-sel').value) || 50;
+  const nn = ADN.tmPlusProcheVoisin(seq, oligo, sel);
+  const gc = ADN.tmGC(seq);
+  const wal = ADN.tmWallace(seq);
+  const m = ADN.masse(seq);
+  const mRc = ADN.masse(ADN.complementInverse(seq));
+  const cases = [
+    ['Tm plus proche voisin', nn === null ? '—' : nb(nn,1)+' °C',
+     nn === null ? 'exige 8 nt ou plus, sans ambiguïté' : 'SantaLucia 1998, '+nb(oligo)+' nM / '+nb(sel)+' mM Na⁺'],
+    ['Tm par le GC', gc === null ? '—' : nb(gc,1)+' °C', 'formule de Marmur-Chester, longs fragments'],
+    ['Tm de Wallace', seq.length > 20 ? '—' : nb(wal,1)+' °C', seq.length > 20 ? 'réservée aux oligos ≤ 20 nt' : '2(A+T) + 4(G+C)'],
+    ['Masse simple brin', m === null ? '—' : nb(m/1000,2)+' kDa', 'oligo linéaire 5′-OH'],
+    ['Masse du duplex', (m===null||mRc===null) ? '—' : nb((m+mRc)/1000,2)+' kDa', 'les deux brins appariés']
+  ];
+  k.innerHTML = cases.map(([l,v,s]) =>
+    '<div class="kpi"><div class="klbl">'+l+'</div><div class="kval">'+v+'</div><div class="ksub">'+s+'</div></div>').join('');
+  note.textContent = 'Chaque Tm a son domaine : Wallace pour les très courts oligos, ' +
+    'le plus proche voisin pour les amorces de PCR (le seul à tenir compte de l’enchaînement des bases ' +
+    'et des concentrations), la formule GC pour les fragments longs. Un tiret signifie que la séquence ' +
+    'sort du domaine de validité du calcul — mieux vaut ça qu’un chiffre faux.';
+}
+
+// ── 5. Vue de la séquence ─────────────────────────────────────────────────
+// Soixante bases par ligne, par groupes de dix, numérotées : la présentation
+// de tous les logiciels du domaine, celle qu'on lit sans compter au doigt.
+function rendreVue(){
+  const v = $('seq-vue'), d = $('derives');
+  if(!etat.seq){ v.innerHTML = '<p class="vide">En attente d’une séquence.</p>'; d.innerHTML=''; return; }
+  const seq = etat.seq;
+  const limite = etat.tout ? seq.length : Math.min(seq.length, PAS_DE_VUE);
+  const largeur = String(seq.length).length;
+  const out = [];
+  for(let i=0;i<limite;i+=60){
+    let ligne = '<span class="num">' + String(i+1).padStart(largeur,' ') + '</span>  ';
+    for(let j=i;j<Math.min(i+60,limite);j++){
+      if(j>i && (j-i)%10===0) ligne += ' ';
+      const c = seq[j];
+      const cls = ['b-' + ('ACGT'.indexOf(c)>=0 ? c : 'N')];
+      if(etat.marques.has(j)) cls.push('marq');
+      else if(etat.corr && etat.corr.reparees.has(j)) cls.push('repar');
+      ligne += '<span class="'+cls.join(' ')+'">'+c+'</span>';
+    }
+    out.push(ligne);
+  }
+  let html = '<div class="seqvue">'+out.join('\n')+'</div>';
+  if(limite < seq.length){
+    html += '<p class="note">'+nb(limite)+' des '+nb(seq.length)+
+            ' bases affichées. « Afficher toute la séquence » pour le reste.</p>';
+  }
+  html += '<p class="note">Fond ambre : une position corrigée. Fond violet : une occurrence du motif cherché.</p>';
+  v.innerHTML = html;
+  $('btn-tout').hidden = seq.length <= PAS_DE_VUE;
+  $('btn-tout').textContent = etat.tout ? 'Réduire l’affichage' : 'Afficher toute la séquence';
+
+  const rc = ADN.complementInverse(seq);
+  const extrait = s => s.length > 400 ? s.slice(0,400) + ' …' : s;
+  d.innerHTML = '<thead><tr><th>Brin</th><th>Séquence (5′ → 3′)</th><th></th></tr></thead><tbody>' +
+    [['Direct', seq], ['Complémentaire inverse', rc],
+     ['Complémentaire (3′ → 5′)', ADN.complement(seq)],
+     ['Transcrit ARN', ADN.transcrire(seq)]]
+    .map(([nom,s],i) => '<tr><td>'+nom+'</td><td class="mono" style="word-break:break-all">'+ech(extrait(s))+
+      '</td><td><button data-copie="'+i+'">Copier</button></td></tr>').join('') +
+    '</tbody>';
+  const sources = [seq, rc, ADN.complement(seq), ADN.transcrire(seq)];
+  d.querySelectorAll('[data-copie]').forEach(b =>
+    b.addEventListener('click', () => copier(sources[+b.dataset.copie], b)));
+}
+
+// ── 6. Cadres et ORF ──────────────────────────────────────────────────────
+function rendreCadres(){
+  const t = $('orf-table'), f = $('cadres-six');
+  if(!etat.seq){ t.innerHTML=''; f.innerHTML = '<p class="vide">En attente d’une séquence.</p>'; return; }
+  const min = Math.max(1, parseInt($('orf-min').value,10) || 30);
+  const liste = ADN.orfs(etat.seq, {minAA:min, inverse:$('orf-inverse').checked});
+  if(!liste.length){
+    t.innerHTML = '<tbody><tr><td class="vide">Aucun cadre ouvert d’au moins '+nb(min)+
+                  ' acides aminés commençant par ATG.</td></tr></tbody>';
+  } else {
+    const montres = liste.slice(0,50);
+    t.innerHTML = '<thead><tr><th>Cadre</th><th>Début</th><th>Fin</th><th>nt</th><th>aa</th><th>Stop</th><th>Protéine</th></tr></thead><tbody>' +
+      montres.map(o => '<tr><td class="mono">'+o.cadre+'</td><td class="mono">'+nb(o.debut)+
+        '</td><td class="mono">'+nb(o.fin)+'</td><td class="mono">'+nb(o.longueurNt)+
+        '</td><td class="mono">'+nb(o.longueurAA)+'</td><td>'+
+        (o.avecStop ? '<span class="pastille ok">oui</span>' : '<span class="pastille warn">tronqué</span>')+
+        '</td><td class="mono" style="word-break:break-all">'+
+        ech(o.prot.length > 120 ? o.prot.slice(0,120)+' …' : o.prot)+'</td></tr>').join('') +
+      '</tbody>';
+    if(liste.length > montres.length){
+      t.innerHTML += '<tfoot><tr><td colspan="7" class="vide">'+nb(liste.length)+
+                     ' ORF au total, les 50 plus longs affichés.</td></tr></tfoot>';
+    }
+  }
+
+  const rc = ADN.complementInverse(etat.seq);
+  const cadres = [];
+  for(let c=0;c<3;c++) cadres.push(['+'+(c+1), ADN.traduire(etat.seq, c)]);
+  for(let c=0;c<3;c++) cadres.push(['−'+(c+1), ADN.traduire(rc, c)]);
+  f.innerHTML = cadres.map(([nom,p]) =>
+    '<div class="frame"><div class="t">Cadre '+nom+' — '+nb(p.length)+' aa, '+
+    nb((p.match(/\*/g)||[]).length)+' stop</div><div class="p">'+
+    (p.length ? colorierProt(p.length > 900 ? p.slice(0,900)+' …' : p) : '<span class="vide">trop court</span>')+
+    '</div></div>').join('');
+}
+function colorierProt(p){
+  return ech(p).replace(/\*/g,'<span class="stop">*</span>').replace(/M/g,'<span class="met">M</span>');
+}
+
+// ── 7. Motifs ─────────────────────────────────────────────────────────────
+function rendreMotif(){
+  const box = $('motif-res');
+  etat.marques = new Set();
+  const motif = $('motif').value.trim();
+  if(!etat.seq || !motif){ box.innerHTML = '<p class="vide">Saisissez un motif.</p>'; return; }
+  if(!ADN.motifEnRegex(motif)){
+    box.innerHTML = '<p class="err">Motif invalide : seuls les codes IUPAC (A C G T R Y S W K M B D H V N) sont acceptés.</p>';
+    return;
+  }
+  const hits = ADN.chercherMotif(etat.seq, motif, $('motif-inverse').checked);
+  for(const h of hits) for(let i=h.debut-1;i<h.fin;i++) etat.marques.add(i);
+  if(!hits.length){
+    box.innerHTML = '<p class="vide">Aucune occurrence de « '+ech(motif.toUpperCase())+' ».</p>';
+    return;
+  }
+  const parBrin = {'+':0, '−':0};
+  hits.forEach(h => parBrin[h.brin]++);
+  const montres = hits.slice(0,100);
+  box.innerHTML =
+    '<p><strong>'+nb(hits.length)+'</strong> occurrence'+(hits.length>1?'s':'')+
+    ' — '+nb(parBrin['+'])+' sur le brin direct, '+nb(parBrin['−'])+' sur le brin inverse.</p>' +
+    '<div class="tbl-scroll" style="margin-top:0.6rem"><table><thead><tr><th>Brin</th><th>Début</th><th>Fin</th><th>Lu sur le brin direct</th></tr></thead><tbody>' +
+    montres.map(h => '<tr><td class="mono">'+h.brin+'</td><td class="mono">'+nb(h.debut)+
+      '</td><td class="mono">'+nb(h.fin)+'</td><td class="mono">'+ech(h.extrait)+'</td></tr>').join('') +
+    '</tbody>'+(hits.length>montres.length ?
+      '<tfoot><tr><td colspan="4" class="vide">100 premières affichées.</td></tr></tfoot>' : '')+'</table></div>';
+}
+
+// ── 8. Enzymes ────────────────────────────────────────────────────────────
+function rendreEnzymes(){
+  const t = $('enz-table'), note = $('enz-note');
+  if(!etat.seq){ t.innerHTML=''; note.textContent=''; return; }
+  const tous = ADN.sitesRestriction(etat.seq);
+  const coupent = tous.filter(e => e.n > 0);
+  const uniques = tous.filter(e => e.n === 1);
+  const montres = $('enz-uniques').checked ? uniques : coupent;
+  if(!montres.length){
+    t.innerHTML = '<tbody><tr><td class="vide">Aucune enzyme de la liste ne coupe'+
+                  ($('enz-uniques').checked ? ' une seule fois' : '')+' cette séquence.</td></tr></tbody>';
+  } else {
+    t.innerHTML = '<thead><tr><th>Enzyme</th><th>Site</th><th>Coupures</th><th>Positions de coupure</th></tr></thead><tbody>' +
+      montres.map(e => {
+        const pos = e.positions.slice(0,25).map(p => nb(p)).join(', ') +
+                    (e.positions.length > 25 ? ' …' : '');
+        const site = ech(e.site.slice(0,e.coupe)) + '‸' + ech(e.site.slice(e.coupe));
+        return '<tr><td><strong>'+e.nom+'</strong></td><td class="mono">'+site+
+               '</td><td class="mono">'+nb(e.n)+'</td><td class="mono">'+pos+'</td></tr>';
+      }).join('') + '</tbody>';
+  }
+  const jamais = tous.filter(e => e.n === 0).map(e => e.nom);
+  note.innerHTML = nb(uniques.length)+' coupeur'+(uniques.length>1?'s':'')+' unique'+(uniques.length>1?'s':'')+
+    ' sur '+nb(tous.length)+' enzymes examinées. ' +
+    (jamais.length ? 'Ne coupent pas du tout : ' + ech(jamais.join(', ')) + '.' : 'Toutes coupent au moins une fois.') +
+    ' La position donnée est celle de la coupure sur le brin direct (le repère ‸ dans le site).';
+}
+
+// ── Copier, télécharger ───────────────────────────────────────────────────
+function copier(texte, bouton){
+  const dire = ok => {
+    if(!bouton) return;
+    const avant = bouton.textContent;
+    bouton.textContent = ok ? 'Copié' : 'Échec';
+    setTimeout(() => { bouton.textContent = avant; }, 1200);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texte).then(() => dire(true), () => dire(secours(texte)));
+  } else {
+    dire(secours(texte));
+  }
+}
+function secours(texte){
+  // Sans presse-papiers (page non sécurisée, vieux navigateur), on passe par
+  // une sélection : ça marche là où l'API n'existe pas.
+  try{
+    const z = document.createElement('textarea');
+    z.value = texte; z.setAttribute('readonly','');
+    z.style.position = 'fixed'; z.style.opacity = '0';
+    document.body.appendChild(z); z.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(z);
+    return ok;
+  }catch(_){ return false; }
+}
+function telecharger(nom, contenu){
+  const b = new Blob([contenu], {type:'text/plain;charset=utf-8'});
+  const u = URL.createObjectURL(b);
+  const a = document.createElement('a');
+  a.href = u; a.download = nom;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
+function enFasta(){
+  const nom = etat.enrs[etat.idx] ? etat.enrs[etat.idx].nom : 'sequence';
+  const lignes = [];
+  for(let i=0;i<etat.seq.length;i+=60) lignes.push(etat.seq.substr(i,60));
+  return '>' + nom + ' | corrigé\n' + lignes.join('\n') + '\n';
+}
+function rapportTexte(){
+  const c = ADN.composition(etat.seq);
+  const co = etat.corr.comptes;
+  const l = [];
+  l.push('RAPPORT DE CORRECTION ET D’ANALYSE');
+  l.push('Enregistrement : ' + (etat.enrs[etat.idx] ? etat.enrs[etat.idx].nom : '—'));
+  l.push('Établi le ' + new Date().toLocaleString('fr-FR'));
+  l.push('');
+  l.push('— CORRECTIONS —');
+  Object.keys(LIBELLES).forEach(k => { if(co[k] > 0) l.push('  ' + String(co[k]).padStart(7) + '  ' + LIBELLES[k]); });
+  if(!etat.corr.journal.length) l.push('  aucune correction de contenu.');
+  etat.corr.journal.slice(0,500).forEach(e =>
+    l.push('  position ' + e.pos + ' : ' + e.quoi + ' (lu « ' + e.avant + ' »)'));
+  if(etat.corr.journal.length > 500) l.push('  … ' + (etat.corr.journal.length-500) + ' autres.');
+  l.push('');
+  l.push('— COMPOSITION —');
+  l.push('  longueur   : ' + c.longueur + ' nt');
+  ADN.BASES.forEach(b => l.push('  ' + b + '          : ' + c.n[b] + ' (' + (c.n[b]/(c.longueur||1)*100).toFixed(2) + ' %)'));
+  if(c.autres) l.push('  ambiguës   : ' + c.autres);
+  l.push('  GC         : ' + c.gc.toFixed(2) + ' %');
+  l.push('  biais GC   : ' + c.skewGC.toFixed(3));
+  l.push('');
+  l.push('— PROPRIÉTÉS —');
+  const nn = ADN.tmPlusProcheVoisin(etat.seq, parseFloat($('conc-oligo').value)||500, parseFloat($('conc-sel').value)||50);
+  l.push('  Tm plus proche voisin : ' + (nn===null ? 'hors domaine' : nn.toFixed(1) + ' °C'));
+  const tgc = ADN.tmGC(etat.seq);
+  l.push('  Tm par le GC          : ' + (tgc===null ? 'hors domaine' : tgc.toFixed(1) + ' °C'));
+  const m = ADN.masse(etat.seq);
+  l.push('  masse simple brin     : ' + (m===null ? '—' : (m/1000).toFixed(2) + ' kDa'));
+  l.push('');
+  l.push('— CADRES OUVERTS —');
+  const min = Math.max(1, parseInt($('orf-min').value,10)||30);
+  const orfs = ADN.orfs(etat.seq, {minAA:min, inverse:$('orf-inverse').checked});
+  if(!orfs.length) l.push('  aucun d’au moins ' + min + ' acides aminés.');
+  orfs.slice(0,50).forEach(o => l.push('  cadre ' + o.cadre + '  ' + o.debut + '..' + o.fin +
+    '  ' + o.longueurAA + ' aa' + (o.avecStop ? '' : ' (tronqué)')));
+  l.push('');
+  l.push('— SÉQUENCE CORRIGÉE —');
+  l.push(enFasta().trim());
+  return l.join('\n') + '\n';
+}
+
+// ── Branchements ──────────────────────────────────────────────────────────
+// Un minuteur par champ, et non un seul pour toute la page : avec un minuteur
+// partagé, saisir un motif juste après avoir collé une séquence annulait
+// l'analyse de la séquence, et l'écran restait sur les résultats précédents.
+const minuteurs = {};
+const bientot = (cle, fn) => {
+  clearTimeout(minuteurs[cle]);
+  minuteurs[cle] = setTimeout(fn, 180);
+};
+
+$('brut').addEventListener('input', () => { etat.idx = 0; etat.tout = false; bientot('seq', analyser); });
+['opt-uracile','opt-lacunes','opt-ambigus','opt-invalides'].forEach(id =>
+  $(id).addEventListener('change', analyser));
+$('enr').addEventListener('change', e => { etat.idx = +e.target.value; etat.tout = false; analyser(); });
+$('btn-analyser').addEventListener('click', analyser);
+$('btn-vider').addEventListener('click', () => { $('brut').value=''; etat.idx=0; etat.tout=false; analyser(); $('brut').focus(); });
+$('btn-exemple').addEventListener('click', () => { $('brut').value = EXEMPLE; etat.idx=0; etat.tout=false; analyser(); });
+
+$('btn-fichier').addEventListener('click', () => $('fichier').click());
+$('fichier').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  lireLeFichier(f);
+  e.target.value = '';
+});
+function lireLeFichier(f){
+  const l = new FileReader();
+  l.onload = () => { $('brut').value = String(l.result); etat.idx=0; etat.tout=false; analyser(); };
+  l.onerror = () => { const e = $('erreur'); e.hidden=false; e.textContent = 'Fichier illisible : ' + f.name; };
+  l.readAsText(f);
+}
+['dragover','drop'].forEach(ev => document.addEventListener(ev, e => {
+  e.preventDefault();
+  if(ev === 'drop' && e.dataTransfer && e.dataTransfer.files[0]) lireLeFichier(e.dataTransfer.files[0]);
+}));
+
+$('fenetre').addEventListener('input', () => bientot('fenetre', rendreGraphe));
+['conc-oligo','conc-sel'].forEach(id => $(id).addEventListener('input', () => bientot('prop', rendreProps)));
+['orf-min'].forEach(id => $(id).addEventListener('input', () => bientot('orf', rendreCadres)));
+$('orf-inverse').addEventListener('change', rendreCadres);
+$('motif').addEventListener('input', () => bientot('motif', () => { rendreMotif(); rendreVue(); }));
+$('motif-inverse').addEventListener('change', () => { rendreMotif(); rendreVue(); });
+$('enz-uniques').addEventListener('change', rendreEnzymes);
+$('btn-tout').addEventListener('click', () => { etat.tout = !etat.tout; rendreVue(); });
+$('btn-copier').addEventListener('click', e => { if(etat.seq) copier(etat.seq, e.target); });
+$('btn-fasta').addEventListener('click', () => {
+  if(etat.seq) telecharger(nomFichier('fasta'), enFasta());
+});
+$('btn-rapport-fichier').addEventListener('click', () => {
+  if(etat.seq) telecharger(nomFichier('txt'), rapportTexte());
+});
+function nomFichier(ext){
+  const brut = (etat.enrs[etat.idx] ? etat.enrs[etat.idx].nom : 'sequence').split(/[|\s]/)[0];
+  const propre = brut.replace(/[^A-Za-z0-9._-]/g,'_').slice(0,40) || 'sequence';
+  return propre + (ext === 'fasta' ? '_corrige.fasta' : '_rapport.txt');
+}
+
+analyser();
+</script>
+</body>
+</html>

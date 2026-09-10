@@ -1,7 +1,8 @@
 # Les épreuves
 
-Une suite par sujet. Chacune ouvre `index.html` dans un vrai navigateur et
-vérifie ce que le code **doit** faire, pas ce qu'il fait.
+Une suite par sujet. Chacune ouvre une page du dépôt (`index.html`, ou
+`adn.html` pour la suite ADN) dans un vrai navigateur et vérifie ce que le code
+**doit** faire, pas ce qu'il fait.
 
 ## Lancer
 
@@ -12,6 +13,7 @@ node tests/lienweb.js
 node tests/curseur.js
 node tests/lignesvides.js
 node tests/maj.js
+node tests/adn.js
 ```
 
 ## Les suites
@@ -22,6 +24,7 @@ node tests/maj.js
 | `curseur.js` | La position du curseur dans l'éditeur de notes, à travers les reconstructions de l'interface. |
 | `lignesvides.js` | Les lignes vides voulues, rendues à la lecture. |
 | `maj.js` | La mise à jour de l'application : les trois paliers, et le refus de boucler en silence. |
+| `adn.js` | `adn.html` : la correction d'une séquence ADN, ses chiffres, ses coordonnées, et son refus de deviner. |
 
 Le navigateur est cherché dans `/opt/pw-browsers/chromium-1194/…` ; sur une
 autre machine, indiquer le sien : `PW_CHROME=/chemin/vers/chrome node tests/…`.
