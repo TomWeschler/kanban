@@ -54,6 +54,7 @@ await p.evaluate(async src=>{
     o.onerror=()=>r(); });
   window.ANNUL=[]; window.offerUndo=(m,fn)=>{ ANNUL.push({m,fn}); };
   CA_PAUSE=20; CA_DELAI_ECR=30; CA_PAUSE_HOTE=30; CA_ESPACE=5;
+  window.GROUPE_DEFAUT=caGroupe; caGroupe='section';   // les épreuves anciennes raisonnent par section
   accessToken='T'; cfg.spreadsheetId='S'; notesLoaded=true;
   try{ localStorage.removeItem('kanban_cartes_dossier'); }catch(e){}
   await new Promise(r=>{ const q=indexedDB.deleteDatabase('kanban-cartes'); q.onsuccess=q.onerror=q.onblocked=r; });
@@ -676,7 +677,7 @@ const lg=await p.evaluate(async()=>{
   out.groupes=[...document.querySelectorAll('.ca-sec-t')].map(x=>x.textContent);
   const gr=[...document.querySelectorAll('.ca-sec')].find(x=>x.querySelector('.ca-sec-t').textContent==='Gradée');
   out.dansGradee=gr?[...gr.querySelectorAll('.ca-nom')].map(x=>x.textContent):[];
-  out.memorise=localStorage.getItem('kanban_cartes_groupe');
+  out.memorise=localStorage.getItem('kanban_cartes_groupe2');
   caGrouper('section');
   return out;
 });
@@ -734,6 +735,41 @@ chk('Un bouton « Masquer les chiffres »',mc.libelle==='Masquer les chiffres',S
 chk('...qui les masque, et devient « Afficher »',mc.masques&&mc.libelle2==='Afficher les chiffres',JSON.stringify(mc));
 chk('...sans toucher aux cartes',mc.grilleLa===true);
 chk('...choix mémorisé, et réversible',mc.memo==='non'&&mc.revenus===true,JSON.stringify(mc));
+
+console.log('=== 9 sexies. CADEAUX ET GROUPES PAR ÉTIQUETTE ===');
+const cg=await p.evaluate(async()=>{
+  const out={};
+  out.defaut=GROUPE_DEFAUT;
+  const mk=(nom,prix,vente,tags,section)=>({id:caId(),section,nom,url:'',prix,vente,tags,langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:10000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
+  const sauve=cartes;
+  cartes=[mk('A',10,12,['Classeur'],'Tableau 2'),mk('Cadeau 1',20,null,['Noé'],'Tableau 2'),
+          mk('Cadeau 2',5,30,['Wizard','noé'],'Tableau 3'),mk('Sans',3,null,[],'Tableau 3'),mk('B',7,null,['Alakazam'],'Tableau 3')];
+  caChiffres=true; caRecherche=''; caOu='';
+  try{ localStorage.removeItem('kanban_cartes_hors_total'); }catch(e){}
+  caGroupe='etiquette'; renderCartes(); await new Promise(r=>setTimeout(r,250));
+  const k=()=>Object.fromEntries([...document.querySelectorAll('.ca-tete .jp-kpi')].map(e=>[
+    e.querySelector('.jp-kpi-l').textContent.replace(/\s+/g,' ').trim(),e.querySelector('.jp-kpi-v').textContent.trim()]));
+  out.kpi=k();
+  out.groupes=[...document.querySelectorAll('.ca-sec-t')].map(x=>x.textContent);
+  out.totalNoe=([...document.querySelectorAll('.ca-sec')].find(x=>x.querySelector('.ca-sec-t').textContent==='Noé')||{querySelector:()=>({textContent:''})})
+    .querySelector('.ca-sec-n').textContent;
+  out.cadeauxVisibles=[...document.querySelectorAll('.ca-nom')].filter(x=>/Cadeau/.test(x.textContent)).length;
+  // Réglable : plus aucune étiquette exclue.
+  window.prompt=()=>''; caHorsRegler(); await new Promise(r=>setTimeout(r,200));
+  out.kpiSans=k();
+  window.prompt=()=>'Noé'; caHorsRegler(); await new Promise(r=>setTimeout(r,200));
+  out.memo=localStorage.getItem('kanban_cartes_hors_total');
+  cartes=sauve; caGroupe='section'; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  return out;
+});
+chk('Par défaut, les cartes sont regroupées par première étiquette',cg.defaut==='etiquette',cg.defaut);
+chk('...plus de « Tableau 2 », « Tableau 3 »',!cg.groupes.some(g=>/^Tableau/.test(g)),cg.groupes.join('|'));
+chk('...les cartes sans étiquette dans « Sans étiquette », à la fin',cg.groupes[cg.groupes.length-1]==='Sans étiquette',cg.groupes.join('|'));
+chk('Les cadeaux (Noé) ne comptent pas dans la valeur',cg.kpi['Valeur hors Noé']==='20 €',JSON.stringify(cg.kpi));
+chk('...même en deuxième étiquette, et quelle que soit la casse',cg.kpi['Prix de vente']==='12 €',JSON.stringify(cg.kpi));
+chk('...mais restent affichés, et leur section garde son total',cg.cadeauxVisibles===2&&/20\s€/.test(cg.totalNoe),JSON.stringify(cg));
+chk('L\'exclusion se règle',cg.kpiSans['Valeur ⚙']==='45 €'&&cg.memo==='Noé',JSON.stringify([cg.kpiSans,cg.memo]));
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({

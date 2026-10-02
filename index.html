@@ -1305,6 +1305,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-tag-x:hover,.ca-tag-g:hover{color:var(--text)}
 .ca-aide{text-transform:none;letter-spacing:0;color:var(--text-dim);opacity:0.8}
 .ca-img.travail{border-color:var(--accent)}
+.ca-hors{background:none;border:none;padding:0;font:inherit;color:var(--warn);cursor:pointer;text-transform:none;letter-spacing:0}
+.ca-hors:hover{text-decoration:underline}
 .ca-ass{display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.6rem;padding:0.5rem 0.7rem;
   background:var(--accent-dim);border-radius:8px}
 .ca-ass-n{font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim)}
@@ -15745,8 +15747,24 @@ let cartes=[], cartesLoaded=false, cartesLoadedAt=0;
 let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0;
 // Regrouper par section (l'origine des cartes) ou par PREMIÈRE étiquette — la
 // principale, celle qu'on met en tête. Mémorisé sur l'appareil.
-const LS_CA_GROUPE='kanban_cartes_groupe';
-let caGroupe=(()=>{ try{ return localStorage.getItem(LS_CA_GROUPE)==='etiquette'?'etiquette':'section'; }catch(e){ return 'section'; } })();
+// Par défaut : la PREMIÈRE ÉTIQUETTE. Les sections héritées de l'import
+// (« Tableau 2 », « Tableau 3 »…) ne disaient rien. Nouvelle clé : l'ancien
+// réglage, qui valait « section » par défaut, n'est pas repris.
+const LS_CA_GROUPE='kanban_cartes_groupe2';
+let caGroupe=(()=>{ try{ return localStorage.getItem(LS_CA_GROUPE)==='section'?'section':'etiquette'; }catch(e){ return 'etiquette'; } })();
+// Les cartes portant l'une de ces étiquettes sont des CADEAUX : elles restent
+// visibles, et leur section garde son total, mais elles ne comptent pas dans
+// la valeur de la collection. Réglable, mémorisé sur l'appareil.
+const LS_CA_HORS='kanban_cartes_hors_total';
+let caHors=(()=>{ try{ const v=localStorage.getItem(LS_CA_HORS); return v==null?['Noé']:caTags(v); }catch(e){ return ['Noé']; } })();
+const caHorsTotal=c=>{ const t=caTags(c.tags).map(x=>x.toLowerCase()); return caHors.some(h=>t.includes(h.toLowerCase())); };
+function caHorsRegler(){
+  const v=prompt('Étiquettes à exclure des totaux (cadeaux…), séparées par des virgules :',caHors.join(', '));
+  if(v==null)return;
+  caHors=caTags(v);
+  try{ localStorage.setItem(LS_CA_HORS,caHors.join(', ')); }catch(e){}
+  renderCartes();
+}
 // Les totaux du bandeau se masquent : utile pour montrer sa collection sans
 // en exposer la valeur, et pour gagner de la place. Mémorisé sur l'appareil.
 const LS_CA_CHIFFRES='kanban_cartes_chiffres';
@@ -16405,7 +16423,11 @@ async function renderCartes(){
   if(caOu&&!lieux.includes(caOu))caOu='';
   const vis=secs.map(s=>({s,l:caVisibles(s)}));
   const vues=vis.flatMap(x=>x.l);
-  const vente=vues.filter(c=>c.vente!=null);
+  const comptees=vues.filter(c=>!caHorsTotal(c));
+  const vente=comptees.filter(c=>c.vente!=null);
+  const exclues=vues.length-comptees.length;
+  const hors=exclues?` <button class="ca-hors" onclick="caHorsRegler()" title="Régler les étiquettes exclues">hors ${tdEsc(caHors.join(', '))}</button>`
+    :caHors.length?'':` <button class="ca-hors" onclick="caHorsRegler()" title="Exclure des étiquettes des totaux">⚙</button>`;
   const kpi=(l,v)=>`<div class="jp-kpi"><div class="jp-kpi-l">${l}</div><div class="jp-kpi-v">${v}</div></div>`;
   el.innerHTML=`
     <div class="ca-tete">
@@ -16418,7 +16440,7 @@ async function renderCartes(){
     </div>
     ${caChiffres?`<div class="jp-kpis">
       ${kpi(caRecherche||caOu?'Cartes affichées':'Cartes',vues.length)}
-      ${kpi('Valeur (prix)',caEur(caSomme(vues)))}
+      ${kpi('Valeur'+hors,caEur(caSomme(comptees)))}
       ${vente.length?kpi('Prix de vente',caEur(vente.reduce((s,c)=>s+c.vente,0))):''}
     </div>`:''}
     <div class="ca-barre">
@@ -19077,7 +19099,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.70.1';
+const APP_VERSION='v1.71.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
