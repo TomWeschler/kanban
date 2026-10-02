@@ -128,6 +128,9 @@ await p.evaluate(async src=>{
       const par=new URL(u).searchParams, n=par.get('name');
       const pg=+par.get('pagination:page')||1, nb=+par.get('pagination:itemsPerPage')||30;
       // 600 Pikachu, servis par pages comme le fait la base.
+      // Une base qui PLAFONNE ses pages à 30, quoi qu'on demande — le cas réel.
+      if(n==='Salameche'){ const tous=Array.from({length:95},(_,i)=>({id:'sa-'+i,localId:String(i),name:'Salamèche',
+        image:`https://assets.tcgdex.net/fr/sv/z/${i}`})); return rep(tous.slice((pg-1)*30,pg*30)); }
       if(n==='Pikachu'){ const tous=Array.from({length:600},(_,i)=>({id:'pk-'+i,localId:String(i),name:'Pikachu',
         image:`https://assets.tcgdex.net/fr/sv/x/${i}`})); return rep(tous.slice((pg-1)*nb,pg*nb)); }
       // Une base qui ignorerait la pagination : tout, à chaque page.
@@ -404,14 +407,19 @@ const sl=await p.evaluate(async()=>{
   caOuvrir(cartes[0].id); await new Promise(r=>setTimeout(r,100));
   document.getElementById('caPickQ').value='Pikachu'; await caPickChercher();
   out.affichees=document.querySelectorAll('#caPickRes .ca-pick').length;
+  out.compteur=document.getElementById('caPickNb').textContent;
   modalFerme('caPickModal'); caFermer();
+  APPELS.length=0;
+  out.plafond=(await caChercher('Salameche')).length; out.plafondPages=APPELS.length;
   window.PAGES_SOURDES=0;
   const s2=await caChercher('Sourdingue');
   out.sourde={nb:s2.length,pages:window.PAGES_SOURDES};
   return out;
 });
-chk('« Choisir l\'image » rend TOUS les résultats, page après page',sl.nb===600&&sl.uniques===600&&sl.pages===3,JSON.stringify(sl));
+chk('« Choisir l\'image » rend TOUS les résultats, page après page',sl.nb===600&&sl.uniques===600&&sl.pages===4,JSON.stringify(sl));
 chk('...et le sélecteur les affiche tous',sl.affichees===600,String(sl.affichees));
+chk('...et dit combien il en a trouvé',sl.compteur==='600 cartes trouvées pour « Pikachu »',sl.compteur);
+chk('Une base qui plafonne ses pages à 30 : tout est rapatrié quand même',sl.plafond===95&&sl.plafondPages===5,JSON.stringify([sl.plafond,sl.plafondPages]));
 chk('Une base qui ignore la pagination ne fait pas boucler',sl.sourde.nb===300&&sl.sourde.pages===2,JSON.stringify(sl.sourde));
 
 console.log('=== 8. UNE IMAGE EFFACÉE DU DRIVE ===');

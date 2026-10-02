@@ -1358,6 +1358,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-img-act{display:flex;gap:0.35rem;flex-wrap:wrap}
 .ca-lien{font-size:0.7rem;margin-top:0.25rem}
 .ca-lien a{color:var(--accent)}
+.ca-pick-nb{font-size:0.7rem;color:var(--text-dim);margin-top:0.5rem}
 .ca-pick-res{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:0.55rem;
   max-height:60vh;overflow-y:auto;margin-top:0.7rem}
 .ca-pick{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.3rem;
@@ -2622,6 +2623,7 @@ body,body *{font-family:var(--font-body)}
       <input type="search" class="ca-q" id="caPickQ" placeholder="Nom du Pokémon, en français" onkeydown="if(event.key==='Enter')caPickChercher()">
       <button class="btn-nav" onclick="caPickChercher()">Chercher</button>
     </div>
+    <div class="ca-pick-nb" id="caPickNb"></div>
     <div class="ca-pick-res" id="caPickRes"></div>
     <div style="display:flex;gap:0.5rem;margin-top:0.6rem">
       <input type="url" class="ca-q" id="caPickUrl" placeholder="…ou colle l'adresse d'une image">
@@ -16118,10 +16120,14 @@ async function caChercherTout(q){
     const rr=await caGet(`${CA_API_DEX}/fr/cards?name=${encodeURIComponent(q)}&pagination:page=${page}&pagination:itemsPerPage=${CA_PAR_PAGE}`);
     const d=rr.ok&&Array.isArray(rr.json)?rr.json:[];
     const avant=vus.size;
-    d.forEach(x=>{ if(x&&x.image&&x.id&&!vus.has(x.id))vus.set(x.id,x); });
-    if(d.length<CA_PAR_PAGE||vus.size===avant)break;
+    d.forEach(x=>{ if(x&&x.id&&!vus.has(x.id))vus.set(x.id,x); });
+    // On ne se fie PAS à la taille de la page : la base peut plafonner ses pages
+    // (à 30, par exemple) quelle que soit la taille demandée. La v1.72.4 en
+    // concluait que la première page était la dernière. On continue tant
+    // qu'une page apporte du nouveau.
+    if(!d.length||vus.size===avant)break;
   }
-  return [...vus.values()];
+  return [...vus.values()].filter(x=>x.image);
 }
 async function caChercher(nom){
   const mots=caNet(nom).replace(/\b(jp|shiny|ar|sar|ir|sir|full ?art|promo|reverse|holo|ex|gx|vmax|vstar|v)\b/gi,' ')
@@ -16964,6 +16970,7 @@ async function caPickChercher(){
   const l=await caChercher(q);
   if(document.getElementById('caPickQ').value.trim()!==q)return;   // une autre recherche a pris le relais
   window.caPickL=l;
+  document.getElementById('caPickNb').textContent=l.length?`${l.length} carte${l.length>1?'s':''} trouvée${l.length>1?'s':''} pour « ${q} »`:'';
   box.innerHTML=l.length?l.map((x,i)=>`<button class="ca-pick" onclick="caPickPrendre(${i})" title="${MD_ATT(x.nom+' — '+x.ref)}">
       <img src="${MD_ATT(x.petite)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()">
       <span>${tdEsc(x.ref)}</span></button>`).join('')
@@ -19281,7 +19288,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.72.4';
+const APP_VERSION='v1.72.5';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
