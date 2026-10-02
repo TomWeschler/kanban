@@ -1244,6 +1244,61 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
    caracteres — le systeme le fait mieux, et gratuitement. */
 :root{--font-jp:'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP','Songti SC',serif;
       --font-jp-s:'Hiragino Sans','Yu Gothic','Noto Sans JP','Meiryo',sans-serif}
+/* ── Cartes ── */
+.ca-wrap{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:1.25rem 1.5rem 3rem;gap:0.9rem}
+.ca-hdr{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap}
+.ca-titre{font-family:var(--font-body);font-size:1.6rem;font-weight:800;color:var(--accent);line-height:1}
+.ca-actions{margin-left:auto;display:flex;gap:0.4rem}
+.ca-barre{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+.ca-q{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  font:inherit;font-size:0.82rem;padding:0.42rem 0.65rem;border-radius:8px;outline:none}
+.ca-q:focus{border-color:var(--accent)}
+.ca-tri{background:var(--surface2);border:1px solid var(--border);color:var(--text);font:inherit;
+  font-size:0.78rem;padding:0.4rem 0.5rem;border-radius:8px}
+.ca-lieux{display:flex;gap:0.3rem;flex-wrap:wrap}
+.ca-lieux .sb-tag{font-size:0.62rem;padding:3px 9px}
+.ca-sec-h{display:flex;align-items:baseline;gap:0.6rem;margin:0.3rem 0 0.55rem;
+  border-bottom:1px solid var(--border);padding-bottom:0.35rem}
+.ca-sec-t{font-weight:700;font-size:0.95rem}
+.ca-sec-n{margin-left:auto;font-family:var(--font-mono);font-size:0.64rem;color:var(--text-dim)}
+.ca-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:0.75rem}
+.ca-tuile{display:flex;flex-direction:column;gap:0.3rem;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:0.45rem;cursor:pointer;color:inherit;font:inherit;text-align:left;
+  transition:transform 0.12s,border-color 0.12s}
+.ca-tuile:hover{transform:translateY(-2px);border-color:var(--accent)}
+.ca-img{aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center}
+.ca-img img{width:100%;height:100%;object-fit:cover;display:block}
+.ca-img.attente{border:1px dashed var(--border2)}
+.ca-img-nom{padding:0.5rem;font-size:0.72rem;color:var(--text-dim);text-align:center}
+.ca-img-nom small{display:block;margin-top:0.4rem;font-size:0.6rem;color:var(--accent);opacity:0.8}
+.ca-nom{font-size:0.74rem;font-weight:600;line-height:1.25;overflow:hidden;display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ca-meta{display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;margin-top:auto}
+.ca-prix{font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:var(--green)}
+.ca-ou{font-family:var(--font-mono);font-size:0.58rem;color:var(--text-dim);border:1px solid var(--border2);
+  border-radius:99px;padding:0 6px}
+.ca-vide{padding:2rem;text-align:center;color:var(--text-dim);display:flex;flex-direction:column;
+  align-items:center;gap:0.7rem}
+.ca-vide-t{font-weight:700;color:var(--text);font-size:1rem}
+.ca-vide-s{color:var(--text-dim);font-size:0.78rem;padding:0.5rem 0}
+.ca-fiche{display:grid;grid-template-columns:220px 1fr;gap:1rem}
+.ca-apercu{aspect-ratio:63/88;border-radius:10px;overflow:hidden;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center}
+.ca-apercu img{width:100%;height:100%;object-fit:contain}
+.ca-apercu-vide{color:var(--text-dim);font-size:0.72rem;padding:1rem;text-align:center}
+.ca-info{font-size:0.66rem;color:var(--text-dim);margin:0.4rem 0;line-height:1.4}
+.ca-img-act{display:flex;gap:0.35rem;flex-wrap:wrap}
+.ca-lien{font-size:0.7rem;margin-top:0.25rem}
+.ca-lien a{color:var(--accent)}
+.ca-pick-res{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:0.55rem;
+  max-height:60vh;overflow-y:auto;margin-top:0.7rem}
+.ca-pick{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.3rem;
+  cursor:pointer;color:var(--text-dim);font:inherit;font-size:0.58rem;display:flex;flex-direction:column;gap:0.2rem}
+.ca-pick:hover{border-color:var(--accent)}
+.ca-pick img{width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:5px}
+@media (max-width:640px){.ca-fiche{grid-template-columns:1fr}.ca-apercu{max-width:220px;margin:0 auto}
+  .ca-grille{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}}
 .jp-wrap{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:1.25rem 1.5rem 3rem;
   gap:0.9rem;position:relative;z-index:1}
 .jp-hdr{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
@@ -2405,6 +2460,10 @@ body,body *{font-family:var(--font-body)}
   </div>
 </div>
 
+<div class="page" id="pagecartes">
+  <div class="ca-wrap" id="caWrap"></div>
+</div>
+
 <div class="page" id="pagesport">
   <div id="sportBanner"></div>
   <div id="sportWeek"></div>
@@ -2417,6 +2476,57 @@ body,body *{font-family:var(--font-body)}
   <div id="sportProgress" class="fit-section"></div>
   <div id="sportHistory" class="fit-section"></div>
   <div id="sportWeight" class="fit-section"></div>
+</div>
+
+<!-- CARTES : fiche d'une carte -->
+<div class="modal-bg" id="caModal">
+  <div class="modal" style="width:min(640px,94vw)">
+    <div class="modal-hdr" id="caModalTitre">CARTE</div>
+    <button class="modal-close" onclick="caFermer()">✕</button>
+    <div class="ca-fiche">
+      <div class="ca-fiche-img">
+        <div class="ca-apercu" id="caApercu"></div>
+        <div class="ca-info" id="caInfo"></div>
+        <div class="ca-img-act">
+          <button class="btn-nav out" onclick="caChoisir()">Choisir l'image…</button>
+          <button class="btn-nav out" onclick="caRetirerImage()" title="Revenir à l'image trouvée depuis l'adresse">Retirer</button>
+        </div>
+      </div>
+      <div class="ca-fiche-ch">
+        <div class="field" id="caSecChamp"><label>Section</label><select id="caSec" onchange="caSecChange(this.value)"></select></div>
+        <div class="field"><label>Nom</label><input type="text" id="caNom" autocomplete="off" placeholder="ex : Flagadoss AR"></div>
+        <div class="field"><label>Adresse de la fiche (Cardmarket…)</label>
+          <input type="url" id="caUrl" autocomplete="off" placeholder="https://www.cardmarket.com/fr/Pokemon/Products/Singles/…" onchange="caUrlChange()" onpaste="setTimeout(caUrlChange,0)">
+          <div class="ca-lien" id="caLien"></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
+          <div class="field" id="caPrixChamp"><label>Prix</label><input type="text" inputmode="decimal" id="caPrix" placeholder="21"></div>
+          <div class="field" id="caVenteChamp"><label>Prix de vente</label><input type="text" inputmode="decimal" id="caVente" placeholder="—"></div>
+        </div>
+        <div class="field" id="caOuChamp"><label>Où</label><input type="text" id="caOuIn" list="caOuListe" autocomplete="off"><datalist id="caOuListe"></datalist></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem">
+      <button class="btn-nav out" id="caSuppr" onclick="caSupprimer()" style="margin-right:auto;color:var(--danger)">Supprimer</button>
+      <button class="btn-nav out" onclick="caFermer()">Annuler</button>
+      <button class="btn-nav" onclick="caEnregistrer()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+<!-- CARTES : choisir une image -->
+<div class="modal-bg" id="caPickModal">
+  <div class="modal" style="width:min(860px,96vw)">
+    <div class="modal-hdr">CHOISIR L'IMAGE</div>
+    <button class="modal-close" onclick="modalFerme('caPickModal')">✕</button>
+    <div style="display:flex;gap:0.5rem">
+      <input type="search" class="ca-q" id="caPickQ" placeholder="Nom du Pokémon, en français" onkeydown="if(event.key==='Enter')caPickChercher()">
+      <button class="btn-nav" onclick="caPickChercher()">Chercher</button>
+    </div>
+    <div class="ca-pick-res" id="caPickRes"></div>
+    <div style="display:flex;gap:0.5rem;margin-top:0.6rem">
+      <input type="url" class="ca-q" id="caPickUrl" placeholder="…ou colle l'adresse d'une image">
+      <button class="btn-nav out" onclick="caPickUrl()">Utiliser</button>
+    </div>
+  </div>
 </div>
 
 <!-- SPORT PLAN MODAL -->
@@ -5655,7 +5765,7 @@ function setNoteOrder(o){
 // Neuf onglets ne tenaient plus. Les cinq pages de pilotage passent en
 // sous-onglets d'une seule entree ; les pages elles-memes sont inchangees.
 const OMEGA=[['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],
-             ['jp','日本語'],
+             ['jp','日本語'],['cartes','Cartes'],
              ['metrics','Mesures'],['finances','Finances'],['crypto','Cryptobot']];
 const LS_OMEGA='kanban_omega_last';
 let omegaLast=localStorage.getItem(LS_OMEGA)||'objectifs';
@@ -15524,9 +15634,571 @@ function switchPage(name){
   if(name==='finances')renderFinancesPage();
   if(name==='sport')renderSportPage();
   if(name==='jp'){applyPageWallpaper('jpBg',randomWallpaper());renderJp();}
+  if(name==='cartes')renderCartes();
   if(name==='adp'){applyPageWallpaper('adpBg',randomWallpaper());renderAdp();}
   if(name==='metrics'){applyPageWallpaper('mesBg',randomWallpaper());renderMetricsPage();}
   navPush();
+}
+
+// ════════════════════════════════════════════════════
+// CARTES — la collection Pokémon, vue et gérée depuis OMEGA
+// ════════════════════════════════════════════════════
+// LA NOTE « Cartes » RESTE LA SOURCE. Aucune feuille nouvelle, aucune copie :
+// cette page LIT les tableaux de la note et RÉÉCRIT leurs lignes. Ce qu'on
+// modifie ici se retrouve dans la note, ce qu'on écrit dans la note apparaît
+// ici, et l'export, l'historique et la synchronisation restent ceux des notes.
+// Chaque tableau de la note est une section ; son titre est la ligne de texte
+// qui le précède (« {vert:Cadeau Noé :} » → « Cadeau Noé »).
+// Les colonnes sont reconnues par leur NOM, jamais par leur rang : on peut
+// en ajouter, en déplacer ou en renommer, les autres sont conservées telles
+// quelles à la réécriture.
+const CA_NOTE='Cartes';
+const LS_CA_IMG='kanban_cartes_img';
+let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0;
+
+// Une cellule de la note, rendue lisible : sans markdown, sans lien, sans
+// couleur. C'est le nom qu'on affiche, et celui qu'on cherche.
+const caNet=s=>String(s==null?'':s)
+  .replace(/!\[[^\]]*\]\([^)]*\)/g,'')
+  .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g,'$2').replace(/\[\[([^\]]+)\]\]/g,'$1')
+  .replace(new RegExp(MD_LIEN_RE.source,'g'),'$1')
+  .replace(MD_COLOR_RE,'$2')
+  .replace(/\*\*|__|~~|==|`/g,'').replace(/(^|\s)[*_](\S)/g,'$1$2').replace(/(\S)[*_](\s|$)/g,'$1$2')
+  .replace(/\s+/g,' ').trim();
+// Une adresse n'est retenue que si elle est web : elle finit dans un href, une
+// balise <img> et une requête. Le reste — javascript:, data:, file: — est ignoré.
+const caWeb=u=>/^https?:\/\/[^\s"'<>]+$/i.test(String(u||'').trim())?String(u).trim():'';
+function caUrlDe(s){
+  const m=new RegExp(MD_LIEN_RE.source).exec(String(s||''));
+  if(m&&caWeb(m[2]))return caWeb(m[2]);
+  const i=new RegExp(MD_IMG_RE.source).exec(String(s||''));
+  if(i&&caWeb(i[2]))return caWeb(i[2]);
+  const n=/https?:\/\/[^\s<>()|]+/i.exec(String(s||''));
+  return n?caWeb(n[0].replace(/[.,;:!?]+$/,'')):'';
+}
+
+function caColonnes(tete){
+  const t=tete.map(h=>tabSansAccent(caNet(h)).trim());
+  const idx=re=>t.findIndex(h=>re.test(h));
+  let nom=idx(/carte|^nom\b|^name|pokemon/); if(nom<0)nom=0;
+  const vente=idx(/vente|revente|cession|sale/);
+  const prix=t.findIndex((h,i)=>i!==vente&&i!==nom&&/prix|achat|cout|valeur|cote|€/.test(h));
+  const ou=idx(/^ou\b|^ou ?\?|lieu|emplacement|classeur|proprietaire|^pour\b|^qui\b/);
+  const url=t.findIndex((h,i)=>i!==nom&&/url|lien|link|cardmarket/.test(h));
+  const img=t.findIndex((h,i)=>i!==nom&&/image|img|visuel|photo|scan/.test(h));
+  return {nom,prix,vente,ou,url,img};
+}
+// Le titre d'une section : la dernière ligne de texte au-dessus du tableau.
+function caTitreAvant(lignes,debut){
+  for(let i=debut-1;i>=0&&i>=debut-6;i--){
+    const l=lignes[i].trim();
+    if(!l)continue;
+    if(/^\s*\|/.test(l)||/^```/.test(l))return '';
+    return caNet(l.replace(/^#{1,6}\s+/,'').replace(/^>\s?/,'')).replace(/\s*:\s*$/,'').trim();
+  }
+  return '';
+}
+
+// La note lue : une section par tableau, une carte par ligne de données.
+// Les lignes d'agrégat (« **Total** | =SOMME(haut) ») ne sont pas des cartes.
+function caLire(n){
+  const src=String(n&&n.content||''), lignes=src.split('\n');
+  return tabBlocs(src).map(([a,z],rang)=>{
+    const brutes=[];
+    for(let i=a;i<=z;i++)if(!/^[\s|:-]+$/.test(lignes[i]))brutes.push({i,c:tabDecoupe(lignes[i])});
+    const tete=(brutes[0]||{c:[]}).c, corps=brutes.slice(1);
+    const cols=caColonnes(tete);
+    const cartes=[];
+    corps.forEach((r,li)=>{
+      if(tabEstAgregat(r.c)||!r.c.some(x=>String(x).trim()))return;
+      const cel=k=>k>=0?String(r.c[k]==null?'':r.c[k]):'';
+      cartes.push({rang,li,sig:r.c.join('\u0001'),
+        nom:caNet(cel(cols.nom))||'(sans nom)',
+        url:caUrlDe(cols.url>=0?cel(cols.url):cel(cols.nom)),
+        img:cols.img>=0?caUrlDe(cel(cols.img)):'',
+        prix:cols.prix>=0?nbFr(cel(cols.prix),null):null,
+        vente:cols.vente>=0?nbFr(cel(cols.vente),null):null,
+        ou:cols.ou>=0?caNet(cel(cols.ou)):''});
+    });
+    return {rang,titre:caTitreAvant(lignes,a)||`Tableau ${rang+1}`,tete,cols,cartes};
+  });
+}
+const caNoteDe=()=>noteByTitle(CA_NOTE);
+
+// ── Retrouver l'image d'une carte ─────────────────────────────────────────
+// Trois chemins, du plus sûr au plus approximatif :
+//   1. une image DÉJÀ CHOISIE (colonne « Image » du tableau) ou une adresse
+//      qui EST une image : on la prend telle quelle ;
+//   2. une adresse de fiche que l'on sait LIRE (Cardmarket, Limitless,
+//      TCGdex, pokemontcg.io) : on en tire l'extension et le numéro, et on
+//      demande la carte exacte à une base publique. C'est le cas automatique ;
+//   3. sinon, rien d'automatique : on ne devine pas une impression parmi
+//      vingt Flagadoss. On propose une recherche par nom, et on retient ce que
+//      l'utilisateur choisit — dans la note, pour que le choix le suive partout.
+// Aucune page marchande n'est lue : Cardmarket refuse les requêtes d'un autre
+// site, et l'adresse suffit. Seules des bases ouvertes sont interrogées.
+const CA_API_PTCG='https://api.pokemontcg.io/v2/cards';
+const CA_API_DEX='https://api.tcgdex.net/v2';
+const caEstImage=u=>/\.(png|jpe?g|webp|gif|avif)(\?.*)?$/i.test(u)
+  ||/^https:\/\/(images\.pokemontcg\.io|assets\.tcgdex\.net)\//i.test(u);
+const caDexImage=(img,q)=>caWeb(img)?(/\.(png|jpe?g|webp)$/i.test(img)?caWeb(img):`${caWeb(img)}/${q||'high'}.webp`):'';
+
+// Ce qu'une adresse dit de la carte, sans la charger.
+function caLireUrl(u){
+  let x; try{ x=new URL(u); }catch(e){ return null; }
+  const h=x.hostname.replace(/^www\./,''), seg=x.pathname.split('/').filter(Boolean).map(s=>decodeURIComponent(s));
+  if(/cardmarket\.com$/.test(h)){
+    // …/Pokemon/Products/Singles/<Extension>/<Carte>-<CODE><numéro>
+    const k=seg.findIndex(s=>/^singles$/i.test(s));
+    if(k<0||!seg[k+2])return null;
+    const ext=seg[k+1].replace(/-/g,' '), slug=seg[k+2];
+    const m=/-([A-Z]{2,5})(\d{1,3})$/i.exec(slug);
+    const nom=slug.replace(/-([A-Z]{2,5})?\d{1,3}$/i,'').replace(/-V\d+$/i,'').replace(/-/g,' ');
+    return {source:'cardmarket',code:m?m[1].toUpperCase():'',num:m?String(+m[2]):'',nom,ext};
+  }
+  if(/limitlesstcg\.com$/.test(h)){
+    const k=seg.indexOf('cards'); if(k<0)return null;
+    const r=seg.slice(k+1).filter(s=>!/^(jp|en)$/i.test(s));
+    if(seg[k+1]&&/^jp$/i.test(seg[k+1]))return {source:'limitless-jp'};   // aucune base ouverte ne les illustre
+    return r.length>=2?{source:'limitless',code:r[0].toUpperCase(),num:String(+r[1]||r[1])}:null;
+  }
+  if(/tcgdex\.(net|dev)$/.test(h)){
+    const m=/cards\/([a-z0-9.\-]+-[a-z0-9]+)/i.exec(x.pathname);
+    return m?{source:'tcgdex',id:m[1],lang:/\/(fr|en|de|es|it|pt|ja)\//.exec(x.pathname)?.[1]||'fr'}:null;
+  }
+  if(/pokemontcg\.io$/.test(h)){
+    const m=/cards?\/([a-z0-9.\-]+-[a-z0-9]+)/i.exec(x.pathname);
+    return m?{source:'ptcg',id:m[1]}:null;
+  }
+  return null;
+}
+async function caGet(u,ms=10000){
+  const ac=new AbortController(), t=setTimeout(()=>ac.abort(),ms);
+  try{ const r=await fetch(u,{signal:ac.signal}); return r.ok?await r.json():null; }
+  catch(e){ return null; } finally{ clearTimeout(t); }
+}
+const caPtcgCarte=d=>{
+  const c=(d&&d.data||[])[0]; if(!c||!c.images)return null;
+  const p=c.cardmarket&&c.cardmarket.prices||{};
+  const img=caWeb(c.images.large||c.images.small); if(!img)return null;
+  return {img,petite:caWeb(c.images.small)||img,
+          ref:`${c.set&&c.set.name||''} ${c.number||''}`.trim(),
+          cote:Number.isFinite(p.trendPrice)?p.trendPrice:Number.isFinite(p.averageSellPrice)?p.averageSellPrice:null};
+};
+async function caResoudreUrl(u){
+  if(caEstImage(u))return {img:u,petite:u};
+  const i=caLireUrl(u); if(!i)return null;
+  if(i.source==='tcgdex'){
+    const c=await caGet(`${CA_API_DEX}/${i.lang}/cards/${encodeURIComponent(i.id)}`);
+    return c&&c.image?{img:caDexImage(c.image),petite:caDexImage(c.image,'low'),
+                       ref:`${c.set&&c.set.name||''} ${c.localId||''}`.trim()}:null;
+  }
+  if(i.source==='ptcg')return caPtcgCarte(await caGet(`${CA_API_PTCG}?q=id:${encodeURIComponent(i.id)}`));
+  if(i.code&&i.num){
+    const r=caPtcgCarte(await caGet(`${CA_API_PTCG}?q=${encodeURIComponent(`set.ptcgoCode:${i.code} number:${i.num}`)}`));
+    if(r)return r;
+  }
+  if(i.source==='cardmarket'&&i.nom){
+    const q=`name:"${i.nom.replace(/"/g,'')}"`+(i.ext?` set.name:"${i.ext.replace(/"/g,'')}"`:'');
+    return caPtcgCarte(await caGet(`${CA_API_PTCG}?q=${encodeURIComponent(q)}`));
+  }
+  return null;
+}
+// Les réponses sont gardées : vingt-six cartes ne doivent pas coûter vingt-six
+// requêtes à chaque ouverture. Un échec est gardé aussi, mais une semaine
+// seulement — la base a pu s'enrichir depuis.
+const CA_ECHEC_TTL=7*86400000;
+function caCache(){ try{ return JSON.parse(localStorage.getItem(LS_CA_IMG)||'{}')||{}; }catch(e){ return {}; } }
+function caCacheMettre(u,v){
+  const c=caCache(); c[u]=v?{...v,at:Date.now()}:{echec:1,at:Date.now()};
+  try{ localStorage.setItem(LS_CA_IMG,JSON.stringify(c)); }catch(e){}
+}
+const caConnue=u=>{ const v=caCache()[u]; if(!v)return undefined;
+  if(v.echec)return Date.now()-v.at<CA_ECHEC_TTL?null:undefined; return v; };
+// L'image à montrer tout de suite, sans réseau : choisie, ou déjà connue.
+function caImageImmediate(c){
+  if(c.img)return {img:c.img,petite:c.img,choisie:true};
+  if(c.url){ if(caEstImage(c.url))return {img:c.url,petite:c.url};
+             const v=caConnue(c.url); if(v&&caWeb(v.img))return v; }
+  return null;
+}
+async function caImage(c){
+  const im=caImageImmediate(c); if(im)return im;
+  if(!c.url||caConnue(c.url)===null)return null;
+  const r=await caResoudreUrl(c.url);
+  caCacheMettre(c.url,r);
+  return r;
+}
+// La recherche par nom, pour le choix manuel. Les noms sont en français :
+// TCGdex est la base ouverte qui les connaît. On retire les mots qui ne sont
+// pas le nom du Pokémon (« Shiny », « AR », « full art »…) en raccourcissant
+// la requête jusqu'à obtenir des résultats.
+async function caChercher(nom){
+  const mots=caNet(nom).replace(/\b(jp|shiny|ar|sar|ir|sir|full ?art|promo|reverse|holo|ex|gx|vmax|vstar|v)\b/gi,' ')
+    .replace(/[-–(),]/g,' ').split(/\s+/).filter(w=>w.length>1&&!/\d/.test(w));
+  for(let k=Math.min(mots.length,3);k>=1;k--){
+    const q=mots.slice(0,k).join(' ');
+    const d=await caGet(`${CA_API_DEX}/fr/cards?name=${encodeURIComponent(q)}`);
+    const l=(Array.isArray(d)?d:[]).filter(x=>x&&x.image);
+    if(l.length)return l.slice(0,60).map(x=>({img:caDexImage(x.image),petite:caDexImage(x.image,'low'),
+                                               nom:x.name,ref:`${x.id||''}`}));
+  }
+  return [];
+}
+
+// ── Réécrire la note ──────────────────────────────────────────────────────
+// La règle des éditeurs de tableau : on relit la note au moment d'écrire, on
+// retrouve la ligne par son CONTENU et non par sa position, et on ne réécrit
+// que les cellules qui ont changé. Une carte modifiée entre-temps sur un autre
+// appareil n'est donc jamais écrasée à l'aveugle : on refuse, et on le dit.
+const caLigneMd=c=>'| '+c.map(tabEchappe).join(' | ')+' |';
+function caFormatPrix(v,colonne){
+  if(v==null||v==='')return '';
+  const n=typeof v==='number'?v:nbFr(v,null); if(n==null)return String(v);
+  const ex=colonne.find(x=>/\d/.test(x)&&nbFr(x,null)!=null)||'';
+  const suf=/\s€\s*$/.test(ex)?' €':/€\s*$/.test(ex)||!ex?'€':'';
+  return (Number.isInteger(n)?String(n):n.toFixed(2).replace('.',','))+suf;
+}
+// op : {type:'maj'|'ajout'|'suppr', rang, sig?, val?:{nom,url,prix,vente,ou,img}}
+// Les références explicites d'une formule (« =B3*C3 ») suivent les lignes qui
+// bougent ; une ligne n'est réécrite que si sa formule a réellement changé.
+function caRemapperLignes(lignes,pos,corps,map){
+  corps.forEach((x,j)=>{
+    if(map[j]==null||map[j]===j)return;
+    const y=x.map(c=>{ const v=String(c).trim();
+      return v[0]==='='?'='+tabRemapper(v.slice(1),null,map):c; });
+    if(y.join('\u0001')!==x.join('\u0001'))lignes[pos[j+1]]=caLigneMd(y);
+  });
+}
+function caAppliquer(src,op){
+  const lignes=String(src).split('\n');
+  const b=tabBlocs(src)[op.rang]; if(!b)return {err:"Le tableau n'est plus dans la note"};
+  const pos=[]; let sep=-1;
+  for(let i=b[0];i<=b[1];i++){ if(/^[\s|:-]+$/.test(lignes[i])){ if(sep<0)sep=i; } else pos.push(i); }
+  const rows=pos.map(i=>tabDecoupe(lignes[i]));
+  const cols=caColonnes(rows[0]);
+  const corps=rows.slice(1);
+  // La ligne est retrouvée AVANT toute retouche de structure : c'est son
+  // contenu d'origine qui l'identifie.
+  let i=-1;
+  if(op.type!=='ajout'){
+    i=corps.findIndex(r=>r.join('\u0001')===op.sig);
+    if(i<0)return {err:'Cette carte a été modifiée ailleurs entre-temps — rien n\'a été écrit.'};
+  }
+  if(op.type==='suppr'){
+    const map={}; corps.forEach((_,j)=>{ if(j>i)map[j]=j-1; });
+    caRemapperLignes(lignes,pos,corps,map);
+    lignes.splice(pos[i+1],1);
+    return {src:lignes.join('\n')};
+  }
+  // Une image choisie à la main a besoin d'une colonne pour être retenue : on
+  // l'ajoute — visible, à droite, et seulement à ce moment-là.
+  let structure=false;
+  if(op.val&&op.val.img&&cols.img<0){
+    const L=rows[0].length; structure=true;
+    rows.forEach((r,k)=>{ while(r.length<L)r.push(''); r.push(k?'':'Image'); lignes[pos[k]]=caLigneMd(r); });
+    if(sep>=0)lignes[sep]=lignes[sep].replace(/\|\s*$/,'')+'|---|';
+    cols.img=L;
+  }
+  const larg=rows[0].length;
+  const colonne=k=>corps.map(x=>String(x[k]||''));
+  const ecrire=(r,v)=>{
+    const avant=r.join('\u0001');
+    while(r.length<larg)r.push('');
+    const ancNom=caNet(r[cols.nom]), ancUrl=caUrlDe(cols.url>=0?r[cols.url]:r[cols.nom]);
+    const nom=v.nom!=null?String(v.nom).trim():ancNom;
+    const url=v.url!=null?caWeb(v.url):ancUrl;
+    if(cols.url>=0){
+      if(nom!==ancNom)r[cols.nom]=nom;
+      if(url!==ancUrl)r[cols.url]=url;
+    } else if(nom!==ancNom||url!==ancUrl){
+      r[cols.nom]=url?`[${nom.replace(/[[\]]/g,'')}](${url})`:nom;
+    }
+    const num=x=>x==null||String(x).trim()===''?null:nbFr(x,null);
+    if(v.prix!==undefined&&cols.prix>=0&&num(r[cols.prix])!==num(v.prix))
+      r[cols.prix]=caFormatPrix(num(v.prix),colonne(cols.prix));
+    if(v.vente!==undefined&&cols.vente>=0&&num(r[cols.vente])!==num(v.vente))
+      r[cols.vente]=caFormatPrix(num(v.vente),colonne(cols.vente));
+    if(v.ou!==undefined&&cols.ou>=0&&caNet(r[cols.ou])!==String(v.ou).trim())r[cols.ou]=String(v.ou).trim();
+    if(v.img!==undefined&&cols.img>=0&&caUrlDe(r[cols.img])!==caWeb(v.img))r[cols.img]=caWeb(v.img);
+    return r.join('\u0001')!==avant;
+  };
+  if(op.type==='ajout'){
+    // Une nouvelle carte entre AVANT la ligne de total : après, elle serait
+    // hors du compte, l'exact inverse de l'intention.
+    let k=corps.length; while(k>0&&tabEstAgregat(corps[k-1]))k--;
+    const r=new Array(larg).fill('');
+    ecrire(r,op.val);
+    const map={}; corps.forEach((_,j)=>{ if(j>=k)map[j]=j+1; });
+    caRemapperLignes(lignes,pos,corps,map);
+    lignes.splice(k<corps.length?pos[k+1]:pos[pos.length-1]+1,0,caLigneMd(r));
+    return {src:lignes.join('\n')};
+  }
+  const r=corps[i];
+  const change=ecrire(r,op.val);
+  if(!change&&!structure)return {src,inchange:true};
+  lignes[pos[i+1]]=caLigneMd(r);
+  return {src:lignes.join('\n')};
+}
+async function caEcrire(op,msg){
+  try{ await refreshNotesIfStale(); }catch(e){}
+  const n=caNoteDe();
+  if(!n){ toast(`La note « ${CA_NOTE} » est introuvable`,'err'); return false; }
+  const avant=n.content;
+  const r=caAppliquer(avant,op);
+  if(r.err){ toast(r.err,'err'); renderCartes(); return false; }
+  if(r.inchange)return true;
+  noteSnapshot(n.title,avant,n.id);
+  n.content=r.src;
+  const ok=await noteUpsert(n);
+  if(!ok){ n.content=avant; toast('ÉCHEC de l\'enregistrement','err'); renderCartes(); return false; }
+  renderCartes();
+  offerUndo(msg,async()=>{
+    const m=caNoteDe(); if(!m||m.content!==r.src){ toast('La note a changé depuis — annulation impossible','err'); return; }
+    m.content=avant; await noteUpsert(m); renderCartes();
+  });
+  return true;
+}
+
+// ── La page ───────────────────────────────────────────────────────────────
+const caEur=v=>v==null?'—':v.toLocaleString('fr-FR',{minimumFractionDigits:Number.isInteger(v)?0:2,maximumFractionDigits:2})+' €';
+const caSomme=l=>l.reduce((s,c)=>s+(c.prix||0),0);
+function caVisibles(s){
+  const q=tabSansAccent(caRecherche.trim());
+  let l=s.cartes.filter(c=>(!caOu||c.ou===caOu)
+    &&(!q||tabSansAccent(c.nom+' '+c.ou+' '+s.titre).includes(q)));
+  if(caTri==='prix-')l=l.slice().sort((a,b)=>(b.prix??-1)-(a.prix??-1));
+  if(caTri==='prix+')l=l.slice().sort((a,b)=>(a.prix??1e9)-(b.prix??1e9));
+  if(caTri==='nom')l=l.slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
+  return l;
+}
+async function renderCartes(){
+  const el=document.getElementById('caWrap'); if(!el)return;
+  if(accessToken&&!notesLoaded){ el.innerHTML='<div class="ca-vide">Chargement des notes…</div>';
+    try{ await loadNotes(); }catch(e){} }
+  else { try{ await refreshNotesIfStale(); }catch(e){} }
+  if(curPage!=='cartes')return;
+  const n=caNoteDe();
+  if(!n){
+    el.innerHTML=`<div class="ca-vide"><div class="ca-vide-t">Aucune note « ${CA_NOTE} »</div>
+      <div>Cette page lit les tableaux d'une note nommée <b>${CA_NOTE}</b>. Elle reste la source : ce que tu modifies ici y est écrit.</div>
+      <button class="btn-nav" onclick="caCreerNote()">Créer la note ${CA_NOTE}</button></div>`;
+    return;
+  }
+  const secs=caLire(n);
+  const toutes=secs.flatMap(s=>s.cartes);
+  const lieux=[...new Set(toutes.map(c=>c.ou).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+  if(caOu&&!lieux.includes(caOu))caOu='';
+  const vis=secs.map(s=>({s,l:caVisibles(s)}));
+  const vues=vis.flatMap(x=>x.l);
+  const vente=vues.filter(c=>c.vente!=null);
+  const kpi=(l,v)=>`<div class="jp-kpi"><div class="jp-kpi-l">${l}</div><div class="jp-kpi-v">${v}</div></div>`;
+  const gen=++caGen;
+  el.innerHTML=`
+    <div class="ca-hdr">
+      <div class="jp-titre"><span class="ca-titre">Cartes</span>
+        <span class="jp-sous">${toutes.length} carte${toutes.length>1?'s':''} · ${secs.length} section${secs.length>1?'s':''}</span></div>
+      <div class="ca-actions">
+        <button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button>
+        <button class="btn-nav out" onclick="openWikiLink('${CA_NOTE}')" title="Ouvrir la note source">Ouvrir la note</button>
+      </div>
+    </div>
+    <div class="jp-kpis">
+      ${kpi(caRecherche||caOu?'Cartes affichées':'Cartes',vues.length)}
+      ${kpi('Valeur (prix)',caEur(caSomme(vues)))}
+      ${vente.length?kpi('Prix de vente',caEur(vente.reduce((s,c)=>s+c.vente,0))):''}
+      ${kpi('Prix moyen',vues.filter(c=>c.prix!=null).length?caEur(caSomme(vues)/vues.filter(c=>c.prix!=null).length):'—')}
+    </div>
+    <div class="ca-barre">
+      <input type="search" class="ca-q" id="caQ" placeholder="Chercher une carte…" value="${MD_ATT(caRecherche)}"
+        oninput="caRecherche=this.value;caRedessiner()">
+      <select class="ca-tri" onchange="caTri=this.value;renderCartes()">
+        ${[['ordre','Ordre de la note'],['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z']].map(([v,l])=>
+          `<option value="${v}"${caTri===v?' selected':''}>${l}</option>`).join('')}
+      </select>
+      ${lieux.length>1?`<div class="ca-lieux">${['',...lieux].map(o=>
+        `<button class="sb-tag${caOu===o?' active':''}" onclick="caOu=this.dataset.o;renderCartes()" data-o="${MD_ATT(o)}">${o?tdEsc(o):'Tous'}</button>`).join('')}</div>`:''}
+    </div>
+    <div id="caSections">${caSectionsHtml(vis)}</div>`;
+  caChargerImages(vues,gen);
+}
+function caSectionsHtml(vis){
+  const html=vis.filter(x=>x.l.length||(!caRecherche&&!caOu)).map(({s,l})=>`
+    <section class="ca-sec">
+      <div class="ca-sec-h"><span class="ca-sec-t">${tdEsc(s.titre)}</span>
+        <span class="ca-sec-n">${l.length} · ${caEur(caSomme(l))}</span></div>
+      ${l.length?`<div class="ca-grille">${l.map(caTuile).join('')}</div>`
+        :'<div class="ca-vide-s">Aucune carte dans ce tableau.</div>'}
+    </section>`).join('');
+  return html||'<div class="ca-vide">Aucune carte ne correspond.</div>';
+}
+const caCle=c=>`${c.rang}:${c.li}`;
+function caTuile(c){
+  const im=caImageImmediate(c);
+  return `<button class="ca-tuile" data-k="${caCle(c)}" onclick="caOuvrir('${caCle(c)}')" title="${MD_ATT(c.nom)}">
+    <div class="ca-img${im?'':' attente'}">${im?`<img src="${MD_ATT(im.petite||im.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="caImgKo(this)">`
+      :`<span class="ca-img-nom">${tdEsc(c.nom)}${c.url?'':'<small>＋ choisir une image</small>'}</span>`}</div>
+    <div class="ca-nom">${tdEsc(c.nom)}</div>
+    <div class="ca-meta">${c.prix!=null?`<span class="ca-prix">${caEur(c.prix)}</span>`:''}${c.ou?`<span class="ca-ou">${tdEsc(c.ou)}</span>`:''}</div>
+  </button>`;
+}
+function caImgKo(img){ const b=img.parentNode; if(!b)return; b.classList.add('attente');
+  b.innerHTML=`<span class="ca-img-nom">${tdEsc((b.closest('.ca-tuile')||{}).title||'')}</span>`; }
+// La recherche redessine la grille, pas le champ : sinon on perdrait le curseur.
+function caRedessiner(){
+  const n=caNoteDe(); const box=document.getElementById('caSections'); if(!n||!box)return;
+  const vis=caLire(n).map(s=>({s,l:caVisibles(s)}));
+  box.innerHTML=caSectionsHtml(vis);
+  caChargerImages(vis.flatMap(x=>x.l),++caGen);
+}
+// Trois requêtes à la fois au plus : la base publique est partagée, et la page
+// reste utilisable pendant ce temps.
+async function caChargerImages(l,gen){
+  const file=l.filter(c=>!caImageImmediate(c)&&c.url&&caConnue(c.url)!==null);
+  const tache=async()=>{
+    while(file.length&&gen===caGen){
+      const c=file.shift();
+      const r=await caImage(c);
+      if(gen!==caGen)return;
+      const t=document.querySelector(`.ca-tuile[data-k="${caCle(c)}"] .ca-img`);
+      if(t&&r){ t.classList.remove('attente');
+        t.innerHTML=`<img src="${MD_ATT(r.petite||r.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="caImgKo(this)">`; }
+    }
+  };
+  await Promise.all([tache(),tache(),tache()]);
+}
+
+// ── La fiche : voir, modifier, ajouter ────────────────────────────────────
+function caTrouver(cle){
+  const n=caNoteDe(); if(!n)return null;
+  const [r,li]=String(cle).split(':').map(Number);
+  const s=caLire(n)[r]; return s?{s,c:s.cartes.find(x=>x.li===li)||null}:null;
+}
+function caOuvrir(cle){
+  const n=caNoteDe(); if(!n)return;
+  const secs=caLire(n);
+  if(!secs.length){ toast('La note Cartes ne contient aucun tableau','err'); return; }
+  const t=cle?caTrouver(cle):null;
+  if(cle&&(!t||!t.c)){ toast('Carte introuvable','err'); renderCartes(); return; }
+  caEd={cle,sig:t?t.c.sig:null,rang:t?t.s.rang:secs[0].rang,img:t?t.c.img:''};
+  const c=t?t.c:{nom:'',url:'',prix:null,vente:null,ou:''};
+  const s=t?t.s:secs[0];
+  document.getElementById('caModalTitre').textContent=t?'CARTE':'NOUVELLE CARTE';
+  document.getElementById('caSecChamp').style.display=t||secs.length<2?'none':'';
+  document.getElementById('caSec').innerHTML=secs.map(x=>`<option value="${x.rang}">${tdEsc(x.titre)}</option>`).join('');
+  document.getElementById('caSec').value=String(caEd.rang);
+  document.getElementById('caNom').value=c.nom==='(sans nom)'?'':c.nom;
+  document.getElementById('caUrl').value=c.url||'';
+  document.getElementById('caPrix').value=c.prix==null?'':String(c.prix).replace('.',',');
+  document.getElementById('caVente').value=c.vente==null?'':String(c.vente).replace('.',',');
+  document.getElementById('caOuIn').value=c.ou||'';
+  caChampsSelon(s);
+  document.getElementById('caSuppr').style.display=t?'':'none';
+  document.getElementById('caLien').innerHTML=c.url?`<a href="${MD_ATT(c.url)}" target="_blank" rel="noopener">Ouvrir la fiche ↗</a>`:'';
+  caApercu(c);
+  modalOuvre('caModal');
+}
+// Seules les colonnes qui EXISTENT sont proposées : un champ sans colonne
+// laisserait croire qu'il est enregistré.
+function caChampsSelon(s){
+  document.getElementById('caPrixChamp').style.display=s.cols.prix>=0?'':'none';
+  document.getElementById('caVenteChamp').style.display=s.cols.vente>=0?'':'none';
+  document.getElementById('caOuChamp').style.display=s.cols.ou>=0?'':'none';
+  const l=document.getElementById('caOuListe');
+  l.innerHTML=[...new Set(caLire(caNoteDe()).flatMap(x=>x.cartes.map(c=>c.ou)).filter(Boolean))]
+    .map(o=>`<option value="${MD_ATT(o)}">`).join('');
+}
+function caSecChange(v){
+  caEd.rang=+v; const s=caLire(caNoteDe())[caEd.rang]; if(s)caChampsSelon(s);
+}
+async function caApercu(c){
+  const box=document.getElementById('caApercu'), info=document.getElementById('caInfo');
+  const pose=r=>{ box.innerHTML=r?`<img src="${MD_ATT(r.img)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`
+    :`<div class="ca-apercu-vide">${c.url?'Image introuvable depuis cette adresse':'Pas d\'image'}</div>`;
+    info.innerHTML=r?[r.choisie?'Image choisie':c.url&&!caEstImage(c.url)?'Trouvée automatiquement':'',
+      r.ref?tdEsc(r.ref):'', r.cote!=null?`Tendance Cardmarket : <b>${caEur(r.cote)}</b>`:'']
+      .filter(Boolean).join(' · '):''; };
+  if(caEd&&caEd.img){ pose({img:caEd.img,choisie:true}); return; }
+  const im=caImageImmediate(c); if(im){ pose(im); return; }
+  if(!c.url){ pose(null); return; }
+  box.innerHTML='<div class="ca-apercu-vide">Recherche de l\'image…</div>'; info.innerHTML='';
+  const r=await caImage(c); if(caEd)pose(r);
+}
+// L'adresse vient d'être collée : on cherche l'image tout de suite, avant même
+// d'enregistrer — c'est le moment où l'on veut savoir si elle est reconnue.
+function caUrlChange(){
+  if(!caEd)return;
+  const u=caWeb(document.getElementById('caUrl').value);
+  document.getElementById('caLien').innerHTML=u?`<a href="${MD_ATT(u)}" target="_blank" rel="noopener">Ouvrir la fiche ↗</a>`:'';
+  if(!caEd.img)caApercu({url:u,img:''});
+}
+function caFermer(){ modalFerme('caModal'); caEd=null; }
+async function caEnregistrer(){
+  if(!caEd)return;
+  const val={nom:document.getElementById('caNom').value.trim(),
+    url:document.getElementById('caUrl').value.trim(),
+    prix:document.getElementById('caPrix').value.trim(),
+    vente:document.getElementById('caVente').value.trim(),
+    ou:document.getElementById('caOuIn').value.trim()};
+  if(!val.nom){ toast('Le nom est obligatoire','err'); return; }
+  if(val.url&&!caWeb(val.url)){ toast('Adresse invalide : elle doit commencer par https://','err'); return; }
+  if(caEd.imgChange)val.img=caEd.img;
+  const op=caEd.cle?{type:'maj',rang:caEd.rang,sig:caEd.sig,val}:{type:'ajout',rang:caEd.rang,val};
+  caFermer();
+  await caEcrire(op,op.type==='ajout'?`« ${val.nom} » ajoutée`:`« ${val.nom} » modifiée`);
+}
+async function caSupprimer(){
+  if(!caEd||!caEd.cle)return;
+  const nom=document.getElementById('caNom').value.trim()||'la carte';
+  const op={type:'suppr',rang:caEd.rang,sig:caEd.sig};
+  caFermer();
+  await caEcrire(op,`« ${nom} » supprimée`);
+}
+async function caCreerNote(){
+  const n=await newNote(null,CA_NOTE);
+  n.content='## Ma collection\n\n| Carte | Prix | Où |\n|---|---|---|\n| **Total** | =SOMME(haut) |  |\n';
+  await noteUpsert(n);
+  switchPage('cartes');
+}
+
+// ── Choisir l'image à la main ─────────────────────────────────────────────
+async function caChoisir(){
+  if(!caEd)return;
+  const q=document.getElementById('caNom').value.trim();
+  document.getElementById('caPickQ').value=q;
+  modalOuvre('caPickModal');
+  caPickChercher();
+}
+async function caPickChercher(){
+  const q=document.getElementById('caPickQ').value.trim();
+  const box=document.getElementById('caPickRes');
+  if(!q){ box.innerHTML='<div class="ca-vide-s">Tape un nom de Pokémon.</div>'; return; }
+  box.innerHTML='<div class="ca-vide-s">Recherche…</div>';
+  const l=await caChercher(q);
+  if(document.getElementById('caPickQ').value.trim()!==q)return;   // une autre recherche a pris le relais
+  window.caPickL=l;
+  box.innerHTML=l.length?l.map((x,i)=>`<button class="ca-pick" onclick="caPickPrendre(${i})" title="${MD_ATT(x.nom+' — '+x.ref)}">
+      <img src="${MD_ATT(x.petite)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()">
+      <span>${tdEsc(x.ref)}</span></button>`).join('')
+    :'<div class="ca-vide-s">Aucune carte trouvée. Essaie le nom seul (« Flagadoss »), ou colle une adresse d\'image ci-dessous.</div>';
+}
+function caPickPrendre(i){ const x=(window.caPickL||[])[i]; if(x)caPoserImage(x.img); }
+function caPickUrl(){
+  const u=caWeb(document.getElementById('caPickUrl').value);
+  if(!u){ toast('Adresse d\'image invalide','err'); return; }
+  caPoserImage(u);
+}
+function caPoserImage(u){
+  if(!caEd)return;
+  caEd.img=u; caEd.imgChange=true;
+  modalFerme('caPickModal');
+  caApercu({url:'',img:u});
+  document.getElementById('caInfo').innerHTML='Image choisie — enregistrée dans une colonne « Image » du tableau, pour te suivre sur tous tes appareils.';
+}
+function caRetirerImage(){
+  if(!caEd)return;
+  caEd.img=''; caEd.imgChange=true;
+  caApercu({url:caWeb(document.getElementById('caUrl').value),img:''});
 }
 
 // ════════════════════════════════════════════════════
@@ -17805,7 +18477,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.66.1';
+const APP_VERSION='v1.67.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
