@@ -15747,6 +15747,12 @@ let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0;
 // principale, celle qu'on met en tête. Mémorisé sur l'appareil.
 const LS_CA_GROUPE='kanban_cartes_groupe';
 let caGroupe=(()=>{ try{ return localStorage.getItem(LS_CA_GROUPE)==='etiquette'?'etiquette':'section'; }catch(e){ return 'section'; } })();
+// Les totaux du bandeau se masquent : utile pour montrer sa collection sans
+// en exposer la valeur, et pour gagner de la place. Mémorisé sur l'appareil.
+const LS_CA_CHIFFRES='kanban_cartes_chiffres';
+let caChiffres=(()=>{ try{ return localStorage.getItem(LS_CA_CHIFFRES)!=='non'; }catch(e){ return true; } })();
+function caChiffresBascule(){ caChiffres=!caChiffres;
+  try{ localStorage.setItem(LS_CA_CHIFFRES,caChiffres?'oui':'non'); }catch(e){} renderCartes(); }
 function caGrouper(v){ caGroupe=v; try{ localStorage.setItem(LS_CA_GROUPE,v); }catch(e){} renderCartes(); }
 
 // ── Lire la note « Cartes » (import seulement) ───────────────────────────
@@ -16400,21 +16406,21 @@ async function renderCartes(){
   const vis=secs.map(s=>({s,l:caVisibles(s)}));
   const vues=vis.flatMap(x=>x.l);
   const vente=vues.filter(c=>c.vente!=null);
-  const avecPrix=vues.filter(c=>c.prix!=null);
   const kpi=(l,v)=>`<div class="jp-kpi"><div class="jp-kpi-l">${l}</div><div class="jp-kpi-v">${v}</div></div>`;
   el.innerHTML=`
     <div class="ca-tete">
     <div class="ca-hdr">
       <div class="jp-titre"><span class="ca-titre">Cartes</span>
         <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${secs.length} ${caGroupe==='etiquette'?'groupe':'section'}${secs.length>1?'s':''}</span></div>
-      <div class="ca-actions"><button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button></div>
+      <div class="ca-actions">
+        <button class="btn-nav out" onclick="caChiffresBascule()" title="${caChiffres?'Masquer':'Afficher'} les totaux">${caChiffres?'Masquer':'Afficher'} les chiffres</button>
+        <button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button></div>
     </div>
-    <div class="jp-kpis">
+    ${caChiffres?`<div class="jp-kpis">
       ${kpi(caRecherche||caOu?'Cartes affichées':'Cartes',vues.length)}
       ${kpi('Valeur (prix)',caEur(caSomme(vues)))}
       ${vente.length?kpi('Prix de vente',caEur(vente.reduce((s,c)=>s+c.vente,0))):''}
-      ${kpi('Prix moyen',avecPrix.length?caEur(caSomme(avecPrix)/avecPrix.length):'—')}
-    </div>
+    </div>`:''}
     <div class="ca-barre">
       <input type="search" class="ca-q" id="caQ" placeholder="Chercher une carte…" value="${MD_ATT(caRecherche)}"
         oninput="caRecherche=this.value;caRedessiner()">
@@ -19071,7 +19077,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.70.0';
+const APP_VERSION='v1.70.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

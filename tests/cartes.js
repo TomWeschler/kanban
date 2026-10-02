@@ -710,6 +710,31 @@ const ancien=await p.evaluate(async()=>{
 chk('L\'en-tête d\'un ancien onglet est mis à jour',/,etiquettes,.*,langue$/.test(ancien.entete),ancien.entete);
 chk('...et son « ou » devient la première étiquette',(ancien.tags||[]).join()==='Noé'&&ancien.langue==='',JSON.stringify(ancien));
 
+console.log('=== 9 quinquies. MASQUER LES CHIFFRES ===');
+const mc=await p.evaluate(async()=>{
+  const out={};
+  try{ localStorage.removeItem('kanban_cartes_chiffres'); }catch(e){}
+  caChiffres=true; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  const kp=()=>[...document.querySelectorAll('.ca-tete .jp-kpi-l')].map(x=>x.textContent);
+  out.avant=kp();
+  const b=[...document.querySelectorAll('.ca-actions button')].find(x=>/chiffres/.test(x.textContent));
+  out.libelle=b&&b.textContent;
+  b.click(); await new Promise(r=>setTimeout(r,200));
+  out.masques=!document.querySelector('.ca-tete .jp-kpis');
+  out.libelle2=[...document.querySelectorAll('.ca-actions button')].find(x=>/chiffres/.test(x.textContent)).textContent;
+  out.memo=localStorage.getItem('kanban_cartes_chiffres');
+  out.grilleLa=document.querySelectorAll('.ca-tuile').length>0;
+  [...document.querySelectorAll('.ca-actions button')].find(x=>/chiffres/.test(x.textContent)).click();
+  await new Promise(r=>setTimeout(r,200));
+  out.revenus=kp().length>0;
+  return out;
+});
+chk('Le prix moyen a disparu des totaux',!mc.avant.some(t=>/moyen/i.test(t))&&mc.avant.length>=2,JSON.stringify(mc.avant));
+chk('Un bouton « Masquer les chiffres »',mc.libelle==='Masquer les chiffres',String(mc.libelle));
+chk('...qui les masque, et devient « Afficher »',mc.masques&&mc.libelle2==='Afficher les chiffres',JSON.stringify(mc));
+chk('...sans toucher aux cartes',mc.grilleLa===true);
+chk('...choix mémorisé, et réversible',mc.memo==='non'&&mc.revenus===true,JSON.stringify(mc));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
