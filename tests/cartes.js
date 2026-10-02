@@ -123,6 +123,15 @@ await p.evaluate(async src=>{
       if(/javascript/.test(q))return rep({data:[{images:{large:'javascript:alert(1)'}}]});
       return rep({data:[]});
     }
+    if(u.startsWith('https://api.tcgdex.net/v2/en/cards?name=')){
+      const n=new URL(u).searchParams.get('name'), pg=+new URL(u).searchParams.get('pagination:page')||1;
+      if(n==='abra'&&pg===1)return rep([
+        {id:'base1-43',localId:'43',name:'Abra',image:'https://assets.tcgdex.net/en/base/base1/43'},
+        {id:'gym1-62',localId:'62',name:"Sabrina's Abra",image:'https://assets.tcgdex.net/en/gym/gym1/62'},
+        {id:'base5-32',localId:'32',name:'Dark Kadabra',image:'https://assets.tcgdex.net/en/base/base5/32'},
+        {id:'ecard1-93',localId:'93',name:'Abra',image:'https://assets.tcgdex.net/en/ecard/ecard1/93'}]);
+      return rep([]);
+    }
     if(u.startsWith('https://api.tcgdex.net/v2/fr/cards?name=')){
       APPELS.push(u);
       const par=new URL(u).searchParams, n=par.get('name');
@@ -136,6 +145,11 @@ await p.evaluate(async src=>{
       // Une base qui ignorerait la pagination : tout, à chaque page.
       if(n==='Sourdingue'){ PAGES_SOURDES=(window.PAGES_SOURDES||0)+1;
         return rep(Array.from({length:300},(_,i)=>({id:'sd-'+i,localId:String(i),name:'Sourdingue',image:`https://assets.tcgdex.net/fr/sv/y/${i}`}))); }
+      if(n==='abra')return rep(pg>1?[]:[
+        {id:'base1-43',localId:'43',name:'Abra',image:'https://assets.tcgdex.net/fr/base/base1/43'},
+        {id:'base1-32',localId:'32',name:'Kadabra',image:'https://assets.tcgdex.net/fr/base/base1/32'},
+        {id:'pl1-31',localId:'31',name:'Simiabraz',image:'https://assets.tcgdex.net/fr/pl/pl1/31'},
+        {id:'sv06-x',localId:'1',name:'Abra de Morgane',image:'https://assets.tcgdex.net/fr/sv/sv06/1'}]);
       if(n==='Flagadoss')return rep([
         {id:'sv03.5-080',localId:'080',name:'Flagadoss',image:'https://assets.tcgdex.net/fr/sv/sv03.5/080'},
         {id:'swsh1-055',localId:'055',name:'Flagadoss',image:'https://assets.tcgdex.net/fr/swsh/swsh1/055'},
@@ -421,6 +435,17 @@ chk('...et le sélecteur les affiche tous',sl.affichees===600,String(sl.affichee
 chk('...et dit combien il en a trouvé',sl.compteur==='600 cartes trouvées pour « Pikachu »',sl.compteur);
 chk('Une base qui plafonne ses pages à 30 : tout est rapatrié quand même',sl.plafond===95&&sl.plafondPages===5,JSON.stringify([sl.plafond,sl.plafondPages]));
 chk('Une base qui ignore la pagination ne fait pas boucler',sl.sourde.nb===300&&sl.sourde.pages===2,JSON.stringify(sl.sourde));
+
+console.log('=== 7 ter. LE MOT ENTIER, DEUX CATALOGUES ===');
+const me=await p.evaluate(async()=>{
+  const l=await caChercher('abra');
+  return {noms:l.map(x=>x.nom),refs:l.map(x=>x.ref),img43:(l.find(x=>/base1-43/.test(x.ref))||{}).img};
+});
+chk('« abra » ne garde que le mot entier : ni Kadabra, ni Simiabraz',
+    !me.noms.some(n=>/kadabra|simiabraz/i.test(n))&&me.noms.includes('Abra de Morgane')&&me.noms.includes("Sabrina's Abra"),JSON.stringify(me.noms));
+chk('Le catalogue anglais complète le français',me.refs.includes('ecard1-93 · EN')&&me.refs.includes('gym1-62 · EN'),JSON.stringify(me.refs));
+chk('...une carte des deux catalogues apparaît une fois, en français',
+    me.refs.filter(r=>/base1-43/.test(r)).length===1&&/assets\.tcgdex\.net\/fr\//.test(me.img43||''),JSON.stringify(me));
 
 console.log('=== 8. UNE IMAGE EFFACÉE DU DRIVE ===');
 const ef=await p.evaluate(async()=>{
