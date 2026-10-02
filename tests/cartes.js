@@ -964,6 +964,40 @@ chk('Aucun numéro parasite sur les tuiles',al.textesParasites.every(t=>t===''),
 chk('...toutes les images au même niveau',new Set(al.hauts).size===1,JSON.stringify(al.hauts));
 chk('Tri par défaut : prix décroissant',al.ordre.join('|')==='Grande|Moyenne|Petite|Sans prix'&&al.premiereOption==='prix-',JSON.stringify(al));
 
+console.log('=== 9 decies. LA LISTE DES ÉTIQUETTES ===');
+const et=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,tags)=>({id:caId(),section:'',nom,url:'',prix:1,vente:null,tags,langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:40000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
+  const sauve=cartes;
+  cartes=[mk('a',['Wizard','Set de Base']),mk('b',['Set de base']),mk('c',['Set de Base','Écarlate']),mk('d',['alakazam']),mk('e',['Zébi'])];
+  out.liste=caToutesEtiquettes();
+  caGroupe='etiquette'; caOu=''; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  out.puces=[...document.querySelectorAll('.ca-lieux .sb-tag')].map(x=>x.textContent);
+  out.groupes=[...document.querySelectorAll('.ca-sec-t')].map(x=>x.textContent);
+  // Filtrer par une étiquette trouve toutes ses graphies.
+  caOu='Set de Base'; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  out.filtre=[...document.querySelectorAll('.ca-nom')].map(x=>x.textContent).sort().join('');
+  caOu='';
+  // Une étiquette qui n'est plus portée disparaît des listes.
+  const e=cartes.find(c=>c.nom==='e');
+  caOuvrir(e.id); await new Promise(r=>setTimeout(r,100));
+  caTagRetirer(0); await caEnregistrer(); await new Promise(r=>setTimeout(r,200));
+  out.apres=[...document.querySelectorAll('.ca-lieux .sb-tag')].map(x=>x.textContent);
+  caOuvrir(cartes[0].id); await new Promise(r=>setTimeout(r,100));
+  out.suggestions=[...document.querySelectorAll('#caOuListe option')].map(o=>o.value);
+  caFermer();
+  cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Une étiquette écrite de deux façons ne compte qu\'une fois, sous sa graphie la plus répandue',
+    et.liste.join('|')==='alakazam|Écarlate|Set de Base|Wizard|Zébi',et.liste.join('|'));
+chk('Les puces de filtre suivent, dans l\'ordre alphabétique',et.puces.join('|')==='Tous|alakazam|Écarlate|Set de Base|Wizard|Zébi',et.puces.join('|'));
+chk('...et les groupes aussi : un seul « Set de Base »',et.groupes.filter(g=>/^set de base$/i.test(g)).length===1,et.groupes.join('|'));
+chk('Filtrer par une étiquette trouve toutes ses graphies',et.filtre==='abc',et.filtre);
+chk('Une étiquette qui n\'est plus portée disparaît',!et.apres.includes('Zébi'),et.apres.join('|'));
+chk('Les suggestions de la fiche sont triées, sans étiquette orpheline',et.suggestions.join('|')==='alakazam|Écarlate|Set de Base|Wizard',et.suggestions.join('|'));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),

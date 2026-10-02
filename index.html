@@ -16468,7 +16468,10 @@ const caSomme=l=>l.reduce((s,c)=>s+(c.prix||0),0);
 function caSections(){
   const par='etiquette';
   const m=new Map();
-  const cle=c=>caTags(c.tags)[0]||'';
+  // Une même étiquette, quelle que soit sa graphie, fait un seul groupe.
+  const norm=t=>tabSansAccent(t).toLowerCase();
+  const canon=new Map(caToutesEtiquettes().map(t=>[norm(t),t]));
+  const cle=c=>{ const t=caTags(c.tags)[0]; return t?canon.get(norm(t))||t:''; };
   cartes.slice().sort((a,b)=>(a.ordre||0)-(b.ordre||0)).forEach(c=>{
     const t=cle(c);
     if(!m.has(t))m.set(t,[]); m.get(t).push(c);
@@ -16481,7 +16484,8 @@ function caSections(){
 }
 function caVisibles(s){
   const q=tabSansAccent(caRecherche.trim());
-  let l=s.cartes.filter(c=>(!caOu||caTags(c.tags).includes(caOu))
+  const ouK=tabSansAccent(caOu).toLowerCase();
+  let l=s.cartes.filter(c=>(!caOu||caTags(c.tags).some(t=>tabSansAccent(t).toLowerCase()===ouK))
     &&(!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')+' '+((caLangue(c)||[])[1]||'')).includes(q)));
   if(caTri==='prix-')l=l.slice().sort((a,b)=>(b.prix??-1)-(a.prix??-1));
   if(caTri==='prix+')l=l.slice().sort((a,b)=>(a.prix??1e9)-(b.prix??1e9));
@@ -16512,7 +16516,7 @@ async function renderCartes(){
   }
   const parSet=caGroupe==='set';
   const secs=caSections();
-  const lieux=[...new Set(cartes.flatMap(c=>caTags(c.tags)))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const lieux=caToutesEtiquettes();
   if(caOu&&!lieux.includes(caOu))caOu='';
   const vis=secs.map(s=>({s,l:caVisibles(s)}));
   const sv=parSet?caSetsVue():null;
@@ -16584,6 +16588,18 @@ const caImgVide=(c,etat)=>`<span class="ca-img-nom">${tdEsc(c.nom)}${
 // « +2 » pour les suivantes, toutes lisibles au survol. Plusieurs étiquettes
 // en entier faisaient passer la ligne à deux étages, et le prix de vente
 // partait seul sur la seconde.
+// Les étiquettes EN USAGE : seulement celles qu'au moins une carte porte, et
+// une seule fois chacune même écrite de plusieurs façons (« Set de Base » et
+// « Set de base » faisaient deux entrées, dont l'une semblait orpheline). La
+// graphie retenue est la plus répandue. Ordre alphabétique, accents compris.
+function caToutesEtiquettes(){
+  const m=new Map();
+  cartes.forEach(c=>caTags(c.tags).forEach(t=>{
+    const k=tabSansAccent(t).toLowerCase(), e=m.get(k)||{f:{},n:0};
+    e.f[t]=(e.f[t]||0)+1; e.n++; m.set(k,e); }));
+  return [...m.values()].map(e=>Object.entries(e.f).sort((a,b)=>b[1]-a[1])[0][0])
+    .sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
+}
 function caTagsHtml(c){
   const t=caTags(c.tags); if(!t.length)return '';
   return `<span class="ca-tagsl" title="${MD_ATT(t.join(', '))}"><span class="ca-ou">${tdEsc(t[0])}</span>${
@@ -16859,7 +16875,7 @@ function caOuvrir(id){
   document.getElementById('caVente').value=c&&c.vente!=null?String(c.vente).replace('.',','):'';
   caEd.tags=c?caTags(c.tags):[]; caEd.langue=c?c.langue||'':'';
   document.getElementById('caTagIn').value='';
-  document.getElementById('caOuListe').innerHTML=[...new Set(cartes.flatMap(x=>caTags(x.tags)))]
+  document.getElementById('caOuListe').innerHTML=caToutesEtiquettes()
     .map(o=>`<option value="${MD_ATT(o)}">`).join('');
   caTagsDessiner(); caLgsDessiner();
   document.getElementById('caSuppr').style.display=c?'':'none';
@@ -19306,7 +19322,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.72.6';
+const APP_VERSION='v1.72.7';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
