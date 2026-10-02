@@ -178,6 +178,46 @@ chk('La recherche ignore la casse',pg.recherche.join('|')==='Ramoloss TOPPS',pg.
 chk('...et ne fait pas perdre le champ',pg.focusGarde===true);
 chk('Trier par prix décroissant',/21\s€/.test(pg.tri),pg.tri);
 
+console.log('=== 3 bis. LE BANDEAU ET LES PRIX ===');
+const bp=await p.evaluate(async()=>{
+  const out={};
+  const src='| Carte | Prix | Prix vente | Où |\n|---|---|---|---|\n'+
+    '| Gagne | 5€ | 8€ | Noé |\n| Perd | 9€ | 3€ | Noé |\n| Egal | 4€ | 4€ | Noé |\n| Sans vente | 2€ |  | Noé |\n| Vente seule |  | 7€ | Noé |\n'+
+    Array.from({length:30},(_,i)=>`| Remplissage ${i} | 1€ |  | Noé |`).join('\n')+'\n';
+  const sauve=caNoteDe().content; caNoteDe().content=src;
+  renderCartes(); await new Promise(r=>setTimeout(r,250));
+  const meta=k=>{ const m=document.querySelector(`.ca-tuile[data-k="0:${k}"] .ca-meta`);
+    return [...m.children].map(e=>({c:e.className,t:e.textContent.trim(),
+      col:getComputedStyle(e).color,x:e.getBoundingClientRect().left})); };
+  out.gagne=meta(0); out.perd=meta(1); out.egal=meta(2); out.sansVente=meta(3); out.venteSeule=meta(4);
+  const v=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  out.vars={jaune:v('--warn'),vert:v('--green'),rouge:v('--danger')};
+  // Le bandeau reste en place quand on fait défiler.
+  const w=document.getElementById('caWrap'), t=document.querySelector('.ca-tete');
+  const avant=t.getBoundingClientRect().top;
+  w.scrollTop=900; await new Promise(r=>setTimeout(r,100));
+  out.defile=w.scrollTop>0;
+  out.bandeauFixe=Math.abs(t.getBoundingClientRect().top-avant)<1;
+  out.bandeauCouvre=getComputedStyle(t).backgroundColor!=='rgba(0, 0, 0, 0)';
+  out.rechercheVisible=document.getElementById('caQ').getBoundingClientRect().top>=avant;
+  w.scrollTop=0;
+  caNoteDe().content=sauve; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  return out;
+});
+const rgb=h=>{ const n=parseInt(h.replace('#',''),16); return `rgb(${n>>16}, ${n>>8&255}, ${n&255})`; };
+chk('Le prix d\'achat est à gauche, en jaune',
+    bp.gagne[0].c==='ca-prix'&&bp.gagne[0].col===rgb(bp.vars.jaune),JSON.stringify(bp.gagne[0]));
+chk('Le prix de vente est à droite de l\'étiquette',
+    bp.gagne.map(e=>e.c.split(' ')[0]).join()==='ca-prix,ca-ou,ca-vente'&&bp.gagne[2].x>bp.gagne[1].x,JSON.stringify(bp.gagne));
+chk('Vente supérieure : en vert',bp.gagne[2].col===rgb(bp.vars.vert)&&/gain/.test(bp.gagne[2].c),JSON.stringify(bp.gagne[2]));
+chk('Vente inférieure : en rouge',bp.perd[2].col===rgb(bp.vars.rouge)&&/perte/.test(bp.perd[2].c),JSON.stringify(bp.perd[2]));
+chk('Vente égale : ni vert ni rouge',!/gain|perte/.test(bp.egal[2].c),JSON.stringify(bp.egal[2]));
+chk('Sans prix de vente, rien n\'est affiché à droite',bp.sansVente.every(e=>!/ca-vente/.test(e.c)),JSON.stringify(bp.sansVente));
+chk('Sans prix d\'achat, la vente n\'est pas jugée',bp.venteSeule.some(e=>/ca-vente/.test(e.c)&&!/gain|perte/.test(e.c)),JSON.stringify(bp.venteSeule));
+chk('Le bandeau reste épinglé quand on fait défiler',bp.defile&&bp.bandeauFixe,JSON.stringify(bp));
+chk('...il masque les cartes qui passent dessous',bp.bandeauCouvre===true);
+chk('...et la recherche y reste accessible',bp.rechercheVisible===true);
+
 console.log('=== 4. LES IMAGES ===');
 const im=await p.evaluate(async()=>{
   const out={};
