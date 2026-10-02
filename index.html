@@ -1305,6 +1305,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-tag-x:hover,.ca-tag-g:hover{color:var(--text)}
 .ca-aide{text-transform:none;letter-spacing:0;color:var(--text-dim);opacity:0.8}
 .ca-img.travail{border-color:var(--accent)}
+.ca-ass{display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.6rem;padding:0.5rem 0.7rem;
+  background:var(--accent-dim);border-radius:8px}
+.ca-ass-n{font-family:var(--font-mono);font-size:0.62rem;color:var(--text-dim)}
+.ca-ass-s{font-size:0.68rem;color:var(--text-dim)}
+.ca-ass-act{margin-left:auto;display:flex;gap:0.4rem}
 .ca-vente{font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:var(--text-mid);margin-left:auto}
 .ca-vente.gain{color:var(--green)}
 .ca-vente.perte{color:var(--danger)}
@@ -2569,7 +2574,8 @@ body,body *{font-family:var(--font-body)}
 <div class="modal-bg" id="caPickModal">
   <div class="modal" style="width:min(860px,96vw)">
     <div class="modal-hdr">CHOISIR L'IMAGE</div>
-    <button class="modal-close" onclick="modalFerme('caPickModal')">✕</button>
+    <button class="modal-close" onclick="if(caAss)caAssFin();else modalFerme('caPickModal')">✕</button>
+    <div id="caPickTete"></div>
     <div style="display:flex;gap:0.5rem">
       <input type="search" class="ca-q" id="caPickQ" placeholder="Nom du Pokémon, en français" onkeydown="if(event.key==='Enter')caPickChercher()">
       <button class="btn-nav" onclick="caPickChercher()">Chercher</button>
@@ -15839,9 +15845,12 @@ function caLireUrl(u){
     const k=seg.findIndex(s=>/^singles$/i.test(s));
     if(k<0||!seg[k+2])return null;
     const ext=seg[k+1].replace(/-/g,' '), slug=seg[k+2];
-    const m=/-([A-Z]{2,5})(\d{1,3})$/i.exec(slug);
-    const nom=slug.replace(/-([A-Z]{2,5})?\d{1,3}$/i,'').replace(/-V\d+$/i,'').replace(/-/g,' ');
-    return {source:'cardmarket',code:m?m[1].toUpperCase():'',num:m?String(+m[2]):'',nom,ext};
+    let code='', num='', jeton=slug.split('-').pop()||'', m;
+    // Promos japonaises : « Psyduck-SV-P262 » — le code contient un tiret.
+    if((m=/-(SV|S|M|SM|XY)-P(\d{1,3})$/i.exec(slug))){ code=m[1].toUpperCase()+'-P'; jeton=code+m[2]; }
+    else if((m=/-([A-Z]{2,5})(\d{1,3})$/i.exec(slug))){ code=m[1].toUpperCase(); num=String(+m[2]); }
+    const nom=slug.replace(/-(SV|S|M|SM|XY)-P\d{1,3}$/i,'').replace(/-[A-Za-z0-9]*\d$/,'').replace(/-V\d+$/i,'').replace(/-/g,' ');
+    return {source:'cardmarket',code,num,nom,ext,jeton};
   }
   if(/limitlesstcg\.com$/.test(h)){
     const k=seg.indexOf('cards'); if(k<0)return null;
@@ -15900,7 +15909,29 @@ const CA_EXT=[["base1","Base","BS"],["base2","Jungle","JU"],["basep","Wizards Bl
 // Les promos : Cardmarket écrit « SVP121 », la base « PR-SV ».
 const CA_EXT_ALIAS={SVP:'PR-SV',SWSHP:'PR-SW',SMP:'PR-SM',XYP:'PR-XY',BWP:'PR-BLW',DPP:'PR-DPP',HSP:'PR-HS'};
 const CA_EXT_NOMS={'base set':'base1','base set 2':'base4'};
-const caNormExt=x=>tabSansAccent(String(x||'')).replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim();
+// Cardmarket écrit « EX FireRed LeafGreen », la base « FireRed & LeafGreen » :
+// on compare sans le préfixe EX, sans « et », sans ponctuation.
+const caNormExt=x=>tabSansAccent(String(x||'')).replace(/&/g,' ').replace(/[^a-z0-9]+/g,' ')
+  .replace(/^ex /,'').replace(/\b(and|the)\b/g,' ').replace(/\s+/g,' ').trim();
+// Les promos se numérotent avec leur préfixe : « SWSH133 », « SM01 », « XY05 ».
+const CA_PROMOS={SWSH:['swshp',3],SM:['smp',2],XY:['xyp',2],BW:['bwp',2],DP:['dpp',2],HGSS:['hsp',2]};
+// Les extensions japonaises, d'après TCGdex (346, septembre 2026) : [id, série].
+// Cardmarket les écrit en fin d'adresse, collées au numéro : « sv4a326 »,
+// « s12a014 », « m583 ». Leurs images vivent chez TCGdex, qui autorise
+// leur lecture depuis une autre page — elles sont donc archivables.
+const CA_JA=[["ADV1","ADV"],["ADV2","ADV"],["ADV3","ADV"],["ADV4","ADV"],["ADV5","ADV"],["BW1a","null"],["BW1b","null"],["BW2","null"],["BW3a","null"],["BW3a","null"],["BW4","null"],["BW5a","null"],["BW5b","null"],["BW6a","null"],["BW6b","null"],["BW7","null"],["BW8a","null"],["BW8a","null"],["BW9","null"],["DS","null"],["EBB","null"],["SC","null"],["DP1a","null"],["DP1b","null"],["DP2","null"],["DP3","null"],["DP4a","null"],["DP4b","null"],["DP5a","null"],["DP5b","null"],["DP6","null"],["Pt1","null"],["Pt2","null"],["Pt3","null"],["Pt4","null"],["L1a","L"],["L1b","L"],["L2","L"],["L3","L"],["LL","L"],["M-P","M"],["M1L","M"],["M1S","M"],["M2","M"],["M2a","M"],["M3","M"],["M4","M"],["M5","M"],["M6","M"],["M6a","M"],["MC","M"],["MF","M"],["miscp","misc"],["PCG1","PCG"],["PCG10","PCG"],["PCG2","PCG"],["PCG3","PCG"],["PCG4","PCG"],["PCG5","PCG"],["PCG6","PCG"],["PCG7","PCG"],["PCG8","PCG"],["PCG9","PCG"],["PMCG1","PMCG"],["PMCG2","PMCG"],["PMCG3","PMCG"],["PMCG4","PMCG"],["PMCG5","PMCG"],["PMCG6","PMCG"],["CS1.5","S"],["CS1.5C","S"],["CS1a","S"],["CS1aC","S"],["CS1b","S"],["CS1bC","S"],["CS2.5","S"],["CS2.5C","S"],["CS2a","S"],["CS2aC","S"],["CS2b","S"],["CS2bC","S"],["CS3.5","S"],["CS3.5C","S"],["CS3D","S"],["CS3a","S"],["CS3aC","S"],["CS3b","S"],["CS3bC","S"],["CS4","S"],["CS4.5C","S"],["CS4Da","S"],["CS4a","S"],["CS4aC","S"],["CS4b","S"],["CS4bC","S"],["CS5.5C","S"],["CS5aC","S"],["CS5bC","S"],["CS6.5C","S"],["CS6aC","S"],["CS6bC","S"],["CSA","S"],["S-P","S"],["S10D","S"],["S10P","S"],["S10a","S"],["S10b","S"],["S11","S"],["S11a","S"],["S12","S"],["S12a","S"],["S1H","S"],["S1W","S"],["S1a","S"],["S2","S"],["S2a","S"],["S3","S"],["S3a","S"],["S4","S"],["S4a","S"],["S5I","S"],["S5R","S"],["S5a","S"],["S6H","S"],["S6K","S"],["S6a","S"],["S7D","S"],["S7R","S"],["S8","S"],["S8a","S"],["S8b","S"],["S9","S"],["S9a","S"],["SC1D","S"],["SC1a","S"],["SC1b","S"],["SC2D","S"],["SC2a","S"],["SC2b","S"],["SC3a","S"],["SC3b","S"],["SCA","S"],["SCB","S"],["SCC","S"],["SCD","S"],["SCE","S"],["SCF","S"],["SDL","S"],["SDM","S"],["SDP","S"],["SH","S"],["SI","S"],["SJ","S"],["SK","S"],["SLD","S"],["SLL","S"],["SN","S"],["SP5","S"],["SP6","S"],["SPD","S"],["SPZ","S"],["AC1a","SM"],["AC1a","SM"],["AC1a","SM"],["AC2D","SM"],["AC2a","SM"],["AC2b","SM"],["AC3a","SM"],["AC3a","SM"],["AC3a","SM"],["AS1D","SM"],["AS1a","SM"],["AS1b","SM"],["AS2D","SM"],["AS2a","SM"],["AS2b","SM"],["AS3D","SM"],["AS3a","SM"],["AS3b","SM"],["AS4D","SM"],["AS4a","SM"],["AS4b","SM"],["AS5D","SM"],["AS5a","SM"],["AS5a","SM"],["AS6b","SM"],["AS6a","SM"],["AS6b","SM"],["csm1.5","SM"],["CSM1.5C","SM"],["csm1a","SM"],["CSM1aC","SM"],["csm1b","SM"],["CSM1bC","SM"],["csm1c","SM"],["CSM1cC","SM"],["csm2.5","SM"],["CSM2.5C","SM"],["csm2a","SM"],["CSM2aC","SM"],["csm2b","SM"],["CSM2bC","SM"],["csm2c","SM"],["CSM2cC","SM"],["CSMPiC","SM"],["SM-P","SM"],["SM0","SM"],["SM1+","SM"],["SM10","SM"],["SM10a","SM"],["SM10b","SM"],["SM11","SM"],["SM11a","SM"],["SM11b","SM"],["SM12","SM"],["SM12a","SM"],["SM1M","SM"],["SM1S","SM"],["SM1p","SM"],["sm2+","SM"],["SM2K","SM"],["SM2L","SM"],["SM2p","SM"],["SM3+","SM"],["SM3H","SM"],["SM3N","SM"],["SM3p","SM"],["SM4+","SM"],["SM4A","SM"],["SM4S","SM"],["SM4p","SM"],["SM5+","SM"],["SM5M","SM"],["SM5S","SM"],["SM5p","SM"],["SM6","SM"],["SM6a","SM"],["SM6b","SM"],["SM7","SM"],["SM7a","SM"],["SM7b","SM"],["SM8","SM"],["SM8a","SM"],["SM8b","SM"],["SM9","SM"],["SM9a","SM"],["SM9b","SM"],["SMP2","SM"],["CSV1C","SV"],["CBB2C","SV"],["CBB3C","SV"],["CBB4C","SV"],["CBB5C","SV"],["CSV1C","SV"],["CSV2C","SV"],["CSV3C","SV"],["CSV4C","SV"],["CSV5C","SV"],["CSV6C","SV"],["CSV7C","SV"],["CSV8C","SV"],["CSV9.5C","SV"],["CSV9C","SV"],["SV-P","SV"],["SV10","SV"],["SV11B","SV"],["SV11W","SV"],["SV1S","SV"],["SV1V","SV"],["SV1a","SV"],["SV2D","SV"],["SV2P","SV"],["SV2a","SV"],["SV3","SV"],["SV3a","SV"],["SV3s","SV"],["SV4K","SV"],["SV4M","SV"],["SV4a","SV"],["SV4s","SV"],["SV5K","SV"],["SV5M","SV"],["SV5a","SV"],["SV5s","SV"],["SV6","SV"],["SV6a","SV"],["SV6s","SV"],["SV7","SV"],["SV7a","SV"],["SV7s","SV"],["SV8","SV"],["SV8a","SV"],["SV8s","SV"],["SV9","SV"],["SV9a","SV"],["SV9s","SV"],["SVAL","SV"],["SVAM","SV"],["SVAW","SV"],["SVB","SV"],["SVC","SV"],["SVD","SV"],["SVDs","SV"],["SVEL","SV"],["SVEM","SV"],["SVF","SV"],["SVHK","SV"],["SVHM","SV"],["SVK","SV"],["SVLN","SV"],["SVLS","SV"],["SVP1","SV"],["WCS23","SV"],["VS1","VS"],["CP1","XY"],["CP2","XY"],["XY1a","XY"],["XY1b","XY"],["XY2","XY"],["XY3","XY"],["XY4","XY"],["XY5a","XY"],["XY5b","XY"],["XY6","XY"],["XY7","XY"],["CP3","XYb"],["CP4","XYb"],["CP5","XYb"],["CP6","XYb"],["XY","XYb"],["XY10","XYb"],["XY11a","XYb"],["XY11b","XYb"],["XY8a","XYb"],["XY8b","XYb"],["XY9","XYb"],["E1","e"],["E2","e"],["E3","e"],["E4","e"],["E5","e"],["neo1","neo"],["neo2","neo"],["neo3","neo"],["neo4","neo"],["web1","web"]];
+let caJaTri=null;
+function caJaDe(jeton){
+  if(!jeton)return null;
+  caJaTri=caJaTri||CA_JA.slice().sort((a,b)=>b[0].length-a[0].length);
+  const t=String(jeton).toLowerCase();
+  for(const [id,serie] of caJaTri){
+    const k=id.toLowerCase();
+    if(k.length>=2&&t.startsWith(k)&&/^\d{1,3}$/.test(t.slice(k.length)))
+      return {set:id,serie,local:t.slice(k.length).padStart(3,'0')};
+  }
+  return null;
+}
 let caExtIdx=null;
 function caExtIndex(){
   if(caExtIdx)return caExtIdx;
@@ -15918,12 +15949,28 @@ function caExtIndex(){
 // probable d'abord. Plusieurs extensions peuvent partager un code (une
 // extension et son « Shiny Vault ») : on les essaie dans l'ordre.
 function caCandidats(i){
-  if(!i||!i.num)return [];
+  if(!i)return [];
   const x=caExtIndex();
-  const ids=[...new Set([].concat(i.code&&x.code[i.code.toUpperCase()]||[], i.ext&&x.nom[caNormExt(i.ext)]||[]))];
-  const n=/^\d+$/.test(i.num)?String(+i.num):i.num;
-  return ids.map(id=>({img:`https://images.pokemontcg.io/${id}/${n}_hires.png`,
-                       petite:`https://images.pokemontcg.io/${id}/${n}.png`,ref:`${x.lib[id]} ${n}`}));
+  let code=(i.code||'').toUpperCase(), n=i.num&&/^\d+$/.test(i.num)?String(+i.num):(i.num||'');
+  let ids=[];
+  const pr=CA_PROMOS[code];
+  if(pr&&n){ ids=[pr[0]]; n=code+n.padStart(pr[1],'0'); }
+  else{
+    // « CRZGG22 » : Galarian Gallery ; « BRSTG05 » : Trainer Gallery.
+    const g=/^([A-Z]{3})(GG|TG)$/.exec(code);
+    if(g&&n){ code=g[1]; n=g[2]+n.padStart(2,'0'); }
+    ids=[...new Set([].concat(code&&x.code[code]||[], i.ext&&x.nom[caNormExt(i.ext)]||[]))];
+  }
+  const en=n?ids.map(id=>({img:`https://images.pokemontcg.io/${id}/${n}_hires.png`,
+                     petite:`https://images.pokemontcg.io/${id}/${n}.png`,ref:`${x.lib[id]} ${n}`})):[];
+  // Le japonais n'est essayé que si aucune extension anglaise ne correspond :
+  // « BS10 » est le Set de base, pas une extension japonaise qui commencerait
+  // par les mêmes lettres.
+  if(en.length)return en;
+  const j=caJaDe(i.jeton);
+  if(!j)return [];
+  const b=`https://assets.tcgdex.net/ja/${j.serie}/${j.set}/${j.local}`;
+  return [{img:`${b}/high.webp`,petite:`${b}/low.webp`,ref:`${j.set} ${j.local} (japonais)`,langue:'jp'}];
 }
 // Les octets vérifiés restent en mémoire le temps de la session : l'image
 // trouvée dans la fiche n'est pas retéléchargée pour être archivée.
@@ -15971,7 +16018,13 @@ async function caResoudreUrl(u){
     if(r&&r.passager)passagerImg=true;
   }
   const essais=i.source==='ptcg'?[`id:${i.id}`]:caEssais(i);
-  if(!essais.length)return passagerImg?{passager:true}:{introuvable:'L\'adresse ne donne ni extension ni numéro de carte.'};
+  // La base ne connaît que les extensions de sa propre table : sans code et
+  // sans extension reconnue, l'interroger coûterait 25 s pour ne rien trouver.
+  const inconnue=i.source==='cardmarket'&&!cands.length&&!i.code;
+  if(inconnue)return {introuvable:`Extension « ${i.ext} » absente des bases ouvertes (édition japonaise ancienne, deck, promo hors série…) : choisis l'image à la main, ou ajoute ta photo.`};
+  if(!essais.length||cands.some(k=>k.langue==='jp'))
+    return passagerImg?{passager:true}:{introuvable:cands.length?'Image japonaise absente de TCGdex.'
+      :'L\'adresse ne donne pas de numéro de carte : choisis l\'image à la main, ou ajoute ta photo.'};
   for(const q of essais){
     const r=await caGet(caPtcgUrl(q));
     // Une base qui sature ne dit rien de la carte : on s'arrête là, et on
@@ -16019,7 +16072,7 @@ function caDeLigne(x){
   const n=i=>{ const v=g(i); return v===''?null:nbFr(v,null); };
   const lg=g(16).toLowerCase();
   return {id:g(0),section:g(1),nom:g(2),url:caWeb(g(3)),prix:n(4),vente:n(5),tags:caTags(g(6)),
-    image:caWeb(g(7)),drive_id:g(8),ref:g(9),cote:n(10),ordre:parseInt(g(11),10)||0,
+    image:caWeb(g(7)),drive_id:g(8)==='-'?'':g(8),ref:g(9),cote:n(10),ordre:parseInt(g(11),10)||0,
     etat:g(12),raison:g(13),created_at:g(14),updated_at:g(15),
     langue:CA_LANGUES.some(l=>l[0]===lg)?lg:''};
 }
@@ -16156,19 +16209,45 @@ const caDelai=ms=>{ const ac=new AbortController(); const t=setTimeout(()=>ac.ab
 // la lecture depuis une autre page : affichable, pas archivable) | {passager}
 // (délai, réseau, 429, 5xx : réessayer). La v1.69 rangeait un simple délai
 // dépassé avec les refus, et ne réessayait plus JAMAIS la carte.
-let CA_DELAI_IMG=30000;
+// UN REFUS N'EN EST PAS FORCÉMENT UN. Quand un site limite le débit, il répond
+// souvent SANS les en-têtes qui autorisent la lecture : le navigateur n'y voit
+// alors qu'une erreur réseau, indiscernable d'un vrai refus. La v1.69.1 en
+// concluait « site qui refuse » et ne réessayait plus jamais — c'est ainsi que
+// trente cartes de pokemontcg.io, site qui accepte pourtant la lecture, sont
+// restées non archivées. Désormais :
+//   - les téléchargements vers un même site passent UN PAR UN, espacés ;
+//   - une erreur réseau met ce site en pause quelques secondes ;
+//   - rien n'est jamais retenu d'une session à l'autre : la carte sera
+//     simplement réessayée à la prochaine ouverture.
+let CA_DELAI_IMG=30000, CA_ESPACE=350, CA_PAUSE_HOTE=6000;
+const caHotes={}, caEchecsImg={};
+function caFileHote(u,f){
+  let h=''; try{ h=new URL(u).hostname; }catch(e){}
+  const e=caHotes[h]||(caHotes[h]={file:Promise.resolve(),apres:0});
+  const p=e.file.then(async()=>{
+    const att=e.apres-Date.now(); if(att>0)await new Promise(r=>setTimeout(r,att));
+    try{ return await f(e); } finally{ e.apres=Math.max(e.apres,Date.now()+CA_ESPACE); }
+  });
+  e.file=p.catch(()=>{});
+  return p;
+}
 async function caTelecharger(u){
-  const d=caDelai(CA_DELAI_IMG);
-  try{
-    const r=await fetch(u,{mode:'cors',credentials:'omit',referrerPolicy:'no-referrer',signal:d.signal});
-    if(r.status===404||r.status===410)return {absent:true};
-    if(!r.ok)return {passager:true};
-    const b=await r.blob();
-    return b&&b.size&&/^image\//.test(b.type||'image/')?{blob:b}:{absent:true};
-  }catch(e){
-    if(e&&e.name==='AbortError')return {passager:true};
-    return navigator.onLine?{refus:true}:{passager:true};
-  }finally{ d.fin(); }
+  if((caEchecsImg[u]||0)>=3)return {refus:true};        // pour cette session seulement
+  return caFileHote(u,async e=>{
+    const d=caDelai(CA_DELAI_IMG);
+    try{
+      const r=await fetch(u,{mode:'cors',credentials:'omit',referrerPolicy:'no-referrer',signal:d.signal});
+      if(r.status===404||r.status===410)return {absent:true};
+      if(!r.ok){ e.apres=Date.now()+CA_PAUSE_HOTE; return {passager:true}; }
+      const b=await r.blob();
+      delete caEchecsImg[u];
+      return b&&b.size&&/^image\//.test(b.type||'image/')?{blob:b}:{absent:true};
+    }catch(x){
+      if(!(x&&x.name==='AbortError'))caEchecsImg[u]=(caEchecsImg[u]||0)+1;
+      e.apres=Date.now()+CA_PAUSE_HOTE;
+      return {passager:true};
+    }finally{ d.fin(); }
+  });
 }
 // Une carte s'affiche en 150 à 220 pixels : 500 de large suffisent, et une
 // image haute définition de 700 Ko devient un WebP de quelques dizaines.
@@ -16211,18 +16290,20 @@ async function caTraiter(c,montrer){
   if(!c.image&&c.url&&!caAbsente(c)){
     const r=await caResoudreUrl(c.url);
     if(r&&r.passager)return 'passager';
-    if(r&&r.img){ c.image=r.img; c.ref=r.ref||''; c.cote=r.cote==null?null:r.cote; c.etat=''; c.raison=''; octets=r.blob||null; }
+    if(r&&r.img){ c.image=r.img; c.ref=r.ref||''; c.cote=r.cote==null?null:r.cote; c.etat=''; c.raison=''; octets=r.blob||null;
+      // L'adresse dit la langue : une image japonaise fait une carte japonaise,
+      // sauf si une langue a déjà été choisie.
+      if(r.langue&&!c.langue)c.langue=r.langue; }
     else { c.etat=CA_ABSENTE; c.raison=(r&&r.introuvable)||''; }
     caPlusTard(c);
   }
   if(!c.image)return caAbsente(c)?'introuvable':'vide';
   montrer(c.image);
-  if(c.drive_id==='-')return 'distante';
   if(!accessToken||!navigator.onLine)return 'distante';
   if(!octets&&caOctets[c.image])octets=caOctets[c.image];
   if(!octets){
     const t=await caTelecharger(c.image);
-    if(t.refus||t.absent){ c.drive_id='-'; caPlusTard(c); return 'distante'; }
+    if(t.refus||t.absent)return 'distante';          // affichée depuis son site ; réessayée la prochaine fois
     if(!t.blob)return 'passager';                     // délai : on réessaiera, rien n'est figé
     octets=t.blob;
   }
@@ -16413,6 +16494,8 @@ function caEtatAfficher(){
   if(e.distante)p.push(`<b>${e.distante}</b> affichées depuis leur site`);
   if(e.passager&&!e.attente)p.push(`<b>${e.passager}</b> non obtenues — réseau ou base saturée, nouvel essai à la prochaine ouverture`);
   if(e.introuvable)p.push(`<b>${e.introuvable}</b> sans correspondance <button class="ca-lienbtn" onclick="caReessayer()">réessayer</button>`);
+  const aMain=cartes.filter(caAAssocier).length;
+  if(!e.attente&&aMain)p.push(`<button class="ca-lienbtn" onclick="caAssistant()">associer ${aMain} image${aMain>1?'s':''} à la main</button>`);
   if(!e.attente&&(e.introuvable||e.passager||e.distante))
     p.push(`<button class="ca-lienbtn" onclick="caDiagnostic()" title="La liste des cartes sans image archivée, avec la raison — à me transmettre">copier le diagnostic</button>`);
   el.innerHTML=p.length?'Images : '+p.join(' · '):'';
@@ -16454,6 +16537,7 @@ async function caChargerImages(l,gen){
       if(gen!==caGen)return;
       if(r==='passager'){
         if(++x.n<3){ reste.push(x); await dodo(CA_PAUSE*x.n); continue; }
+        if(c.image)r='distante';                       // visible, archivage remis à plus tard
       }
       if(r==='vide'||r==='introuvable'){ const t=caTuileImg(c); if(t&&!t.querySelector('img'))t.innerHTML=caImgVide(c); }
       fin(r);
@@ -16468,13 +16552,57 @@ function caDiagnostic(){
   const lignes=l.map(c=>{ const i=c.url?caLireUrl(c.url):null;
     return [c.nom, c.url||'(pas d\'adresse)',
       i?[i.source,i.code,i.num,i.ext].filter(Boolean).join(' '):'',
-      c.drive_id==='-'?'site qui refuse la lecture':caAbsente(c)?c.raison||'introuvable':c.image?'pas encore archivée':'pas encore cherchée',
+      caAbsente(c)?c.raison||'introuvable':c.image?'pas encore archivée':'pas encore cherchée',
       c.image||''].join(' | '); });
   const t=`Cartes sans image archivée : ${l.length} sur ${cartes.length} — ${APP_VERSION}\n`+lignes.join('\n');
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(
     ()=>toast(`Diagnostic copié — ${l.length} cartes`,'ok'),
     ()=>{ const w=window.open('','_blank'); if(w){ w.document.body.innerText=t; } });
   return t;
+}
+// ── L'assistant : associer les images à la main, à la chaîne ──────────────
+// Pour les cartes dont l'adresse ne dit rien — ou qui n'en ont pas — : une
+// carte après l'autre, la recherche lancée sur son nom, un clic pour choisir,
+// et l'on passe à la suivante. L'archive dans Drive suit d'elle-même.
+let caAss=null;
+const caAAssocier=c=>!c.image&&!(c.drive_id&&c.drive_id!=='-')&&(!c.url||caAbsente(c));
+function caAssistant(){
+  const l=cartes.filter(caAAssocier).sort((a,b)=>(a.ordre||0)-(b.ordre||0));
+  if(!l.length){ toast('Toutes les cartes ont une image','ok'); return; }
+  caAss={liste:l,i:0,faites:0};
+  modalOuvre('caPickModal');
+  caAssMontrer();
+}
+function caAssMontrer(){
+  const c=caAss.liste[caAss.i];
+  document.getElementById('caPickTete').innerHTML=`<div class="ca-ass">
+    <span class="ca-ass-n">${caAss.i+1} / ${caAss.liste.length}</span>
+    <b>${tdEsc(c.nom)}</b>${c.section?` <span class="ca-ass-s">${tdEsc(c.section)}</span>`:''}
+    <span class="ca-ass-act"><button class="btn-nav out" onclick="caAssSuivante()">Passer</button>
+    <button class="btn-nav out" onclick="caAssFin()">Terminer</button></span></div>`;
+  document.getElementById('caPickQ').value=c.nom;
+  document.getElementById('caPickUrl').value='';
+  caPickChercher();
+}
+async function caAssPoser(u){
+  const c=caAss.liste[caAss.i];
+  const v={...c,image:caWeb(u),drive_id:'',etat:'',raison:''};
+  caAss.faites++;
+  caSauver([v]);
+  caAssSuivante();
+}
+function caAssSuivante(){
+  caAss.i++;
+  if(caAss.i>=caAss.liste.length){ caAssFin(); return; }
+  caAssMontrer();
+}
+function caAssFin(){
+  const n=caAss?caAss.faites:0;
+  caAss=null;
+  document.getElementById('caPickTete').innerHTML='';
+  modalFerme('caPickModal');
+  if(n)toast(`${n} image${n>1?'s':''} associée${n>1?'s':''} — archivage en cours`,'ok');
+  renderCartes();
 }
 function caReessayer(){
   const l=cartes.filter(caAbsente);
@@ -16631,11 +16759,11 @@ async function caPickChercher(){
       <span>${tdEsc(x.ref)}</span></button>`).join('')
     :'<div class="ca-vide-s">Aucune carte trouvée. Essaie le nom seul (« Flagadoss »), ajoute ta photo, ou colle une adresse d\'image ci-dessous.</div>';
 }
-function caPickPrendre(i){ const x=(window.caPickL||[])[i]; if(x)caPoserImage(x.img); }
+function caPickPrendre(i){ const x=(window.caPickL||[])[i]; if(!x)return; if(caAss)caAssPoser(x.img); else caPoserImage(x.img); }
 function caPickUrl(){
   const u=caWeb(document.getElementById('caPickUrl').value);
   if(!u){ toast('Adresse d\'image invalide','err'); return; }
-  caPoserImage(u);
+  if(caAss)caAssPoser(u); else caPoserImage(u);
 }
 function caPoserImage(u){
   if(!caEd)return;
@@ -18943,7 +19071,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.69.1';
+const APP_VERSION='v1.70.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

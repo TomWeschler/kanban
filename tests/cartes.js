@@ -53,7 +53,7 @@ await p.evaluate(async src=>{
       t.oncomplete=()=>{ o.result.close(); r(); }; t.onerror=()=>r(); };
     o.onerror=()=>r(); });
   window.ANNUL=[]; window.offerUndo=(m,fn)=>{ ANNUL.push({m,fn}); };
-  CA_PAUSE=20; CA_DELAI_ECR=30;
+  CA_PAUSE=20; CA_DELAI_ECR=30; CA_PAUSE_HOTE=30; CA_ESPACE=5;
   accessToken='T'; cfg.spreadsheetId='S'; notesLoaded=true;
   try{ localStorage.removeItem('kanban_cartes_dossier'); }catch(e){}
   await new Promise(r=>{ const q=indexedDB.deleteDatabase('kanban-cartes'); q.onsuccess=q.onerror=q.onblocked=r; });
@@ -103,6 +103,7 @@ await p.evaluate(async src=>{
   };
   // ── Les bases publiques et les sites d'images simulés
   window.APPELS=[]; window.IMAGES=[]; window.SATURE={}; window.IMG404=[]; window.IMGLENTE=[];
+  window.CAPRICE={}; window.EN_VOL=0; window.EN_VOL_MAX=0;
   window.fetch=async (u,o={})=>{
     u=String(u);
     const rep=j=>({ok:true,status:200,json:async()=>j});
@@ -132,6 +133,11 @@ await p.evaluate(async src=>{
     }
     // Les images : les sites ouverts livrent les octets, le site hostile refuse.
     if(/^https:\/\/(images\.pokemontcg\.io|assets\.tcgdex\.net)\//.test(u)){ IMAGES.push(u);
+      EN_VOL++; EN_VOL_MAX=Math.max(EN_VOL_MAX,EN_VOL); await new Promise(r=>setTimeout(r,5)); EN_VOL--;
+      // Un site qui limite le débit répond sans les en-têtes de lecture : le
+      // navigateur n'y voit qu'une erreur réseau.
+      const cap=Object.keys(CAPRICE).find(k=>u.includes(k));
+      if(cap&&CAPRICE[cap]-->0)throw new TypeError('Failed to fetch');
       if(IMGLENTE.some(x=>u.includes(x)))return new Promise((_,ko)=>{
         if(o.signal)o.signal.addEventListener('abort',()=>ko(Object.assign(new Error('délai'),{name:'AbortError'}))); });
       if(IMG404.some(x=>u.includes(x)))return {ok:false,status:404,blob:async()=>null};
@@ -178,6 +184,7 @@ chk('Une adresse qui est une image devient l\'image',/sv3\/1_hires/.test(im.cart
 
 console.log('=== 2. PREMIÈRE OUVERTURE : CHERCHER, AFFICHER, ARCHIVER ===');
 await attendre(1500);
+const IMAGES_HOSTILE=await p.evaluate(()=>IMAGES.filter(u=>/hostile/.test(u)).length);
 const pr=await p.evaluate(async()=>{
   const out={};
   await caVider();
@@ -216,8 +223,9 @@ chk('...et bien plus légère que l\'original',pr.fichier.taille<pr.tailleOrigin
 chk('...et gardée dans le navigateur',pr.idb===true);
 chk('L\'image reprise de la v1.67 est archivée sans recherche',/^d\d+$/.test(pr.deja.drive_id));
 chk('Une adresse d\'image directe est archivée aussi',/^d\d+$/.test(pr.direct.drive_id));
-chk('Un site qui refuse la lecture : affichée depuis son site, sans réessai',
-    pr.hostile.drive_id==='-'&&/hostile\.example/.test(pr.tuileHostile),JSON.stringify([pr.hostile.drive_id,pr.tuileHostile]));
+chk('Un site qui refuse la lecture : affichée depuis son site, et RIEN de figé',
+    pr.hostile.drive_id===''&&/hostile\.example/.test(pr.tuileHostile),JSON.stringify([pr.hostile.drive_id,pr.tuileHostile]));
+chk('...trois tentatives au plus dans la session',IMAGES_HOSTILE<=3,String(IMAGES_HOSTILE));
 chk('Une carte sans adresse invite à ajouter une image',pr.indiceFlaga===true);
 chk('La tuile montre la copie locale',/^blob:/.test(pr.tuileDracau),pr.tuileDracau);
 // Trois images archivables (trouvée, directe, reprise de la v1.67) ; la quatrième
@@ -232,6 +240,7 @@ const su=await p.evaluate(async()=>{
   switchPage('habits'); switchPage('cartes');
   await new Promise(r=>setTimeout(r,800)); await caVider();
   out.recherches=APPELS.length; out.images=IMAGES.filter(u=>!/hostile/.test(u)).length;
+  out.hostile=IMAGES.filter(u=>/hostile/.test(u)).length;
   out.drive=DRIVE_APPELS.length; out.ecritures=ECRITURES.length;
   out.blobs=[...document.querySelectorAll('.ca-tuile img')].filter(i=>/^blob:/.test(i.src)).length;
   return out;
@@ -241,6 +250,7 @@ chk('Aucun téléchargement d\'image',su.images===0,String(su.images));
 chk('Aucun appel à Drive',su.drive===0,JSON.stringify(su.drive));
 chk('Aucune écriture dans le classeur',su.ecritures===0,String(su.ecritures));
 chk('Les trois images archivées viennent de l\'appareil',su.blobs===3,String(su.blobs));
+chk('Le site qui refuse n\'est plus sollicité dans la session',su.hostile===0,String(su.hostile));
 
 console.log('=== 4. UN AUTRE APPAREIL ===');
 const ap=await p.evaluate(async()=>{
@@ -476,6 +486,121 @@ chk('...et elle est archivée au passage suivant',/^d/.test(tx.lenteFin.drive)&&
 chk('Une absence notée par l\'ancienne méthode est réessayée',/sv3\/12_hires/.test(tx.ancienneImage||''),JSON.stringify(tx));
 chk('Le diagnostic liste les cartes sans image, avec la raison',
     /^Cartes sans image archivée : \d+ sur \d+ — v\d/.test(tx.diag)&&/\nD \| https:\/\/www\.cardmarket\.com\/[^|]+ \| cardmarket ZZZ 7 X \| Lu dans l'adresse/.test(tx.diag)&&/Limonde AR \| \(pas d'adresse\)/.test(tx.diag),tx.diag.slice(0,400));
+
+console.log('=== 8 ter. LES ADRESSES DE LA VRAIE COLLECTION ===');
+// Tirées du diagnostic réel. Pour chacune : la première image essayée.
+const vraies=await p.evaluate(()=>{
+  const S='https://www.cardmarket.com/fr/Pokemon/Products/Singles/';
+  const l={
+    'Silver-Tempest/Radiant-Alakazam-SIT059':'https://images.pokemontcg.io/swsh12/59_hires.png',
+    'Expedition-Base-Set/Abra-EX93':'https://images.pokemontcg.io/ecard1/93_hires.png',
+    'Team-Rocket/Abra-TR49':'https://images.pokemontcg.io/base5/49_hires.png',
+    'Fossil/Psyduck-FO53?minCondition=3':'https://images.pokemontcg.io/base3/53_hires.png',
+    'Detective-Pikachu/Psyduck-DET7?minCondition=3':'https://images.pokemontcg.io/det1/7_hires.png',
+    'Neo-Destiny/Light-Golduck-NDE47':'https://images.pokemontcg.io/neo4/47_hires.png',
+    'EX-Delta-Species/Ditto-DS63':'https://images.pokemontcg.io/ex11/63_hires.png',
+    '151/Ditto-V1-MEW132':'https://images.pokemontcg.io/sv3pt5/132_hires.png',
+    'EX-FireRed-LeafGreen/Ditto-FL4':'https://images.pokemontcg.io/ex6/4_hires.png',
+    'Base-Set/Mewtwo-V1-BS10':'https://images.pokemontcg.io/base1/10_hires.png',
+    'Phantasmal-Flames/Oricorio-ex-V2-PFL110':'https://images.pokemontcg.io/me2/110_hires.png',
+    'Surging-Sparks/Clobbopus-V2-SSP207':'https://images.pokemontcg.io/sv8/207_hires.png',
+    'SWSH-Black-Star-Promos/Lances-Charizard-V-V1-SWSH133?minCondition=3':'https://images.pokemontcg.io/swshp/SWSH133_hires.png',
+    'Shiny-Treasure-ex/Alakazam-ex-V2-sv4a326':'https://assets.tcgdex.net/ja/SV/SV4a/326/high.webp',
+    'VSTAR-Universe/Charizard-VSTAR-V1-s12a014':'https://assets.tcgdex.net/ja/S/S12a/014/high.webp',
+    'VMAX-Climax/Rayquaza-VMAX-V1-s8b120?minCondition=3':'https://assets.tcgdex.net/ja/S/S8b/120/high.webp',
+    'Shiny-Star-V/Dragapult-VMAX-V2-s4a318':'https://assets.tcgdex.net/ja/S/S4a/318/high.webp',
+    'Shiny-Star-V/Eldegoss-V-V1-s4a16':'https://assets.tcgdex.net/ja/S/S4a/016/high.webp',
+    'Pokemon-Card-151/Gyarados-sv2a130':'https://assets.tcgdex.net/ja/SV/SV2a/130/high.webp',
+    'Raging-Surf/Hoopa-ex-V2-sv3a078':'https://assets.tcgdex.net/ja/SV/SV3a/078/high.webp',
+    'Clay-Burst/Chi-Yu-ex-V2-sv2D085':'https://assets.tcgdex.net/ja/SV/SV2D/085/high.webp',
+    'Triplet-Beat/Skeledirge-ex-V2-sv1a087':'https://assets.tcgdex.net/ja/SV/SV1a/087/high.webp',
+    'Inferno-X/Oricorio-ex-V3-m2111':'https://assets.tcgdex.net/ja/M/M2/111/high.webp',
+    'Nihil-Zero/Forest-of-Vitality-m3109':'https://assets.tcgdex.net/ja/M/M3/109/high.webp',
+    'Abyss-Eye/Armarouge-V2-m583':'https://assets.tcgdex.net/ja/M/M5/083/high.webp',
+    'Storm-Emeralda/Kyogre-V2-m6080':'https://assets.tcgdex.net/ja/M/M6/080/high.webp',
+    'Mega-Symphonia/Delibird-V2-m1S074':'https://assets.tcgdex.net/ja/M/M1S/074/high.webp',
+    'Battle-Region/Chandelure-V2-s9a069':'https://assets.tcgdex.net/ja/S/S9a/069/high.webp',
+    'Rebellion-Crash/Falinks-V-V2-s2102':'https://assets.tcgdex.net/ja/S/S2/102/high.webp',
+    'Explosive-Flame-Walker/Grapploct-V-V2-S2A75':'https://assets.tcgdex.net/ja/S/S2a/075/high.webp',
+    'Scarlet-Violet-Promos/Psyduck-SV-P262?minCondition=3':'https://assets.tcgdex.net/ja/SV/SV-P/262/high.webp',
+  };
+  const out={};
+  for(const [k,v] of Object.entries(l)){ const c=caCandidats(caLireUrl(S+k)); out[k]={attendu:v,obtenu:c[0]&&c[0].img}; }
+  // Galarian Gallery : les deux extensions de Crown Zenith, au numéro GG22.
+  out.gg=caCandidats(caLireUrl(S+'Crown-Zenith/Ditto-V2-CRZGG22')).map(x=>x.img);
+  // Sans numéro, ou extension inconnue : aucune image devinée.
+  out.sans=['Rocket-Gang/Dark-Alakazam','Expansion-Pack/Abra','Collection-X/Xerneas-EX-V1',
+            'Yamabuki-City-Gym/Sabrinas-Alakazam-CGY','Unnumbered-Promos/Sabrinas-Abra-UNP']
+    .map(k=>caCandidats(caLireUrl(S+k)).length);
+  return out;
+});
+const ecarts=Object.entries(vraies).filter(([k,v])=>v&&v.attendu&&v.attendu!==v.obtenu);
+chk(`Les ${Object.keys(vraies).length-2} adresses réelles donnent la bonne image`,ecarts.length===0,JSON.stringify(ecarts));
+chk('Galarian Gallery : numéro GG22, dans les deux extensions de Crown Zenith',
+    vraies.gg.join()==='https://images.pokemontcg.io/swsh12pt5/GG22_hires.png,https://images.pokemontcg.io/swsh12pt5gg/GG22_hires.png',JSON.stringify(vraies.gg));
+chk('Sans numéro ni extension connue, aucune image n\'est devinée',vraies.sans.every(n=>n===0),JSON.stringify(vraies.sans));
+const sansReq=await p.evaluate(async()=>{
+  APPELS.length=0;
+  const r=await caResoudreUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Rocket-Gang/Dark-Alakazam');
+  const r2=await caResoudreUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Shiny-Treasure-ex/Alakazam-ex-V2-sv4a326');
+  return {appels:APPELS.length,raison:r.introuvable,jp:r2&&r2.img,langue:r2&&r2.langue};
+});
+chk('...et la base lente n\'est pas interrogée pour rien',sansReq.appels===0&&/Rocket Gang.*absente des bases ouvertes/.test(sansReq.raison||''),JSON.stringify(sansReq));
+chk('Une carte japonaise trouvée l\'est sans la base, et dit sa langue',
+    /tcgdex\.net\/ja\/SV\/SV4a\/326/.test(sansReq.jp||'')&&sansReq.langue==='jp',JSON.stringify(sansReq));
+
+console.log('=== 8 quater. UN SITE QUI LIMITE LE DÉBIT ===');
+const deb=await p.evaluate(async()=>{
+  const out={};
+  // La v1.69.1 posait « - » (refus définitif) : il est ignoré à la lecture.
+  out.ancienRefus=caDeLigne(['caX','S','N','','','','','https://images.pokemontcg.io/base1/2_hires.png','-']).drive_id;
+  // Deux erreurs réseau, puis le site répond : la carte est archivée.
+  CA_PAUSE_HOTE=40; CA_ESPACE=5;
+  CAPRICE['base1/2_hires']=2;
+  const c={id:caId(),section:'Débit',nom:'Débit',url:'',prix:1,vente:null,tags:[],langue:'',
+    image:'https://images.pokemontcg.io/base1/2_hires.png',drive_id:'',ref:'',cote:null,ordre:8000,etat:'',raison:'',created_at:td(),updated_at:td()};
+  await caSauver([c]);
+  const r=[]; for(let k=0;k<3;k++)r.push(await caTraiter(c,()=>{}));
+  out.essais=r; out.drive=c.drive_id;
+  // Les téléchargements vers un même site passent un par un.
+  EN_VOL_MAX=0;
+  await Promise.all(['base1/3','base1/4','base1/5','base1/6'].map(k=>caTelecharger(`https://images.pokemontcg.io/${k}_hires.png`)));
+  out.enVolMax=EN_VOL_MAX;
+  CA_PAUSE_HOTE=30; CA_ESPACE=5;
+  return out;
+});
+chk('Un ancien « refus définitif » est oublié à la lecture',deb.ancienRefus==='',deb.ancienRefus);
+chk('Des erreurs réseau passagères n\'empêchent pas l\'archive',
+    deb.essais.join()==='passager,passager,archivee'&&/^d/.test(deb.drive),JSON.stringify(deb));
+chk('Un seul téléchargement à la fois par site',deb.enVolMax===1,String(deb.enVolMax));
+
+console.log('=== 8 quinquies. L\'ASSISTANT ===');
+const ass=await p.evaluate(async()=>{
+  const out={};
+  const mk=nom=>({id:caId(),section:'Assistant',nom,url:'',prix:1,vente:null,tags:[],langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:9000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
+  const sauve=cartes; cartes=[mk('Flagadoss TOPPS'),mk('Kadabra Gym'),mk('Flagadoss Yuka Mori')];
+  renderCartes(); await new Promise(r=>setTimeout(r,300));
+  out.bouton=/associer 3 images à la main/.test(document.getElementById('caEtat').textContent);
+  caAssistant(); await new Promise(r=>setTimeout(r,200));
+  out.tete=document.getElementById('caPickTete').textContent.replace(/\s+/g,' ');
+  out.q=document.getElementById('caPickQ').value;
+  out.res=document.querySelectorAll('#caPickRes .ca-pick').length;
+  caPickPrendre(0); await new Promise(r=>setTimeout(r,200));
+  out.tete2=document.getElementById('caPickTete').textContent.replace(/\s+/g,' ');
+  caAssSuivante(); await new Promise(r=>setTimeout(r,200));
+  out.tete3=document.getElementById('caPickTete').textContent.replace(/\s+/g,' ');
+  caAssFin(); await new Promise(r=>setTimeout(r,200));
+  out.ferme=!document.getElementById('caPickModal').classList.contains('open');
+  out.images=cartes.map(c=>c.image);
+  cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  return out;
+});
+chk('L\'assistant est proposé pour les cartes sans adresse',ass.bouton===true);
+chk('Il présente la première carte, et cherche sur son nom',/1 \/ 3/.test(ass.tete)&&/Flagadoss TOPPS/.test(ass.tete)&&ass.q==='Flagadoss TOPPS'&&ass.res===2,JSON.stringify(ass));
+chk('Un clic choisit l\'image et passe à la suivante',/2 \/ 3/.test(ass.tete2)&&/Kadabra Gym/.test(ass.tete2)&&/080\/high\.webp$/.test(ass.images[0]||''),JSON.stringify(ass));
+chk('« Passer » laisse la carte telle quelle',/3 \/ 3/.test(ass.tete3)&&ass.images[1]==='',JSON.stringify(ass.images));
+chk('« Terminer » ferme l\'assistant',ass.ferme===true);
 
 console.log('=== 9 bis. RIEN NE BLOQUE LA FILE ===');
 // Le défaut constaté : la file « s'arrêtait » après cinq images. Une requête
