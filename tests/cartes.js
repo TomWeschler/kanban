@@ -793,6 +793,10 @@ const ps=await p.evaluate(async()=>{
     mk('Cadeau','https://images.pokemontcg.io/base1/4_hires.png',100,'',['Noé']),
     mk('Kadabra SDB','',4),mk('Hors set','https://images.pokemontcg.io/sv3/223_hires.png',5)];
   out.cases=cartes.map(caCaseDe);
+  out.tcgdex=['https://assets.tcgdex.net/fr/base/base1/58/high.webp','https://assets.tcgdex.net/fr/base/base3/1/low.webp',
+    'https://assets.tcgdex.net/en/gym/gym1/12/high.webp','https://assets.tcgdex.net/fr/base/base2/001',
+    'https://assets.tcgdex.net/fr/base/base1/999/high.webp','https://assets.tcgdex.net/fr/sv/sv03.5/080/high.webp']
+    .map(u=>caCaseDe({image:u,url:''}));
   caGroupe='set'; caManquantes=false; caRecherche=''; renderCartes(); await new Promise(r=>setTimeout(r,400));
   const sec=[...document.querySelectorAll('.ca-sec')];
   out.titres=sec.map(x=>x.querySelector('.ca-sec-t').textContent);
@@ -834,6 +838,8 @@ const ps=await p.evaluate(async()=>{
 chk('Six sets complets, avec toutes leurs cartes',
     JSON.stringify(ps.sets)===JSON.stringify([['base1','Set de base',102],['base2','Jungle',64],['base3','Fossile',62],['base5','Team Rocket',83],['gym1','Gym Heroes',132],['gym2','Gym Challenge',132]]),JSON.stringify(ps.sets));
 chk('...avec les noms français',ps.frBase.join()==='Alakazam,Tortank,Leveinard',ps.frBase.join());
+chk('La case se lit aussi dans une image TCGdex (« Choisir l\'image… »)',
+    JSON.stringify(ps.tcgdex)===JSON.stringify(['base1/58','base3/1','gym1/12','base2/1','','']),JSON.stringify(ps.tcgdex));
 chk('La case d\'une carte se lit dans son image ou son adresse Cardmarket',
     ps.cases.join()==='base1/1,base1/1,base1/10,base1/4,,',ps.cases.join());
 chk('Chaque set s\'affiche, toutes ses cartes par ordre de numéro',

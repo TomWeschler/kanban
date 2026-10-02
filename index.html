@@ -16656,8 +16656,19 @@ const CA_SET_IDS=new Set(CA_SETS.map(x=>x[0]));
 // La case d'une carte : « base1/58 ». Lue dans l'adresse de son image, sinon
 // déduite de l'adresse Cardmarket — sans aucune requête.
 function caCaseDe(c){
-  const lire=u=>{ const m=/images\.pokemontcg\.io\/([a-z0-9]+)\/([A-Za-z0-9]+?)(?:_hires)?\.png/i.exec(u||'');
-    return m&&CA_SET_IDS.has(m[1])?m[1]+'/'+m[2]:''; };
+  // Deux formes d'adresse d'image se lisent : celle de pokemontcg.io
+  // (« images.pokemontcg.io/base1/58_hires.png ») et celle de TCGdex, d'où
+  // viennent les images de « Choisir l'image… » (« assets.tcgdex.net/fr/base/
+  // base1/58/high.webp »). Les deux bases nomment ces sets de la même façon.
+  // Une case n'est retenue que si ce numéro existe bien dans le set.
+  const lire=u=>{
+    let m=/images\.pokemontcg\.io\/([a-z0-9]+)\/([A-Za-z0-9]+?)(?:_hires)?\.png/i.exec(u||'');
+    if(!m){ m=/assets\.tcgdex\.net\/[a-z-]+\/[^/]+\/([^/]+)\/([A-Za-z0-9]+)(?:\/|$)/i.exec(u||'');
+            if(m)m=[m[0],m[1].toLowerCase(),/^\d+$/.test(m[2])?String(+m[2]):m[2]]; }
+    if(!m||!CA_SET_IDS.has(m[1]))return '';
+    const st=CA_SETS.find(x=>x[0]===m[1]);
+    return st&&st[2].some(e=>e[0]===m[2])?m[1]+'/'+m[2]:'';
+  };
   let k=lire(c.image);
   if(!k&&c.url){ const i=caLireUrl(c.url); if(i)for(const x of caCandidats(i)){ k=lire(x.img); if(k)break; } }
   return k;
@@ -19243,7 +19254,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.72.1';
+const APP_VERSION='v1.72.2';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
