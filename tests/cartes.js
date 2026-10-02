@@ -778,6 +778,78 @@ chk('Le total de Noé s\'écrit à côté du nom de son groupe',/^20\s€$/.test
 chk('...et seulement pour un groupe de cadeaux',cg.aCoteAutres===0,String(cg.aCoteAutres));
 chk('L\'exclusion se règle',cg.kpiSans['Valeur ⚙']==='45 €'&&cg.memo==='Noé',JSON.stringify([cg.kpiSans,cg.memo]));
 
+console.log('=== 9 septies. PAR SET ===');
+const ps=await p.evaluate(async()=>{
+  const out={};
+  out.sets=CA_SETS.map(x=>[x[0],x[1],x[2].length]);
+  out.frBase=CA_SETS[0][2].slice(0,3).map(x=>x[1]);
+  const mk=(nom,img,prix,url,tags)=>({id:caId(),section:'',nom,url:url||'',prix,vente:null,tags:tags||['Wizard'],langue:'',image:img||'',drive_id:'',ref:'',cote:null,
+    ordre:20000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
+  const sauve=cartes;
+  cartes=[mk('Alakazam SDB','https://images.pokemontcg.io/base1/1_hires.png',30),mk('Alakazam SDB','https://images.pokemontcg.io/base1/1_hires.png',28),
+    mk('Mewtwo SDB','',18,'https://www.cardmarket.com/fr/Pokemon/Products/Singles/Base-Set/Mewtwo-V1-BS10'),
+    mk('Cadeau','https://images.pokemontcg.io/base1/4_hires.png',100,'',['Noé']),
+    mk('Kadabra SDB','',4),mk('Hors set','https://images.pokemontcg.io/sv3/223_hires.png',5)];
+  out.cases=cartes.map(caCaseDe);
+  caGroupe='set'; caManquantes=false; caRecherche=''; renderCartes(); await new Promise(r=>setTimeout(r,400));
+  const sec=[...document.querySelectorAll('.ca-sec')];
+  out.titres=sec.map(x=>x.querySelector('.ca-sec-t').textContent);
+  out.tuilesBase=sec[0].querySelectorAll('.ca-tuile').length;
+  out.compte=sec[0].querySelector('.ca-sec-n').textContent;
+  out.ordre=[...sec[0].querySelectorAll('.ca-num')].slice(0,5).map(x=>x.textContent);
+  const t1=sec[0].querySelectorAll('.ca-tuile')[0];
+  out.t1={possedee:!t1.classList.contains('ca-manque'),nb:(t1.querySelector('.ca-nb')||{}).textContent,nom:t1.querySelector('.ca-nom').textContent};
+  const t3=sec[0].querySelectorAll('.ca-tuile')[2];
+  out.t3={manque:t3.classList.contains('ca-manque'),gris:getComputedStyle(t3.querySelector('.ca-img img')).filter,img:t3.querySelector('img').getAttribute('src')};
+  out.horsSet=!document.querySelector('#caSections').textContent.includes('Hors set');
+  out.sous=document.querySelector('.ca-tete .jp-sous').textContent;
+  // Manquantes seulement.
+  caManquantes=true; caRedessiner();
+  out.manquantes=document.querySelectorAll('.ca-sec')[0].querySelectorAll('.ca-tuile').length;
+  caManquantes=false;
+  // Une recherche filtre les cases.
+  caRecherche='kadabra'; caRedessiner();
+  out.recherche=[...document.querySelectorAll('.ca-sec')[0].querySelectorAll('.ca-nom')].map(x=>x.textContent);
+  caRecherche='';
+  // Ranger une carte existante dans sa case.
+  caCase('base1','32'); await new Promise(r=>setTimeout(r,150));
+  out.modale={titre:document.getElementById('caCaseTitre').textContent,nom:document.getElementById('caCaseNom').textContent,
+    proposees:[...document.querySelectorAll('#caCaseRes .ca-case-c b')].map(x=>x.textContent)};
+  const kad=cartes.find(c=>c.nom==='Kadabra SDB');
+  await caCaseLier(kad.id); await new Promise(r=>setTimeout(r,200));
+  out.lie={case:caCaseDe(caParId(kad.id)),image:caParId(kad.id).image,compte:document.querySelectorAll('.ca-sec')[0].querySelector('.ca-sec-n').textContent};
+  // Ajouter une carte depuis une case.
+  caCase('base1','58'); await new Promise(r=>setTimeout(r,100));
+  caCaseNouvelle(); await new Promise(r=>setTimeout(r,150));
+  out.fiche={nom:document.getElementById('caNom').value,sec:document.getElementById('caSec').value};
+  document.getElementById('caPrix').value='12';
+  await caEnregistrer(); await new Promise(r=>setTimeout(r,300));
+  const pik=cartes.find(c=>c.nom==='Pikachu');
+  out.ajout=pik&&{case:caCaseDe(pik),prix:pik.prix};
+  cartes=sauve; caGroupe='section'; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  return out;
+});
+chk('Six sets complets, avec toutes leurs cartes',
+    JSON.stringify(ps.sets)===JSON.stringify([['base1','Set de base',102],['base2','Jungle',64],['base3','Fossile',62],['base5','Team Rocket',83],['gym1','Gym Heroes',132],['gym2','Gym Challenge',132]]),JSON.stringify(ps.sets));
+chk('...avec les noms français',ps.frBase.join()==='Alakazam,Tortank,Leveinard',ps.frBase.join());
+chk('La case d\'une carte se lit dans son image ou son adresse Cardmarket',
+    ps.cases.join()==='base1/1,base1/1,base1/10,base1/4,,',ps.cases.join());
+chk('Chaque set s\'affiche, toutes ses cartes par ordre de numéro',
+    ps.titres.join('|')==='Set de base|Jungle|Fossile|Team Rocket|Gym Heroes|Gym Challenge'&&ps.tuilesBase===102&&ps.ordre.join()==='1,2,3,4,5',JSON.stringify(ps));
+chk('La progression compte les cartes possédées, les cadeaux hors valeur',ps.compte==='3 / 102 · 76 €',ps.compte);
+chk('Une carte possédée s\'affiche, avec ses exemplaires',ps.t1.possedee&&ps.t1.nb==='×2'&&ps.t1.nom==='Alakazam SDB',JSON.stringify(ps.t1));
+chk('Une carte manquante est grisée, avec son image',ps.t3.manque&&/grayscale\(1\)/.test(ps.t3.gris)&&ps.t3.img==='https://images.pokemontcg.io/base1/3.png',JSON.stringify(ps.t3));
+chk('Les cartes hors de ces sets n\'y apparaissent pas',ps.horsSet===true);
+chk('Le sous-titre compte les sets',/6 sets/.test(ps.sous),ps.sous);
+chk('« Manquantes seulement »',ps.manquantes===99,String(ps.manquantes));
+chk('La recherche filtre les cases',ps.recherche.join('|')==='Kadabra',ps.recherche.join('|'));
+chk('Une case manquante propose les cartes sans set qui y ressemblent',
+    /SET DE BASE — N° 32/.test(ps.modale.titre)&&ps.modale.nom==='Kadabra'&&ps.modale.proposees.join()==='Kadabra SDB',JSON.stringify(ps.modale));
+chk('...et y range la carte choisie, prix et étiquettes compris',
+    ps.lie.case==='base1/32'&&ps.lie.image==='https://images.pokemontcg.io/base1/32_hires.png'&&/^4 \/ 102/.test(ps.lie.compte),JSON.stringify(ps.lie));
+chk('« Je l\'ai » ouvre une fiche préremplie',ps.fiche.nom==='Pikachu'&&ps.fiche.sec==='Set de base',JSON.stringify(ps.fiche));
+chk('...et la carte ajoutée prend sa case',ps.ajout&&ps.ajout.case==='base1/58'&&ps.ajout.prix===12,JSON.stringify(ps.ajout));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),

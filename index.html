@@ -1305,6 +1305,25 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-tag-x:hover,.ca-tag-g:hover{color:var(--text)}
 .ca-aide{text-transform:none;letter-spacing:0;color:var(--text-dim);opacity:0.8}
 .ca-img.travail{border-color:var(--accent)}
+/* Les sets : numéro, exemplaires, cases manquantes grisées, progression. */
+.ca-num{position:absolute;top:0.2rem;left:0.2rem;z-index:2;font-family:var(--font-mono);font-size:0.55rem;font-weight:700;
+  background:rgba(0,0,0,0.65);color:#fff;border-radius:4px;padding:0.05rem 0.3rem}
+.ca-nb{position:absolute;bottom:3.3rem;right:0.35rem;z-index:2;font-family:var(--font-mono);font-size:0.62rem;font-weight:700;
+  background:var(--accent);color:#fff;border-radius:99px;padding:0.05rem 0.4rem}
+.ca-manque{opacity:0.75}
+.ca-manque .ca-img img{filter:grayscale(1);opacity:0.35}
+.ca-manque .ca-nom{color:var(--text-dim)}
+.ca-manque:hover{opacity:1}
+.ca-manque-t{font-family:var(--font-mono);font-size:0.56rem;color:var(--text-dim)}
+.ca-holo{color:var(--warn)}
+.ca-prog{flex:0 1 160px;height:6px;border-radius:99px;background:var(--surface3);overflow:hidden;margin-left:0.6rem}
+.ca-prog span{display:block;height:100%;background:var(--green)}
+.ca-manq{font-size:0.72rem;color:var(--text-dim);display:flex;align-items:center;gap:0.35rem;cursor:pointer}
+.ca-case-nom{font-size:1.1rem;font-weight:700}
+.ca-case-res{display:flex;flex-direction:column;gap:0.3rem;max-height:40vh;overflow-y:auto}
+.ca-case-c{text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:0.4rem 0.6rem;
+  color:var(--text);font:inherit;font-size:0.78rem;cursor:pointer;display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap}
+.ca-case-c:hover{border-color:var(--accent)}
 .ca-sec-cadeau{font-family:var(--font-mono);font-size:0.8rem;font-weight:700;color:var(--warn)}
 .ca-hors{background:none;border:none;padding:0;font:inherit;color:var(--warn);cursor:pointer;text-transform:none;letter-spacing:0}
 .ca-hors:hover{text-decoration:underline}
@@ -2570,6 +2589,23 @@ body,body *{font-family:var(--font-body)}
       <button class="btn-nav out" id="caSuppr" onclick="caSupprimer()" style="margin-right:auto;color:var(--danger)">Supprimer</button>
       <button class="btn-nav out" onclick="caFermer()">Annuler</button>
       <button class="btn-nav" onclick="caEnregistrer()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+<!-- CARTES : une case manquante d'un set -->
+<div class="modal-bg" id="caCaseModal">
+  <div class="modal" style="width:min(640px,94vw)">
+    <div class="modal-hdr" id="caCaseTitre">SET</div>
+    <button class="modal-close" onclick="modalFerme('caCaseModal')">✕</button>
+    <div class="ca-fiche">
+      <div><div class="ca-apercu" id="caCaseImg"></div></div>
+      <div>
+        <div class="ca-case-nom" id="caCaseNom"></div>
+        <button class="btn-nav" onclick="caCaseNouvelle()" style="margin:0.5rem 0 1rem">＋ Je l'ai : l'ajouter</button>
+        <div class="field"><label>Ou c'est une carte déjà saisie, sans set</label>
+          <input type="search" id="caCaseQ" class="ca-q" oninput="caCaseListe()" placeholder="Chercher dans mes cartes…"></div>
+        <div class="ca-case-res" id="caCaseRes"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -15752,7 +15788,7 @@ let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0;
 // (« Tableau 2 », « Tableau 3 »…) ne disaient rien. Nouvelle clé : l'ancien
 // réglage, qui valait « section » par défaut, n'est pas repris.
 const LS_CA_GROUPE='kanban_cartes_groupe2';
-let caGroupe=(()=>{ try{ return localStorage.getItem(LS_CA_GROUPE)==='section'?'section':'etiquette'; }catch(e){ return 'etiquette'; } })();
+let caGroupe=(()=>{ try{ const v=localStorage.getItem(LS_CA_GROUPE); return v==='section'||v==='set'?v:'etiquette'; }catch(e){ return 'etiquette'; } })();
 // Les cartes portant l'une de ces étiquettes sont des CADEAUX : elles restent
 // visibles, et leur section garde son total, mais elles ne comptent pas dans
 // la valeur de la collection. Réglable, mémorisé sur l'appareil.
@@ -16419,10 +16455,12 @@ async function renderCartes(){
       <button class="btn-nav out" onclick="caOuvrir(null)">+ Ajouter une carte</button></div>`;
     return;
   }
-  const secs=caSections(caGroupe);
+  const parSet=caGroupe==='set';
+  const secs=caSections(parSet?'etiquette':caGroupe);
   const lieux=[...new Set(cartes.flatMap(c=>caTags(c.tags)))].sort((a,b)=>a.localeCompare(b,'fr'));
   if(caOu&&!lieux.includes(caOu))caOu='';
   const vis=secs.map(s=>({s,l:caVisibles(s)}));
+  const sv=parSet?caSetsVue():null;
   const vues=vis.flatMap(x=>x.l);
   const comptees=vues.filter(c=>!caHorsTotal(c));
   const vente=comptees.filter(c=>c.vente!=null);
@@ -16434,7 +16472,7 @@ async function renderCartes(){
     <div class="ca-tete">
     <div class="ca-hdr">
       <div class="jp-titre"><span class="ca-titre">Cartes</span>
-        <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${secs.length} ${caGroupe==='etiquette'?'groupe':'section'}${secs.length>1?'s':''}</span></div>
+        <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${parSet?`${CA_SETS.length} sets`:`${secs.length} ${caGroupe==='etiquette'?'groupe':'section'}${secs.length>1?'s':''}`}</span></div>
       <div class="ca-actions">
         <button class="btn-nav out" onclick="caChiffresBascule()" title="${caChiffres?'Masquer':'Afficher'} les totaux">${caChiffres?'Masquer':'Afficher'} les chiffres</button>
         <button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button></div>
@@ -16450,18 +16488,20 @@ async function renderCartes(){
       <select class="ca-tri" onchange="caGrouper(this.value)" title="Regrouper les cartes">
         <option value="section"${caGroupe==='section'?' selected':''}>Par section</option>
         <option value="etiquette"${caGroupe==='etiquette'?' selected':''}>Par 1re étiquette</option>
+        <option value="set"${caGroupe==='set'?' selected':''}>Par set</option>
       </select>
       <select class="ca-tri" onchange="caTri=this.value;caRedessiner()">
         ${[['ordre','Ordre de saisie'],['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z']].map(([v,l])=>
           `<option value="${v}"${caTri===v?' selected':''}>${l}</option>`).join('')}
       </select>
-      ${lieux.length>1?`<div class="ca-lieux">${['',...lieux].map(o=>
+      ${lieux.length>1&&!parSet?`<div class="ca-lieux">${['',...lieux].map(o=>
         `<button class="sb-tag${caOu===o?' active':''}" onclick="caOu=this.dataset.o;renderCartes()" data-o="${MD_ATT(o)}">${o?tdEsc(o):'Tous'}</button>`).join('')}</div>`:''}
     </div>
     <div class="ca-etat" id="caEtat"></div>
     </div>
-    <div id="caSections">${caSectionsHtml(vis)}</div>`;
-  caChargerImages(vues,++caGen);
+    ${parSet?`<label class="ca-manq"><input type="checkbox" ${caManquantes?'checked':''} onchange="caManquantes=this.checked;caRedessiner()"> manquantes seulement</label>`:''}
+    <div id="caSections">${parSet?sv.html:caSectionsHtml(vis)}</div>`;
+  caChargerImages(parSet?sv.vues:vues,++caGen);
 }
 function caSectionsHtml(vis){
   const html=vis.filter(x=>x.l.length).map(({s,l})=>`
@@ -16486,11 +16526,11 @@ const caImgTag=src=>`<img src="${MD_ATT(src)}" alt="" loading="lazy" referrerpol
 const caImgVide=(c,etat)=>`<span class="ca-img-nom">${tdEsc(c.nom)}${
   etat==='attente'?'<small class="ca-att">chargement…</small>'
   :!c.url||caAbsente(c)?'<small>＋ ajouter une image</small>':''}</span>`;
-function caTuile(c){
+function caTuile(c,extra){
   const im=caImmediate(c);
   const lg=caLangue(c);
   return `<button class="ca-tuile" data-k="${MD_ATT(c.id)}" onclick="caOuvrir(this.dataset.k)" title="${MD_ATT(c.nom)}">
-    ${lg?`<span class="ca-lg ca-lg-${lg[0]}" title="${lg[1]}">${lg[2]}</span>`:''}
+    ${lg?`<span class="ca-lg ca-lg-${lg[0]}" title="${lg[1]}">${lg[2]}</span>`:''}${extra||''}
     <div class="ca-img${im?'':' attente'}">${im?caImgTag(im):caImgVide(c,'attente')}</div>
     <div class="ca-nom">${tdEsc(c.nom)}</div>
     <div class="ca-meta">${c.prix!=null?`<span class="ca-prix">${caEur(c.prix)}</span>`:''}${caTags(c.tags).map(t=>`<span class="ca-ou">${tdEsc(t)}</span>`).join('')}${caVenteHtml(c)}</div>
@@ -16501,6 +16541,7 @@ function caImgKo(img){ const b=img.parentNode; if(!b)return; b.classList.add('at
 // La recherche redessine la grille, pas le champ : sinon on perdrait le curseur.
 function caRedessiner(){
   const box=document.getElementById('caSections'); if(!box)return;
+  if(caGroupe==='set'){ const sv=caSetsVue(); box.innerHTML=sv.html; caChargerImages(sv.vues,++caGen); return; }
   const vis=caSections(caGroupe).map(s=>({s,l:caVisibles(s)}));
   box.innerHTML=caSectionsHtml(vis);
   caChargerImages(vis.flatMap(x=>x.l),++caGen);
@@ -16592,6 +16633,97 @@ function caDiagnostic(){
     ()=>{ const w=window.open('','_blank'); if(w){ w.document.body.innerText=t; } });
   return t;
 }
+// ── Les sets complets ─────────────────────────────────────────────────────
+// Toutes les cartes de quelques sets, dans l'ordre de leur numéro : pour voir
+// d'un coup d'œil ce qu'on a et ce qui manque. Les listes viennent des données
+// ouvertes de pokemontcg.io ; les noms français, de TCGdex. Gym Heroes et Gym
+// Challenge ne sont jamais sortis en français : leurs cartes gardent leur nom
+// anglais. Format : [id, nom affiché, [[numéro, nom, holo], …]].
+const CA_SETS=[["base1","Set de base",[["1","Alakazam",1],["2","Tortank",1],["3","Leveinard",1],["4","Dracaufeu",1],["5","Mélofée",1],["6","Léviator",1],["7","Tygnon",1],["8","Mackogneur",1],["9","Magnéton",1],["10","Mewtwo",1],["11","Nidoking",1],["12","Feunard",1],["13","Tartard",1],["14","Raichu",1],["15","Florizarre",1],["16","Électhor",1],["17","Dardargnan",0],["18","Draco",0],["19","Triopikeur",0],["20","Élektek",0],["21","Électrode",0],["22","Roucoups",0],["23","Arcanin",0],["24","Reptincel",0],["25","Lamantine",0],["26","Minidraco",0],["27","Canarticho",0],["28","Caninos",0],["29","Spectrum",0],["30","Herbizarre",0],["31","Lippoutou",0],["32","Kadabra",0],["33","Coconfort",0],["34","Machopeur",0],["35","Magicarpe",0],["36","Magmar",0],["37","Nidorino",0],["38","Têtarte",0],["39","Porygon",0],["40","Rattatac",0],["41","Otaria",0],["42","Carabaffe",0],["43","Abra",0],["44","Bulbizarre",0],["45","Chenipan",0],["46","Salamèche",0],["47","Taupiqueur",0],["48","Doduo",0],["49","Soporifik",0],["50","Fantominus",0],["51","Smogo",0],["52","Machoc",0],["53","Magnéti",0],["54","Chrysacier",0],["55","Nidoran ♂",0],["56","Onix",0],["57","Roucool",0],["58","Pikachu",0],["59","Ptitard",0],["60","Ponyta",0],["61","Rattata",0],["62","Sabelette",0],["63","Carapuce",0],["64","Staross",0],["65","Stari",0],["66","Saquedeneu",0],["67","Voltorbe",0],["68","Goupix",0],["69","Aspicot",0],["70","Peluche Mélofée",0],["71","Recherche informatique",0],["72","Vaporisateur rétrograde",0],["73","Faux Professeur Chen",0],["74","Récupérateur",0],["75","Fillette",0],["76","Éleveur de Pokémon",0],["77","Marchand de Pokémon",0],["78","Rappel",0],["79","Double Suppression d",0],["80","Défenseur",0],["81","Sauvegarde d",0],["82","Guérison Totale",0],["83","Entretien",0],["84","PlusPower",0],["85","Centre Pokémon",0],["86","Flûte Pokémon",0],["87","Pokédex",0],["88","Professeur Chen",0],["89","Réanimation",0],["90","Super Potion",0],["91","Léo",0],["92","Suppression d",0],["93","Rafale de vent",0],["94","Potion",0],["95","Transfert",0],["96","Double Énergie Incolore",0],["97","Énergie Combat",0],["98","Énergie Feu",0],["99","Énergie Plante",0],["100","Énergie Électrique",0],["101","Énergie Psy",0],["102","Énergie Eau",0]]],["base2","Jungle",[["1","Mélodelfe",1],["2","Électrode",1],["3","Pyroli",1],["4","Voltali",1],["5","Kangourex",1],["6","M. Mime",1],["7","Nidoqueen",1],["8","Roucarnage",1],["9","Scarabrute",1],["10","Insécateur",1],["11","Ronflex",1],["12","Aquali",1],["13","Aéromite",1],["14","Empiflor",1],["15","Raflésia",1],["16","Grodoudou",1],["17","Mélodelfe",0],["18","Électrode",0],["19","Pyroli",0],["20","Voltali",0],["21","Kangourex",0],["22","M. Mime",0],["23","Nidoqueen",0],["24","Roucarnage",0],["25","Scarabrute",0],["26","Insécateur",0],["27","Ronflex",0],["28","Aquali",0],["29","Aéromite",0],["30","Empiflor",0],["31","Raflésia",0],["32","Grodoudou",0],["33","Papilusion",0],["34","Dodrio",0],["35","Noadkoko",0],["36","Rapasdepic",0],["37","Ortide",0],["38","Excelangue",0],["39","Ossatueur",0],["40","Nidorina",0],["41","Parasect",0],["42","Persian",0],["43","Colossinge",0],["44","Galopa",0],["45","Rhinoféros",0],["46","Poissoroy",0],["47","Tauros",0],["48","Boustiflor",0],["49","Chétiflor",0],["50","Osselait",0],["51","Évoli",0],["52","Nœufnœuf",0],["53","Poissirène",0],["54","Rondoudou",0],["55","Férosinge",0],["56","Miaouss",0],["57","Nidoran ♀",0],["58","Mystherbe",0],["59","Paras",0],["60","Pikachu",0],["61","Rhinocorne",0],["62","Piafabec",0],["63","Mimitoss",0],["64","Poké Balle",0]]],["base3","Fossile",[["1","Ptéra",1],["2","Artikodin",1],["3","Métamorph",1],["4","Dracolosse",1],["5","Ectoplasma",1],["6","Spectrum",1],["7","Kicklee",1],["8","Hypnomade",1],["9","Kabutops",1],["10","Lokhlass",1],["11","Magnéton",1],["12","Sulfura",1],["13","Grotadmorv",1],["14","Raichu",1],["15","Élector",1],["16","Ptéra",0],["17","Artikodin",0],["18","Métamorph",0],["19","Dracolosse",0],["20","Ectoplasma",0],["21","Spectrum",0],["22","Kicklee",0],["23","Hypnomade",0],["24","Kabutops",0],["25","Lokhlass",0],["26","Magnéton",0],["27","Sulfura",0],["28","Grotadmorv",0],["29","Raichu",0],["30","Élector",0],["31","Arbok",0],["32","Crustabri",0],["33","Fantominus",0],["34","Nosferalto",0],["35","Akwakwak",0],["36","Grolem",0],["37","Gravalanch",0],["38","Krabboss",0],["39","Magmar",0],["40","Amonistar",0],["41","Sablaireau",0],["42","Hypocéan",0],["43","Flagadoss",0],["44","Tentacruel",0],["45","Smogogo",0],["46","Abo",0],["47","Racaillou",0],["48","Tadmorv",0],["49","Hypotrempe",0],["50","Kabuto",0],["51","Krabby",0],["52","Amonita",0],["53","Psykokwak",0],["54","Kokiyas",0],["55","Ramoloss",0],["56","Tentacool",0],["57","Nosferapti",0],["58","M. Fuji",0],["59","Recherche d",0],["60","Joueur",0],["61","Recyclage",0],["62","Mystérieux Fossile",0]]],["base5","Team Rocket",[["1","Alakazam obscur",1],["2","Arbok obscur",1],["3","Tortank obscur",1],["4","Dracaufeu obscur",1],["5","Dracolosse obscur",1],["6","Triopikeur obscur",1],["7","Nosferalto obscur",1],["8","Léviator obscur",1],["9","Hypnomade obscur",1],["10","Mackogneur obscur",1],["11","Magneton obscur",1],["12","Flagadoss obscur",1],["13","Rafflesia obscur",1],["14","Smogogo obscur",1],["15","Et voila les Team Rocket !",1],["16","Attaque sournoise des Rocket",1],["17","Énergie multicolore",1],["18","Alakazam obscur",0],["19","Arbok obscur",0],["20","Tortank obscur",0],["21","Dracaufeu obscur",0],["22","Dracolosse obscur",0],["23","Triopikeur obscur",0],["24","Nosferalto obscur",0],["25","Léviator obscur",0],["26","Hypnomade obscur",0],["27","Mackogneur obscur",0],["28","Magneton obscur",0],["29","Flagadoss obscur",0],["30","Rafflesia obscur",0],["31","Smogogo obscur",0],["32","Reptincel Obscur",0],["33","Draco obscur",0],["34","Electrode obscur",0],["35","Pyroli obscur",0],["36","Ortide obscur",0],["37","Akwakwak obscur",0],["38","Voltali obscur",0],["39","Kadabra obscur",0],["40","Machopeur obscur",0],["41","Grotadmorv obscur",0],["42","Persian obscur",0],["43","Colossinge obscur",0],["44","Galopa obscur",0],["45","Aquali obscur",0],["46","Carabaffe obscur",0],["47","Magicarpe",0],["48","Porygon",0],["49","Abra",0],["50","Salamèche",0],["51","Rattatac obscur",0],["52","Taupiqueur",0],["53","Minidraco",0],["54","Soporifik",0],["55","Évoli",0],["56","Abo",0],["57","Tadmorv",0],["58","Smogo",0],["59","Machoc",0],["60","Magnéti",0],["61","Férosinge",0],["62","Miaouss",0],["63","Mystherbe",0],["64","Ponyta",0],["65","Psykokwak",0],["66","Rattata",0],["67","Ramoloss",0],["68","Carapuce",0],["69","Voltorbe",0],["70","Nosferapti",0],["71","Et voila les Team Rocket !",0],["72","Attaque sournoise des Rocket",0],["73","À la façon du Boss",0],["74","Défi !",0],["75","Excavatrice",0],["76","La revanche de Chen, l",0],["77","Raid nocturne dans les poubelles",0],["78","Attaque au gaz gluant",0],["79","Bonne nuit, les petits !",0],["80","Énergie multicolore",0],["81","Énergie guérisseuse",0],["82","Énergie potion",0],["83","Raichu obscur",0]]],["gym1","Gym Heroes",[["1","Blaine's Moltres",1],["2","Brock's Rhydon",1],["3","Erika's Clefable",1],["4","Erika's Dragonair",1],["5","Erika's Vileplume",1],["6","Lt. Surge's Electabuzz",1],["7","Lt. Surge's Fearow",1],["8","Lt. Surge's Magneton",1],["9","Misty's Seadra",1],["10","Misty's Tentacruel",1],["11","Rocket's Hitmonchan",1],["12","Rocket's Moltres",1],["13","Rocket's Scyther",1],["14","Sabrina's Gengar",1],["15","Brock",1],["16","Erika",1],["17","Lt. Surge",1],["18","Misty",1],["19","The Rocket's Trap",1],["20","Brock's Golem",0],["21","Brock's Onix",0],["22","Brock's Rhyhorn",0],["23","Brock's Sandslash",0],["24","Brock's Zubat",0],["25","Erika's Clefairy",0],["26","Erika's Victreebel",0],["27","Lt. Surge's Electabuzz",0],["28","Lt. Surge's Raichu",0],["29","Misty's Cloyster",0],["30","Misty's Goldeen",0],["31","Misty's Poliwrath",0],["32","Misty's Tentacool",0],["33","Rocket's Snorlax",0],["34","Sabrina's Venomoth",0],["35","Blaine's Growlithe",0],["36","Blaine's Kangaskhan",0],["37","Blaine's Magmar",0],["38","Brock's Geodude",0],["39","Brock's Golbat",0],["40","Brock's Graveler",0],["41","Brock's Lickitung",0],["42","Erika's Dratini",0],["43","Erika's Exeggcute",0],["44","Erika's Exeggutor",0],["45","Erika's Gloom",0],["46","Erika's Gloom",0],["47","Erika's Oddish",0],["48","Erika's Weepinbell",0],["49","Erika's Weepinbell",0],["50","Lt. Surge's Magnemite",0],["51","Lt. Surge's Raticate",0],["52","Lt. Surge's Spearow",0],["53","Misty's Poliwhirl",0],["54","Misty's Psyduck",0],["55","Misty's Seaking",0],["56","Misty's Starmie",0],["57","Misty's Tentacool",0],["58","Sabrina's Haunter",0],["59","Sabrina's Jynx",0],["60","Sabrina's Slowbro",0],["61","Blaine's Charmander",0],["62","Blaine's Growlithe",0],["63","Blaine's Ponyta",0],["64","Blaine's Tauros",0],["65","Blaine's Vulpix",0],["66","Brock's Geodude",0],["67","Brock's Mankey",0],["68","Brock's Mankey",0],["69","Brock's Onix",0],["70","Brock's Rhyhorn",0],["71","Brock's Sandshrew",0],["72","Brock's Sandshrew",0],["73","Brock's Vulpix",0],["74","Brock's Zubat",0],["75","Erika's Bellsprout",0],["76","Erika's Bellsprout",0],["77","Erika's Exeggcute",0],["78","Erika's Oddish",0],["79","Erika's Tangela",0],["80","Lt. Surge's Magnemite",0],["81","Lt. Surge's Pikachu",0],["82","Lt. Surge's Rattata",0],["83","Lt. Surge's Spearow",0],["84","Lt. Surge's Voltorb",0],["85","Misty's Goldeen",0],["86","Misty's Horsea",0],["87","Misty's Poliwag",0],["88","Misty's Seel",0],["89","Misty's Shellder",0],["90","Misty's Staryu",0],["91","Sabrina's Abra",0],["92","Sabrina's Drowzee",0],["93","Sabrina's Gastly",0],["94","Sabrina's Mr. Mime",0],["95","Sabrina's Slowpoke",0],["96","Sabrina's Venonat",0],["97","Blaine's Quiz #1",0],["98","Brock",0],["99","Charity",0],["100","Erika",0],["101","Lt. Surge",0],["102","Misty",0],["103","No Removal Gym",0],["104","The Rocket's Training Gym",0],["105","Blaine's Last Resort",0],["106","Brock's Training Method",0],["107","Celadon City Gym",0],["108","Cerulean City Gym",0],["109","Erika's Maids",0],["110","Erika's Perfume",0],["111","Good Manners",0],["112","Lt. Surge's Treaty",0],["113","Minion of Team Rocket",0],["114","Misty's Wrath",0],["115","Pewter City Gym",0],["116","Recall",0],["117","Sabrina's ESP",0],["118","Secret Mission",0],["119","Tickling Machine",0],["120","Vermilion City Gym",0],["121","Blaine's Gamble",0],["122","Energy Flow",0],["123","Misty's Duel",0],["124","Narrow Gym",0],["125","Sabrina's Gaze",0],["126","Trash Exchange",0],["127","Fighting Energy",0],["128","Fire Energy",0],["129","Grass Energy",0],["130","Lightning Energy",0],["131","Psychic Energy",0],["132","Water Energy",0]]],["gym2","Gym Challenge",[["1","Blaine's Arcanine",1],["2","Blaine's Charizard",1],["3","Brock's Ninetales",1],["4","Erika's Venusaur",1],["5","Giovanni's Gyarados",1],["6","Giovanni's Machamp",1],["7","Giovanni's Nidoking",1],["8","Giovanni's Persian",1],["9","Koga's Beedrill",1],["10","Koga's Ditto",1],["11","Lt. Surge's Raichu",1],["12","Misty's Golduck",1],["13","Misty's Gyarados",1],["14","Rocket's Mewtwo",1],["15","Rocket's Zapdos",1],["16","Sabrina's Alakazam",1],["17","Blaine",1],["18","Giovanni",1],["19","Koga",1],["20","Sabrina",1],["21","Blaine's Ninetales",0],["22","Brock's Dugtrio",0],["23","Giovanni's Nidoqueen",0],["24","Giovanni's Pinsir",0],["25","Koga's Arbok",0],["26","Koga's Muk",0],["27","Koga's Pidgeotto",0],["28","Lt. Surge's Jolteon",0],["29","Sabrina's Gengar",0],["30","Sabrina's Golduck",0],["31","Blaine's Charmeleon",0],["32","Blaine's Dodrio",0],["33","Blaine's Rapidash",0],["34","Brock's Graveler",0],["35","Brock's Primeape",0],["36","Brock's Sandslash",0],["37","Brock's Vulpix",0],["38","Erika's Bellsprout",0],["39","Erika's Bulbasaur",0],["40","Erika's Clefairy",0],["41","Erika's Ivysaur",0],["42","Giovanni's Machoke",0],["43","Giovanni's Meowth",0],["44","Giovanni's Nidorina",0],["45","Giovanni's Nidorino",0],["46","Koga's Golbat",0],["47","Koga's Kakuna",0],["48","Koga's Koffing",0],["49","Koga's Pidgey",0],["50","Koga's Weezing",0],["51","Lt. Surge's Eevee",0],["52","Lt. Surge's Electrode",0],["53","Lt. Surge's Raticate",0],["54","Misty's Dewgong",0],["55","Sabrina's Haunter",0],["56","Sabrina's Hypno",0],["57","Sabrina's Jynx",0],["58","Sabrina's Kadabra",0],["59","Sabrina's Mr. Mime",0],["60","Blaine's Charmander",0],["61","Blaine's Doduo",0],["62","Blaine's Growlithe",0],["63","Blaine's Mankey",0],["64","Blaine's Ponyta",0],["65","Blaine's Rhyhorn",0],["66","Blaine's Vulpix",0],["67","Brock's Diglett",0],["68","Brock's Geodude",0],["69","Erika's Jigglypuff",0],["70","Erika's Oddish",0],["71","Erika's Paras",0],["72","Giovanni's Machop",0],["73","Giovanni's Magikarp",0],["74","Giovanni's Meowth",0],["75","Giovanni's Nidoran ♀",0],["76","Giovanni's Nidoran ♂",0],["77","Koga's Ekans",0],["78","Koga's Grimer",0],["79","Koga's Koffing",0],["80","Koga's Pidgey",0],["81","Koga's Tangela",0],["82","Koga's Weedle",0],["83","Koga's Zubat",0],["84","Lt. Surge's Pikachu",0],["85","Lt. Surge's Rattata",0],["86","Lt. Surge's Voltorb",0],["87","Misty's Horsea",0],["88","Misty's Magikarp",0],["89","Misty's Poliwag",0],["90","Misty's Psyduck",0],["91","Misty's Seel",0],["92","Misty's Staryu",0],["93","Sabrina's Abra",0],["94","Sabrina's Abra",0],["95","Sabrina's Drowzee",0],["96","Sabrina's Gastly",0],["97","Sabrina's Gastly",0],["98","Sabrina's Porygon",0],["99","Sabrina's Psyduck",0],["100","Blaine",0],["101","Brock's Protection",0],["102","Chaos Gym",0],["103","Erika's Kindness",0],["104","Giovanni",0],["105","Giovanni's Last Resort",0],["106","Koga",0],["107","Lt. Surge's Secret Plan",0],["108","Misty's Wish",0],["109","Resistance Gym",0],["110","Sabrina",0],["111","Blaine's Quiz #2",0],["112","Blaine's Quiz #3",0],["113","Cinnabar City Gym",0],["114","Fuchsia City Gym",0],["115","Koga's Ninja Trick",0],["116","Master Ball",0],["117","Max Revive",0],["118","Misty's Tears",0],["119","Rocket's Minefield Gym",0],["120","Rocket's Secret Experiment",0],["121","Sabrina's Psychic Control",0],["122","Saffron City Gym",0],["123","Viridian City Gym",0],["124","Fervor",0],["125","Transparent Walls",0],["126","Warp Point",0],["127","Fighting Energy",0],["128","Fire Energy",0],["129","Grass Energy",0],["130","Lightning Energy",0],["131","Psychic Energy",0],["132","Water Energy",0]]]];
+const CA_SET_IDS=new Set(CA_SETS.map(x=>x[0]));
+// La case d'une carte : « base1/58 ». Lue dans l'adresse de son image, sinon
+// déduite de l'adresse Cardmarket — sans aucune requête.
+function caCaseDe(c){
+  const lire=u=>{ const m=/images\.pokemontcg\.io\/([a-z0-9]+)\/([A-Za-z0-9]+?)(?:_hires)?\.png/i.exec(u||'');
+    return m&&CA_SET_IDS.has(m[1])?m[1]+'/'+m[2]:''; };
+  let k=lire(c.image);
+  if(!k&&c.url){ const i=caLireUrl(c.url); if(i)for(const x of caCandidats(i)){ k=lire(x.img); if(k)break; } }
+  return k;
+}
+const caCaseImg=(sid,n,q)=>`https://images.pokemontcg.io/${sid}/${n}${q==='hd'?'_hires':''}.png`;
+let caManquantes=false;
+function caSetsVue(){
+  const q=tabSansAccent(caRecherche.trim());
+  const eues={};
+  cartes.forEach(c=>{ const k=caCaseDe(c); if(k)(eues[k]=eues[k]||[]).push(c); });
+  const vues=[];
+  const html=CA_SETS.map(([sid,nom,l])=>{
+    const nb=l.filter(([n])=>eues[sid+'/'+n]).length;
+    const valeur=l.reduce((t,[n])=>t+caSomme((eues[sid+'/'+n]||[]).filter(c=>!caHorsTotal(c))),0);
+    const cases=l.filter(([n,nm])=>(!q||tabSansAccent(nm+' '+n).includes(q))&&(!caManquantes||!eues[sid+'/'+n]));
+    const tuiles=cases.map(([n,nm,holo])=>{
+      const l2=eues[sid+'/'+n];
+      if(l2){ vues.push(l2[0]);
+        return caTuile(l2[0],`<span class="ca-num">${tdEsc(n)}</span>${l2.length>1?`<span class="ca-nb" title="${l2.length} exemplaires">×${l2.length}</span>`:''}`); }
+      return `<button class="ca-tuile ca-manque" onclick="caCase('${sid}','${MD_ATT(n)}')" title="Il te manque : ${MD_ATT(nm)} (${MD_ATT(n)})">
+        <span class="ca-num">${tdEsc(n)}</span>
+        <div class="ca-img"><img src="${caCaseImg(sid,n)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></div>
+        <div class="ca-nom">${tdEsc(nm)}${holo?' <span class="ca-holo" title="Holo">★</span>':''}</div>
+        <div class="ca-meta"><span class="ca-manque-t">manquante</span></div></button>`;
+    }).join('');
+    const pc=Math.round(nb/l.length*100);
+    return `<section class="ca-sec">
+      <div class="ca-sec-h"><span class="ca-sec-t">${tdEsc(nom)}</span>
+        <span class="ca-prog" title="${pc} %"><span style="width:${pc}%"></span></span>
+        <span class="ca-sec-n">${nb} / ${l.length}${valeur?` · ${caEur(valeur)}`:''}</span></div>
+      ${tuiles?`<div class="ca-grille">${tuiles}</div>`:'<div class="ca-vide-s">'+(caManquantes&&nb===l.length?'Set complet !':'Aucune carte ne correspond.')+'</div>'}
+    </section>`;
+  }).join('');
+  return {html,vues};
+}
+// Une case manquante : l'ajouter comme carte nouvelle, ou dire que c'est une
+// carte déjà saisie — sans adresse, elle ne pouvait pas savoir où se ranger.
+let caCaseEd=null;
+function caCase(sid,n){
+  const st=CA_SETS.find(x=>x[0]===sid); if(!st)return;
+  const e=st[2].find(x=>x[0]===n); if(!e)return;
+  caCaseEd={sid,n,nom:e[1],set:st[1]};
+  document.getElementById('caCaseTitre').textContent=`${st[1].toUpperCase()} — N° ${n}`;
+  document.getElementById('caCaseImg').innerHTML=`<img src="${caCaseImg(sid,n,'hd')}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`;
+  document.getElementById('caCaseNom').textContent=e[1];
+  document.getElementById('caCaseQ').value=tabSansAccent(e[1]).split(/[\s']/)[0];
+  caCaseListe();
+  modalOuvre('caCaseModal');
+}
+function caCaseListe(){
+  const q=tabSansAccent(document.getElementById('caCaseQ').value.trim());
+  const l=cartes.filter(c=>!caCaseDe(c)&&(!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')).includes(q)))
+    .sort((a,b)=>a.nom.localeCompare(b.nom,'fr')).slice(0,40);
+  document.getElementById('caCaseRes').innerHTML=l.length?l.map(c=>`<button class="ca-case-c" onclick="caCaseLier('${MD_ATT(c.id)}')">
+      <b>${tdEsc(c.nom)}</b>${c.prix!=null?` <span class="ca-prix">${caEur(c.prix)}</span>`:''}${caTags(c.tags).map(t=>` <span class="ca-ou">${tdEsc(t)}</span>`).join('')}</button>`).join('')
+    :'<div class="ca-vide-s">Aucune carte sans set ne correspond.</div>';
+}
+async function caCaseLier(id){
+  const c=caParId(id); if(!c||!caCaseEd)return;
+  const avant={...c};
+  const v={...c,image:caCaseImg(caCaseEd.sid,caCaseEd.n,'hd'),drive_id:'',etat:'',raison:'',
+    ref:`${caCaseEd.set} ${caCaseEd.n}`};
+  modalFerme('caCaseModal'); caCaseEd=null;
+  await caSauver([v]);
+  renderCartes();
+  offerUndo(`« ${c.nom} » rangée dans son set`,async()=>{ await caSauver([avant]); renderCartes(); });
+}
+function caCaseNouvelle(){
+  if(!caCaseEd)return;
+  const e=caCaseEd; modalFerme('caCaseModal'); caCaseEd=null;
+  caOuvrir(null);
+  document.getElementById('caNom').value=e.nom;
+  document.getElementById('caSec').value=e.set;
+  caEd.image=caCaseImg(e.sid,e.n,'hd');
+  caApercu(null);
+  document.getElementById('caInfo').innerHTML=`${tdEsc(e.set)} n° ${tdEsc(e.n)} — l'image sera enregistrée dans Google Drive.`;
+}
+
 // ── L'assistant : associer les images à la main, à la chaîne ──────────────
 // Pour les cartes dont l'adresse ne dit rien — ou qui n'en ont pas — : une
 // carte après l'autre, la recherche lancée sur son nom, un clic pour choisir,
@@ -19103,7 +19235,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.71.1';
+const APP_VERSION='v1.72.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
