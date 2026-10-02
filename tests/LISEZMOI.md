@@ -22,7 +22,7 @@ node tests/cartes.js
 | `lienweb.js` | Poser et rendre un lien vers une page web. |
 | `curseur.js` | La position du curseur dans l'éditeur de notes, à travers les reconstructions de l'interface. |
 | `lignesvides.js` | Les lignes vides voulues, rendues à la lecture. |
-| `cartes.js` | La collection de cartes d'OMEGA : lecture de la note, réécriture ligne à ligne, images. |
+| `cartes.js` | La collection de cartes d'OMEGA : onglet du classeur, images archivées dans Drive et gardées sur l'appareil. |
 | `maj.js` | La mise à jour de l'application : les trois paliers, et le refus de boucler en silence. |
 
 Le navigateur est cherché dans `/opt/pw-browsers/chromium-1194/…` ; sur une

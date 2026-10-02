@@ -2509,20 +2509,22 @@ body,body *{font-family:var(--font-body)}
         <div class="ca-info" id="caInfo"></div>
         <div class="ca-img-act">
           <button class="btn-nav out" onclick="caChoisir()">Choisir l'image…</button>
-          <button class="btn-nav out" onclick="caRetirerImage()" title="Revenir à l'image trouvée depuis l'adresse">Retirer</button>
+          <button class="btn-nav out" onclick="caPhoto()" title="Prendre ou choisir une photo : elle est enregistrée dans Google Drive">📷 Ma photo</button>
+          <button class="btn-nav out" onclick="caRetirerImage()">Retirer</button>
+          <input type="file" id="caPhotoIn" accept="image/*" style="display:none" onchange="caPhotoPrise(this.files[0])">
         </div>
       </div>
       <div class="ca-fiche-ch">
-        <div class="field" id="caSecChamp"><label>Section</label><select id="caSec" onchange="caSecChange(this.value)"></select></div>
+        <div class="field"><label>Section</label><input type="text" id="caSec" list="caSecListe" autocomplete="off" placeholder="ex : Cadeau Noé"><datalist id="caSecListe"></datalist></div>
         <div class="field"><label>Nom</label><input type="text" id="caNom" autocomplete="off" placeholder="ex : Flagadoss AR"></div>
         <div class="field"><label>Adresse de la fiche (Cardmarket…)</label>
           <input type="url" id="caUrl" autocomplete="off" placeholder="https://www.cardmarket.com/fr/Pokemon/Products/Singles/…" onchange="caUrlChange()" onpaste="setTimeout(caUrlChange,0)">
           <div class="ca-lien" id="caLien"></div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
-          <div class="field" id="caPrixChamp"><label>Prix</label><input type="text" inputmode="decimal" id="caPrix" placeholder="21"></div>
-          <div class="field" id="caVenteChamp"><label>Prix de vente</label><input type="text" inputmode="decimal" id="caVente" placeholder="—"></div>
+          <div class="field"><label>Prix d'achat</label><input type="text" inputmode="decimal" id="caPrix" placeholder="21"></div>
+          <div class="field"><label>Prix de vente</label><input type="text" inputmode="decimal" id="caVente" placeholder="—"></div>
         </div>
-        <div class="field" id="caOuChamp"><label>Où</label><input type="text" id="caOuIn" list="caOuListe" autocomplete="off"><datalist id="caOuListe"></datalist></div>
+        <div class="field"><label>Où</label><input type="text" id="caOuIn" list="caOuListe" autocomplete="off"><datalist id="caOuListe"></datalist></div>
       </div>
     </div>
     <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem">
@@ -7881,7 +7883,10 @@ const BK_TABLES=[
   ['jpPlan',       'JLPT, plan',  ()=>jpPlan,        v=>{jpPlan=v;}],
   ['jpJournal',    'JLPT, journal',()=>jpJournal,    v=>{jpJournal=v;}],
   ['jpMesures',    'JLPT, compteurs',()=>jpMesures,  v=>{jpMesures=v;}],
-  ['jpCheck',      'JLPT, points', ()=>jpCheck,      v=>{jpCheck=v;}]];
+  ['jpCheck',      'JLPT, points', ()=>jpCheck,      v=>{jpCheck=v;}],
+  // Inscrit LE JOUR où l'onglet naît : c'est l'oubli que cette liste a déjà
+  // connu trois fois.
+  ['cartes',       'Cartes',       ()=>cartes,       v=>{cartes=v;}]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -7960,7 +7965,7 @@ async function applyBackup(){
   // caches locaux d'abord : même si le réseau échoue, l'état restauré survit
   ['notes','mesDefs','mesVals','adpProjects','adpContacts','adpMilestones',
    'adpTemplates','adpBudget','adpRuns','autoRegles','autoJournal','adpPoints',
-   'brsLignes','jpPlan','jpJournal','jpMesures','jpCheck'].forEach(k=>{
+   'brsLignes','jpPlan','jpJournal','jpMesures','jpCheck','cartes'].forEach(k=>{
     const t=BK_TABLES.find(x=>x[0]===k); if(t)cacheSet(k,t[2]()||[]);
   });
   lsSet(LS_CACHE,JSON.stringify(allTasks));
@@ -7986,6 +7991,7 @@ async function applyBackup(){
       if(jpJournal.length)  ok=await sheetBatchUpsert('jp_journal',jpJournal.map(jpJourRow))&&ok;
       if(jpMesures.length)  ok=await sheetBatchUpsert('jp_mesures',jpMesures.map(jpMesRow))&&ok;
       if(jpCheck.length)    ok=await sheetBatchUpsert('jp_check',jpCheck.map(jpChkRow))&&ok;
+      if(cartes.length){ await ensureCartesSheet(); ok=await sheetBatchUpsert(CA_SHEET,cartes.map(caRow))&&ok; }
     }catch(e){ ok=false; }
   }
   showLoad(false);
@@ -8920,6 +8926,7 @@ function adpRestoreCache(){
   adpPoints=cacheGet('adpPoints',[]); brsLignes=cacheGet('brsLignes',[]);
   jpPlan=cacheGet('jpPlan',[]); jpJournal=cacheGet('jpJournal',[]);
   jpMesures=cacheGet('jpMesures',[]); jpCheck=cacheGet('jpCheck',[]);
+  cartes=cacheGet('cartes',[]);
   projTagsInvalidate();
 }
 // ── Le fil du projet ──────────────────────────────────────────────────────
@@ -15661,21 +15668,35 @@ function switchPage(name){
 }
 
 // ════════════════════════════════════════════════════
-// CARTES — la collection Pokémon, vue et gérée depuis OMEGA
+// CARTES — la collection Pokémon, gérée depuis OMEGA
 // ════════════════════════════════════════════════════
-// LA NOTE « Cartes » RESTE LA SOURCE. Aucune feuille nouvelle, aucune copie :
-// cette page LIT les tableaux de la note et RÉÉCRIT leurs lignes. Ce qu'on
-// modifie ici se retrouve dans la note, ce qu'on écrit dans la note apparaît
-// ici, et l'export, l'historique et la synchronisation restent ceux des notes.
-// Chaque tableau de la note est une section ; son titre est la ligne de texte
-// qui le précède (« {vert:Cadeau Noé :} » → « Cadeau Noé »).
-// Les colonnes sont reconnues par leur NOM, jamais par leur rang : on peut
-// en ajouter, en déplacer ou en renommer, les autres sont conservées telles
-// quelles à la réécriture.
+// UNE TABLE À SOI, DES IMAGES À SOI.
+// La v1.67 lisait et réécrivait une note : c'était simple, mais chaque
+// ouverture repartait chercher les images sur une base publique lente et
+// rationnée, et tout s'effaçait au premier vidage du cache. Désormais :
+//   - les cartes vivent dans l'onglet « cartes » du classeur, une ligne par
+//     carte : on les modifie une à une, sans réécrire un tableau entier ;
+//   - une image n'est cherchée QU'UNE FOIS, pour toujours et pour tous les
+//     appareils : ce qui a été trouvé est écrit dans la ligne de la carte ;
+//   - elle est ensuite ARCHIVÉE dans Google Drive (dossier « Kanban —
+//     Cartes »), réduite à une taille d'écran ;
+//   - et gardée dans le navigateur (IndexedDB) : les ouvertures suivantes
+//     n'ont plus besoin d'aucun réseau.
+// La note « Cartes » n'est plus lue qu'une fois, pour l'import ; elle n'est
+// jamais modifiée.
 const CA_NOTE='Cartes';
+const CA_SHEET='cartes';
+const CA_HEADER=['id','section','nom','url','prix','vente','ou','image','drive_id','ref','cote',
+                 'ordre','etat','raison','created_at','updated_at'];
+const CA_DOSSIER='Kanban — Cartes';
+const LS_CA_DOSSIER='kanban_cartes_dossier';
+// Ce que la v1.67 avait déjà trouvé, appareil par appareil : l'import s'en sert
+// pour ne pas refaire une seule recherche déjà faite.
 const LS_CA_IMG='kanban_cartes_img2';
+let cartes=[], cartesLoaded=false, cartesLoadedAt=0;
 let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0;
 
+// ── Lire la note « Cartes » (import seulement) ───────────────────────────
 // Une cellule de la note, rendue lisible : sans markdown, sans lien, sans
 // couleur. C'est le nom qu'on affiche, et celui qu'on cherche.
 const caNet=s=>String(s==null?'':s)
@@ -15753,8 +15774,7 @@ const caNoteDe=()=>noteByTitle(CA_NOTE);
 //      TCGdex, pokemontcg.io) : on en tire l'extension et le numéro, et on
 //      demande la carte exacte à une base publique. C'est le cas automatique ;
 //   3. sinon, rien d'automatique : on ne devine pas une impression parmi
-//      vingt Flagadoss. On propose une recherche par nom, et on retient ce que
-//      l'utilisateur choisit — dans la note, pour que le choix le suive partout.
+//      vingt Flagadoss. On propose une recherche par nom, ou une photo.
 // Aucune page marchande n'est lue : Cardmarket refuse les requêtes d'un autre
 // site, et l'adresse suffit. Seules des bases ouvertes sont interrogées.
 const CA_API_PTCG='https://api.pokemontcg.io/v2/cards';
@@ -15860,41 +15880,6 @@ async function caResoudreUrl(u){
   const lu=[i.ext,i.code&&i.num?`${i.code} ${i.num}`:i.num?`n° ${i.num}`:'',i.nom].filter(Boolean).join(' · ');
   return {introuvable:`Lu dans l'adresse : ${lu||'?'} — aucune carte correspondante dans la base.`};
 }
-// Version 2 du cache : celui de la v1.67.0 contient des échecs passagers
-// rangés à tort comme introuvables. On le jette plutôt que de le croire.
-const CA_ECHEC_TTL=7*86400000;
-try{ localStorage.removeItem('kanban_cartes_img'); }catch(e){}
-function caCache(){ try{ return JSON.parse(localStorage.getItem(LS_CA_IMG)||'{}')||{}; }catch(e){ return {}; } }
-function caCacheMettre(u,v){
-  if(!v||v.passager)return;                       // jamais : ce n'est pas une réponse
-  const c=caCache(); c[u]={...v,at:Date.now()};
-  try{ localStorage.setItem(LS_CA_IMG,JSON.stringify(c)); }catch(e){}
-}
-// Ce qu'on sait d'une adresse : {img…}, {introuvable}, ou undefined (à chercher).
-const caConnue=u=>{ const v=caCache()[u]; if(!v)return undefined;
-  if(v.introuvable)return Date.now()-v.at<CA_ECHEC_TTL?v:undefined;
-  return caWeb(v.img)?v:undefined; };
-const caIntrouvable=c=>!!(c.url&&!c.img&&!caEstImage(c.url)&&(caConnue(c.url)||{}).introuvable);
-function caOublierIntrouvables(){
-  const c=caCache(); Object.keys(c).forEach(k=>{ if(c[k].introuvable)delete c[k]; });
-  try{ localStorage.setItem(LS_CA_IMG,JSON.stringify(c)); }catch(e){}
-  renderCartes();
-}
-// L'image à montrer tout de suite, sans réseau : choisie, ou déjà connue.
-function caImageImmediate(c){
-  if(c.img)return {img:c.img,petite:c.img,choisie:true};
-  if(c.url){ if(caEstImage(c.url))return {img:c.url,petite:c.url};
-             const v=caConnue(c.url); if(v&&v.img)return v; }
-  return null;
-}
-async function caImage(c){
-  const im=caImageImmediate(c); if(im)return im;
-  if(!c.url)return null;
-  const k=caConnue(c.url); if(k&&k.introuvable)return k;
-  const r=await caResoudreUrl(c.url);
-  caCacheMettre(c.url,r);
-  return r;
-}
 // La recherche par nom, pour le choix manuel. Les noms sont en français :
 // TCGdex est la base ouverte qui les connaît. On retire les mots qui ne sont
 // pas le nom du Pokémon (« Shiny », « AR », « full art »…) en raccourcissant
@@ -15913,123 +15898,246 @@ async function caChercher(nom){
   return [];
 }
 
-// ── Réécrire la note ──────────────────────────────────────────────────────
-// La règle des éditeurs de tableau : on relit la note au moment d'écrire, on
-// retrouve la ligne par son CONTENU et non par sa position, et on ne réécrit
-// que les cellules qui ont changé. Une carte modifiée entre-temps sur un autre
-// appareil n'est donc jamais écrasée à l'aveugle : on refuse, et on le dit.
-const caLigneMd=c=>'| '+c.map(tabEchappe).join(' | ')+' |';
-function caFormatPrix(v,colonne){
-  if(v==null||v==='')return '';
-  const n=typeof v==='number'?v:nbFr(v,null); if(n==null)return String(v);
-  const ex=colonne.find(x=>/\d/.test(x)&&nbFr(x,null)!=null)||'';
-  const suf=/\s€\s*$/.test(ex)?' €':/€\s*$/.test(ex)||!ex?'€':'';
-  return (Number.isInteger(n)?String(n):n.toFixed(2).replace('.',','))+suf;
+
+// ── La table « cartes » du classeur ───────────────────────────────────────
+// Une ligne par carte, clé en colonne A. Une carte supprimée laisse une pierre
+// tombale (nom vide), comme partout ailleurs : on ne décale jamais la feuille
+// sous des écritures en vol.
+let caSeq=0;
+const caId=()=>'ca'+Date.now().toString(36)+(caSeq=(caSeq+1)%46656).toString(36).padStart(3,'0');
+const caNum=v=>v==null||v===''?'':String(v);
+const caRow=c=>[c.id,c.section||'',c.nom||'',c.url||'',caNum(c.prix),caNum(c.vente),c.ou||'',
+  c.image||'',c.drive_id||'',c.ref||'',caNum(c.cote),String(c.ordre||0),c.etat||'',c.raison||'',
+  c.created_at||'',c.updated_at||''];
+const caTombe=id=>[id,'','','','','','','','','','','','','','',td()];
+function caDeLigne(x){
+  const g=i=>String(x[i]==null?'':x[i]).trim();
+  const n=i=>{ const v=g(i); return v===''?null:nbFr(v,null); };
+  return {id:g(0),section:g(1),nom:g(2),url:caWeb(g(3)),prix:n(4),vente:n(5),ou:g(6),
+    image:caWeb(g(7)),drive_id:g(8),ref:g(9),cote:n(10),ordre:parseInt(g(11),10)||0,
+    etat:g(12),raison:g(13),created_at:g(14),updated_at:g(15)};
 }
-// op : {type:'maj'|'ajout'|'suppr', rang, sig?, val?:{nom,url,prix,vente,ou,img}}
-// Les références explicites d'une formule (« =B3*C3 ») suivent les lignes qui
-// bougent ; une ligne n'est réécrite que si sa formule a réellement changé.
-function caRemapperLignes(lignes,pos,corps,map){
-  corps.forEach((x,j)=>{
-    if(map[j]==null||map[j]===j)return;
-    const y=x.map(c=>{ const v=String(c).trim();
-      return v[0]==='='?'='+tabRemapper(v.slice(1),null,map):c; });
-    if(y.join('\u0001')!==x.join('\u0001'))lignes[pos[j+1]]=caLigneMd(y);
-  });
+async function ensureCartesSheet(){
+  const titles=await sheetTitres();
+  if(titles.includes(CA_SHEET))return;
+  sheetTitresOublie();
+  await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}:batchUpdate`,
+    {method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({requests:[{addSheet:{properties:{title:CA_SHEET}}}]})});
+  await sheetPut(`${CA_SHEET}!A1`,[CA_HEADER]);
 }
-function caAppliquer(src,op){
-  const lignes=String(src).split('\n');
-  const b=tabBlocs(src)[op.rang]; if(!b)return {err:"Le tableau n'est plus dans la note"};
-  const pos=[]; let sep=-1;
-  for(let i=b[0];i<=b[1];i++){ if(/^[\s|:-]+$/.test(lignes[i])){ if(sep<0)sep=i; } else pos.push(i); }
-  const rows=pos.map(i=>tabDecoupe(lignes[i]));
-  const cols=caColonnes(rows[0]);
-  const corps=rows.slice(1);
-  // La ligne est retrouvée AVANT toute retouche de structure : c'est son
-  // contenu d'origine qui l'identifie.
-  let i=-1;
-  if(op.type!=='ajout'){
-    i=corps.findIndex(r=>r.join('\u0001')===op.sig);
-    if(i<0)return {err:'Cette carte a été modifiée ailleurs entre-temps — rien n\'a été écrit.'};
-  }
-  if(op.type==='suppr'){
-    const map={}; corps.forEach((_,j)=>{ if(j>i)map[j]=j-1; });
-    caRemapperLignes(lignes,pos,corps,map);
-    lignes.splice(pos[i+1],1);
-    return {src:lignes.join('\n')};
-  }
-  // Une image choisie à la main a besoin d'une colonne pour être retenue : on
-  // l'ajoute — visible, à droite, et seulement à ce moment-là.
-  let structure=false;
-  if(op.val&&op.val.img&&cols.img<0){
-    const L=rows[0].length; structure=true;
-    rows.forEach((r,k)=>{ while(r.length<L)r.push(''); r.push(k?'':'Image'); lignes[pos[k]]=caLigneMd(r); });
-    if(sep>=0)lignes[sep]=lignes[sep].replace(/\|\s*$/,'')+'|---|';
-    cols.img=L;
-  }
-  const larg=rows[0].length;
-  const colonne=k=>corps.map(x=>String(x[k]||''));
-  const ecrire=(r,v)=>{
-    const avant=r.join('\u0001');
-    while(r.length<larg)r.push('');
-    const ancNom=caNet(r[cols.nom]), ancUrl=caUrlDe(cols.url>=0?r[cols.url]:r[cols.nom]);
-    const nom=v.nom!=null?String(v.nom).trim():ancNom;
-    const url=v.url!=null?caWeb(v.url):ancUrl;
-    if(cols.url>=0){
-      if(nom!==ancNom)r[cols.nom]=nom;
-      if(url!==ancUrl)r[cols.url]=url;
-    } else if(nom!==ancNom||url!==ancUrl){
-      r[cols.nom]=url?`[${nom.replace(/[[\]]/g,'')}](${url})`:nom;
-    }
-    const num=x=>x==null||String(x).trim()===''?null:nbFr(x,null);
-    if(v.prix!==undefined&&cols.prix>=0&&num(r[cols.prix])!==num(v.prix))
-      r[cols.prix]=caFormatPrix(num(v.prix),colonne(cols.prix));
-    if(v.vente!==undefined&&cols.vente>=0&&num(r[cols.vente])!==num(v.vente))
-      r[cols.vente]=caFormatPrix(num(v.vente),colonne(cols.vente));
-    if(v.ou!==undefined&&cols.ou>=0&&caNet(r[cols.ou])!==String(v.ou).trim())r[cols.ou]=String(v.ou).trim();
-    if(v.img!==undefined&&cols.img>=0&&caUrlDe(r[cols.img])!==caWeb(v.img))r[cols.img]=caWeb(v.img);
-    return r.join('\u0001')!==avant;
+// Chargée à la première visite de la page, pas au démarrage : l'ouverture de
+// l'application reste sous les dix appels.
+async function loadCartes(){
+  if(!accessToken)return;
+  await ensureCartesSheet();
+  const [l]=await sheetBatchLignes([`${CA_SHEET}!A:P`]);
+  const m={};
+  l.forEach(x=>{ const c=caDeLigne(x); if(!c.id)return; if(c.nom)m[c.id]=c; else delete m[c.id]; });
+  cartes=Object.values(m);
+  cartesLoaded=true; cartesLoadedAt=Date.now();
+  cacheSet('cartes',cartes);
+}
+const caParId=id=>cartes.find(c=>c.id===id)||null;
+function caPoser(c){
+  const i=cartes.findIndex(x=>x.id===c.id);
+  if(i>=0)cartes[i]=c; else cartes.push(c);
+}
+// Ce que fait l'utilisateur part tout de suite.
+async function caSauver(liste){
+  liste.forEach(c=>{ c.updated_at=td(); caPoser(c); });
+  cacheSet('cartes',cartes);
+  if(!accessToken)return true;
+  return sheetBatchUpsert(CA_SHEET,liste.map(caRow));
+}
+// Ce que fait la machine (image trouvée, archivée) est regroupé : cent cartes
+// résolues font une écriture, pas cent.
+let caAttenteEcr={}, caAttenteT=null, CA_DELAI_ECR=3000;
+function caPlusTard(c){
+  c.updated_at=td(); caPoser(c); caAttenteEcr[c.id]=c;
+  cacheSet('cartes',cartes);
+  clearTimeout(caAttenteT); caAttenteT=setTimeout(caVider,CA_DELAI_ECR);
+}
+async function caVider(){
+  clearTimeout(caAttenteT);
+  const l=Object.values(caAttenteEcr); caAttenteEcr={};
+  if(l.length&&accessToken)await sheetBatchUpsert(CA_SHEET,l.map(caRow));
+}
+document.addEventListener('visibilitychange',()=>{ if(document.hidden)caVider(); });
+
+// ── La copie locale : IndexedDB ───────────────────────────────────────────
+// Pas le cache du service worker : il est vidé à chaque mise à jour et par
+// « Vider le cache ». Les images ont vocation à durer.
+const caIdb=(()=>{
+  let p=null;
+  const ouvrir=()=>p||(p=new Promise((ok,ko)=>{
+    const r=indexedDB.open('kanban-cartes',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('img');
+    r.onsuccess=()=>ok(r.result); r.onerror=()=>ko(r.error);
+  }));
+  return {
+    get:async k=>{ try{ const db=await ouvrir(); return await new Promise(ok=>{
+      const q=db.transaction('img').objectStore('img').get(k);
+      q.onsuccess=()=>ok(q.result||null); q.onerror=()=>ok(null); }); }catch(e){ return null; } },
+    set:async(k,v)=>{ try{ const db=await ouvrir(); await new Promise(ok=>{
+      const t=db.transaction('img','readwrite'); t.objectStore('img').put(v,k);
+      t.oncomplete=ok; t.onerror=ok; }); }catch(e){} }
   };
-  if(op.type==='ajout'){
-    // Une nouvelle carte entre AVANT la ligne de total : après, elle serait
-    // hors du compte, l'exact inverse de l'intention.
-    let k=corps.length; while(k>0&&tabEstAgregat(corps[k-1]))k--;
-    const r=new Array(larg).fill('');
-    ecrire(r,op.val);
-    const map={}; corps.forEach((_,j)=>{ if(j>=k)map[j]=j+1; });
-    caRemapperLignes(lignes,pos,corps,map);
-    lignes.splice(k<corps.length?pos[k+1]:pos[pos.length-1]+1,0,caLigneMd(r));
-    return {src:lignes.join('\n')};
+})();
+const caObj={};                                   // drive_id → URL blob, pour la session
+
+// ── L'archive : Google Drive ──────────────────────────────────────────────
+// Le droit accordé est « drive.file » : l'application ne voit que les fichiers
+// qu'elle a créés. Le dossier se retrouve donc par son nom depuis n'importe
+// quel appareil, et rien d'autre du Drive n'est accessible.
+async function caDossier(){
+  const c=localStorage.getItem(LS_CA_DOSSIER); if(c)return c;
+  const q=encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${CA_DOSSIER}' and trashed=false`);
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{}})
+    .then(x=>x.ok?x.json():null).catch(()=>null);
+  let id=r&&r.files&&r.files.length?r.files[0].id:null;
+  if(!id){
+    const n=await authFetch('https://www.googleapis.com/drive/v3/files?fields=id',
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({name:CA_DOSSIER,mimeType:'application/vnd.google-apps.folder'})})
+      .then(x=>x.ok?x.json():null).catch(()=>null);
+    id=n&&n.id||null;
   }
-  const r=corps[i];
-  const change=ecrire(r,op.val);
-  if(!change&&!structure)return {src,inchange:true};
-  lignes[pos[i+1]]=caLigneMd(r);
-  return {src:lignes.join('\n')};
+  if(id)try{ localStorage.setItem(LS_CA_DOSSIER,id); }catch(e){}
+  return id;
 }
-async function caEcrire(op,msg){
-  try{ await refreshNotesIfStale(); }catch(e){}
-  const n=caNoteDe();
-  if(!n){ toast(`La note « ${CA_NOTE} » est introuvable`,'err'); return false; }
-  const avant=n.content;
-  const r=caAppliquer(avant,op);
-  if(r.err){ toast(r.err,'err'); renderCartes(); return false; }
-  if(r.inchange)return true;
-  noteSnapshot(n.title,avant,n.id);
-  n.content=r.src;
-  const ok=await noteUpsert(n);
-  if(!ok){ n.content=avant; toast('ÉCHEC de l\'enregistrement','err'); renderCartes(); return false; }
+async function caDriveEnvoyer(blob,nom){
+  const up=await authFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=media&fields=id',
+    {method:'POST',headers:{'Content-Type':blob.type||'image/webp'},body:blob}).catch(()=>null);
+  if(!up||!up.ok)return null;
+  const j=await up.json().catch(()=>null); if(!j||!j.id)return null;
+  const dossier=await caDossier();
+  await authFetch(`https://www.googleapis.com/drive/v3/files/${j.id}?fields=id`+(dossier?`&addParents=${dossier}`:''),
+    {method:'PATCH',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({name:String(nom).replace(/[\\/]/g,'-').slice(0,120)})}).catch(()=>null);
+  return j.id;
+}
+// {blob} | {absent:true} (supprimé du Drive) | null (réseau : on réessaiera)
+async function caDriveLire(id){
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media`,{headers:{}})
+    .catch(()=>null);
+  if(!r)return null;
+  if(r.status===404)return {absent:true};
+  if(!r.ok)return null;
+  const b=await r.blob().catch(()=>null);
+  return b&&b.size?{blob:b}:null;
+}
+// Les octets d'une image publique. Un site qui refuse les lectures d'un autre
+// site (CORS) laisse l'image AFFICHABLE mais pas archivable : on garde alors
+// son adresse, sans réessayer à chaque ouverture.
+async function caTelecharger(u){
+  try{
+    const r=await fetch(u,{mode:'cors',credentials:'omit',referrerPolicy:'no-referrer'});
+    if(!r.ok)return null;
+    const b=await r.blob();
+    return b&&b.size&&/^image\//.test(b.type||'image/')?b:null;
+  }catch(e){ return null; }
+}
+// Une carte s'affiche en 150 à 220 pixels : 500 de large suffisent, et une
+// image haute définition de 700 Ko devient un WebP de quelques dizaines.
+let CA_LARGEUR=500;
+async function caReduire(blob){
+  try{
+    const bm=await createImageBitmap(blob);
+    const k=Math.min(1,CA_LARGEUR/bm.width);
+    if(k>=1&&blob.size<200000)return blob;
+    const w=Math.round(bm.width*k), h=Math.round(bm.height*k);
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(bm,0,0,w,h);
+    const out=await new Promise(r=>cv.toBlob(r,'image/webp',0.86));
+    return out&&out.size?out:blob;
+  }catch(e){ return blob; }
+}
+
+// ── Préparer l'image d'une carte ──────────────────────────────────────────
+// Dans l'ordre, et on s'arrête au premier qui répond :
+//   1. la copie locale (IndexedDB) — aucun réseau ;
+//   2. l'archive Drive — un téléchargement, puis copie locale ;
+//   3. l'image connue (trouvée ou choisie) — affichée, puis archivée ;
+//   4. l'adresse de la fiche — résolue UNE FOIS, résultat écrit dans la table.
+async function caLocale(c){
+  if(!c.drive_id||c.drive_id==='-')return null;
+  if(caObj[c.drive_id])return caObj[c.drive_id];
+  const b=await caIdb.get(c.drive_id);
+  return b?(caObj[c.drive_id]=URL.createObjectURL(b)):null;
+}
+async function caTraiter(c,montrer){
+  const loc=await caLocale(c); if(loc){ montrer(loc); return 'archivee'; }
+  if(c.drive_id&&c.drive_id!=='-'&&accessToken){
+    const d=await caDriveLire(c.drive_id);
+    if(d&&d.blob){ await caIdb.set(c.drive_id,d.blob);
+      montrer(caObj[c.drive_id]=URL.createObjectURL(d.blob)); return 'archivee'; }
+    if(d&&d.absent){ c.drive_id=''; caPlusTard(c); }     // effacée du Drive : on la refera
+    else if(!d)return 'passager';
+  }
+  if(!c.image&&c.url&&c.etat!=='introuvable'){
+    const r=await caResoudreUrl(c.url);
+    if(r&&r.passager)return 'passager';
+    if(r&&r.img){ c.image=r.img; c.ref=r.ref||''; c.cote=r.cote==null?null:r.cote; c.etat=''; c.raison=''; }
+    else { c.etat='introuvable'; c.raison=(r&&r.introuvable)||''; }
+    caPlusTard(c);
+  }
+  if(!c.image)return c.etat==='introuvable'?'introuvable':'vide';
+  montrer(c.image);
+  if(c.drive_id==='-')return 'distante';
+  if(!accessToken||!navigator.onLine)return 'distante';
+  const b=await caTelecharger(c.image);
+  if(!b){ c.drive_id='-'; caPlusTard(c); return 'distante'; }
+  const p=await caReduire(b);
+  const id=await caDriveEnvoyer(p,`${c.nom} — ${c.id}.webp`);
+  if(!id)return 'distante';                          // Drive refuse : on réessaiera
+  c.drive_id=id; caPlusTard(c);
+  await caIdb.set(id,p);
+  montrer(caObj[id]=URL.createObjectURL(p));
+  return 'archivee';
+}
+
+
+// ── Importer la note « Cartes » ───────────────────────────────────────────
+// Une fois. Chaque tableau devient une section, chaque ligne une carte. Ce que
+// la v1.67 avait déjà trouvé sur cet appareil est repris tel quel : aucune
+// recherche n'est refaite. La note n'est pas touchée.
+function caImportables(){
+  const n=noteByTitle(CA_NOTE); if(!n)return [];
+  let vu={}; try{ vu=JSON.parse(localStorage.getItem(LS_CA_IMG)||'{}')||{}; }catch(e){}
+  let o=cartes.reduce((m,c)=>Math.max(m,c.ordre||0),0);
+  const out=[];
+  caLire(n).forEach(s=>s.cartes.forEach(c=>{
+    const v=c.url&&vu[c.url]&&caWeb(vu[c.url].img)?vu[c.url]:null;
+    out.push({id:caId(),section:s.titre,nom:c.nom,url:c.url,prix:c.prix,vente:c.vente,ou:c.ou,
+      image:c.img||(c.url&&caEstImage(c.url)?c.url:'')||(v?v.img:''),
+      drive_id:'',ref:v&&v.ref||'',cote:v&&v.cote!=null?v.cote:null,ordre:++o,
+      etat:'',raison:'',created_at:td(),updated_at:td()});
+  }));
+  return out;
+}
+async function caImporter(){
+  const l=caImportables();
+  if(!l.length){ toast('Rien à importer','err'); return; }
+  showLoad(true);
+  const ok=await caSauver(l);
+  showLoad(false);
+  toast(ok?`${l.length} cartes importées — la note n'a pas été modifiée`:'ÉCHEC de l\'import','');
   renderCartes();
-  offerUndo(msg,async()=>{
-    const m=caNoteDe(); if(!m||m.content!==r.src){ toast('La note a changé depuis — annulation impossible','err'); return; }
-    m.content=avant; await noteUpsert(m); renderCartes();
-  });
-  return true;
 }
 
 // ── La page ───────────────────────────────────────────────────────────────
 const caEur=v=>v==null?'—':v.toLocaleString('fr-FR',{minimumFractionDigits:Number.isInteger(v)?0:2,maximumFractionDigits:2})+' €';
 const caSomme=l=>l.reduce((s,c)=>s+(c.prix||0),0);
+// Les sections dans l'ordre de leur première carte.
+function caSections(){
+  const m=new Map();
+  cartes.slice().sort((a,b)=>(a.ordre||0)-(b.ordre||0)).forEach(c=>{
+    const t=c.section||'Sans section';
+    if(!m.has(t))m.set(t,[]); m.get(t).push(c);
+  });
+  return [...m].map(([titre,l])=>({titre,cartes:l}));
+}
 function caVisibles(s){
   const q=tabSansAccent(caRecherche.trim());
   let l=s.cartes.filter(c=>(!caOu||c.ou===caOu)
@@ -16041,47 +16149,52 @@ function caVisibles(s){
 }
 async function renderCartes(){
   const el=document.getElementById('caWrap'); if(!el)return;
-  if(accessToken&&!notesLoaded){ el.innerHTML='<div class="ca-vide">Chargement des notes…</div>';
-    try{ await loadNotes(); }catch(e){} }
-  else { try{ await refreshNotesIfStale(); }catch(e){} }
+  // Relue toutes les deux minutes au plus : un autre appareil a pu passer. Ce
+  // qui attend d'être écrit part AVANT, sinon la relecture l'effacerait.
+  if(accessToken&&(!cartesLoaded||Date.now()-cartesLoadedAt>NOTES_STALE)){
+    if(!cartes.length)el.innerHTML='<div class="ca-vide">Chargement des cartes…</div>';
+    try{ await caVider(); await loadCartes(); }catch(e){ toast('Lecture de l\'onglet « cartes » impossible','err'); }
+  }
   if(curPage!=='cartes')return;
-  const n=caNoteDe();
-  if(!n){
-    el.innerHTML=`<div class="ca-vide"><div class="ca-vide-t">Aucune note « ${CA_NOTE} »</div>
-      <div>Cette page lit les tableaux d'une note nommée <b>${CA_NOTE}</b>. Elle reste la source : ce que tu modifies ici y est écrit.</div>
-      <button class="btn-nav" onclick="caCreerNote()">Créer la note ${CA_NOTE}</button></div>`;
+  // La note n'est lue que pour proposer l'import : pas de chargement réseau si
+  // les cartes sont déjà là.
+  if(!cartes.length&&accessToken&&!notesLoaded){ try{ await loadNotes(); }catch(e){} }
+  const imp=!cartes.length?caImportables().length:0;
+  if(!cartes.length){
+    el.innerHTML=`<div class="ca-vide"><div class="ca-vide-t">Aucune carte</div>
+      ${imp?`<div>La note « ${CA_NOTE} » contient <b>${imp}</b> cartes. Les importer dans l'onglet « cartes » du classeur ?
+        La note ne sera pas modifiée, et ce qui a déjà été trouvé comme images est repris.</div>
+        <button class="btn-nav" onclick="caImporter()">Importer ${imp} cartes</button>`
+       :`<div>Les cartes sont rangées dans l'onglet « cartes » du classeur, leurs images dans Google Drive.</div>`}
+      <button class="btn-nav out" onclick="caOuvrir(null)">+ Ajouter une carte</button></div>`;
     return;
   }
-  const secs=caLire(n);
-  const toutes=secs.flatMap(s=>s.cartes);
-  const lieux=[...new Set(toutes.map(c=>c.ou).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const secs=caSections();
+  const lieux=[...new Set(cartes.map(c=>c.ou).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
   if(caOu&&!lieux.includes(caOu))caOu='';
   const vis=secs.map(s=>({s,l:caVisibles(s)}));
   const vues=vis.flatMap(x=>x.l);
   const vente=vues.filter(c=>c.vente!=null);
+  const avecPrix=vues.filter(c=>c.prix!=null);
   const kpi=(l,v)=>`<div class="jp-kpi"><div class="jp-kpi-l">${l}</div><div class="jp-kpi-v">${v}</div></div>`;
-  const gen=++caGen;
   el.innerHTML=`
     <div class="ca-tete">
     <div class="ca-hdr">
       <div class="jp-titre"><span class="ca-titre">Cartes</span>
-        <span class="jp-sous">${toutes.length} carte${toutes.length>1?'s':''} · ${secs.length} section${secs.length>1?'s':''}</span></div>
-      <div class="ca-actions">
-        <button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button>
-        <button class="btn-nav out" onclick="openWikiLink('${CA_NOTE}')" title="Ouvrir la note source">Ouvrir la note</button>
-      </div>
+        <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${secs.length} section${secs.length>1?'s':''}</span></div>
+      <div class="ca-actions"><button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button></div>
     </div>
     <div class="jp-kpis">
       ${kpi(caRecherche||caOu?'Cartes affichées':'Cartes',vues.length)}
       ${kpi('Valeur (prix)',caEur(caSomme(vues)))}
       ${vente.length?kpi('Prix de vente',caEur(vente.reduce((s,c)=>s+c.vente,0))):''}
-      ${kpi('Prix moyen',vues.filter(c=>c.prix!=null).length?caEur(caSomme(vues)/vues.filter(c=>c.prix!=null).length):'—')}
+      ${kpi('Prix moyen',avecPrix.length?caEur(caSomme(avecPrix)/avecPrix.length):'—')}
     </div>
     <div class="ca-barre">
       <input type="search" class="ca-q" id="caQ" placeholder="Chercher une carte…" value="${MD_ATT(caRecherche)}"
         oninput="caRecherche=this.value;caRedessiner()">
-      <select class="ca-tri" onchange="caTri=this.value;renderCartes()">
-        ${[['ordre','Ordre de la note'],['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z']].map(([v,l])=>
+      <select class="ca-tri" onchange="caTri=this.value;caRedessiner()">
+        ${[['ordre','Ordre de saisie'],['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z']].map(([v,l])=>
           `<option value="${v}"${caTri===v?' selected':''}>${l}</option>`).join('')}
       </select>
       ${lieux.length>1?`<div class="ca-lieux">${['',...lieux].map(o=>
@@ -16090,193 +16203,212 @@ async function renderCartes(){
     <div class="ca-etat" id="caEtat"></div>
     </div>
     <div id="caSections">${caSectionsHtml(vis)}</div>`;
-  caChargerImages(vues,gen);
+  caChargerImages(vues,++caGen);
 }
 function caSectionsHtml(vis){
-  const html=vis.filter(x=>x.l.length||(!caRecherche&&!caOu)).map(({s,l})=>`
+  const html=vis.filter(x=>x.l.length).map(({s,l})=>`
     <section class="ca-sec">
       <div class="ca-sec-h"><span class="ca-sec-t">${tdEsc(s.titre)}</span>
         <span class="ca-sec-n">${l.length} · ${caEur(caSomme(l))}</span></div>
-      ${l.length?`<div class="ca-grille">${l.map(caTuile).join('')}</div>`
-        :'<div class="ca-vide-s">Aucune carte dans ce tableau.</div>'}
+      <div class="ca-grille">${l.map(caTuile).join('')}</div>
     </section>`).join('');
   return html||'<div class="ca-vide">Aucune carte ne correspond.</div>';
 }
-const caCle=c=>`${c.rang}:${c.li}`;
-// Le prix de vente se lit CONTRE le prix d'achat : rouge s'il est plus bas
-// (on y perd), vert s'il est plus haut (on y gagne), neutre s'il est égal ou
-// s'il n'y a pas de prix d'achat pour comparer.
+// Le prix de vente se lit CONTRE le prix d'achat : rouge s'il est plus bas,
+// vert s'il est plus haut, neutre s'il est égal ou sans prix d'achat.
 const caVenteSens=c=>c.vente==null||c.prix==null||c.vente===c.prix?'':c.vente<c.prix?' perte':' gain';
 const caVenteHtml=c=>c.vente==null?'':
   `<span class="ca-vente${caVenteSens(c)}" title="Prix de vente${c.prix!=null&&c.vente!==c.prix?` — ${c.vente>c.prix?'+':''}${caEur(c.vente-c.prix)} par rapport à l'achat`:''}">${caEur(c.vente)}</span>`;
+// Sans réseau ni attente : ce qu'on peut montrer à l'instant même.
+const caImmediate=c=>(c.drive_id&&caObj[c.drive_id])||(c.image&&(!c.drive_id||c.drive_id==='-')?c.image:'');
+const caImgTag=src=>`<img src="${MD_ATT(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="caImgKo(this)">`;
+const caImgVide=(c,etat)=>`<span class="ca-img-nom">${tdEsc(c.nom)}${
+  etat==='attente'?'<small class="ca-att">chargement…</small>'
+  :!c.url||c.etat==='introuvable'?'<small>＋ ajouter une image</small>':''}</span>`;
 function caTuile(c){
-  const im=caImageImmediate(c);
-  return `<button class="ca-tuile" data-k="${caCle(c)}" onclick="caOuvrir('${caCle(c)}')" title="${MD_ATT(c.nom)}">
-    <div class="ca-img${im?'':' attente'}">${im?`<img src="${MD_ATT(im.petite||im.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="caImgKo(this)">`
-      :caImgVide(c)}</div>
+  const im=caImmediate(c);
+  return `<button class="ca-tuile" data-k="${MD_ATT(c.id)}" onclick="caOuvrir(this.dataset.k)" title="${MD_ATT(c.nom)}">
+    <div class="ca-img${im?'':' attente'}">${im?caImgTag(im):caImgVide(c,'attente')}</div>
     <div class="ca-nom">${tdEsc(c.nom)}</div>
     <div class="ca-meta">${c.prix!=null?`<span class="ca-prix">${caEur(c.prix)}</span>`:''}${c.ou?`<span class="ca-ou">${tdEsc(c.ou)}</span>`:''}${caVenteHtml(c)}</div>
   </button>`;
 }
-const caImgVide=(c,etat)=>`<span class="ca-img-nom">${tdEsc(c.nom)}${
-  etat==='attente'?'<small class="ca-att">recherche…</small>'
-  :!c.url||caIntrouvable(c)||etat==='introuvable'?'<small>＋ choisir une image</small>':''}</span>`;
 function caImgKo(img){ const b=img.parentNode; if(!b)return; b.classList.add('attente');
-  b.innerHTML=`<span class="ca-img-nom">${tdEsc((b.closest('.ca-tuile')||{}).title||'')}</span>`; }
+  b.innerHTML=`<span class="ca-img-nom">${tdEsc((b.closest('.ca-tuile')||{}).title||'')}<small>＋ ajouter une image</small></span>`; }
 // La recherche redessine la grille, pas le champ : sinon on perdrait le curseur.
 function caRedessiner(){
-  const n=caNoteDe(); const box=document.getElementById('caSections'); if(!n||!box)return;
-  const vis=caLire(n).map(s=>({s,l:caVisibles(s)}));
+  const box=document.getElementById('caSections'); if(!box)return;
+  const vis=caSections().map(s=>({s,l:caVisibles(s)}));
   box.innerHTML=caSectionsHtml(vis);
   caChargerImages(vis.flatMap(x=>x.l),++caGen);
 }
-// DEUX requêtes à la fois, pas plus : la base est publique et limite le débit.
-// Un refus passager remet la carte en fin de file après une pause croissante,
-// trois fois au plus ; au-delà on la laisse pour la prochaine ouverture, sans
-// rien garder. Une ligne d'état dit où l'on en est.
-let caEtatImg={trouvees:0,introuvables:0,attente:0,passagers:0};
+const caTuileImg=c=>document.querySelector(`.ca-tuile[data-k="${CSS.escape(c.id)}"] .ca-img`);
+function caMontrer(c,src){
+  const t=caTuileImg(c); if(!t)return;
+  const i=t.querySelector('img');
+  if(i&&i.getAttribute('src')===src)return;
+  t.classList.remove('attente'); t.innerHTML=caImgTag(src);
+}
+
+// ── Le chargeur ───────────────────────────────────────────────────────────
+// D'abord tout ce qui est DÉJÀ sur l'appareil, en parallèle : c'est instantané.
+// Puis le réseau, trois à la fois : archives Drive, recherches, archivages.
+// Une base publique saturée remet la carte en file, trois fois au plus.
+let caEtatImg={};
 function caEtatAfficher(){
   const el=document.getElementById('caEtat'); if(!el)return;
   const e=caEtatImg, p=[];
-  if(e.attente)p.push(`<b>${e.attente}</b> en recherche…`);
-  if(e.passagers&&!e.attente)p.push(`<b>${e.passagers}</b> non obtenues — la base est saturée, nouvel essai à la prochaine ouverture`);
-  if(e.introuvables)p.push(`<b>${e.introuvables}</b> sans correspondance <button class="ca-lienbtn" onclick="caOublierIntrouvables()">réessayer</button>`);
+  if(e.attente)p.push(`<b>${e.attente}</b> en cours…`);
+  if(e.archivee)p.push(`<b>${e.archivee}</b> enregistrées`);
+  if(e.distante)p.push(`<b>${e.distante}</b> affichées depuis leur site`);
+  if(e.passager&&!e.attente)p.push(`<b>${e.passager}</b> non obtenues — réseau ou base saturée, nouvel essai à la prochaine ouverture`);
+  if(e.introuvable)p.push(`<b>${e.introuvable}</b> sans correspondance <button class="ca-lienbtn" onclick="caReessayer()">réessayer</button>`);
   el.innerHTML=p.length?'Images : '+p.join(' · '):'';
 }
+let CA_PAUSE=4000;
 async function caChargerImages(l,gen){
-  const file=l.filter(c=>!caImageImmediate(c)&&c.url&&!caIntrouvable(c)).map(c=>({c,n:0}));
-  caEtatImg={trouvees:0,introuvables:l.filter(caIntrouvable).length,attente:file.length,passagers:0};
+  caEtatImg={attente:l.length,archivee:0,distante:0,passager:0,introuvable:0,vide:0};
   caEtatAfficher();
-  file.forEach(({c})=>{ const t=document.querySelector(`.ca-tuile[data-k="${caCle(c)}"] .ca-img`);
-    if(t)t.innerHTML=caImgVide(c,'attente'); });
+  const fin=(etat)=>{ caEtatImg.attente--; caEtatImg[etat]=(caEtatImg[etat]||0)+1; caEtatAfficher(); };
+  // 1. Le local, d'un coup.
+  const reste=[];
+  await Promise.all(l.map(async c=>{
+    const loc=await caLocale(c);
+    if(gen!==caGen)return;
+    if(loc){ caMontrer(c,loc); fin('archivee'); } else reste.push({c,n:0});
+  }));
+  if(gen!==caGen)return;
+  // L'ordre d'affichage d'abord : ce qui est en haut de l'écran arrive en premier.
+  const rang=new Map(l.map((c,i)=>[c.id,i]));
+  reste.sort((a,b)=>rang.get(a.c.id)-rang.get(b.c.id));
   const dodo=ms=>new Promise(r=>setTimeout(r,ms));
   const tache=async()=>{
-    while(file.length&&gen===caGen){
-      const x=file.shift(), c=x.c;
-      const r=await caImage(c);
+    while(reste.length&&gen===caGen){
+      const x=reste.shift(), c=x.c;
+      const r=await caTraiter(c,src=>{ if(gen===caGen)caMontrer(c,src); });
       if(gen!==caGen)return;
-      const t=document.querySelector(`.ca-tuile[data-k="${caCle(c)}"] .ca-img`);
-      if(r&&r.passager){
-        if(++x.n<3){ file.push(x); await dodo(CA_PAUSE*x.n); continue; }
-        caEtatImg.attente--; caEtatImg.passagers++;
-        if(t)t.innerHTML=caImgVide(c);
-      } else if(r&&r.img){
-        caEtatImg.attente--; caEtatImg.trouvees++;
-        if(t){ t.classList.remove('attente');
-          t.innerHTML=`<img src="${MD_ATT(r.petite||r.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="caImgKo(this)">`; }
-      } else {
-        caEtatImg.attente--; caEtatImg.introuvables++;
-        if(t)t.innerHTML=caImgVide(c,'introuvable');
+      if(r==='passager'){
+        if(++x.n<3){ reste.push(x); await dodo(CA_PAUSE*x.n); continue; }
       }
-      caEtatAfficher();
+      if(r==='vide'||r==='introuvable'){ const t=caTuileImg(c); if(t&&!t.querySelector('img'))t.innerHTML=caImgVide(c); }
+      fin(r);
     }
   };
-  await Promise.all([tache(),tache()]);
+  await Promise.all([tache(),tache(),tache()]);
 }
-let CA_PAUSE=4000;
+function caReessayer(){
+  const l=cartes.filter(c=>c.etat==='introuvable');
+  l.forEach(c=>{ c.etat=''; c.raison=''; caPlusTard(c); });
+  renderCartes();
+}
 
 // ── La fiche : voir, modifier, ajouter ────────────────────────────────────
-function caTrouver(cle){
-  const n=caNoteDe(); if(!n)return null;
-  const [r,li]=String(cle).split(':').map(Number);
-  const s=caLire(n)[r]; return s?{s,c:s.cartes.find(x=>x.li===li)||null}:null;
-}
-function caOuvrir(cle){
-  const n=caNoteDe(); if(!n)return;
-  const secs=caLire(n);
-  if(!secs.length){ toast('La note Cartes ne contient aucun tableau','err'); return; }
-  const t=cle?caTrouver(cle):null;
-  if(cle&&(!t||!t.c)){ toast('Carte introuvable','err'); renderCartes(); return; }
-  caEd={cle,sig:t?t.c.sig:null,rang:t?t.s.rang:secs[0].rang,img:t?t.c.img:''};
-  const c=t?t.c:{nom:'',url:'',prix:null,vente:null,ou:''};
-  const s=t?t.s:secs[0];
-  document.getElementById('caModalTitre').textContent=t?'CARTE':'NOUVELLE CARTE';
-  document.getElementById('caSecChamp').style.display=t||secs.length<2?'none':'';
-  document.getElementById('caSec').innerHTML=secs.map(x=>`<option value="${x.rang}">${tdEsc(x.titre)}</option>`).join('');
-  document.getElementById('caSec').value=String(caEd.rang);
-  document.getElementById('caNom').value=c.nom==='(sans nom)'?'':c.nom;
-  document.getElementById('caUrl').value=c.url||'';
-  document.getElementById('caPrix').value=c.prix==null?'':String(c.prix).replace('.',',');
-  document.getElementById('caVente').value=c.vente==null?'':String(c.vente).replace('.',',');
-  document.getElementById('caOuIn').value=c.ou||'';
-  caChampsSelon(s);
-  document.getElementById('caSuppr').style.display=t?'':'none';
-  document.getElementById('caLien').innerHTML=c.url?`<a href="${MD_ATT(c.url)}" target="_blank" rel="noopener">Ouvrir la fiche ↗</a>`:'';
+function caOuvrir(id){
+  const c=id?caParId(id):null;
+  if(id&&!c){ toast('Carte introuvable','err'); renderCartes(); return; }
+  const secs=caSections().map(s=>s.titre);
+  caEd={id:id||null,image:null,photo:null,trouve:null,urlInitiale:c?c.url:''};
+  document.getElementById('caModalTitre').textContent=c?'CARTE':'NOUVELLE CARTE';
+  document.getElementById('caSecListe').innerHTML=secs.map(t=>`<option value="${MD_ATT(t)}">`).join('');
+  document.getElementById('caSec').value=c?c.section:(secs[secs.length-1]||'');
+  document.getElementById('caNom').value=c?c.nom:'';
+  document.getElementById('caUrl').value=c?c.url:'';
+  document.getElementById('caPrix').value=c&&c.prix!=null?String(c.prix).replace('.',','):'';
+  document.getElementById('caVente').value=c&&c.vente!=null?String(c.vente).replace('.',','):'';
+  document.getElementById('caOuIn').value=c?c.ou:'';
+  document.getElementById('caOuListe').innerHTML=[...new Set(cartes.map(x=>x.ou).filter(Boolean))]
+    .map(o=>`<option value="${MD_ATT(o)}">`).join('');
+  document.getElementById('caSuppr').style.display=c?'':'none';
+  caLienMaj(c?c.url:'');
   caApercu(c);
   modalOuvre('caModal');
 }
-// Seules les colonnes qui EXISTENT sont proposées : un champ sans colonne
-// laisserait croire qu'il est enregistré.
-function caChampsSelon(s){
-  document.getElementById('caPrixChamp').style.display=s.cols.prix>=0?'':'none';
-  document.getElementById('caVenteChamp').style.display=s.cols.vente>=0?'':'none';
-  document.getElementById('caOuChamp').style.display=s.cols.ou>=0?'':'none';
-  const l=document.getElementById('caOuListe');
-  l.innerHTML=[...new Set(caLire(caNoteDe()).flatMap(x=>x.cartes.map(c=>c.ou)).filter(Boolean))]
-    .map(o=>`<option value="${MD_ATT(o)}">`).join('');
-}
-function caSecChange(v){
-  caEd.rang=+v; const s=caLire(caNoteDe())[caEd.rang]; if(s)caChampsSelon(s);
+function caLienMaj(u){
+  document.getElementById('caLien').innerHTML=caWeb(u)?`<a href="${MD_ATT(caWeb(u))}" target="_blank" rel="noopener">Ouvrir la fiche ↗</a>`:'';
 }
 async function caApercu(c){
   const box=document.getElementById('caApercu'), info=document.getElementById('caInfo');
-  const pose=r=>{ box.innerHTML=r?`<img src="${MD_ATT(r.img)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`
-    :`<div class="ca-apercu-vide">${c.url?'Pas d\'image trouvée':'Pas d\'image'}</div>`;
-    if(r&&r.introuvable){ box.innerHTML='<div class="ca-apercu-vide">Pas d\'image trouvée</div>';
-      info.innerHTML=tdEsc(r.introuvable)+' Tu peux la choisir à la main.'; return; }
-    if(r&&r.passager){ box.innerHTML='<div class="ca-apercu-vide">Base saturée</div>';
-      info.innerHTML='La base d\'images ne répond pas pour l\'instant — réessaie dans un moment.'; return; }
-    info.innerHTML=r?[r.choisie?'Image choisie':c.url&&!caEstImage(c.url)?'Trouvée automatiquement':'',
-      r.ref?tdEsc(r.ref):'', r.cote!=null?`Tendance Cardmarket : <b>${caEur(r.cote)}</b>`:'']
-      .filter(Boolean).join(' · '):''; };
-  if(caEd&&caEd.img){ pose({img:caEd.img,choisie:true}); return; }
-  const im=caImageImmediate(c); if(im){ pose(im); return; }
-  if(!c.url){ pose(null); return; }
-  box.innerHTML='<div class="ca-apercu-vide">Recherche de l\'image…</div>'; info.innerHTML='';
-  const r=await caImage(c); if(caEd)pose(r);
+  const pose=(src,txt)=>{ box.innerHTML=src?`<img src="${MD_ATT(src)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`
+    :'<div class="ca-apercu-vide">Pas d\'image</div>'; info.innerHTML=txt||''; };
+  if(caEd&&caEd.photo){ pose(caEd.photo.src,'Ta photo — enregistrée dans Google Drive.'); return; }
+  if(caEd&&caEd.image){ pose(caEd.image,'Image choisie — elle sera enregistrée dans Google Drive.'); return; }
+  if(caEd&&caEd.trouve){ const t=caEd.trouve;
+    if(t.img){ pose(t.img,['Trouvée depuis l\'adresse',t.ref?tdEsc(t.ref):'',t.cote!=null?`Tendance Cardmarket : <b>${caEur(t.cote)}</b>`:''].filter(Boolean).join(' · ')); return; }
+    pose('',t.passager?'La base d\'images ne répond pas pour l\'instant — elle sera réinterrogée.'
+      :tdEsc(t.introuvable||'')+' Tu peux la choisir à la main.'); return; }
+  if(!c){ pose('',''); return; }
+  const src=(await caLocale(c))||c.image||'';
+  const d=[c.drive_id&&c.drive_id!=='-'?'Enregistrée dans Google Drive':c.image?'Affichée depuis son site d\'origine':'',
+    c.ref?tdEsc(c.ref):'', c.cote!=null?`Tendance Cardmarket : <b>${caEur(c.cote)}</b>`:''].filter(Boolean).join(' · ');
+  if(src){ pose(src,d); return; }
+  if(c.drive_id&&c.drive_id!=='-'){ pose('','Chargement depuis Google Drive…');
+    const d2=await caDriveLire(c.drive_id);
+    if(d2&&d2.blob){ await caIdb.set(c.drive_id,d2.blob); pose(caObj[c.drive_id]=URL.createObjectURL(d2.blob),d); }
+    else pose('','Image enregistrée, mais Google Drive ne l\'a pas rendue.'); return; }
+  pose('',c.etat==='introuvable'?tdEsc(c.raison||'Aucune image trouvée.')+' Tu peux la choisir à la main.'
+    :c.url?'Pas encore cherchée — elle le sera à l\'enregistrement.':'');
 }
 // L'adresse vient d'être collée : on cherche l'image tout de suite, avant même
 // d'enregistrer — c'est le moment où l'on veut savoir si elle est reconnue.
-function caUrlChange(){
+async function caUrlChange(){
   if(!caEd)return;
   const u=caWeb(document.getElementById('caUrl').value);
-  document.getElementById('caLien').innerHTML=u?`<a href="${MD_ATT(u)}" target="_blank" rel="noopener">Ouvrir la fiche ↗</a>`:'';
-  if(!caEd.img)caApercu({url:u,img:''});
+  caLienMaj(u);
+  if(caEd.image||caEd.photo||!u){ caEd.trouve=null; return; }
+  if(u===caEd.urlInitiale){ caEd.trouve=null; caApercu(caEd.id?caParId(caEd.id):null); return; }
+  document.getElementById('caApercu').innerHTML='<div class="ca-apercu-vide">Recherche de l\'image…</div>';
+  document.getElementById('caInfo').innerHTML='';
+  const r=await caResoudreUrl(u);
+  if(!caEd||caWeb(document.getElementById('caUrl').value)!==u)return;
+  caEd.trouve=r; caApercu(null);
 }
 function caFermer(){ modalFerme('caModal'); caEd=null; }
 async function caEnregistrer(){
   if(!caEd)return;
-  const val={nom:document.getElementById('caNom').value.trim(),
-    url:document.getElementById('caUrl').value.trim(),
-    prix:document.getElementById('caPrix').value.trim(),
-    vente:document.getElementById('caVente').value.trim(),
-    ou:document.getElementById('caOuIn').value.trim()};
-  if(!val.nom){ toast('Le nom est obligatoire','err'); return; }
-  if(val.url&&!caWeb(val.url)){ toast('Adresse invalide : elle doit commencer par https://','err'); return; }
-  if(caEd.imgChange)val.img=caEd.img;
-  const op=caEd.cle?{type:'maj',rang:caEd.rang,sig:caEd.sig,val}:{type:'ajout',rang:caEd.rang,val};
+  const nom=document.getElementById('caNom').value.trim();
+  const url=document.getElementById('caUrl').value.trim();
+  if(!nom){ toast('Le nom est obligatoire','err'); return; }
+  if(url&&!caWeb(url)){ toast('Adresse invalide : elle doit commencer par https://','err'); return; }
+  const num=id=>{ const v=document.getElementById(id).value.trim(); return v===''?null:nbFr(v,null); };
+  const avant=caEd.id?caParId(caEd.id):null;
+  const c=avant?{...avant}:{id:caId(),created_at:td(),drive_id:'',image:'',etat:'',raison:'',ref:'',cote:null,
+    ordre:cartes.reduce((m,x)=>Math.max(m,x.ordre||0),0)+1};
+  Object.assign(c,{nom,url:caWeb(url),section:document.getElementById('caSec').value.trim(),
+    prix:num('caPrix'),vente:num('caVente'),ou:document.getElementById('caOuIn').value.trim()});
+  // L'image suit ce qu'on a fait : photo, choix, ou adresse nouvelle.
+  if(caEd.photo){ Object.assign(c,{drive_id:caEd.photo.id,image:'',etat:'',raison:''}); }
+  else if(caEd.image!=null){ Object.assign(c,{image:caWeb(caEd.image),drive_id:'',etat:'',raison:''}); }
+  else if(c.url!==(avant?avant.url:'')){
+    const t=caEd.trouve;
+    Object.assign(c,{drive_id:'',ref:'',cote:null,
+      image:t&&t.img?t.img:'',etat:t&&t.introuvable?'introuvable':'',raison:t&&t.introuvable||''});
+    if(t&&t.img){ c.ref=t.ref||''; c.cote=t.cote==null?null:t.cote; }
+  }
   caFermer();
-  await caEcrire(op,op.type==='ajout'?`« ${val.nom} » ajoutée`:`« ${val.nom} » modifiée`);
+  const ok=await caSauver([c]);
+  if(!ok){ toast('ÉCHEC de l\'enregistrement','err'); }
+  renderCartes();
+  offerUndo(avant?`« ${nom} » modifiée`:`« ${nom} » ajoutée`,async()=>{
+    if(avant)await caSauver([avant]);
+    else{ cartes=cartes.filter(x=>x.id!==c.id); cacheSet('cartes',cartes);
+          if(accessToken)await sheetBatchUpsert(CA_SHEET,[caTombe(c.id)]); }
+    renderCartes();
+  });
 }
 async function caSupprimer(){
-  if(!caEd||!caEd.cle)return;
-  const nom=document.getElementById('caNom').value.trim()||'la carte';
-  const op={type:'suppr',rang:caEd.rang,sig:caEd.sig};
-  caFermer();
-  await caEcrire(op,`« ${nom} » supprimée`);
-}
-async function caCreerNote(){
-  const n=await newNote(null,CA_NOTE);
-  n.content='## Ma collection\n\n| Carte | Prix | Où |\n|---|---|---|\n| **Total** | =SOMME(haut) |  |\n';
-  await noteUpsert(n);
-  switchPage('cartes');
+  if(!caEd||!caEd.id)return;
+  const c=caParId(caEd.id); caFermer(); if(!c)return;
+  cartes=cartes.filter(x=>x.id!==c.id); cacheSet('cartes',cartes);
+  if(accessToken)await sheetBatchUpsert(CA_SHEET,[caTombe(c.id)]);
+  renderCartes();
+  // L'image reste dans Drive : l'annulation la retrouve telle quelle.
+  offerUndo(`« ${c.nom} » supprimée`,async()=>{ await caSauver([c]); renderCartes(); });
 }
 
 // ── Choisir l'image à la main ─────────────────────────────────────────────
 async function caChoisir(){
   if(!caEd)return;
-  const q=document.getElementById('caNom').value.trim();
-  document.getElementById('caPickQ').value=q;
+  document.getElementById('caPickQ').value=document.getElementById('caNom').value.trim();
   modalOuvre('caPickModal');
   caPickChercher();
 }
@@ -16291,7 +16423,7 @@ async function caPickChercher(){
   box.innerHTML=l.length?l.map((x,i)=>`<button class="ca-pick" onclick="caPickPrendre(${i})" title="${MD_ATT(x.nom+' — '+x.ref)}">
       <img src="${MD_ATT(x.petite)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()">
       <span>${tdEsc(x.ref)}</span></button>`).join('')
-    :'<div class="ca-vide-s">Aucune carte trouvée. Essaie le nom seul (« Flagadoss »), ou colle une adresse d\'image ci-dessous.</div>';
+    :'<div class="ca-vide-s">Aucune carte trouvée. Essaie le nom seul (« Flagadoss »), ajoute ta photo, ou colle une adresse d\'image ci-dessous.</div>';
 }
 function caPickPrendre(i){ const x=(window.caPickL||[])[i]; if(x)caPoserImage(x.img); }
 function caPickUrl(){
@@ -16301,16 +16433,33 @@ function caPickUrl(){
 }
 function caPoserImage(u){
   if(!caEd)return;
-  caEd.img=u; caEd.imgChange=true;
+  caEd.image=u; caEd.photo=null; caEd.trouve=null;
   modalFerme('caPickModal');
-  caApercu({url:'',img:u});
-  document.getElementById('caInfo').innerHTML='Image choisie — enregistrée dans une colonne « Image » du tableau, pour te suivre sur tous tes appareils.';
+  caApercu(null);
+}
+// Une photo prise ou choisie sur l'appareil : le seul recours pour une carte
+// qu'aucune base ouverte n'illustre (les exclusivités japonaises, par exemple).
+function caPhoto(){ document.getElementById('caPhotoIn').value=''; document.getElementById('caPhotoIn').click(); }
+async function caPhotoPrise(f){
+  if(!caEd||!f)return;
+  if(!accessToken||!navigator.onLine){ toast('Il faut être connecté pour enregistrer une photo','err'); return; }
+  document.getElementById('caInfo').innerHTML='Envoi vers Google Drive…';
+  const p=await caReduire(f);
+  const nom=document.getElementById('caNom').value.trim()||'carte';
+  const id=await caDriveEnvoyer(p,`${nom} — photo.webp`);
+  if(!caEd)return;
+  if(!id){ toast('Échec de l\'envoi vers Google Drive','err'); caApercu(caEd.id?caParId(caEd.id):null); return; }
+  await caIdb.set(id,p);
+  caEd.photo={id,src:caObj[id]=URL.createObjectURL(p)}; caEd.image=null; caEd.trouve=null;
+  caApercu(null);
 }
 function caRetirerImage(){
   if(!caEd)return;
-  caEd.img=''; caEd.imgChange=true;
-  caApercu({url:caWeb(document.getElementById('caUrl').value),img:''});
+  caEd.image=''; caEd.photo=null; caEd.trouve=null;
+  document.getElementById('caApercu').innerHTML='<div class="ca-apercu-vide">Pas d\'image</div>';
+  document.getElementById('caInfo').innerHTML='L\'image sera retirée à l\'enregistrement — et recherchée de nouveau depuis l\'adresse, s\'il y en a une.';
 }
+
 
 // ════════════════════════════════════════════════════
 // UTILS
@@ -18588,7 +18737,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.67.2';
+const APP_VERSION='v1.68.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
