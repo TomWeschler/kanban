@@ -54,7 +54,7 @@ await p.evaluate(async src=>{
     o.onerror=()=>r(); });
   window.ANNUL=[]; window.offerUndo=(m,fn)=>{ ANNUL.push({m,fn}); };
   CA_PAUSE=20; CA_DELAI_ECR=30; CA_PAUSE_HOTE=30; CA_ESPACE=5;
-  window.GROUPE_DEFAUT=caGroupe; caGroupe='section';   // les épreuves anciennes raisonnent par section
+  window.GROUPE_DEFAUT=caGroupe;
   accessToken='T'; cfg.spreadsheetId='S'; notesLoaded=true;
   try{ localStorage.removeItem('kanban_cartes_dossier'); }catch(e){}
   await new Promise(r=>{ const q=indexedDB.deleteDatabase('kanban-cartes'); q.onsuccess=q.onerror=q.onblocked=r; });
@@ -307,7 +307,7 @@ const ge=await p.evaluate(async()=>{
   const c=cartes.find(x=>x.nom==='Limonde AR');
   caOuvrir(c.id); await new Promise(r=>setTimeout(r,200));
   out.fiche={nom:document.getElementById('caNom').value,prix:document.getElementById('caPrix').value,
-    sec:document.getElementById('caSec').value,tags:document.getElementById('caTagsListe').textContent};
+    champSection:!!document.getElementById('caSec'),tags:document.getElementById('caTagsListe').textContent};
   document.getElementById('caPrix').value='7,5';
   await caEnregistrer();
   out.maj=ECRITURES.map(e=>e.map(r=>[r[0],r[2],r[4]]));
@@ -317,7 +317,7 @@ const ge=await p.evaluate(async()=>{
   // c. Ajouter, dans une section nouvelle, avec une adresse : l'image est
   //    trouvée dans la fiche même, et pas cherchée une seconde fois.
   caOuvrir(null); await new Promise(r=>setTimeout(r,100));
-  document.getElementById('caSec').value='Nouvelle section';
+  caEd.tags=['Nouvelle étiquette']; caTagsDessiner();
   document.getElementById('caNom').value='Axolotto promo';
   document.getElementById('caUrl').value='https://www.cardmarket.com/fr/Pokemon/Products/Singles/SV-Promos/Axolotto-SVP121';
   APPELS.length=0;
@@ -343,7 +343,8 @@ const ge=await p.evaluate(async()=>{
   out.rechargees=cartes.length;
   return out;
 });
-chk('La fiche est remplie',ge.fiche.nom==='Limonde AR'&&ge.fiche.prix==='3'&&ge.fiche.sec==='Cadeau Noé'&&/Classeur/.test(ge.fiche.tags),JSON.stringify(ge.fiche));
+chk('La fiche n\'a plus de champ « section »',ge.fiche.champSection===false);
+chk('La fiche est remplie',ge.fiche.nom==='Limonde AR'&&ge.fiche.prix==='3'&&ge.fiche.champSection===false&&/Classeur/.test(ge.fiche.tags),JSON.stringify(ge.fiche));
 chk('Modifier un prix écrit UNE ligne, la sienne',ge.maj.length===1&&ge.maj[0].length===1&&ge.maj[0][0][2]==='7.5',JSON.stringify(ge.maj));
 chk('Annuler rend le prix d\'avant',ge.annule===3,String(ge.annule));
 chk('Une adresse collée dans la fiche est résolue sur-le-champ',/Trouvée depuis l'adresse · Scarlet & Violet Black Star Promos 121/.test(ge.apercuInfo),ge.apercuInfo);
@@ -351,7 +352,7 @@ chk('...et ce résultat est enregistré, sans seconde recherche',
     /svp\/121_hires/.test(ge.ajout.image)&&ge.requetesFiche===1&&ge.recherchesApres===0&&ge.baseFiche===0,JSON.stringify(ge));
 chk('...puis archivé',/^d/.test(ge.ajout.drive),ge.ajout.drive);
 chk('Une nouvelle carte se range en dernier',ge.ajout.ordre===ge.ajout.max);
-chk('Une section nouvelle apparaît',ge.sections.includes('Nouvelle section'),ge.sections.join('|'));
+chk('Une étiquette nouvelle fait un groupe nouveau',ge.sections.includes('Nouvelle étiquette'),ge.sections.join('|'));
 chk('Supprimer laisse une pierre tombale',ge.tombe===true&&ge.disparue===true);
 chk('...et s\'annule',ge.revenue===true);
 chk('Recharger depuis le classeur rend exactement les cartes vivantes',ge.rechargees===11,String(ge.rechargees));
@@ -610,7 +611,7 @@ const fi=await p.evaluate(async()=>{
   const out={};
   CA_MAX_CARTE=300;
   const U=c=>`https://www.cardmarket.com/fr/Pokemon/Products/Singles/X/Carte-${c}`;
-  const mk=(nom,url)=>({id:caId(),section:'File',nom,url,prix:1,vente:null,tags:[],langue:'',image:'',drive_id:'',ref:'',cote:null,
+  const mk=(nom,url)=>({id:caId(),section:'File',nom,url,prix:1,vente:null,tags:['File'],langue:'',image:'',drive_id:'',ref:'',cote:null,
     ordre:3000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
   // Trois cartes qui ne répondront jamais — autant que d'ouvriers — puis deux normales.
   await caSauver([mk('Bloque1',U('HANG1')),mk('Bloque2',U('HANG2')),mk('Bloque3',U('HANG3')),
@@ -655,7 +656,7 @@ const lg=await p.evaluate(async()=>{
   cartesLoaded=false; await loadCartes();
   const r=cartes.find(x=>x.id===c.id);
   out.relue={tags:r.tags,langue:r.langue};
-  caRecherche=''; caGroupe='section'; renderCartes(); await new Promise(r=>setTimeout(r,300));
+  caRecherche=''; caGroupe='etiquette'; renderCartes(); await new Promise(r=>setTimeout(r,300));
   const t=document.querySelector(`.ca-tuile[data-k="${c.id}"]`);
   const pas=t.querySelector('.ca-lg');
   out.pastille=pas&&{texte:pas.textContent,fond:getComputedStyle(pas).backgroundColor,
@@ -678,7 +679,7 @@ const lg=await p.evaluate(async()=>{
   const gr=[...document.querySelectorAll('.ca-sec')].find(x=>x.querySelector('.ca-sec-t').textContent==='Gradée');
   out.dansGradee=gr?[...gr.querySelectorAll('.ca-nom')].map(x=>x.textContent):[];
   out.memorise=localStorage.getItem('kanban_cartes_groupe2');
-  caGrouper('section');
+  out.options=[...document.querySelectorAll('.ca-tri')[0].options].map(o=>o.value);
   return out;
 });
 chk('Cinq langues proposées, et « aucune »',lg.choixLangues.join()==='Aucune,FR,JP,EN,KR,CN',lg.choixLangues.join());
@@ -694,10 +695,11 @@ chk('Une couleur différente par langue',new Set(lg.couleurs).size===5,JSON.stri
 chk('Pas de langue, pas de pastille',lg.sansPastille===true);
 chk('Toutes les étiquettes s\'affichent sur la carte',lg.etiquettesTuile.join('|')==='Alakazam|Classeur|Gradée|PSA 9',lg.etiquettesTuile.join('|'));
 chk('Filtrer par une étiquette qui n\'est pas la première',lg.filtre.join('|')==='Limonde AR',lg.filtre.join('|'));
-chk('Grouper par première étiquette',lg.groupes.includes('Alakazam')&&lg.groupes.includes('Noé')&&lg.groupes[lg.groupes.length-1]==='Sans étiquette',lg.groupes.join('|'));
+chk('Grouper par première étiquette',lg.groupes.includes('Alakazam')&&lg.groupes.includes('Noé')&&(!lg.groupes.includes('Sans étiquette')||lg.groupes[lg.groupes.length-1]==='Sans étiquette'),lg.groupes.join('|'));
 chk('...une carte n\'apparaît que dans le groupe de sa PREMIÈRE étiquette',!lg.groupes.includes('Gradée')&&lg.dansGradee.length===0,lg.groupes.join('|'));
 chk('...groupes par ordre alphabétique',(()=>{ const g=lg.groupes.slice(0,-1); return g.join()===g.slice().sort((a,b)=>a.localeCompare(b,'fr')).join(); })(),lg.groupes.join('|'));
 chk('Le choix du regroupement est mémorisé',lg.memorise==='etiquette');
+chk('Plus d\'option « par section » : première étiquette, ou set',lg.options.join()==='etiquette,set',JSON.stringify(lg.options));
 
 console.log('=== 9 quater. UN ONGLET DE LA VERSION PRÉCÉDENTE ===');
 const ancien=await p.evaluate(async()=>{
@@ -764,7 +766,7 @@ const cg=await p.evaluate(async()=>{
   out.kpiSans=k();
   window.prompt=()=>'Noé'; caHorsRegler(); await new Promise(r=>setTimeout(r,200));
   out.memo=localStorage.getItem('kanban_cartes_hors_total');
-  cartes=sauve; caGroupe='section'; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  cartes=sauve; caGroupe='etiquette'; renderCartes(); await new Promise(r=>setTimeout(r,200));
   return out;
 });
 chk('Par défaut, les cartes sont regroupées par première étiquette',cg.defaut==='etiquette',cg.defaut);
@@ -821,12 +823,12 @@ const ps=await p.evaluate(async()=>{
   // Ajouter une carte depuis une case.
   caCase('base1','58'); await new Promise(r=>setTimeout(r,100));
   caCaseNouvelle(); await new Promise(r=>setTimeout(r,150));
-  out.fiche={nom:document.getElementById('caNom').value,sec:document.getElementById('caSec').value};
+  out.fiche={nom:document.getElementById('caNom').value,image:caEd.image};
   document.getElementById('caPrix').value='12';
   await caEnregistrer(); await new Promise(r=>setTimeout(r,300));
   const pik=cartes.find(c=>c.nom==='Pikachu');
   out.ajout=pik&&{case:caCaseDe(pik),prix:pik.prix};
-  cartes=sauve; caGroupe='section'; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  cartes=sauve; caGroupe='etiquette'; renderCartes(); await new Promise(r=>setTimeout(r,200));
   return out;
 });
 chk('Six sets complets, avec toutes leurs cartes',
@@ -847,8 +849,27 @@ chk('Une case manquante propose les cartes sans set qui y ressemblent',
     /SET DE BASE — N° 32/.test(ps.modale.titre)&&ps.modale.nom==='Kadabra'&&ps.modale.proposees.join()==='Kadabra SDB',JSON.stringify(ps.modale));
 chk('...et y range la carte choisie, prix et étiquettes compris',
     ps.lie.case==='base1/32'&&ps.lie.image==='https://images.pokemontcg.io/base1/32_hires.png'&&/^4 \/ 102/.test(ps.lie.compte),JSON.stringify(ps.lie));
-chk('« Je l\'ai » ouvre une fiche préremplie',ps.fiche.nom==='Pikachu'&&ps.fiche.sec==='Set de base',JSON.stringify(ps.fiche));
+chk('« Je l\'ai » ouvre une fiche préremplie',ps.fiche.nom==='Pikachu'&&/base1\/58_hires/.test(ps.fiche.image||''),JSON.stringify(ps.fiche));
 chk('...et la carte ajoutée prend sa case',ps.ajout&&ps.ajout.case==='base1/58'&&ps.ajout.prix===12,JSON.stringify(ps.ajout));
+
+console.log('=== 9 octies. LA SECTION DEVIENT UNE ÉTIQUETTE ===');
+const mg=await p.evaluate(async()=>{
+  const sauve=FEUILLE;
+  FEUILLE=[CA_HEADER.slice(),
+    ['m1','Cadeau Noé','Sans étiquette mais nommée','','1','','','','','','','1','','','x','x',''],
+    ['m2','Tableau 2','Section fabriquée','','1','','','','','','','2','','','x','x',''],
+    ['m3','Ma section','Déjà étiquetée','','1','','Wizard','','','','','3','','','x','x','']];
+  cartesLoaded=false; await loadCartes(); await caVider();
+  const g=id=>cartes.find(c=>c.id===id).tags.join('|');
+  const out={m1:g('m1'),m2:g('m2'),m3:g('m3'),ecrit:caDeLigne(FEUILLE.find(x=>x[0]==='m1')).tags.join('|'),
+    colonne:FEUILLE.find(x=>x[0]==='m1')[1]};
+  FEUILLE=sauve; cartesLoaded=false; await loadCartes();
+  return out;
+});
+chk('Une carte sans étiquette garde le nom de sa section, en étiquette',mg.m1==='Cadeau Noé'&&mg.ecrit==='Cadeau Noé',JSON.stringify(mg));
+chk('...sauf un nom fabriqué par l\'import (« Tableau 2 »)',mg.m2==='',JSON.stringify(mg));
+chk('...et une carte déjà étiquetée n\'est pas touchée',mg.m3==='Wizard',JSON.stringify(mg));
+chk('La colonne « section » reste intacte dans le classeur',mg.colonne==='Cadeau Noé',mg.colonne);
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({

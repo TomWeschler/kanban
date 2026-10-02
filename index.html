@@ -2567,7 +2567,6 @@ body,body *{font-family:var(--font-body)}
         </div>
       </div>
       <div class="ca-fiche-ch">
-        <div class="field"><label>Section</label><input type="text" id="caSec" list="caSecListe" autocomplete="off" placeholder="ex : Cadeau Noé"><datalist id="caSecListe"></datalist></div>
         <div class="field"><label>Nom</label><input type="text" id="caNom" autocomplete="off" placeholder="ex : Flagadoss AR"></div>
         <div class="field"><label>Adresse de la fiche (Cardmarket…)</label>
           <input type="url" id="caUrl" autocomplete="off" placeholder="https://www.cardmarket.com/fr/Pokemon/Products/Singles/…" onchange="caUrlChange()" onpaste="setTimeout(caUrlChange,0)">
@@ -15788,7 +15787,9 @@ let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0;
 // (« Tableau 2 », « Tableau 3 »…) ne disaient rien. Nouvelle clé : l'ancien
 // réglage, qui valait « section » par défaut, n'est pas repris.
 const LS_CA_GROUPE='kanban_cartes_groupe2';
-let caGroupe=(()=>{ try{ const v=localStorage.getItem(LS_CA_GROUPE); return v==='section'||v==='set'?v:'etiquette'; }catch(e){ return 'etiquette'; } })();
+// La section faisait doublon avec la première étiquette : il n'y a plus que
+// deux façons de regrouper, par première étiquette ou par set.
+let caGroupe=(()=>{ try{ return localStorage.getItem(LS_CA_GROUPE)==='set'?'set':'etiquette'; }catch(e){ return 'etiquette'; } })();
 // Les cartes portant l'une de ces étiquettes sont des CADEAUX : elles restent
 // visibles, et leur section garde son total, mais elles ne comptent pas dans
 // la valeur de la collection. Réglable, mémorisé sur l'appareil.
@@ -16159,9 +16160,20 @@ async function loadCartes(){
   l.forEach(x=>{ const c=caDeLigne(x); if(!c.id)return; if(c.nom)m[c.id]=c; else delete m[c.id]; });
   cartes=Object.values(m);
   cartesLoaded=true; cartesLoadedAt=Date.now();
+  caMigrerSections();
   cacheSet('cartes',cartes);
 }
 const caParId=id=>cartes.find(c=>c.id===id)||null;
+// Le champ « section » a disparu, au profit de la première étiquette. Une carte
+// SANS étiquette dont la section portait un vrai nom ne doit pas tomber pour
+// autant dans « Sans étiquette » : ce nom devient sa première étiquette. Les
+// noms fabriqués par l'import (« Tableau 2 »…) ne disaient rien, on les laisse.
+// La colonne reste dans le classeur, intacte : rien n'est perdu.
+function caMigrerSections(){
+  const l=cartes.filter(c=>!caTags(c.tags).length&&c.section&&!/^(tableau \d+|sans section)$/i.test(String(c.section).trim()));
+  l.forEach(c=>{ c.tags=[String(c.section).trim()]; caPlusTard(c); });
+  return l.length;
+}
 // Une absence est datée de la méthode qui l'a constatée. Celles des versions
 // précédentes ont été notées SANS la table des extensions : elles sont
 // réessayées une fois, d'elles-mêmes.
@@ -16411,9 +16423,10 @@ async function caImporter(){
 const caEur=v=>v==null?'—':v.toLocaleString('fr-FR',{minimumFractionDigits:Number.isInteger(v)?0:2,maximumFractionDigits:2})+' €';
 const caSomme=l=>l.reduce((s,c)=>s+(c.prix||0),0);
 // Les sections dans l'ordre de leur première carte.
-function caSections(par){
+function caSections(){
+  const par='etiquette';
   const m=new Map();
-  const cle=par==='etiquette'?c=>caTags(c.tags)[0]||'':c=>c.section||'Sans section';
+  const cle=c=>caTags(c.tags)[0]||'';
   cartes.slice().sort((a,b)=>(a.ordre||0)-(b.ordre||0)).forEach(c=>{
     const t=cle(c);
     if(!m.has(t))m.set(t,[]); m.get(t).push(c);
@@ -16427,7 +16440,7 @@ function caSections(par){
 function caVisibles(s){
   const q=tabSansAccent(caRecherche.trim());
   let l=s.cartes.filter(c=>(!caOu||caTags(c.tags).includes(caOu))
-    &&(!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')+' '+s.titre+' '+c.section+' '+((caLangue(c)||[])[1]||'')).includes(q)));
+    &&(!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')+' '+((caLangue(c)||[])[1]||'')).includes(q)));
   if(caTri==='prix-')l=l.slice().sort((a,b)=>(b.prix??-1)-(a.prix??-1));
   if(caTri==='prix+')l=l.slice().sort((a,b)=>(a.prix??1e9)-(b.prix??1e9));
   if(caTri==='nom')l=l.slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
@@ -16456,7 +16469,7 @@ async function renderCartes(){
     return;
   }
   const parSet=caGroupe==='set';
-  const secs=caSections(parSet?'etiquette':caGroupe);
+  const secs=caSections();
   const lieux=[...new Set(cartes.flatMap(c=>caTags(c.tags)))].sort((a,b)=>a.localeCompare(b,'fr'));
   if(caOu&&!lieux.includes(caOu))caOu='';
   const vis=secs.map(s=>({s,l:caVisibles(s)}));
@@ -16472,7 +16485,7 @@ async function renderCartes(){
     <div class="ca-tete">
     <div class="ca-hdr">
       <div class="jp-titre"><span class="ca-titre">Cartes</span>
-        <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${parSet?`${CA_SETS.length} sets`:`${secs.length} ${caGroupe==='etiquette'?'groupe':'section'}${secs.length>1?'s':''}`}</span></div>
+        <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${parSet?`${CA_SETS.length} sets`:`${secs.length} groupe${secs.length>1?'s':''}`}</span></div>
       <div class="ca-actions">
         <button class="btn-nav out" onclick="caChiffresBascule()" title="${caChiffres?'Masquer':'Afficher'} les totaux">${caChiffres?'Masquer':'Afficher'} les chiffres</button>
         <button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button></div>
@@ -16486,7 +16499,6 @@ async function renderCartes(){
       <input type="search" class="ca-q" id="caQ" placeholder="Chercher une carte…" value="${MD_ATT(caRecherche)}"
         oninput="caRecherche=this.value;caRedessiner()">
       <select class="ca-tri" onchange="caGrouper(this.value)" title="Regrouper les cartes">
-        <option value="section"${caGroupe==='section'?' selected':''}>Par section</option>
         <option value="etiquette"${caGroupe==='etiquette'?' selected':''}>Par 1re étiquette</option>
         <option value="set"${caGroupe==='set'?' selected':''}>Par set</option>
       </select>
@@ -16542,7 +16554,7 @@ function caImgKo(img){ const b=img.parentNode; if(!b)return; b.classList.add('at
 function caRedessiner(){
   const box=document.getElementById('caSections'); if(!box)return;
   if(caGroupe==='set'){ const sv=caSetsVue(); box.innerHTML=sv.html; caChargerImages(sv.vues,++caGen); return; }
-  const vis=caSections(caGroupe).map(s=>({s,l:caVisibles(s)}));
+  const vis=caSections().map(s=>({s,l:caVisibles(s)}));
   box.innerHTML=caSectionsHtml(vis);
   caChargerImages(vis.flatMap(x=>x.l),++caGen);
 }
@@ -16718,7 +16730,6 @@ function caCaseNouvelle(){
   const e=caCaseEd; modalFerme('caCaseModal'); caCaseEd=null;
   caOuvrir(null);
   document.getElementById('caNom').value=e.nom;
-  document.getElementById('caSec').value=e.set;
   caEd.image=caCaseImg(e.sid,e.n,'hd');
   caApercu(null);
   document.getElementById('caInfo').innerHTML=`${tdEsc(e.set)} n° ${tdEsc(e.n)} — l'image sera enregistrée dans Google Drive.`;
@@ -16741,7 +16752,7 @@ function caAssMontrer(){
   const c=caAss.liste[caAss.i];
   document.getElementById('caPickTete').innerHTML=`<div class="ca-ass">
     <span class="ca-ass-n">${caAss.i+1} / ${caAss.liste.length}</span>
-    <b>${tdEsc(c.nom)}</b>${c.section?` <span class="ca-ass-s">${tdEsc(c.section)}</span>`:''}
+    <b>${tdEsc(c.nom)}</b>${caTags(c.tags).length?` <span class="ca-ass-s">${tdEsc(caTags(c.tags).join(', '))}</span>`:''}
     <span class="ca-ass-act"><button class="btn-nav out" onclick="caAssSuivante()">Passer</button>
     <button class="btn-nav out" onclick="caAssFin()">Terminer</button></span></div>`;
   document.getElementById('caPickQ').value=c.nom;
@@ -16778,11 +16789,8 @@ function caReessayer(){
 function caOuvrir(id){
   const c=id?caParId(id):null;
   if(id&&!c){ toast('Carte introuvable','err'); renderCartes(); return; }
-  const secs=caSections().map(s=>s.titre);
   caEd={id:id||null,image:null,photo:null,trouve:null,urlInitiale:c?c.url:''};
   document.getElementById('caModalTitre').textContent=c?'CARTE':'NOUVELLE CARTE';
-  document.getElementById('caSecListe').innerHTML=secs.map(t=>`<option value="${MD_ATT(t)}">`).join('');
-  document.getElementById('caSec').value=c?c.section:(secs[secs.length-1]||'');
   document.getElementById('caNom').value=c?c.nom:'';
   document.getElementById('caUrl').value=c?c.url:'';
   document.getElementById('caPrix').value=c&&c.prix!=null?String(c.prix).replace('.',','):'';
@@ -16870,7 +16878,7 @@ async function caEnregistrer(){
   const avant=caEd.id?caParId(caEd.id):null;
   const c=avant?{...avant}:{id:caId(),created_at:td(),drive_id:'',image:'',etat:'',raison:'',ref:'',cote:null,
     ordre:cartes.reduce((m,x)=>Math.max(m,x.ordre||0),0)+1};
-  Object.assign(c,{nom,url:caWeb(url),section:document.getElementById('caSec').value.trim(),
+  Object.assign(c,{nom,url:caWeb(url),
     prix:num('caPrix'),vente:num('caVente'),
     tags:caTags(caEd.tags.concat(document.getElementById('caTagIn').value)),langue:caEd.langue});
   // L'image suit ce qu'on a fait : photo, choix, ou adresse nouvelle.
@@ -19235,7 +19243,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.72.0';
+const APP_VERSION='v1.72.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
