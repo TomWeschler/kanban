@@ -56,11 +56,12 @@ await p.evaluate(src=>{
   window.toast=()=>{}; window.noteUpsert=async()=>true; window.noteSnapshot=async()=>{};
   window.ANNUL=[]; window.offerUndo=(m,fn)=>{ ANNUL.push({m,fn}); };
   accessToken=''; notesLoaded=true;
-  try{ localStorage.removeItem('kanban_cartes_img'); }catch(e){}
+  try{ localStorage.removeItem('kanban_cartes_img2'); }catch(e){}
+  CA_PAUSE=20;
   notes=[{id:'nc',title:'Cartes',content:src,tags:'',parent_id:'',icon:'🃏',status:'active',
           created_at:'2026-01-01',updated_at:'2026-01-01'}];
   noteIndexInvalidate();
-  window.APPELS=[];
+  window.APPELS=[]; window.SATURE={};
   window.fetch=async u=>{
     u=String(u); APPELS.push(u);
     const rep=j=>({ok:true,json:async()=>j});
@@ -73,6 +74,13 @@ await p.evaluate(src=>{
       if(/name:"Pikachu" set\.name:"Base Set"/.test(q))return rep({data:[{id:'base1-58',name:'Pikachu',number:'58',
         set:{name:'Base Set'},images:{small:'https://images.pokemontcg.io/base1/58.png',large:'https://images.pokemontcg.io/base1/58_hires.png'}}]});
       if(/javascript/.test(q))return rep({data:[{images:{large:'javascript:alert(1)'}}]});
+      if(/set\.id:svp number:121/.test(q))return rep({data:[{number:'121',set:{name:'SV Promos'},
+        images:{small:'https://images.pokemontcg.io/svp/121.png',large:'https://images.pokemontcg.io/svp/121_hires.png'}}]});
+      // Une base saturée : SATURE[code] refus avant de répondre.
+      const m=/ptcgoCode:(SAT[A-Z])/.exec(q);
+      if(m){ if(window.SATURE[m[1]]-->0)return {ok:false,status:429,json:async()=>null};
+             return rep({data:[{number:'1',set:{name:'X'},images:{small:`https://images.pokemontcg.io/x/${m[1]}.png`,large:`https://images.pokemontcg.io/x/${m[1]}_hires.png`}}]}); }
+      if(/ptcgoCode:NET /.test(q))throw new TypeError('Failed to fetch');
       return rep({data:[]});
     }
     if(u.startsWith('https://api.tcgdex.net/v2/fr/cards?name=')){
@@ -188,6 +196,8 @@ const im=await p.evaluate(async()=>{
   const n1=APPELS.length;
   const r2=await caImage({url:'https://www.cardmarket.com/fr/Pokemon/Products/Singles/Inconnue/Truc-ZZZ9',img:''});
   out.echec={r1,r2,n1,n2:APPELS.length-n1};
+  // Le code Cardmarket des promos n'est pas celui de la base : repli sur l'identifiant d'extension.
+  out.promo=await caResoudreUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/SV-Black-Star-Promos/Axolotto-SVP121');
   // Sans code, repli sur nom + extension.
   out.repli=await caResoudreUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Base-Set/Pikachu-V1');
   // Une réponse piégée n'entre pas dans une balise.
@@ -205,12 +215,72 @@ chk('Une adresse d\'image est montrée telle quelle, sans requête',
 chk('Sans adresse, rien n\'est deviné',im.sansUrl===null);
 chk('Pas plus d\'une requête par carte',im.appels.length===1,JSON.stringify(im.appels));
 chk('Deuxième ouverture : aucune requête',im.appels2.length===0,JSON.stringify(im.appels2));
-chk('Un échec est retenu, pas réessayé à chaque fois',
-    im.echec.r1===null&&im.echec.r2===null&&im.echec.n2===0,JSON.stringify(im.echec));
+chk('Une vraie absence est retenue, pas réessayée à chaque fois',
+    !!(im.echec.r1&&im.echec.r1.introuvable)&&!!(im.echec.r2&&im.echec.r2.introuvable)&&im.echec.n2===0,JSON.stringify(im.echec));
+chk('...avec ce qui a été lu dans l\'adresse',/Inconnue · ZZZ 9 · Truc/.test(im.echec.r1&&im.echec.r1.introuvable||''),JSON.stringify(im.echec.r1));
+chk('Promo : repli sur l\'identifiant d\'extension',im.promo&&/svp\/121/.test(im.promo.img||''),JSON.stringify(im.promo));
 chk('Sans code dans l\'adresse, repli sur le nom et l\'extension',
     im.repli&&/base1\/58/.test(im.repli.img),JSON.stringify(im.repli));
-chk('Une adresse d\'image piégée est refusée',im.piege===null,JSON.stringify(im.piege));
+chk('Une adresse d\'image piégée est refusée',!!im.piege&&!im.piege.img,JSON.stringify(im.piege));
 chk('La cote Cardmarket est retenue',im.cote===23.4,String(im.cote));
+
+console.log('=== 4 bis. UNE BASE SATURÉE N\'EST PAS UNE ABSENCE ===');
+// C'est le défaut constaté en vrai sur la v1.67.0 : passé les premières
+// cartes, la base refusait (429) ou tardait, et ces refus étaient gardés
+// comme « introuvable » une semaine. La moitié de la collection restait vide.
+const sat=await p.evaluate(async()=>{
+  const out={};
+  const U=c=>`https://www.cardmarket.com/fr/Pokemon/Products/Singles/X/Carte-${c}`;
+  // a. Un refus 429 n'est pas gardé.
+  SATURE.SATA=1;
+  const r1=await caImage({url:U('SATA1'),img:''});
+  out.refus=r1; out.garde=!!caCache()[U('SATA1')];
+  // ...et la carte s'obtient dès que la base répond.
+  const r2=await caImage({url:U('SATA1'),img:''});
+  out.ensuite=r2&&r2.img;
+  // b. Une coupure réseau non plus.
+  const r3=await caImage({url:U('NET1'),img:''});
+  out.reseau={r3,garde:!!caCache()[U('NET1')]};
+  // c. Le chargeur remet en file et réessaie.
+  const src='| Carte | Prix |\n|---|---|\n'+
+    `| [A](${U('SATB1')}) | 1€ |\n| [B](${U('SATC1')}) | 1€ |\n| [C](${U('SATD1')}) | 1€ |\n| [D](${U('ZZZ7')}) | 1€ |\n| Sans adresse | 1€ |\n`;
+  caNoteDe().content=src;
+  SATURE.SATB=2; SATURE.SATC=1; SATURE.SATD=9;          // 2 refus, 1 refus, toujours refusé
+  const vus=[]; const obs=new MutationObserver(()=>{ const e=document.getElementById('caEtat'); if(e)vus.push(e.textContent); });
+  obs.observe(document.getElementById('caWrap'),{childList:true,subtree:true,characterData:true});
+  renderCartes(); await new Promise(r=>setTimeout(r,250));
+  out.etatPendant=vus.find(t=>/en recherche/.test(t))||vus.join(' / ');
+  await new Promise(r=>setTimeout(r,1500));
+  const img=k=>!!document.querySelector(`.ca-tuile[data-k="0:${k}"] img`);
+  out.obtenues=[img(0),img(1),img(2),img(3)];
+  out.etat=document.getElementById('caEtat').textContent; obs.disconnect();
+  out.saturePasGardee=!caCache()[U('SATD1')];
+  out.indiceIntrouvable=/choisir une image/.test(document.querySelector('.ca-tuile[data-k="0:3"]').textContent);
+  out.indiceSansAdresse=/choisir une image/.test(document.querySelector('.ca-tuile[data-k="0:4"]').textContent);
+  // d. « Réessayer » oublie les absences et relance.
+  APPELS.length=0;
+  caOublierIntrouvables(); await new Promise(r=>setTimeout(r,600));
+  out.relance=APPELS.some(u=>/ZZZ/.test(decodeURIComponent(u)));
+  // e. La fiche dit pourquoi il n'y a pas d'image.
+  caOuvrir('0:3'); await new Promise(r=>setTimeout(r,300));
+  out.raison=document.getElementById('caInfo').textContent;
+  caFermer();
+  // f. L'ancien cache, faussé, est jeté.
+  out.ancienJete=localStorage.getItem('kanban_cartes_img')===null;
+  return out;
+});
+chk('Un refus 429 est passager, pas une absence',!!(sat.refus&&sat.refus.passager)&&sat.garde===false,JSON.stringify(sat));
+chk('...et la carte s\'obtient au passage suivant',/SATA_hires/.test(sat.ensuite||''),String(sat.ensuite));
+chk('Une coupure réseau n\'est pas gardée non plus',!!(sat.reseau.r3&&sat.reseau.r3.passager)&&!sat.reseau.garde,JSON.stringify(sat.reseau));
+chk('La ligne d\'état montre la recherche en cours',/en recherche/.test(sat.etatPendant),sat.etatPendant);
+chk('Le chargeur réessaie : 2 refus puis réponse → image',sat.obtenues[0]===true&&sat.obtenues[1]===true,JSON.stringify(sat.obtenues));
+chk('Toujours refusée : pas d\'image, et rien de gardé',sat.obtenues[2]===false&&sat.saturePasGardee===true,JSON.stringify(sat));
+chk('...et la ligne d\'état le dit',/1 non obtenues.*saturée/.test(sat.etat)&&/1 sans correspondance/.test(sat.etat),sat.etat);
+chk('Une carte sans correspondance invite à choisir l\'image',sat.indiceIntrouvable===true);
+chk('...comme une carte sans adresse',sat.indiceSansAdresse===true);
+chk('« Réessayer » relance les cartes sans correspondance',sat.relance===true);
+chk('La fiche dit pourquoi',/Lu dans l'adresse.*aucune carte correspondante/.test(sat.raison),sat.raison);
+chk('L\'ancien cache faussé est jeté',sat.ancienJete===true);
 
 console.log('=== 5. ÉCRIRE DANS LA NOTE ===');
 const ec=await p.evaluate(async src=>{

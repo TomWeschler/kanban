@@ -1271,6 +1271,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-img img{width:100%;height:100%;object-fit:cover;display:block}
 .ca-img.attente{border:1px dashed var(--border2)}
 .ca-img-nom{padding:0.5rem;font-size:0.72rem;color:var(--text-dim);text-align:center}
+.ca-etat{font-size:0.7rem;color:var(--text-dim);min-height:1em}
+.ca-etat b{color:var(--text)}
+.ca-lienbtn{background:none;border:none;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;padding:0}
+.ca-img-nom small.ca-att{color:var(--text-dim)}
 .ca-img-nom small{display:block;margin-top:0.4rem;font-size:0.6rem;color:var(--accent);opacity:0.8}
 .ca-nom{font-size:0.74rem;font-weight:600;line-height:1.25;overflow:hidden;display:-webkit-box;
   -webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -15653,7 +15657,7 @@ function switchPage(name){
 // en ajouter, en déplacer ou en renommer, les autres sont conservées telles
 // quelles à la réécriture.
 const CA_NOTE='Cartes';
-const LS_CA_IMG='kanban_cartes_img';
+const LS_CA_IMG='kanban_cartes_img2';
 let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0;
 
 // Une cellule de la note, rendue lisible : sans markdown, sans lien, sans
@@ -15772,10 +15776,23 @@ function caLireUrl(u){
   }
   return null;
 }
-async function caGet(u,ms=10000){
+// UN ÉCHEC PASSAGER N'EST PAS UNE CARTE INTROUVABLE. pokemontcg.io, sans clé,
+// répond lentement et limite le débit : passé les premières cartes, les
+// requêtes dépassaient le délai ou étaient refusées (429). La v1.67.0 rangeait
+// ces refus avec les vraies absences, et les gardait UNE SEMAINE — la moitié
+// de la collection restait vide sans raison. On distingue désormais :
+//   - trouvée              → gardée ;
+//   - introuvable          → la base a répondu « rien » : gardé une semaine,
+//                            avec la raison, qu'on montre ;
+//   - passager             → délai, réseau, 429, 5xx : JAMAIS gardé, réessayé.
+async function caGet(u,ms=25000){
   const ac=new AbortController(), t=setTimeout(()=>ac.abort(),ms);
-  try{ const r=await fetch(u,{signal:ac.signal}); return r.ok?await r.json():null; }
-  catch(e){ return null; } finally{ clearTimeout(t); }
+  try{
+    const r=await fetch(u,{signal:ac.signal});
+    if(r.ok)return {ok:true,json:await r.json()};
+    return {ok:false,passager:r.status===429||r.status===408||r.status>=500,statut:r.status};
+  }catch(e){ return {ok:false,passager:true}; }
+  finally{ clearTimeout(t); }
 }
 const caPtcgCarte=d=>{
   const c=(d&&d.data||[])[0]; if(!c||!c.images)return null;
@@ -15785,46 +15802,79 @@ const caPtcgCarte=d=>{
           ref:`${c.set&&c.set.name||''} ${c.number||''}`.trim(),
           cote:Number.isFinite(p.trendPrice)?p.trendPrice:Number.isFinite(p.averageSellPrice)?p.averageSellPrice:null};
 };
+const caPtcgUrl=q=>`${CA_API_PTCG}?q=${encodeURIComponent(q)}&pageSize=1`;
+// Plusieurs façons de désigner la même carte, de la plus précise à la plus
+// large. Le code d'extension de Cardmarket n'est pas toujours celui de la
+// base (les promos, notamment) : on essaie aussi l'identifiant d'extension et
+// le nom d'extension, avec le numéro.
+function caEssais(i){
+  const q=[];
+  const esc=x=>String(x).replace(/"/g,'');
+  if(i.code&&i.num){
+    q.push(`set.ptcgoCode:${i.code} number:${i.num}`);
+    q.push(`set.id:${i.code.toLowerCase()} number:${i.num}`);
+  }
+  if(i.ext&&i.num)q.push(`set.name:"${esc(i.ext)}" number:${i.num}`);
+  if(i.nom&&i.ext)q.push(`name:"${esc(i.nom)}" set.name:"${esc(i.ext)}"`);
+  return q;
+}
 async function caResoudreUrl(u){
   if(caEstImage(u))return {img:u,petite:u};
-  const i=caLireUrl(u); if(!i)return null;
+  const i=caLireUrl(u);
+  let hote=''; try{ hote=new URL(u).hostname.replace(/^www\./,''); }catch(e){}
+  if(!i)return {introuvable:`Adresse non reconnue (${hote||'?'}) : seules Cardmarket, Limitless et TCGdex se lisent.`};
+  if(i.source==='limitless-jp')return {introuvable:'Carte japonaise : aucune base ouverte ne les illustre.'};
   if(i.source==='tcgdex'){
-    const c=await caGet(`${CA_API_DEX}/${i.lang}/cards/${encodeURIComponent(i.id)}`);
-    return c&&c.image?{img:caDexImage(c.image),petite:caDexImage(c.image,'low'),
-                       ref:`${c.set&&c.set.name||''} ${c.localId||''}`.trim()}:null;
+    const r=await caGet(`${CA_API_DEX}/${i.lang}/cards/${encodeURIComponent(i.id)}`);
+    if(!r.ok)return r.passager?{passager:true}:{introuvable:`Carte ${i.id} absente de TCGdex.`};
+    const c=r.json;
+    return c&&caDexImage(c.image)?{img:caDexImage(c.image),petite:caDexImage(c.image,'low'),
+      ref:`${c.set&&c.set.name||''} ${c.localId||''}`.trim()}:{introuvable:`TCGdex n'a pas d'image pour ${i.id}.`};
   }
-  if(i.source==='ptcg')return caPtcgCarte(await caGet(`${CA_API_PTCG}?q=id:${encodeURIComponent(i.id)}`));
-  if(i.code&&i.num){
-    const r=caPtcgCarte(await caGet(`${CA_API_PTCG}?q=${encodeURIComponent(`set.ptcgoCode:${i.code} number:${i.num}`)}`));
-    if(r)return r;
+  const essais=i.source==='ptcg'?[`id:${i.id}`]:caEssais(i);
+  if(!essais.length)return {introuvable:'L\'adresse ne donne ni extension ni numéro de carte.'};
+  for(const q of essais){
+    const r=await caGet(caPtcgUrl(q));
+    // Une base qui sature ne dit rien de la carte : on s'arrête là, et on
+    // reviendra — insister ne ferait qu'aggraver le refus.
+    if(!r.ok){ if(r.passager)return {passager:true}; continue; }
+    const c=caPtcgCarte(r.json);
+    if(c)return c;
   }
-  if(i.source==='cardmarket'&&i.nom){
-    const q=`name:"${i.nom.replace(/"/g,'')}"`+(i.ext?` set.name:"${i.ext.replace(/"/g,'')}"`:'');
-    return caPtcgCarte(await caGet(`${CA_API_PTCG}?q=${encodeURIComponent(q)}`));
-  }
-  return null;
+  const lu=[i.ext,i.code&&i.num?`${i.code} ${i.num}`:i.num?`n° ${i.num}`:'',i.nom].filter(Boolean).join(' · ');
+  return {introuvable:`Lu dans l'adresse : ${lu||'?'} — aucune carte correspondante dans la base.`};
 }
-// Les réponses sont gardées : vingt-six cartes ne doivent pas coûter vingt-six
-// requêtes à chaque ouverture. Un échec est gardé aussi, mais une semaine
-// seulement — la base a pu s'enrichir depuis.
+// Version 2 du cache : celui de la v1.67.0 contient des échecs passagers
+// rangés à tort comme introuvables. On le jette plutôt que de le croire.
 const CA_ECHEC_TTL=7*86400000;
+try{ localStorage.removeItem('kanban_cartes_img'); }catch(e){}
 function caCache(){ try{ return JSON.parse(localStorage.getItem(LS_CA_IMG)||'{}')||{}; }catch(e){ return {}; } }
 function caCacheMettre(u,v){
-  const c=caCache(); c[u]=v?{...v,at:Date.now()}:{echec:1,at:Date.now()};
+  if(!v||v.passager)return;                       // jamais : ce n'est pas une réponse
+  const c=caCache(); c[u]={...v,at:Date.now()};
   try{ localStorage.setItem(LS_CA_IMG,JSON.stringify(c)); }catch(e){}
 }
+// Ce qu'on sait d'une adresse : {img…}, {introuvable}, ou undefined (à chercher).
 const caConnue=u=>{ const v=caCache()[u]; if(!v)return undefined;
-  if(v.echec)return Date.now()-v.at<CA_ECHEC_TTL?null:undefined; return v; };
+  if(v.introuvable)return Date.now()-v.at<CA_ECHEC_TTL?v:undefined;
+  return caWeb(v.img)?v:undefined; };
+const caIntrouvable=c=>!!(c.url&&!c.img&&!caEstImage(c.url)&&(caConnue(c.url)||{}).introuvable);
+function caOublierIntrouvables(){
+  const c=caCache(); Object.keys(c).forEach(k=>{ if(c[k].introuvable)delete c[k]; });
+  try{ localStorage.setItem(LS_CA_IMG,JSON.stringify(c)); }catch(e){}
+  renderCartes();
+}
 // L'image à montrer tout de suite, sans réseau : choisie, ou déjà connue.
 function caImageImmediate(c){
   if(c.img)return {img:c.img,petite:c.img,choisie:true};
   if(c.url){ if(caEstImage(c.url))return {img:c.url,petite:c.url};
-             const v=caConnue(c.url); if(v&&caWeb(v.img))return v; }
+             const v=caConnue(c.url); if(v&&v.img)return v; }
   return null;
 }
 async function caImage(c){
   const im=caImageImmediate(c); if(im)return im;
-  if(!c.url||caConnue(c.url)===null)return null;
+  if(!c.url)return null;
+  const k=caConnue(c.url); if(k&&k.introuvable)return k;
   const r=await caResoudreUrl(c.url);
   caCacheMettre(c.url,r);
   return r;
@@ -15838,7 +15888,8 @@ async function caChercher(nom){
     .replace(/[-–(),]/g,' ').split(/\s+/).filter(w=>w.length>1&&!/\d/.test(w));
   for(let k=Math.min(mots.length,3);k>=1;k--){
     const q=mots.slice(0,k).join(' ');
-    const d=await caGet(`${CA_API_DEX}/fr/cards?name=${encodeURIComponent(q)}`);
+    const rr=await caGet(`${CA_API_DEX}/fr/cards?name=${encodeURIComponent(q)}`);
+    const d=rr.ok?rr.json:null;
     const l=(Array.isArray(d)?d:[]).filter(x=>x&&x.image);
     if(l.length)return l.slice(0,60).map(x=>({img:caDexImage(x.image),petite:caDexImage(x.image,'low'),
                                                nom:x.name,ref:`${x.id||''}`}));
@@ -16019,6 +16070,7 @@ async function renderCartes(){
       ${lieux.length>1?`<div class="ca-lieux">${['',...lieux].map(o=>
         `<button class="sb-tag${caOu===o?' active':''}" onclick="caOu=this.dataset.o;renderCartes()" data-o="${MD_ATT(o)}">${o?tdEsc(o):'Tous'}</button>`).join('')}</div>`:''}
     </div>
+    <div class="ca-etat" id="caEtat"></div>
     <div id="caSections">${caSectionsHtml(vis)}</div>`;
   caChargerImages(vues,gen);
 }
@@ -16037,11 +16089,14 @@ function caTuile(c){
   const im=caImageImmediate(c);
   return `<button class="ca-tuile" data-k="${caCle(c)}" onclick="caOuvrir('${caCle(c)}')" title="${MD_ATT(c.nom)}">
     <div class="ca-img${im?'':' attente'}">${im?`<img src="${MD_ATT(im.petite||im.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="caImgKo(this)">`
-      :`<span class="ca-img-nom">${tdEsc(c.nom)}${c.url?'':'<small>＋ choisir une image</small>'}</span>`}</div>
+      :caImgVide(c)}</div>
     <div class="ca-nom">${tdEsc(c.nom)}</div>
     <div class="ca-meta">${c.prix!=null?`<span class="ca-prix">${caEur(c.prix)}</span>`:''}${c.ou?`<span class="ca-ou">${tdEsc(c.ou)}</span>`:''}</div>
   </button>`;
 }
+const caImgVide=(c,etat)=>`<span class="ca-img-nom">${tdEsc(c.nom)}${
+  etat==='attente'?'<small class="ca-att">recherche…</small>'
+  :!c.url||caIntrouvable(c)||etat==='introuvable'?'<small>＋ choisir une image</small>':''}</span>`;
 function caImgKo(img){ const b=img.parentNode; if(!b)return; b.classList.add('attente');
   b.innerHTML=`<span class="ca-img-nom">${tdEsc((b.closest('.ca-tuile')||{}).title||'')}</span>`; }
 // La recherche redessine la grille, pas le champ : sinon on perdrait le curseur.
@@ -16051,22 +16106,50 @@ function caRedessiner(){
   box.innerHTML=caSectionsHtml(vis);
   caChargerImages(vis.flatMap(x=>x.l),++caGen);
 }
-// Trois requêtes à la fois au plus : la base publique est partagée, et la page
-// reste utilisable pendant ce temps.
+// DEUX requêtes à la fois, pas plus : la base est publique et limite le débit.
+// Un refus passager remet la carte en fin de file après une pause croissante,
+// trois fois au plus ; au-delà on la laisse pour la prochaine ouverture, sans
+// rien garder. Une ligne d'état dit où l'on en est.
+let caEtatImg={trouvees:0,introuvables:0,attente:0,passagers:0};
+function caEtatAfficher(){
+  const el=document.getElementById('caEtat'); if(!el)return;
+  const e=caEtatImg, p=[];
+  if(e.attente)p.push(`<b>${e.attente}</b> en recherche…`);
+  if(e.passagers&&!e.attente)p.push(`<b>${e.passagers}</b> non obtenues — la base est saturée, nouvel essai à la prochaine ouverture`);
+  if(e.introuvables)p.push(`<b>${e.introuvables}</b> sans correspondance <button class="ca-lienbtn" onclick="caOublierIntrouvables()">réessayer</button>`);
+  el.innerHTML=p.length?'Images : '+p.join(' · '):'';
+}
 async function caChargerImages(l,gen){
-  const file=l.filter(c=>!caImageImmediate(c)&&c.url&&caConnue(c.url)!==null);
+  const file=l.filter(c=>!caImageImmediate(c)&&c.url&&!caIntrouvable(c)).map(c=>({c,n:0}));
+  caEtatImg={trouvees:0,introuvables:l.filter(caIntrouvable).length,attente:file.length,passagers:0};
+  caEtatAfficher();
+  file.forEach(({c})=>{ const t=document.querySelector(`.ca-tuile[data-k="${caCle(c)}"] .ca-img`);
+    if(t)t.innerHTML=caImgVide(c,'attente'); });
+  const dodo=ms=>new Promise(r=>setTimeout(r,ms));
   const tache=async()=>{
     while(file.length&&gen===caGen){
-      const c=file.shift();
+      const x=file.shift(), c=x.c;
       const r=await caImage(c);
       if(gen!==caGen)return;
       const t=document.querySelector(`.ca-tuile[data-k="${caCle(c)}"] .ca-img`);
-      if(t&&r){ t.classList.remove('attente');
-        t.innerHTML=`<img src="${MD_ATT(r.petite||r.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="caImgKo(this)">`; }
+      if(r&&r.passager){
+        if(++x.n<3){ file.push(x); await dodo(CA_PAUSE*x.n); continue; }
+        caEtatImg.attente--; caEtatImg.passagers++;
+        if(t)t.innerHTML=caImgVide(c);
+      } else if(r&&r.img){
+        caEtatImg.attente--; caEtatImg.trouvees++;
+        if(t){ t.classList.remove('attente');
+          t.innerHTML=`<img src="${MD_ATT(r.petite||r.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="caImgKo(this)">`; }
+      } else {
+        caEtatImg.attente--; caEtatImg.introuvables++;
+        if(t)t.innerHTML=caImgVide(c,'introuvable');
+      }
+      caEtatAfficher();
     }
   };
-  await Promise.all([tache(),tache(),tache()]);
+  await Promise.all([tache(),tache()]);
 }
+let CA_PAUSE=4000;
 
 // ── La fiche : voir, modifier, ajouter ────────────────────────────────────
 function caTrouver(cle){
@@ -16114,7 +16197,11 @@ function caSecChange(v){
 async function caApercu(c){
   const box=document.getElementById('caApercu'), info=document.getElementById('caInfo');
   const pose=r=>{ box.innerHTML=r?`<img src="${MD_ATT(r.img)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`
-    :`<div class="ca-apercu-vide">${c.url?'Image introuvable depuis cette adresse':'Pas d\'image'}</div>`;
+    :`<div class="ca-apercu-vide">${c.url?'Pas d\'image trouvée':'Pas d\'image'}</div>`;
+    if(r&&r.introuvable){ box.innerHTML='<div class="ca-apercu-vide">Pas d\'image trouvée</div>';
+      info.innerHTML=tdEsc(r.introuvable)+' Tu peux la choisir à la main.'; return; }
+    if(r&&r.passager){ box.innerHTML='<div class="ca-apercu-vide">Base saturée</div>';
+      info.innerHTML='La base d\'images ne répond pas pour l\'instant — réessaie dans un moment.'; return; }
     info.innerHTML=r?[r.choisie?'Image choisie':c.url&&!caEstImage(c.url)?'Trouvée automatiquement':'',
       r.ref?tdEsc(r.ref):'', r.cote!=null?`Tendance Cardmarket : <b>${caEur(r.cote)}</b>`:'']
       .filter(Boolean).join(' · '):''; };
@@ -18477,7 +18564,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.67.0';
+const APP_VERSION='v1.67.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
