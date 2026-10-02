@@ -102,8 +102,8 @@ await p.evaluate(async src=>{
     return {ok:false,status:400,json:async()=>null};
   };
   // ── Les bases publiques et les sites d'images simulés
-  window.APPELS=[]; window.IMAGES=[]; window.SATURE={};
-  window.fetch=async u=>{
+  window.APPELS=[]; window.IMAGES=[]; window.SATURE={}; window.IMG404=[]; window.IMGLENTE=[];
+  window.fetch=async (u,o={})=>{
     u=String(u);
     const rep=j=>({ok:true,status:200,json:async()=>j});
     if(u.startsWith('https://api.pokemontcg.io/v2/cards')){
@@ -132,6 +132,9 @@ await p.evaluate(async src=>{
     }
     // Les images : les sites ouverts livrent les octets, le site hostile refuse.
     if(/^https:\/\/(images\.pokemontcg\.io|assets\.tcgdex\.net)\//.test(u)){ IMAGES.push(u);
+      if(IMGLENTE.some(x=>u.includes(x)))return new Promise((_,ko)=>{
+        if(o.signal)o.signal.addEventListener('abort',()=>ko(Object.assign(new Error('délai'),{name:'AbortError'}))); });
+      if(IMG404.some(x=>u.includes(x)))return {ok:false,status:404,blob:async()=>null};
       return {ok:true,status:200,blob:async()=>GRANDE}; }
     if(/hostile\.example/.test(u)){ IMAGES.push(u); throw new TypeError('Failed to fetch'); }   // CORS
     return {ok:false,status:404,json:async()=>null};
@@ -181,6 +184,7 @@ const pr=await p.evaluate(async()=>{
   const l=()=>FEUILLE.slice(1).map(caDeLigne);
   const par=n=>l().find(c=>c.nom===n);
   out.recherches=APPELS.slice();
+  out.telechargements={}; IMAGES.forEach(u=>{ const k=(/pokemontcg\.io\/(.+?)(_hires)?\.png/.exec(u)||[])[1]; if(k)out.telechargements[k]=(out.telechargements[k]||0)+1; });
   out.dracau=par('Dracaufeu ex'); out.direct=par('Lien direct'); out.deja=par('Déjà trouvée');
   out.hostile=par('Site hostile'); out.flaga=par('Flagadoss Shiny');
   out.dossier=DRIVE_APPELS.filter(x=>/dossier/.test(x));
@@ -195,16 +199,14 @@ const pr=await p.evaluate(async()=>{
   out.indiceFlaga=/ajouter une image/.test(document.querySelector(`.ca-tuile[data-k="${out.flaga.id}"]`).textContent);
   return out;
 });
-chk('Une seule requête, pour la seule carte qui en avait besoin',
-    pr.recherches.length===1,JSON.stringify(pr.recherches));
-// Les trois façons de nommer l'extension partent ensemble, et seuls les
-// champs utiles sont demandés : c'est ce qui rend la base supportable.
-const q0=decodeURIComponent(pr.recherches[0]||'');
-chk('...qui essaie code, identifiant et nom d\'extension d\'un coup',
-    /\(set\.ptcgoCode:OBF OR set\.id:obf OR set\.name:"Obsidian Flames"\) number:223/.test(q0),q0);
-chk('...et ne demande que les champs utiles',/select=images,set,number,cardmarket/.test(q0),q0);
-chk('Le résultat est écrit dans la table : image, extension, cote',
-    /sv3\/223_hires/.test(pr.dracau.image)&&pr.dracau.ref==='Obsidian Flames 223'&&pr.dracau.cote===23.4,JSON.stringify(pr.dracau));
+// L'adresse Cardmarket donne OBF et 223 ; la table des extensions donne sv3 ;
+// l'image se télécharge directement. La base lente n'est plus interrogée.
+chk('Aucune requête à la base pour une adresse Cardmarket connue',pr.recherches.length===0,JSON.stringify(pr.recherches));
+chk('...l\'image vient de son adresse fixe, déduite de la table',
+    pr.dracau.image==='https://images.pokemontcg.io/sv3/223_hires.png'&&pr.dracau.ref==='Obsidian Flames 223',JSON.stringify(pr.dracau));
+chk('...téléchargée UNE fois : la vérification sert aussi à l\'archive',
+    pr.telechargements['sv3/223']===1,JSON.stringify(pr.telechargements));
+chk('Le résultat est écrit dans la table',/sv3\/223_hires/.test(pr.dracau.image)&&pr.dracau.ref==='Obsidian Flames 223',JSON.stringify(pr.dracau));
 chk('L\'image est archivée dans Drive, et la table le sait',/^d\d+$/.test(pr.dracau.drive_id),pr.dracau.drive_id);
 chk('...dans le dossier « Kanban — Cartes », créé une fois',
     pr.fichier&&pr.fichier.parent==='dossier1'&&pr.dossier.filter(x=>x==='dossier+').length===1,JSON.stringify([pr.fichier,pr.dossier]));
@@ -282,7 +284,7 @@ const sat=await p.evaluate(async()=>{
 chk('Deux refus puis réponse : trouvée et archivée',/SATA_hires/.test(sat.a.image)&&/^d/.test(sat.a.drive_id),JSON.stringify(sat.a));
 chk('Un refus puis réponse : trouvée',/SATB_hires/.test(sat.b.image),JSON.stringify(sat.b));
 chk('Toujours refusée : RIEN n\'est écrit, elle sera réessayée',sat.c.etat===''&&sat.c.image==='',JSON.stringify(sat.c));
-chk('Une vraie absence est écrite, avec sa raison',sat.d.etat==='introuvable'&&/aucune carte correspondante/.test(sat.d.raison),JSON.stringify(sat.d));
+chk('Une vraie absence est écrite, avec sa raison',sat.d.etat==='introuvable-2'&&/aucune carte correspondante/.test(sat.d.raison),JSON.stringify(sat.d));
 chk('La ligne d\'état distingue les deux',/1 non obtenues/.test(sat.etat)&&/1 sans correspondance/.test(sat.etat),sat.etat);
 chk('« réessayer » relance les absences',sat.relance===true);
 
@@ -309,8 +311,8 @@ const ge=await p.evaluate(async()=>{
   document.getElementById('caUrl').value='https://www.cardmarket.com/fr/Pokemon/Products/Singles/SV-Promos/Axolotto-SVP121';
   APPELS.length=0;
   await caUrlChange();
-  const svp=()=>APPELS.filter(u=>/SVP|svp/.test(decodeURIComponent(u))).length;
-  out.requetesFiche=svp();
+  const svp=()=>IMAGES.filter(u=>/svp\/121/.test(u)).length;
+  out.requetesFiche=svp(); out.baseFiche=APPELS.length;
   out.apercuInfo=document.getElementById('caInfo').textContent;
   document.getElementById('caPrix').value='4';
   await caEnregistrer(); await new Promise(r=>setTimeout(r,600)); await caVider();
@@ -333,9 +335,9 @@ const ge=await p.evaluate(async()=>{
 chk('La fiche est remplie',ge.fiche.nom==='Limonde AR'&&ge.fiche.prix==='3'&&ge.fiche.sec==='Cadeau Noé'&&/Classeur/.test(ge.fiche.tags),JSON.stringify(ge.fiche));
 chk('Modifier un prix écrit UNE ligne, la sienne',ge.maj.length===1&&ge.maj[0].length===1&&ge.maj[0][0][2]==='7.5',JSON.stringify(ge.maj));
 chk('Annuler rend le prix d\'avant',ge.annule===3,String(ge.annule));
-chk('Une adresse collée dans la fiche est résolue sur-le-champ',/Trouvée depuis l'adresse/.test(ge.apercuInfo),ge.apercuInfo);
+chk('Une adresse collée dans la fiche est résolue sur-le-champ',/Trouvée depuis l'adresse · Scarlet & Violet Black Star Promos 121/.test(ge.apercuInfo),ge.apercuInfo);
 chk('...et ce résultat est enregistré, sans seconde recherche',
-    /svp\/121_hires/.test(ge.ajout.image)&&ge.requetesFiche>0&&ge.recherchesApres===0,JSON.stringify(ge));
+    /svp\/121_hires/.test(ge.ajout.image)&&ge.requetesFiche===1&&ge.recherchesApres===0&&ge.baseFiche===0,JSON.stringify(ge));
 chk('...puis archivé',/^d/.test(ge.ajout.drive),ge.ajout.drive);
 chk('Une nouvelle carte se range en dernier',ge.ajout.ordre===ge.ajout.max);
 chk('Une section nouvelle apparaît',ge.sections.includes('Nouvelle section'),ge.sections.join('|'));
@@ -415,6 +417,65 @@ chk('Vente supérieure en vert, inférieure en rouge',bp.gagne[2].col===rgb(bp.v
 chk('Égale, ou sans achat pour comparer : neutre',!/gain|perte/.test(bp.egal[2].c)&&bp.venteSeule.some(e=>/ca-vente/.test(e.c)&&!/gain|perte/.test(e.c)));
 chk('Sans prix de vente, rien à droite',bp.sansVente.every(e=>!/ca-vente/.test(e.c)));
 chk('Le bandeau reste épinglé',bp.defile&&bp.fixe,JSON.stringify(bp));
+
+console.log('=== 8 bis. LA TABLE DES EXTENSIONS ===');
+const tx=await p.evaluate(async()=>{
+  const out={};
+  const C=(slug)=>caCandidats(caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/'+slug)).map(x=>x.img);
+  out.obf=C('Obsidian-Flames/Charizard-ex-V1-OBF223');
+  out.zero=C('Paldean-Fates/Charmander-PAF054');
+  out.base=C('Base-Set/Charizard-BS4');
+  out.promo=C('SV-Black-Star-Promos/Pikachu-SVP101');
+  out.partage=C('Hidden-Fates/Charizard-GX-HIF9');
+  out.nomSeul=caCandidats({ext:'Team Rocket',num:'4'}).map(x=>x.img);
+  out.inconnu=C('Nouvelle-Extension/Carte-ZZQ12');
+  out.taille=CA_EXT.length;
+  // Deux extensions partagent un code : la première n'a pas l'image, la seconde si.
+  IMG404.push('sm115/9'); APPELS.length=0;
+  out.secondChoix=await caResoudreUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Hidden-Fates/Charizard-GX-HIF9');
+  out.baseApres404=APPELS.length;
+  // Aucune image à l'adresse déduite : la base prend le relais.
+  IMG404.push('sv3/999'); APPELS.length=0;
+  out.relais=await caResoudreUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Obsidian-Flames/Inconnue-OBF999');
+  out.requetesRelais=APPELS.map(u=>decodeURIComponent(u.split('q=')[1]||'').replace(/&pageSize=1$/,''));
+  IMG404.length=0;
+  // Une image trop lente : réessayée plus tard, jamais figée.
+  CA_DELAI_IMG=150; IMGLENTE.push('sv3/150');
+  const c={id:caId(),section:'Lente',nom:'Lente',url:'https://www.cardmarket.com/fr/Pokemon/Products/Singles/Obsidian-Flames/Lente-OBF150',
+    prix:1,vente:null,tags:[],langue:'',image:'',drive_id:'',ref:'',cote:null,ordre:7000,etat:'',raison:'',created_at:td(),updated_at:td()};
+  await caSauver([c]);
+  out.lente=await caTraiter(c,()=>{});
+  out.lenteEtat={etat:c.etat,drive:c.drive_id,image:c.image};
+  IMGLENTE.length=0; CA_DELAI_IMG=30000;
+  out.lenteEnsuite=await caTraiter(c,()=>{});
+  out.lenteFin={drive:c.drive_id};
+  // Une absence notée par une version précédente est réessayée.
+  const v={...c,id:caId(),nom:'Ancienne absence',url:'https://www.cardmarket.com/fr/Pokemon/Products/Singles/Obsidian-Flames/X-OBF12',
+    image:'',drive_id:'',etat:'introuvable',raison:'ancienne méthode'};
+  await caSauver([v]);
+  out.ancienne=await caTraiter(v,()=>{});
+  out.ancienneImage=v.image;
+  // Le diagnostic.
+  out.diag=caDiagnostic();
+  return out;
+});
+chk('Code et numéro → adresse fixe de l\'image',tx.obf[0]==='https://images.pokemontcg.io/sv3/223_hires.png',JSON.stringify(tx.obf));
+chk('...les zéros de tête sont retirés',tx.zero[0]==='https://images.pokemontcg.io/sv4pt5/54_hires.png',JSON.stringify(tx.zero));
+chk('...le Set de base des anciens codes',tx.base[0]==='https://images.pokemontcg.io/base1/4_hires.png',JSON.stringify(tx.base));
+chk('...les promos par leur alias',tx.promo[0]==='https://images.pokemontcg.io/svp/101_hires.png',JSON.stringify(tx.promo));
+chk('...un code partagé donne toutes ses extensions',tx.partage.length>=2&&tx.partage.some(u=>/sm115\//.test(u))&&tx.partage.some(u=>/sma\//.test(u)),JSON.stringify(tx.partage));
+chk('...le nom de l\'extension suffit aussi',tx.nomSeul[0]==='https://images.pokemontcg.io/base5/4_hires.png',JSON.stringify(tx.nomSeul));
+chk('...une extension inconnue ne donne rien à essayer',tx.inconnu.length===0);
+chk('La table contient les 176 extensions',tx.taille===176,String(tx.taille));
+chk('Si la première extension n\'a pas l\'image, la suivante est essayée',
+    tx.secondChoix&&!/sm115/.test(tx.secondChoix.img)&&/^https:\/\/images\.pokemontcg\.io\//.test(tx.secondChoix.img||'')&&tx.baseApres404===0,JSON.stringify(tx.secondChoix));
+chk('Sans image à l\'adresse déduite, la base prend le relais',tx.requetesRelais[0]==='set.ptcgoCode:OBF number:999',JSON.stringify(tx.requetesRelais));
+chk('...avec les requêtes simples d\'avant, sans « OU »',!tx.requetesRelais.some(q=>/ OR /.test(q)),JSON.stringify(tx.requetesRelais));
+chk('Une image trop lente n\'est PAS notée « site qui refuse »',tx.lente==='passager'&&tx.lenteEtat.drive===''&&tx.lenteEtat.etat==='',JSON.stringify([tx.lente,tx.lenteEtat]));
+chk('...et elle est archivée au passage suivant',/^d/.test(tx.lenteFin.drive)&&tx.lenteEnsuite==='archivee',JSON.stringify([tx.lenteEnsuite,tx.lenteFin]));
+chk('Une absence notée par l\'ancienne méthode est réessayée',/sv3\/12_hires/.test(tx.ancienneImage||''),JSON.stringify(tx));
+chk('Le diagnostic liste les cartes sans image, avec la raison',
+    /^Cartes sans image archivée : \d+ sur \d+ — v\d/.test(tx.diag)&&/\nD \| https:\/\/www\.cardmarket\.com\/[^|]+ \| cardmarket ZZZ 7 X \| Lu dans l'adresse/.test(tx.diag)&&/Limonde AR \| \(pas d'adresse\)/.test(tx.diag),tx.diag.slice(0,400));
 
 console.log('=== 9 bis. RIEN NE BLOQUE LA FILE ===');
 // Le défaut constaté : la file « s'arrêtait » après cinq images. Une requête

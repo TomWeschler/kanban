@@ -15885,24 +15885,67 @@ const caPtcgCarte=d=>{
           ref:`${c.set&&c.set.name||''} ${c.number||''}`.trim(),
           cote:Number.isFinite(p.trendPrice)?p.trendPrice:Number.isFinite(p.averageSellPrice)?p.averageSellPrice:null};
 };
-// `select` ne demande que les champs utiles : une fiche complète de la base pèse
-// des dizaines de Ko (attaques, légalités, prix de chaque variante…), et c'est
-// ce poids, multiplié par la lenteur du service, qui faisait durer les minutes.
-const caPtcgUrl=q=>`${CA_API_PTCG}?q=${encodeURIComponent(q)}&pageSize=1&select=images,set,number,cardmarket`;
-// Plusieurs façons de désigner la même carte, de la plus précise à la plus
-// large. Le code d'extension de Cardmarket n'est pas toujours celui de la
-// base (les promos, notamment) : on essaie aussi l'identifiant d'extension et
-// le nom d'extension, avec le numéro.
-// Les trois façons de nommer l'extension partent en UNE requête (« OU ») : la
-// base met 10 à 30 s à répondre, et trois essais successifs faisaient d'une
-// carte une attente d'une minute et demie.
+// ── La table des extensions ───────────────────────────────────────────────
+// L'image d'une carte de pokemontcg.io a une adresse FIXE :
+//   images.pokemontcg.io/<extension>/<numéro>.png
+// Connaître l'extension suffit donc : une adresse Cardmarket donne son code
+// (« OBF ») et son numéro (« 223 »), cette table donne l'extension (« sv3 »),
+// et l'image se télécharge directement — sans interroger la base, qui met 10
+// à 30 s par réponse et rationne ses visiteurs. C'est ce qui faisait durer les
+// recherches des minutes, quand elles aboutissaient.
+// Source : pokemon-tcg-data (données ouvertes de pokemontcg.io), 176 extensions,
+// septembre 2026. Une extension plus récente que cette table passe par la base,
+// comme avant : rien n'est perdu, c'est seulement plus lent.
+const CA_EXT=[["base1","Base","BS"],["base2","Jungle","JU"],["basep","Wizards Black Star Promos","PR"],["base3","Fossil","FO"],["base4","Base Set 2","B2"],["base5","Team Rocket","TR"],["gym1","Gym Heroes","G1"],["gym2","Gym Challenge","G2"],["neo1","Neo Genesis","N1"],["neo2","Neo Discovery","N2"],["si1","Southern Islands",""],["neo3","Neo Revelation","N3"],["neo4","Neo Destiny","N4"],["base6","Legendary Collection","LC"],["ecard1","Expedition Base Set","EX"],["bp","Best of Game","BP"],["ecard2","Aquapolis","AQ"],["ecard3","Skyridge","SK"],["ex1","Ruby & Sapphire","RS"],["ex2","Sandstorm","SS"],["np","Nintendo Black Star Promos","PR-NP"],["ex3","Dragon","DR"],["ex4","Team Magma vs Team Aqua","MA"],["tk1a","EX Trainer Kit Latias",""],["tk1b","EX Trainer Kit Latios",""],["ex5","Hidden Legends","HL"],["ex6","FireRed & LeafGreen","RG"],["pop1","POP Series 1",""],["ex7","Team Rocket Returns","TRR"],["ex8","Deoxys","DX"],["ex9","Emerald","EM"],["ex10","Unseen Forces","UF"],["pop2","POP Series 2",""],["ex11","Delta Species","DS"],["ex12","Legend Maker","LM"],["tk2a","EX Trainer Kit 2 Plusle",""],["tk2b","EX Trainer Kit 2 Minun",""],["pop3","POP Series 3",""],["ex13","Holon Phantoms","HP"],["ex14","Crystal Guardians","CG"],["pop4","POP Series 4",""],["ex15","Dragon Frontiers","DF"],["ex16","Power Keepers","PK"],["pop5","POP Series 5",""],["dp1","Diamond & Pearl","DP"],["dpp","DP Black Star Promos","PR-DPP"],["dp2","Mysterious Treasures","MT"],["pop6","POP Series 6",""],["dp3","Secret Wonders","SW"],["dp4","Great Encounters","GE"],["pop7","POP Series 7",""],["dp5","Majestic Dawn","MD"],["dp6","Legends Awakened","LA"],["pop8","POP Series 8",""],["dp7","Stormfront","SF"],["pl1","Platinum","PL"],["pop9","POP Series 9",""],["pl2","Rising Rivals","RR"],["pl3","Supreme Victors","SV"],["pl4","Arceus","AR"],["ru1","Pokémon Rumble",""],["hgss1","HeartGold & SoulSilver","HS"],["hsp","HGSS Black Star Promos","PR-HS"],["hgss2","HS—Unleashed","UL"],["hgss3","HS—Undaunted","UD"],["hgss4","HS—Triumphant","TM"],["col1","Call of Legends","CL"],["bwp","BW Black Star Promos","PR-BLW"],["bw1","Black & White","BLW"],["mcd11","McDonald's Collection 2011",""],["bw2","Emerging Powers","EPO"],["bw3","Noble Victories","NVI"],["bw4","Next Destinies","NXD"],["bw5","Dark Explorers","DEX"],["mcd12","McDonald's Collection 2012",""],["bw6","Dragons Exalted","DRX"],["dv1","Dragon Vault","DRV"],["bw7","Boundaries Crossed","BCR"],["bw8","Plasma Storm","PLS"],["bw9","Plasma Freeze","PLF"],["bw10","Plasma Blast","PLB"],["xyp","XY Black Star Promos","PR-XY"],["bw11","Legendary Treasures","LTR"],["xy0","Kalos Starter Set","KSS"],["xy1","XY","XY"],["xy2","Flashfire","FLF"],["mcd14","McDonald's Collection 2014",""],["xy3","Furious Fists","FFI"],["xy4","Phantom Forces","PHF"],["xy5","Primal Clash","PRC"],["dc1","Double Crisis","DCR"],["xy6","Roaring Skies","ROS"],["xy7","Ancient Origins","AOR"],["xy8","BREAKthrough","BKT"],["mcd15","McDonald's Collection 2015",""],["xy9","BREAKpoint","BKP"],["g1","Generations","GEN"],["xy10","Fates Collide","FCO"],["xy11","Steam Siege","STS"],["mcd16","McDonald's Collection 2016",""],["xy12","Evolutions","EVO"],["sm1","Sun & Moon","SUM"],["smp","SM Black Star Promos","PR-SM"],["sm2","Guardians Rising","GRI"],["sm3","Burning Shadows","BUS"],["sm35","Shining Legends","SLG"],["sm4","Crimson Invasion","CIN"],["mcd17","McDonald's Collection 2017",""],["sm5","Ultra Prism","UPR"],["sm6","Forbidden Light","FLI"],["sm7","Celestial Storm","CES"],["sm75","Dragon Majesty","DRM"],["mcd18","McDonald's Collection 2018",""],["sm8","Lost Thunder","LOT"],["sm9","Team Up","TEU"],["det1","Detective Pikachu","DET"],["sm10","Unbroken Bonds","UNB"],["sm11","Unified Minds","UNM"],["sm115","Hidden Fates","HIF"],["sma","Hidden Fates Shiny Vault","HIF"],["mcd19","McDonald's Collection 2019",""],["sm12","Cosmic Eclipse","CEC"],["swshp","SWSH Black Star Promos","PR-SW"],["swsh1","Sword & Shield","SSH"],["swsh2","Rebel Clash","RCL"],["swsh3","Darkness Ablaze","DAA"],["fut20","Pokémon Futsal Collection","FUT20"],["swsh35","Champion's Path","CPA"],["swsh4","Vivid Voltage","VIV"],["mcd21","McDonald's Collection 2021",""],["swsh45","Shining Fates","SHF"],["swsh45sv","Shining Fates Shiny Vault","SHF"],["swsh5","Battle Styles","BST"],["swsh6","Chilling Reign","CRE"],["swsh7","Evolving Skies","EVS"],["cel25","Celebrations","CEL"],["cel25c","Celebrations: Classic Collection","CEL"],["swsh8","Fusion Strike","FST"],["swsh9","Brilliant Stars","BRS"],["swsh9tg","Brilliant Stars Trainer Gallery","BRS"],["swsh10","Astral Radiance","ASR"],["swsh10tg","Astral Radiance Trainer Gallery","ASR"],["pgo","Pokémon GO","PGO"],["mcd22","McDonald's Collection 2022",""],["swsh11","Lost Origin","LOR"],["swsh11tg","Lost Origin Trainer Gallery","LOR"],["swsh12","Silver Tempest","SIT"],["swsh12tg","Silver Tempest Trainer Gallery","SIT"],["svp","Scarlet & Violet Black Star Promos","PR-SV"],["swsh12pt5","Crown Zenith","CRZ"],["swsh12pt5gg","Crown Zenith Galarian Gallery","CRZ"],["sve","Scarlet & Violet Energies","SVE"],["sv1","Scarlet & Violet","SVI"],["sv2","Paldea Evolved","PAL"],["sv3","Obsidian Flames","OBF"],["sv3pt5","151","MEW"],["sv4","Paradox Rift","PAR"],["sv4pt5","Paldean Fates","PAF"],["sv5","Temporal Forces","TEF"],["sv6","Twilight Masquerade","TWM"],["sv6pt5","Shrouded Fable","SFA"],["sv7","Stellar Crown","SCR"],["sv8","Surging Sparks","SSP"],["sv8pt5","Prismatic Evolutions","PRE"],["sv9","Journey Together","JTG"],["sv10","Destined Rivals","DRI"],["zsv10pt5","Black Bolt","BLK"],["rsv10pt5","White Flare","WHT"],["me1","Mega Evolution","MEG"],["me2","Phantasmal Flames","PFL"],["me2pt5","Ascended Heroes","ASC"],["me3","Perfect Order","POR"],["me4","Chaos Rising","CRI"],["me5","Pitch Black","PBL"],["me55","30th Celebration","30C"],["me55c","30th Celebration: Classic Collection","30C"]];
+// Les promos : Cardmarket écrit « SVP121 », la base « PR-SV ».
+const CA_EXT_ALIAS={SVP:'PR-SV',SWSHP:'PR-SW',SMP:'PR-SM',XYP:'PR-XY',BWP:'PR-BLW',DPP:'PR-DPP',HSP:'PR-HS'};
+const CA_EXT_NOMS={'base set':'base1','base set 2':'base4'};
+const caNormExt=x=>tabSansAccent(String(x||'')).replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim();
+let caExtIdx=null;
+function caExtIndex(){
+  if(caExtIdx)return caExtIdx;
+  const code={}, nom={}, lib={};
+  CA_EXT.forEach(([id,n,c])=>{
+    lib[id]=n;
+    if(c)(code[c.toUpperCase()]=code[c.toUpperCase()]||[]).push(id);
+    (nom[caNormExt(n)]=nom[caNormExt(n)]||[]).push(id);
+  });
+  Object.entries(CA_EXT_ALIAS).forEach(([a,c])=>{ if(code[c])code[a]=(code[a]||[]).concat(code[c]); });
+  Object.entries(CA_EXT_NOMS).forEach(([n,id])=>{ (nom[n]=nom[n]||[]).push(id); });
+  return caExtIdx={code,nom,lib};
+}
+// Les adresses d'image possibles pour ce que l'adresse a révélé, la plus
+// probable d'abord. Plusieurs extensions peuvent partager un code (une
+// extension et son « Shiny Vault ») : on les essaie dans l'ordre.
+function caCandidats(i){
+  if(!i||!i.num)return [];
+  const x=caExtIndex();
+  const ids=[...new Set([].concat(i.code&&x.code[i.code.toUpperCase()]||[], i.ext&&x.nom[caNormExt(i.ext)]||[]))];
+  const n=/^\d+$/.test(i.num)?String(+i.num):i.num;
+  return ids.map(id=>({img:`https://images.pokemontcg.io/${id}/${n}_hires.png`,
+                       petite:`https://images.pokemontcg.io/${id}/${n}.png`,ref:`${x.lib[id]} ${n}`}));
+}
+// Les octets vérifiés restent en mémoire le temps de la session : l'image
+// trouvée dans la fiche n'est pas retéléchargée pour être archivée.
+const caOctets={};
+async function caEssayerImages(l){
+  let passager=false;
+  for(const k of l){
+    const t=await caTelecharger(k.img);
+    if(t.blob){ caOctets[k.img]=t.blob; return {...k,blob:t.blob}; }
+    if(t.refus)return {...k};                        // affichable, pas archivable
+    if(t.passager)passager=true;
+  }
+  return passager?{passager:true}:null;
+}
+const caPtcgUrl=q=>`${CA_API_PTCG}?q=${encodeURIComponent(q)}&pageSize=1`;
+// Dernier recours, la base : les formes de requête simples, celles qui ont
+// donné des résultats en vrai (v1.67). La requête groupée de la v1.69 n'a
+// jamais pu être éprouvée contre le service ; elle est retirée.
 function caEssais(i){
   const q=[];
   const esc=x=>String(x).replace(/"/g,'');
-  const ext=[];
-  if(i.code){ ext.push(`set.ptcgoCode:${i.code}`); ext.push(`set.id:${i.code.toLowerCase()}`); }
-  if(i.ext)ext.push(`set.name:"${esc(i.ext)}"`);
-  if(i.num&&ext.length)q.push(`(${ext.join(' OR ')}) number:${i.num}`);
+  if(i.code&&i.num)q.push(`set.ptcgoCode:${i.code} number:${i.num}`);
   if(i.nom&&i.ext)q.push(`name:"${esc(i.nom)}" set.name:"${esc(i.ext)}"`);
   return q;
 }
@@ -15919,8 +15962,16 @@ async function caResoudreUrl(u){
     return c&&caDexImage(c.image)?{img:caDexImage(c.image),petite:caDexImage(c.image,'low'),
       ref:`${c.set&&c.set.name||''} ${c.localId||''}`.trim()}:{introuvable:`TCGdex n'a pas d'image pour ${i.id}.`};
   }
+  // D'abord l'adresse d'image déduite : aucune requête à la base.
+  let passagerImg=false;
+  const cands=i.source==='ptcg'?[]:caCandidats(i);
+  if(cands.length){
+    const r=await caEssayerImages(cands);
+    if(r&&r.img)return r;
+    if(r&&r.passager)passagerImg=true;
+  }
   const essais=i.source==='ptcg'?[`id:${i.id}`]:caEssais(i);
-  if(!essais.length)return {introuvable:'L\'adresse ne donne ni extension ni numéro de carte.'};
+  if(!essais.length)return passagerImg?{passager:true}:{introuvable:'L\'adresse ne donne ni extension ni numéro de carte.'};
   for(const q of essais){
     const r=await caGet(caPtcgUrl(q));
     // Une base qui sature ne dit rien de la carte : on s'arrête là, et on
@@ -15929,6 +15980,7 @@ async function caResoudreUrl(u){
     const c=caPtcgCarte(r.json);
     if(c)return c;
   }
+  if(passagerImg)return {passager:true};
   const lu=[i.ext,i.code&&i.num?`${i.code} ${i.num}`:i.num?`n° ${i.num}`:'',i.nom].filter(Boolean).join(' · ');
   return {introuvable:`Lu dans l'adresse : ${lu||'?'} — aucune carte correspondante dans la base.`};
 }
@@ -15996,6 +16048,11 @@ async function loadCartes(){
   cacheSet('cartes',cartes);
 }
 const caParId=id=>cartes.find(c=>c.id===id)||null;
+// Une absence est datée de la méthode qui l'a constatée. Celles des versions
+// précédentes ont été notées SANS la table des extensions : elles sont
+// réessayées une fois, d'elles-mêmes.
+const CA_ABSENTE='introuvable-2';
+const caAbsente=c=>c.etat===CA_ABSENTE;
 function caPoser(c){
   const i=cartes.findIndex(x=>x.id===c.id);
   if(i>=0)cartes[i]=c; else cartes.push(c);
@@ -16095,14 +16152,23 @@ async function caDriveLire(id){
 // répond jamais immobilisait un des trois ouvriers de la file, pour toujours.
 const caDelai=ms=>{ const ac=new AbortController(); const t=setTimeout(()=>ac.abort(),ms);
   return {signal:ac.signal,fin:()=>clearTimeout(t)}; };
+// {blob} | {absent} (404 : cette image n'existe pas) | {refus} (le site interdit
+// la lecture depuis une autre page : affichable, pas archivable) | {passager}
+// (délai, réseau, 429, 5xx : réessayer). La v1.69 rangeait un simple délai
+// dépassé avec les refus, et ne réessayait plus JAMAIS la carte.
+let CA_DELAI_IMG=30000;
 async function caTelecharger(u){
-  const d=caDelai(20000);
+  const d=caDelai(CA_DELAI_IMG);
   try{
     const r=await fetch(u,{mode:'cors',credentials:'omit',referrerPolicy:'no-referrer',signal:d.signal});
-    if(!r.ok)return null;
+    if(r.status===404||r.status===410)return {absent:true};
+    if(!r.ok)return {passager:true};
     const b=await r.blob();
-    return b&&b.size&&/^image\//.test(b.type||'image/')?b:null;
-  }catch(e){ return null; } finally{ d.fin(); }
+    return b&&b.size&&/^image\//.test(b.type||'image/')?{blob:b}:{absent:true};
+  }catch(e){
+    if(e&&e.name==='AbortError')return {passager:true};
+    return navigator.onLine?{refus:true}:{passager:true};
+  }finally{ d.fin(); }
 }
 // Une carte s'affiche en 150 à 220 pixels : 500 de large suffisent, et une
 // image haute définition de 700 Ko devient un WebP de quelques dizaines.
@@ -16141,20 +16207,27 @@ async function caTraiter(c,montrer){
     if(d&&d.absent){ c.drive_id=''; caPlusTard(c); }     // effacée du Drive : on la refera
     else if(!d)return 'passager';
   }
-  if(!c.image&&c.url&&c.etat!=='introuvable'){
+  let octets=null;
+  if(!c.image&&c.url&&!caAbsente(c)){
     const r=await caResoudreUrl(c.url);
     if(r&&r.passager)return 'passager';
-    if(r&&r.img){ c.image=r.img; c.ref=r.ref||''; c.cote=r.cote==null?null:r.cote; c.etat=''; c.raison=''; }
-    else { c.etat='introuvable'; c.raison=(r&&r.introuvable)||''; }
+    if(r&&r.img){ c.image=r.img; c.ref=r.ref||''; c.cote=r.cote==null?null:r.cote; c.etat=''; c.raison=''; octets=r.blob||null; }
+    else { c.etat=CA_ABSENTE; c.raison=(r&&r.introuvable)||''; }
     caPlusTard(c);
   }
-  if(!c.image)return c.etat==='introuvable'?'introuvable':'vide';
+  if(!c.image)return caAbsente(c)?'introuvable':'vide';
   montrer(c.image);
   if(c.drive_id==='-')return 'distante';
   if(!accessToken||!navigator.onLine)return 'distante';
-  const b=await caTelecharger(c.image);
-  if(!b){ c.drive_id='-'; caPlusTard(c); return 'distante'; }
-  const p=await caReduire(b);
+  if(!octets&&caOctets[c.image])octets=caOctets[c.image];
+  if(!octets){
+    const t=await caTelecharger(c.image);
+    if(t.refus||t.absent){ c.drive_id='-'; caPlusTard(c); return 'distante'; }
+    if(!t.blob)return 'passager';                     // délai : on réessaiera, rien n'est figé
+    octets=t.blob;
+  }
+  delete caOctets[c.image];
+  const p=await caReduire(octets);
   const id=await caDriveEnvoyer(p,`${c.nom} — ${c.id}.webp`);
   if(!id)return 'distante';                          // Drive refuse : on réessaiera
   c.drive_id=id; caPlusTard(c);
@@ -16299,7 +16372,7 @@ const caImmediate=c=>(c.drive_id&&caObj[c.drive_id])||(c.image&&(!c.drive_id||c.
 const caImgTag=src=>`<img src="${MD_ATT(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="caImgKo(this)">`;
 const caImgVide=(c,etat)=>`<span class="ca-img-nom">${tdEsc(c.nom)}${
   etat==='attente'?'<small class="ca-att">chargement…</small>'
-  :!c.url||c.etat==='introuvable'?'<small>＋ ajouter une image</small>':''}</span>`;
+  :!c.url||caAbsente(c)?'<small>＋ ajouter une image</small>':''}</span>`;
 function caTuile(c){
   const im=caImmediate(c);
   const lg=caLangue(c);
@@ -16340,6 +16413,8 @@ function caEtatAfficher(){
   if(e.distante)p.push(`<b>${e.distante}</b> affichées depuis leur site`);
   if(e.passager&&!e.attente)p.push(`<b>${e.passager}</b> non obtenues — réseau ou base saturée, nouvel essai à la prochaine ouverture`);
   if(e.introuvable)p.push(`<b>${e.introuvable}</b> sans correspondance <button class="ca-lienbtn" onclick="caReessayer()">réessayer</button>`);
+  if(!e.attente&&(e.introuvable||e.passager||e.distante))
+    p.push(`<button class="ca-lienbtn" onclick="caDiagnostic()" title="La liste des cartes sans image archivée, avec la raison — à me transmettre">copier le diagnostic</button>`);
   el.innerHTML=p.length?'Images : '+p.join(' · '):'';
 }
 let CA_PAUSE=4000, CA_MAX_CARTE=120000;
@@ -16386,8 +16461,23 @@ async function caChargerImages(l,gen){
   };
   await Promise.all([tache(),tache(),tache()]);
 }
+// Ce qu'il faut pour comprendre une image manquante sans voir l'écran : le
+// nom, l'adresse, ce qu'on en a lu, et la raison constatée.
+function caDiagnostic(){
+  const l=cartes.filter(c=>!(c.drive_id&&c.drive_id!=='-'));
+  const lignes=l.map(c=>{ const i=c.url?caLireUrl(c.url):null;
+    return [c.nom, c.url||'(pas d\'adresse)',
+      i?[i.source,i.code,i.num,i.ext].filter(Boolean).join(' '):'',
+      c.drive_id==='-'?'site qui refuse la lecture':caAbsente(c)?c.raison||'introuvable':c.image?'pas encore archivée':'pas encore cherchée',
+      c.image||''].join(' | '); });
+  const t=`Cartes sans image archivée : ${l.length} sur ${cartes.length} — ${APP_VERSION}\n`+lignes.join('\n');
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(
+    ()=>toast(`Diagnostic copié — ${l.length} cartes`,'ok'),
+    ()=>{ const w=window.open('','_blank'); if(w){ w.document.body.innerText=t; } });
+  return t;
+}
 function caReessayer(){
-  const l=cartes.filter(c=>c.etat==='introuvable');
+  const l=cartes.filter(caAbsente);
   l.forEach(c=>{ c.etat=''; c.raison=''; caPlusTard(c); });
   renderCartes();
 }
@@ -16460,7 +16550,7 @@ async function caApercu(c){
     const d2=await caDriveLire(c.drive_id);
     if(d2&&d2.blob){ await caIdb.set(c.drive_id,d2.blob); pose(caObj[c.drive_id]=URL.createObjectURL(d2.blob),d); }
     else pose('','Image enregistrée, mais Google Drive ne l\'a pas rendue.'); return; }
-  pose('',c.etat==='introuvable'?tdEsc(c.raison||'Aucune image trouvée.')+' Tu peux la choisir à la main.'
+  pose('',caAbsente(c)?tdEsc(c.raison||'Aucune image trouvée.')+' Tu peux la choisir à la main.'
     :c.url?'Pas encore cherchée — elle le sera à l\'enregistrement.':'');
 }
 // L'adresse vient d'être collée : on cherche l'image tout de suite, avant même
@@ -16497,7 +16587,7 @@ async function caEnregistrer(){
   else if(c.url!==(avant?avant.url:'')){
     const t=caEd.trouve;
     Object.assign(c,{drive_id:'',ref:'',cote:null,
-      image:t&&t.img?t.img:'',etat:t&&t.introuvable?'introuvable':'',raison:t&&t.introuvable||''});
+      image:t&&t.img?t.img:'',etat:t&&t.introuvable?CA_ABSENTE:'',raison:t&&t.introuvable||''});
     if(t&&t.img){ c.ref=t.ref||''; c.cote=t.cote==null?null:t.cote; }
   }
   caFermer();
@@ -18853,7 +18943,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.69.0';
+const APP_VERSION='v1.69.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
