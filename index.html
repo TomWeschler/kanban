@@ -1280,6 +1280,31 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
   -webkit-line-clamp:2;-webkit-box-orient:vertical}
 .ca-meta{display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;margin-top:auto}
 .ca-prix{font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:var(--warn)}
+.ca-tuile{position:relative}
+/* La langue : une pastille au coin haut droit, une couleur par langue. */
+.ca-lg{position:absolute;top:0.2rem;right:0.2rem;z-index:2;min-width:1.6rem;height:1.25rem;padding:0 0.3rem;
+  border-radius:99px;font-family:var(--font-mono);font-size:0.55rem;font-weight:700;letter-spacing:0.04em;
+  display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.5);
+  border:1.5px solid rgba(255,255,255,0.85)}
+.ca-lg-fr{background:#2563eb}.ca-lg-jp{background:#dc2626}.ca-lg-en{background:#059669}
+.ca-lg-kr{background:#7c3aed}.ca-lg-cn{background:#d97706}
+.ca-lgs{display:flex;gap:0.3rem;flex-wrap:wrap}
+.ca-lg-choix{border:1px solid var(--border2);background:var(--surface2);color:var(--text-dim);border-radius:99px;
+  font-family:var(--font-mono);font-size:0.62rem;padding:0.2rem 0.6rem;cursor:pointer;opacity:0.55}
+.ca-lg-choix.on{opacity:1;color:#fff;border-color:#fff;background:var(--surface3)}
+.ca-lg-choix.on.ca-lg-fr{background:#2563eb}.ca-lg-choix.on.ca-lg-jp{background:#dc2626}
+.ca-lg-choix.on.ca-lg-en{background:#059669}.ca-lg-choix.on.ca-lg-kr{background:#7c3aed}
+.ca-lg-choix.on.ca-lg-cn{background:#d97706}
+.ca-tags{display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;background:var(--surface2);border:1px solid var(--border);
+  padding:0.3rem 0.4rem;min-height:2.2rem;cursor:text}
+.ca-tags input{flex:1;min-width:6rem;border:none!important;background:none!important;padding:0.1rem 0.2rem!important;outline:none}
+.ca-tag{display:inline-flex;align-items:center;gap:0.2rem;border:1px solid var(--border2);border-radius:99px;
+  padding:0.05rem 0.25rem 0.05rem 0.55rem;font-size:0.7rem;color:var(--text)}
+.ca-tag.premiere{border-color:var(--accent);color:var(--accent)}
+.ca-tag-x,.ca-tag-g{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.8rem;line-height:1;padding:0 0.15rem}
+.ca-tag-x:hover,.ca-tag-g:hover{color:var(--text)}
+.ca-aide{text-transform:none;letter-spacing:0;color:var(--text-dim);opacity:0.8}
+.ca-img.travail{border-color:var(--accent)}
 .ca-vente{font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:var(--text-mid);margin-left:auto}
 .ca-vente.gain{color:var(--green)}
 .ca-vente.perte{color:var(--danger)}
@@ -2524,7 +2549,13 @@ body,body *{font-family:var(--font-body)}
           <div class="field"><label>Prix d'achat</label><input type="text" inputmode="decimal" id="caPrix" placeholder="21"></div>
           <div class="field"><label>Prix de vente</label><input type="text" inputmode="decimal" id="caVente" placeholder="—"></div>
         </div>
-        <div class="field"><label>Où</label><input type="text" id="caOuIn" list="caOuListe" autocomplete="off"><datalist id="caOuListe"></datalist></div>
+        <div class="field"><label>Langue</label><div class="ca-lgs" id="caLgs"></div></div>
+        <div class="field"><label>Étiquettes <span class="ca-aide">— la première sert au regroupement</span></label>
+          <div class="ca-tags" id="caTagsBox" onclick="document.getElementById('caTagIn').focus()">
+            <span id="caTagsListe"></span>
+            <input type="text" id="caTagIn" list="caOuListe" autocomplete="off" placeholder="ajouter…"
+              onkeydown="caTagTouche(event)" onchange="caTagAjouter(this.value)" onblur="caTagAjouter(this.value)">
+          </div><datalist id="caOuListe"></datalist></div>
       </div>
     </div>
     <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem">
@@ -8926,7 +8957,7 @@ function adpRestoreCache(){
   adpPoints=cacheGet('adpPoints',[]); brsLignes=cacheGet('brsLignes',[]);
   jpPlan=cacheGet('jpPlan',[]); jpJournal=cacheGet('jpJournal',[]);
   jpMesures=cacheGet('jpMesures',[]); jpCheck=cacheGet('jpCheck',[]);
-  cartes=cacheGet('cartes',[]);
+  cartes=cacheGet('cartes',[]).map(c=>c.tags?c:{...c,tags:caTags(c.ou),langue:c.langue||''});
   projTagsInvalidate();
 }
 // ── Le fil du projet ──────────────────────────────────────────────────────
@@ -15686,8 +15717,19 @@ function switchPage(name){
 // jamais modifiée.
 const CA_NOTE='Cartes';
 const CA_SHEET='cartes';
-const CA_HEADER=['id','section','nom','url','prix','vente','ou','image','drive_id','ref','cote',
-                 'ordre','etat','raison','created_at','updated_at'];
+// La colonne G s'appelait « ou » et ne portait qu'un lieu : elle porte
+// désormais PLUSIEURS étiquettes, séparées par des virgules. La langue arrive
+// en dernière colonne, pour ne rien décaler.
+const CA_HEADER=['id','section','nom','url','prix','vente','etiquettes','image','drive_id','ref','cote',
+                 'ordre','etat','raison','created_at','updated_at','langue'];
+const CA_LANGUES=[['fr','Français','FR'],['jp','Japonais','JP'],['en','Anglais','EN'],
+                  ['kr','Coréen','KR'],['cn','Chinois','CN']];
+const caLangue=c=>CA_LANGUES.find(l=>l[0]===c.langue)||null;
+// Les étiquettes se saisissent séparées par des virgules ; doublons et vides retirés.
+const caTags=v=>{ const vu=new Set(), out=[];
+  (Array.isArray(v)?v:String(v||'').split(',')).map(x=>String(x).trim()).filter(Boolean)
+    .forEach(x=>{ const k=x.toLowerCase(); if(!vu.has(k)){ vu.add(k); out.push(x); } });
+  return out; };
 const CA_DOSSIER='Kanban — Cartes';
 const LS_CA_DOSSIER='kanban_cartes_dossier';
 // Ce que la v1.67 avait déjà trouvé, appareil par appareil : l'import s'en sert
@@ -15695,6 +15737,11 @@ const LS_CA_DOSSIER='kanban_cartes_dossier';
 const LS_CA_IMG='kanban_cartes_img2';
 let cartes=[], cartesLoaded=false, cartesLoadedAt=0;
 let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0;
+// Regrouper par section (l'origine des cartes) ou par PREMIÈRE étiquette — la
+// principale, celle qu'on met en tête. Mémorisé sur l'appareil.
+const LS_CA_GROUPE='kanban_cartes_groupe';
+let caGroupe=(()=>{ try{ return localStorage.getItem(LS_CA_GROUPE)==='etiquette'?'etiquette':'section'; }catch(e){ return 'section'; } })();
+function caGrouper(v){ caGroupe=v; try{ localStorage.setItem(LS_CA_GROUPE,v); }catch(e){} renderCartes(); }
 
 // ── Lire la note « Cartes » (import seulement) ───────────────────────────
 // Une cellule de la note, rendue lisible : sans markdown, sans lien, sans
@@ -15838,19 +15885,24 @@ const caPtcgCarte=d=>{
           ref:`${c.set&&c.set.name||''} ${c.number||''}`.trim(),
           cote:Number.isFinite(p.trendPrice)?p.trendPrice:Number.isFinite(p.averageSellPrice)?p.averageSellPrice:null};
 };
-const caPtcgUrl=q=>`${CA_API_PTCG}?q=${encodeURIComponent(q)}&pageSize=1`;
+// `select` ne demande que les champs utiles : une fiche complète de la base pèse
+// des dizaines de Ko (attaques, légalités, prix de chaque variante…), et c'est
+// ce poids, multiplié par la lenteur du service, qui faisait durer les minutes.
+const caPtcgUrl=q=>`${CA_API_PTCG}?q=${encodeURIComponent(q)}&pageSize=1&select=images,set,number,cardmarket`;
 // Plusieurs façons de désigner la même carte, de la plus précise à la plus
 // large. Le code d'extension de Cardmarket n'est pas toujours celui de la
 // base (les promos, notamment) : on essaie aussi l'identifiant d'extension et
 // le nom d'extension, avec le numéro.
+// Les trois façons de nommer l'extension partent en UNE requête (« OU ») : la
+// base met 10 à 30 s à répondre, et trois essais successifs faisaient d'une
+// carte une attente d'une minute et demie.
 function caEssais(i){
   const q=[];
   const esc=x=>String(x).replace(/"/g,'');
-  if(i.code&&i.num){
-    q.push(`set.ptcgoCode:${i.code} number:${i.num}`);
-    q.push(`set.id:${i.code.toLowerCase()} number:${i.num}`);
-  }
-  if(i.ext&&i.num)q.push(`set.name:"${esc(i.ext)}" number:${i.num}`);
+  const ext=[];
+  if(i.code){ ext.push(`set.ptcgoCode:${i.code}`); ext.push(`set.id:${i.code.toLowerCase()}`); }
+  if(i.ext)ext.push(`set.name:"${esc(i.ext)}"`);
+  if(i.num&&ext.length)q.push(`(${ext.join(' OR ')}) number:${i.num}`);
   if(i.nom&&i.ext)q.push(`name:"${esc(i.nom)}" set.name:"${esc(i.ext)}"`);
   return q;
 }
@@ -15906,20 +15958,22 @@ async function caChercher(nom){
 let caSeq=0;
 const caId=()=>'ca'+Date.now().toString(36)+(caSeq=(caSeq+1)%46656).toString(36).padStart(3,'0');
 const caNum=v=>v==null||v===''?'':String(v);
-const caRow=c=>[c.id,c.section||'',c.nom||'',c.url||'',caNum(c.prix),caNum(c.vente),c.ou||'',
+const caRow=c=>[c.id,c.section||'',c.nom||'',c.url||'',caNum(c.prix),caNum(c.vente),caTags(c.tags).join(', '),
   c.image||'',c.drive_id||'',c.ref||'',caNum(c.cote),String(c.ordre||0),c.etat||'',c.raison||'',
-  c.created_at||'',c.updated_at||''];
-const caTombe=id=>[id,'','','','','','','','','','','','','','',td()];
+  c.created_at||'',c.updated_at||'',c.langue||''];
+const caTombe=id=>[id,'','','','','','','','','','','','','','',td(),''];
 function caDeLigne(x){
   const g=i=>String(x[i]==null?'':x[i]).trim();
   const n=i=>{ const v=g(i); return v===''?null:nbFr(v,null); };
-  return {id:g(0),section:g(1),nom:g(2),url:caWeb(g(3)),prix:n(4),vente:n(5),ou:g(6),
+  const lg=g(16).toLowerCase();
+  return {id:g(0),section:g(1),nom:g(2),url:caWeb(g(3)),prix:n(4),vente:n(5),tags:caTags(g(6)),
     image:caWeb(g(7)),drive_id:g(8),ref:g(9),cote:n(10),ordre:parseInt(g(11),10)||0,
-    etat:g(12),raison:g(13),created_at:g(14),updated_at:g(15)};
+    etat:g(12),raison:g(13),created_at:g(14),updated_at:g(15),
+    langue:CA_LANGUES.some(l=>l[0]===lg)?lg:''};
 }
 async function ensureCartesSheet(){
   const titles=await sheetTitres();
-  if(titles.includes(CA_SHEET))return;
+  if(titles.includes(CA_SHEET))return true;
   sheetTitresOublie();
   await authFetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}:batchUpdate`,
     {method:'POST',headers:{'Content-Type':'application/json'},
@@ -15931,7 +15985,10 @@ async function ensureCartesSheet(){
 async function loadCartes(){
   if(!accessToken)return;
   await ensureCartesSheet();
-  const [l]=await sheetBatchLignes([`${CA_SHEET}!A:P`]);
+  const [tout]=await sheetBatchGet([`${CA_SHEET}!A:Q`]);
+  // L'en-tête suit le schéma : l'onglet reste lisible tel quel dans Sheets.
+  if(tout.length&&(tout[0]||[]).join('|')!==CA_HEADER.join('|'))await sheetPut(`${CA_SHEET}!A1`,[CA_HEADER]);
+  const l=tout.slice(1).filter(x=>x[0]);
   const m={};
   l.forEach(x=>{ const c=caDeLigne(x); if(!c.id)return; if(c.nom)m[c.id]=c; else delete m[c.id]; });
   cartes=Object.values(m);
@@ -15973,7 +16030,7 @@ const caIdb=(()=>{
   const ouvrir=()=>p||(p=new Promise((ok,ko)=>{
     const r=indexedDB.open('kanban-cartes',1);
     r.onupgradeneeded=()=>r.result.createObjectStore('img');
-    r.onsuccess=()=>ok(r.result); r.onerror=()=>ko(r.error);
+    r.onsuccess=()=>ok(r.result); r.onerror=()=>ko(r.error); r.onblocked=()=>ko(new Error('bloquée'));
   }));
   return {
     get:async k=>{ try{ const db=await ouvrir(); return await new Promise(ok=>{
@@ -15981,7 +16038,7 @@ const caIdb=(()=>{
       q.onsuccess=()=>ok(q.result||null); q.onerror=()=>ok(null); }); }catch(e){ return null; } },
     set:async(k,v)=>{ try{ const db=await ouvrir(); await new Promise(ok=>{
       const t=db.transaction('img','readwrite'); t.objectStore('img').put(v,k);
-      t.oncomplete=ok; t.onerror=ok; }); }catch(e){} }
+      t.oncomplete=ok; t.onerror=ok; t.onabort=ok; }); }catch(e){} }
   };
 })();
 const caObj={};                                   // drive_id → URL blob, pour la session
@@ -16007,8 +16064,10 @@ async function caDossier(){
   return id;
 }
 async function caDriveEnvoyer(blob,nom){
+  const d=caDelai(45000);
   const up=await authFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=media&fields=id',
-    {method:'POST',headers:{'Content-Type':blob.type||'image/webp'},body:blob}).catch(()=>null);
+    {method:'POST',headers:{'Content-Type':blob.type||'image/webp'},body:blob,signal:d.signal}).catch(()=>null);
+  d.fin();
   if(!up||!up.ok)return null;
   const j=await up.json().catch(()=>null); if(!j||!j.id)return null;
   const dossier=await caDossier();
@@ -16019,8 +16078,10 @@ async function caDriveEnvoyer(blob,nom){
 }
 // {blob} | {absent:true} (supprimé du Drive) | null (réseau : on réessaiera)
 async function caDriveLire(id){
-  const r=await authFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media`,{headers:{}})
+  const d=caDelai(30000);
+  const r=await authFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media`,{headers:{},signal:d.signal})
     .catch(()=>null);
+  d.fin();
   if(!r)return null;
   if(r.status===404)return {absent:true};
   if(!r.ok)return null;
@@ -16030,13 +16091,18 @@ async function caDriveLire(id){
 // Les octets d'une image publique. Un site qui refuse les lectures d'un autre
 // site (CORS) laisse l'image AFFICHABLE mais pas archivable : on garde alors
 // son adresse, sans réessayer à chaque ouverture.
+// Toute opération réseau a une durée maximale : une seule requête qui ne
+// répond jamais immobilisait un des trois ouvriers de la file, pour toujours.
+const caDelai=ms=>{ const ac=new AbortController(); const t=setTimeout(()=>ac.abort(),ms);
+  return {signal:ac.signal,fin:()=>clearTimeout(t)}; };
 async function caTelecharger(u){
+  const d=caDelai(20000);
   try{
-    const r=await fetch(u,{mode:'cors',credentials:'omit',referrerPolicy:'no-referrer'});
+    const r=await fetch(u,{mode:'cors',credentials:'omit',referrerPolicy:'no-referrer',signal:d.signal});
     if(!r.ok)return null;
     const b=await r.blob();
     return b&&b.size&&/^image\//.test(b.type||'image/')?b:null;
-  }catch(e){ return null; }
+  }catch(e){ return null; } finally{ d.fin(); }
 }
 // Une carte s'affiche en 150 à 220 pixels : 500 de large suffisent, et une
 // image haute définition de 700 Ko devient un WebP de quelques dizaines.
@@ -16109,7 +16175,7 @@ function caImportables(){
   const out=[];
   caLire(n).forEach(s=>s.cartes.forEach(c=>{
     const v=c.url&&vu[c.url]&&caWeb(vu[c.url].img)?vu[c.url]:null;
-    out.push({id:caId(),section:s.titre,nom:c.nom,url:c.url,prix:c.prix,vente:c.vente,ou:c.ou,
+    out.push({id:caId(),section:s.titre,nom:c.nom,url:c.url,prix:c.prix,vente:c.vente,tags:caTags(c.ou),langue:'',
       image:c.img||(c.url&&caEstImage(c.url)?c.url:'')||(v?v.img:''),
       drive_id:'',ref:v&&v.ref||'',cote:v&&v.cote!=null?v.cote:null,ordre:++o,
       etat:'',raison:'',created_at:td(),updated_at:td()});
@@ -16130,18 +16196,23 @@ async function caImporter(){
 const caEur=v=>v==null?'—':v.toLocaleString('fr-FR',{minimumFractionDigits:Number.isInteger(v)?0:2,maximumFractionDigits:2})+' €';
 const caSomme=l=>l.reduce((s,c)=>s+(c.prix||0),0);
 // Les sections dans l'ordre de leur première carte.
-function caSections(){
+function caSections(par){
   const m=new Map();
+  const cle=par==='etiquette'?c=>caTags(c.tags)[0]||'':c=>c.section||'Sans section';
   cartes.slice().sort((a,b)=>(a.ordre||0)-(b.ordre||0)).forEach(c=>{
-    const t=c.section||'Sans section';
+    const t=cle(c);
     if(!m.has(t))m.set(t,[]); m.get(t).push(c);
   });
-  return [...m].map(([titre,l])=>({titre,cartes:l}));
+  let l=[...m].map(([titre,cs])=>({titre,cartes:cs}));
+  // Par étiquette : ordre alphabétique, les cartes sans étiquette en dernier.
+  if(par==='etiquette')l=l.filter(g=>g.titre).sort((a,b)=>a.titre.localeCompare(b.titre,'fr'))
+    .concat(l.filter(g=>!g.titre).map(g=>({titre:'Sans étiquette',cartes:g.cartes})));
+  return l;
 }
 function caVisibles(s){
   const q=tabSansAccent(caRecherche.trim());
-  let l=s.cartes.filter(c=>(!caOu||c.ou===caOu)
-    &&(!q||tabSansAccent(c.nom+' '+c.ou+' '+s.titre).includes(q)));
+  let l=s.cartes.filter(c=>(!caOu||caTags(c.tags).includes(caOu))
+    &&(!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')+' '+s.titre+' '+c.section+' '+((caLangue(c)||[])[1]||'')).includes(q)));
   if(caTri==='prix-')l=l.slice().sort((a,b)=>(b.prix??-1)-(a.prix??-1));
   if(caTri==='prix+')l=l.slice().sort((a,b)=>(a.prix??1e9)-(b.prix??1e9));
   if(caTri==='nom')l=l.slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
@@ -16169,8 +16240,8 @@ async function renderCartes(){
       <button class="btn-nav out" onclick="caOuvrir(null)">+ Ajouter une carte</button></div>`;
     return;
   }
-  const secs=caSections();
-  const lieux=[...new Set(cartes.map(c=>c.ou).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const secs=caSections(caGroupe);
+  const lieux=[...new Set(cartes.flatMap(c=>caTags(c.tags)))].sort((a,b)=>a.localeCompare(b,'fr'));
   if(caOu&&!lieux.includes(caOu))caOu='';
   const vis=secs.map(s=>({s,l:caVisibles(s)}));
   const vues=vis.flatMap(x=>x.l);
@@ -16181,7 +16252,7 @@ async function renderCartes(){
     <div class="ca-tete">
     <div class="ca-hdr">
       <div class="jp-titre"><span class="ca-titre">Cartes</span>
-        <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${secs.length} section${secs.length>1?'s':''}</span></div>
+        <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${secs.length} ${caGroupe==='etiquette'?'groupe':'section'}${secs.length>1?'s':''}</span></div>
       <div class="ca-actions"><button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button></div>
     </div>
     <div class="jp-kpis">
@@ -16193,6 +16264,10 @@ async function renderCartes(){
     <div class="ca-barre">
       <input type="search" class="ca-q" id="caQ" placeholder="Chercher une carte…" value="${MD_ATT(caRecherche)}"
         oninput="caRecherche=this.value;caRedessiner()">
+      <select class="ca-tri" onchange="caGrouper(this.value)" title="Regrouper les cartes">
+        <option value="section"${caGroupe==='section'?' selected':''}>Par section</option>
+        <option value="etiquette"${caGroupe==='etiquette'?' selected':''}>Par 1re étiquette</option>
+      </select>
       <select class="ca-tri" onchange="caTri=this.value;caRedessiner()">
         ${[['ordre','Ordre de saisie'],['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z']].map(([v,l])=>
           `<option value="${v}"${caTri===v?' selected':''}>${l}</option>`).join('')}
@@ -16227,10 +16302,12 @@ const caImgVide=(c,etat)=>`<span class="ca-img-nom">${tdEsc(c.nom)}${
   :!c.url||c.etat==='introuvable'?'<small>＋ ajouter une image</small>':''}</span>`;
 function caTuile(c){
   const im=caImmediate(c);
+  const lg=caLangue(c);
   return `<button class="ca-tuile" data-k="${MD_ATT(c.id)}" onclick="caOuvrir(this.dataset.k)" title="${MD_ATT(c.nom)}">
+    ${lg?`<span class="ca-lg ca-lg-${lg[0]}" title="${lg[1]}">${lg[2]}</span>`:''}
     <div class="ca-img${im?'':' attente'}">${im?caImgTag(im):caImgVide(c,'attente')}</div>
     <div class="ca-nom">${tdEsc(c.nom)}</div>
-    <div class="ca-meta">${c.prix!=null?`<span class="ca-prix">${caEur(c.prix)}</span>`:''}${c.ou?`<span class="ca-ou">${tdEsc(c.ou)}</span>`:''}${caVenteHtml(c)}</div>
+    <div class="ca-meta">${c.prix!=null?`<span class="ca-prix">${caEur(c.prix)}</span>`:''}${caTags(c.tags).map(t=>`<span class="ca-ou">${tdEsc(t)}</span>`).join('')}${caVenteHtml(c)}</div>
   </button>`;
 }
 function caImgKo(img){ const b=img.parentNode; if(!b)return; b.classList.add('attente');
@@ -16238,7 +16315,7 @@ function caImgKo(img){ const b=img.parentNode; if(!b)return; b.classList.add('at
 // La recherche redessine la grille, pas le champ : sinon on perdrait le curseur.
 function caRedessiner(){
   const box=document.getElementById('caSections'); if(!box)return;
-  const vis=caSections().map(s=>({s,l:caVisibles(s)}));
+  const vis=caSections(caGroupe).map(s=>({s,l:caVisibles(s)}));
   box.innerHTML=caSectionsHtml(vis);
   caChargerImages(vis.flatMap(x=>x.l),++caGen);
 }
@@ -16265,7 +16342,14 @@ function caEtatAfficher(){
   if(e.introuvable)p.push(`<b>${e.introuvable}</b> sans correspondance <button class="ca-lienbtn" onclick="caReessayer()">réessayer</button>`);
   el.innerHTML=p.length?'Images : '+p.join(' · '):'';
 }
-let CA_PAUSE=4000;
+let CA_PAUSE=4000, CA_MAX_CARTE=120000;
+// La carte en cours de traitement le montre : sans cela, une recherche longue
+// ressemblait à une file arrêtée.
+function caEnCours(c,oui){
+  const t=caTuileImg(c); if(!t||t.querySelector('img'))return;
+  const s=t.querySelector('.ca-att'); if(s)s.textContent=oui?'recherche en cours…':'chargement…';
+  t.classList.toggle('travail',oui);
+}
 async function caChargerImages(l,gen){
   caEtatImg={attente:l.length,archivee:0,distante:0,passager:0,introuvable:0,vide:0};
   caEtatAfficher();
@@ -16285,7 +16369,13 @@ async function caChargerImages(l,gen){
   const tache=async()=>{
     while(reste.length&&gen===caGen){
       const x=reste.shift(), c=x.c;
-      const r=await caTraiter(c,src=>{ if(gen===caGen)caMontrer(c,src); });
+      caEnCours(c,true);
+      let r;
+      try{
+        r=await Promise.race([caTraiter(c,src=>{ if(gen===caGen)caMontrer(c,src); }),
+          new Promise(f=>setTimeout(()=>f('passager'),CA_MAX_CARTE))]);
+      }catch(e){ r='passager'; }
+      caEnCours(c,false);
       if(gen!==caGen)return;
       if(r==='passager'){
         if(++x.n<3){ reste.push(x); await dodo(CA_PAUSE*x.n); continue; }
@@ -16315,13 +16405,38 @@ function caOuvrir(id){
   document.getElementById('caUrl').value=c?c.url:'';
   document.getElementById('caPrix').value=c&&c.prix!=null?String(c.prix).replace('.',','):'';
   document.getElementById('caVente').value=c&&c.vente!=null?String(c.vente).replace('.',','):'';
-  document.getElementById('caOuIn').value=c?c.ou:'';
-  document.getElementById('caOuListe').innerHTML=[...new Set(cartes.map(x=>x.ou).filter(Boolean))]
+  caEd.tags=c?caTags(c.tags):[]; caEd.langue=c?c.langue||'':'';
+  document.getElementById('caTagIn').value='';
+  document.getElementById('caOuListe').innerHTML=[...new Set(cartes.flatMap(x=>caTags(x.tags)))]
     .map(o=>`<option value="${MD_ATT(o)}">`).join('');
+  caTagsDessiner(); caLgsDessiner();
   document.getElementById('caSuppr').style.display=c?'':'none';
   caLienMaj(c?c.url:'');
   caApercu(c);
   modalOuvre('caModal');
+}
+// Étiquettes : des pastilles qu'on retire d'un clic, un champ pour en ajouter.
+function caTagsDessiner(){
+  document.getElementById('caTagsListe').innerHTML=caEd.tags.map((t,i)=>
+    `<span class="ca-tag${i?'':' premiere'}" title="${i?'':'Première étiquette : sert au regroupement'}">${tdEsc(t)}`+
+    (i?`<button type="button" class="ca-tag-g" title="Mettre en premier" onclick="event.stopPropagation();caTagPremier(${i})">↑</button>`:'')+
+    `<button type="button" class="ca-tag-x" title="Retirer" onclick="event.stopPropagation();caTagRetirer(${i})">×</button></span>`).join('');
+}
+function caTagAjouter(v){
+  if(!caEd)return;
+  const n=caTags(caEd.tags.concat(String(v||'').split(',')));
+  document.getElementById('caTagIn').value='';
+  if(n.length!==caEd.tags.length){ caEd.tags=n; caTagsDessiner(); }
+}
+function caTagTouche(e){
+  if(e.key==='Enter'||e.key===','){ e.preventDefault(); caTagAjouter(e.target.value); }
+  else if(e.key==='Backspace'&&!e.target.value&&caEd.tags.length){ caEd.tags.pop(); caTagsDessiner(); }
+}
+function caTagRetirer(i){ caEd.tags.splice(i,1); caTagsDessiner(); }
+function caTagPremier(i){ const t=caEd.tags.splice(i,1)[0]; caEd.tags.unshift(t); caTagsDessiner(); }
+function caLgsDessiner(){
+  document.getElementById('caLgs').innerHTML=[['','—','—']].concat(CA_LANGUES).map(([v,l,c])=>
+    `<button type="button" class="ca-lg-choix${caEd.langue===v?' on':''}${v?' ca-lg-'+v:''}" onclick="caEd.langue='${v}';caLgsDessiner()" title="${l}">${v?c:'Aucune'}</button>`).join('');
 }
 function caLienMaj(u){
   document.getElementById('caLien').innerHTML=caWeb(u)?`<a href="${MD_ATT(caWeb(u))}" target="_blank" rel="noopener">Ouvrir la fiche ↗</a>`:'';
@@ -16374,7 +16489,8 @@ async function caEnregistrer(){
   const c=avant?{...avant}:{id:caId(),created_at:td(),drive_id:'',image:'',etat:'',raison:'',ref:'',cote:null,
     ordre:cartes.reduce((m,x)=>Math.max(m,x.ordre||0),0)+1};
   Object.assign(c,{nom,url:caWeb(url),section:document.getElementById('caSec').value.trim(),
-    prix:num('caPrix'),vente:num('caVente'),ou:document.getElementById('caOuIn').value.trim()});
+    prix:num('caPrix'),vente:num('caVente'),
+    tags:caTags(caEd.tags.concat(document.getElementById('caTagIn').value)),langue:caEd.langue});
   // L'image suit ce qu'on a fait : photo, choix, ou adresse nouvelle.
   if(caEd.photo){ Object.assign(c,{drive_id:caEd.photo.id,image:'',etat:'',raison:''}); }
   else if(caEd.image!=null){ Object.assign(c,{image:caWeb(caEd.image),drive_id:'',etat:'',raison:''}); }
@@ -18737,7 +18853,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.68.0';
+const APP_VERSION='v1.69.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

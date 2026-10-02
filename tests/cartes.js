@@ -75,6 +75,7 @@ await p.evaluate(async src=>{
   window.sheetTitresOublie=()=>{};
   window.sheetPut=async(range,values)=>{ if(/^cartes!A1/.test(range))FEUILLE=[values[0]]; return {ok:true,json:async()=>({})}; };
   window.sheetBatchLignes=async ranges=>ranges.map(r=>/^cartes!/.test(r)&&FEUILLE?FEUILLE.slice(1).filter(x=>x[0]):[]);
+  window.sheetBatchGet=async ranges=>ranges.map(r=>/^cartes!/.test(r)&&FEUILLE?FEUILLE.map(x=>x.slice()):[]);
   window.sheetBatchUpsert=async(sheet,rows)=>{
     if(sheet!=='cartes')return true;
     ECRITURES.push(rows.map(r=>r.slice()));
@@ -109,12 +110,13 @@ await p.evaluate(async src=>{
       APPELS.push(u);
       const q=decodeURIComponent(u.split('q=')[1]||'');
       const m=/ptcgoCode:(SAT[A-Z])/.exec(q);
+      if(/ptcgoCode:HANG/.test(q))return new Promise(()=>{});      // une base qui ne répond jamais
       if(m&&SATURE[m[1]]-->0)return {ok:false,status:429,json:async()=>null};
       if(m)return rep({data:[{number:'1',set:{name:'X'},images:{small:`https://images.pokemontcg.io/x/${m[1]}.png`,large:`https://images.pokemontcg.io/x/${m[1]}_hires.png`}}]});
-      if(/set\.ptcgoCode:OBF number:223/.test(q))return rep({data:[{number:'223',set:{name:'Obsidian Flames'},
+      if(/set\.ptcgoCode:OBF\b.*number:223/.test(q))return rep({data:[{number:'223',set:{name:'Obsidian Flames'},
         images:{small:'https://images.pokemontcg.io/sv3/223.png',large:'https://images.pokemontcg.io/sv3/223_hires.png'},
         cardmarket:{prices:{trendPrice:23.4}}}]});
-      if(/set\.id:svp number:121/.test(q))return rep({data:[{number:'121',set:{name:'SV Promos'},
+      if(/set\.id:svp[ )].*number:121/.test(q))return rep({data:[{number:'121',set:{name:'SV Promos'},
         images:{small:'https://images.pokemontcg.io/svp/121.png',large:'https://images.pokemontcg.io/svp/121_hires.png'}}]});
       if(/javascript/.test(q))return rep({data:[{images:{large:'javascript:alert(1)'}}]});
       return rep({data:[]});
@@ -145,7 +147,7 @@ console.log('=== 1. IMPORTER LA NOTE, UNE FOIS ===');
 const im=await p.evaluate(async()=>{
   const out={};
   switchPage('cartes'); await new Promise(r=>setTimeout(r,300));
-  out.ongletCree=!!FEUILLE&&FEUILLE[0].join()==='id,section,nom,url,prix,vente,ou,image,drive_id,ref,cote,ordre,etat,raison,created_at,updated_at';
+  out.ongletCree=!!FEUILLE&&FEUILLE[0].join()==='id,section,nom,url,prix,vente,etiquettes,image,drive_id,ref,cote,ordre,etat,raison,created_at,updated_at,langue';
   out.propose=document.getElementById('caWrap').textContent.replace(/\s+/g,' ');
   const avantNote=caNoteDe().content;
   APPELS.length=0;
@@ -154,7 +156,7 @@ const im=await p.evaluate(async()=>{
   out.uneEcriture=ECRITURES.length===1;
   out.noteIntacte=caNoteDe().content===avantNote;
   const l=FEUILLE.slice(1).map(caDeLigne);
-  out.cartes=l.map(c=>({nom:c.nom,section:c.section,prix:c.prix,vente:c.vente,ou:c.ou,image:c.image,ordre:c.ordre}));
+  out.cartes=l.map(c=>({nom:c.nom,section:c.section,prix:c.prix,vente:c.vente,tags:c.tags,image:c.image,ordre:c.ordre}));
   out.dejaTrouvee=l.find(c=>c.nom==='Déjà trouvée');
   return out;
 });
@@ -164,7 +166,7 @@ chk('L\'import écrit une ligne par carte, en une seule écriture',im.lignes===6
 chk('La note n\'est pas modifiée',im.noteIntacte===true);
 chk('Chaque carte garde sa section',im.cartes.map(c=>c.section).join('|')==='Cadeau Noé|Cadeau Noé|Cadeau Noé|Cadeau Noé|À vendre|À vendre',im.cartes.map(c=>c.section).join('|'));
 chk('...son nom, ses prix et son lieu',
-    im.cartes[2].nom==='Limonde AR'&&im.cartes[2].prix===3&&im.cartes[2].vente===4&&im.cartes[2].ou==='Classeur'&&im.cartes[3].prix===6.5,JSON.stringify(im.cartes[2]));
+    im.cartes[2].nom==='Limonde AR'&&im.cartes[2].prix===3&&im.cartes[2].vente===4&&im.cartes[2].tags.join()==='Classeur'&&im.cartes[3].prix===6.5,JSON.stringify(im.cartes[2]));
 chk('...et l\'ordre de la note',im.cartes.map(c=>c.ordre).join()==='1,2,3,4,5,6');
 chk('La ligne Total n\'est pas importée comme une carte',!im.cartes.some(c=>/total/i.test(c.nom)));
 chk('Ce que la v1.67 avait trouvé est repris : aucune recherche à refaire',
@@ -193,8 +195,14 @@ const pr=await p.evaluate(async()=>{
   out.indiceFlaga=/ajouter une image/.test(document.querySelector(`.ca-tuile[data-k="${out.flaga.id}"]`).textContent);
   return out;
 });
-chk('Une seule recherche, pour la seule carte qui en avait besoin',
-    pr.recherches.length===1&&/OBF%20number%3A223/.test(pr.recherches[0]),JSON.stringify(pr.recherches));
+chk('Une seule requête, pour la seule carte qui en avait besoin',
+    pr.recherches.length===1,JSON.stringify(pr.recherches));
+// Les trois façons de nommer l'extension partent ensemble, et seuls les
+// champs utiles sont demandés : c'est ce qui rend la base supportable.
+const q0=decodeURIComponent(pr.recherches[0]||'');
+chk('...qui essaie code, identifiant et nom d\'extension d\'un coup',
+    /\(set\.ptcgoCode:OBF OR set\.id:obf OR set\.name:"Obsidian Flames"\) number:223/.test(q0),q0);
+chk('...et ne demande que les champs utiles',/select=images,set,number,cardmarket/.test(q0),q0);
 chk('Le résultat est écrit dans la table : image, extension, cote',
     /sv3\/223_hires/.test(pr.dracau.image)&&pr.dracau.ref==='Obsidian Flames 223'&&pr.dracau.cote===23.4,JSON.stringify(pr.dracau));
 chk('L\'image est archivée dans Drive, et la table le sait',/^d\d+$/.test(pr.dracau.drive_id),pr.dracau.drive_id);
@@ -257,7 +265,7 @@ console.log('=== 5. UNE BASE SATURÉE N\'EST PAS UNE ABSENCE ===');
 const sat=await p.evaluate(async()=>{
   const out={};
   const U=c=>`https://www.cardmarket.com/fr/Pokemon/Products/Singles/X/Carte-${c}`;
-  const mk=(nom,url)=>({id:caId(),section:'Saturée',nom,url,prix:1,vente:null,ou:'',image:'',drive_id:'',ref:'',cote:null,
+  const mk=(nom,url)=>({id:caId(),section:'Saturée',nom,url,prix:1,vente:null,tags:[],langue:'',image:'',drive_id:'',ref:'',cote:null,
     ordre:900+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
   const l=[mk('A',U('SATA1')),mk('B',U('SATB1')),mk('C',U('SATC1')),mk('D',U('ZZZ7'))];
   await caSauver(l);
@@ -286,7 +294,7 @@ const ge=await p.evaluate(async()=>{
   const c=cartes.find(x=>x.nom==='Limonde AR');
   caOuvrir(c.id); await new Promise(r=>setTimeout(r,200));
   out.fiche={nom:document.getElementById('caNom').value,prix:document.getElementById('caPrix').value,
-    sec:document.getElementById('caSec').value,ou:document.getElementById('caOuIn').value};
+    sec:document.getElementById('caSec').value,tags:document.getElementById('caTagsListe').textContent};
   document.getElementById('caPrix').value='7,5';
   await caEnregistrer();
   out.maj=ECRITURES.map(e=>e.map(r=>[r[0],r[2],r[4]]));
@@ -322,7 +330,7 @@ const ge=await p.evaluate(async()=>{
   out.rechargees=cartes.length;
   return out;
 });
-chk('La fiche est remplie',ge.fiche.nom==='Limonde AR'&&ge.fiche.prix==='3'&&ge.fiche.sec==='Cadeau Noé'&&ge.fiche.ou==='Classeur',JSON.stringify(ge.fiche));
+chk('La fiche est remplie',ge.fiche.nom==='Limonde AR'&&ge.fiche.prix==='3'&&ge.fiche.sec==='Cadeau Noé'&&/Classeur/.test(ge.fiche.tags),JSON.stringify(ge.fiche));
 chk('Modifier un prix écrit UNE ligne, la sienne',ge.maj.length===1&&ge.maj[0].length===1&&ge.maj[0][0][2]==='7.5',JSON.stringify(ge.maj));
 chk('Annuler rend le prix d\'avant',ge.annule===3,String(ge.annule));
 chk('Une adresse collée dans la fiche est résolue sur-le-champ',/Trouvée depuis l'adresse/.test(ge.apercuInfo),ge.apercuInfo);
@@ -382,7 +390,7 @@ chk('Effacée du Drive : elle est réarchivée, sans nouvelle recherche',
 console.log('=== 9. LE BANDEAU ET LES PRIX ===');
 const bp=await p.evaluate(async()=>{
   const out={};
-  const mk=(nom,prix,vente)=>({id:caId(),section:'Prix',nom,url:'',prix,vente,ou:'Noé',image:'',drive_id:'',ref:'',cote:null,
+  const mk=(nom,prix,vente)=>({id:caId(),section:'Prix',nom,url:'',prix,vente,tags:['Noé'],langue:'',image:'',drive_id:'',ref:'',cote:null,
     ordre:2000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
   await caSauver([mk('Gagne',5,8),mk('Perd',9,3),mk('Egal',4,4),mk('Sans vente',2,null),mk('Vente seule',null,7)]);
   await caSauver(Array.from({length:30},(_,i)=>mk('Remplissage '+i,1,null)));
@@ -408,6 +416,114 @@ chk('Égale, ou sans achat pour comparer : neutre',!/gain|perte/.test(bp.egal[2]
 chk('Sans prix de vente, rien à droite',bp.sansVente.every(e=>!/ca-vente/.test(e.c)));
 chk('Le bandeau reste épinglé',bp.defile&&bp.fixe,JSON.stringify(bp));
 
+console.log('=== 9 bis. RIEN NE BLOQUE LA FILE ===');
+// Le défaut constaté : la file « s'arrêtait » après cinq images. Une requête
+// sans durée maximale immobilisait un ouvrier pour toujours.
+const fi=await p.evaluate(async()=>{
+  const out={};
+  CA_MAX_CARTE=300;
+  const U=c=>`https://www.cardmarket.com/fr/Pokemon/Products/Singles/X/Carte-${c}`;
+  const mk=(nom,url)=>({id:caId(),section:'File',nom,url,prix:1,vente:null,tags:[],langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:3000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
+  // Trois cartes qui ne répondront jamais — autant que d'ouvriers — puis deux normales.
+  await caSauver([mk('Bloque1',U('HANG1')),mk('Bloque2',U('HANG2')),mk('Bloque3',U('HANG3')),
+                  mk('Apres1',U('SATE1')),mk('Apres2',U('SATF1'))]);
+  // Une exception en plein traitement ne doit pas tuer l'ouvrier non plus.
+  const vrai=caReduire; let une=true;
+  window.caReduire=async b=>{ if(une){ une=false; throw new Error('boum'); } return vrai(b); };
+  caRecherche='File'; renderCartes(); await new Promise(r=>setTimeout(r,2500)); await caVider();
+  window.caReduire=vrai;
+  const par=n=>cartes.find(x=>x.nom===n);
+  out.apres=[par('Apres1').image,par('Apres2').image];
+  out.bloquees=[par('Bloque1').etat,par('Bloque1').image];
+  out.etat=document.getElementById('caEtat').textContent;
+  caRecherche=''; CA_MAX_CARTE=120000;
+  return out;
+});
+chk('Des cartes qui ne répondent jamais ne bloquent plus les suivantes',
+    /SATE_hires/.test(fi.apres[0]||'')&&/SATF_hires/.test(fi.apres[1]||''),JSON.stringify(fi));
+chk('...et ne sont pas notées introuvables : elles seront réessayées',fi.bloquees[0]===''&&fi.bloquees[1]==='',JSON.stringify(fi.bloquees));
+chk('...ce que dit la ligne d\'état',/non obtenues/.test(fi.etat),fi.etat);
+
+console.log('=== 9 ter. LANGUE, ÉTIQUETTES, GROUPES ===');
+const lg=await p.evaluate(async()=>{
+  const out={};
+  const c=cartes.find(x=>x.nom==='Limonde AR');
+  caOuvrir(c.id); await new Promise(r=>setTimeout(r,150));
+  out.choixLangues=[...document.querySelectorAll('#caLgs button')].map(b=>b.textContent);
+  // Langue : japonais.
+  [...document.querySelectorAll('#caLgs button')].find(b=>b.textContent==='JP').click();
+  // Étiquettes : on en ajoute deux, au clavier, puis on change la première.
+  const inp=document.getElementById('caTagIn');
+  inp.value='Alakazam'; inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+  inp.value='Gradée, PSA 9'; caTagAjouter(inp.value);
+  inp.value='classeur'; inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));   // doublon, casse différente
+  out.tagsFiche=caEd.tags.slice();
+  caTagPremier(1);
+  out.tagsApres=caEd.tags.slice();
+  await caEnregistrer(); await caVider();
+  const ligne=FEUILLE.find(x=>x[0]===c.id);
+  out.cellule=ligne[6]; out.langueCellule=ligne[16];
+  // Relu depuis le classeur.
+  cartesLoaded=false; await loadCartes();
+  const r=cartes.find(x=>x.id===c.id);
+  out.relue={tags:r.tags,langue:r.langue};
+  caRecherche=''; caGroupe='section'; renderCartes(); await new Promise(r=>setTimeout(r,300));
+  const t=document.querySelector(`.ca-tuile[data-k="${c.id}"]`);
+  const pas=t.querySelector('.ca-lg');
+  out.pastille=pas&&{texte:pas.textContent,fond:getComputedStyle(pas).backgroundColor,
+    haut:pas.getBoundingClientRect().top-t.getBoundingClientRect().top,
+    droite:t.getBoundingClientRect().right-pas.getBoundingClientRect().right};
+  out.etiquettesTuile=[...t.querySelectorAll('.ca-ou')].map(e=>e.textContent);
+  // Les couleurs : une par langue, toutes différentes.
+  out.couleurs=['fr','jp','en','kr','cn'].map(l=>{ const e=document.createElement('span'); e.className='ca-lg ca-lg-'+l;
+    document.body.appendChild(e); const c2=getComputedStyle(e).backgroundColor; e.remove(); return c2; });
+  // Une carte sans langue n'a pas de pastille.
+  const sans=cartes.find(x=>!x.langue);
+  out.sansPastille=!document.querySelector(`.ca-tuile[data-k="${sans.id}"] .ca-lg`);
+  // Filtrer par une étiquette qui n'est pas la première.
+  caOu='Gradée'; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  out.filtre=[...document.querySelectorAll('.ca-tuile .ca-nom')].map(x=>x.textContent);
+  caOu='';
+  // Grouper par PREMIÈRE étiquette.
+  caGrouper('etiquette'); await new Promise(r=>setTimeout(r,300));
+  out.groupes=[...document.querySelectorAll('.ca-sec-t')].map(x=>x.textContent);
+  const gr=[...document.querySelectorAll('.ca-sec')].find(x=>x.querySelector('.ca-sec-t').textContent==='Gradée');
+  out.dansGradee=gr?[...gr.querySelectorAll('.ca-nom')].map(x=>x.textContent):[];
+  out.memorise=localStorage.getItem('kanban_cartes_groupe');
+  caGrouper('section');
+  return out;
+});
+chk('Cinq langues proposées, et « aucune »',lg.choixLangues.join()==='Aucune,FR,JP,EN,KR,CN',lg.choixLangues.join());
+chk('Plusieurs étiquettes, sans doublon même en changeant la casse',
+    lg.tagsFiche.join('|')==='Classeur|Alakazam|Gradée|PSA 9',lg.tagsFiche.join('|'));
+chk('On peut changer la première étiquette',lg.tagsApres[0]==='Alakazam',lg.tagsApres.join('|'));
+chk('Écrites dans la table, séparées par des virgules',lg.cellule==='Alakazam, Classeur, Gradée, PSA 9',lg.cellule);
+chk('La langue est écrite dans sa colonne',lg.langueCellule==='jp',lg.langueCellule);
+chk('...et tout se relit à l\'identique',lg.relue.tags.join('|')==='Alakazam|Classeur|Gradée|PSA 9'&&lg.relue.langue==='jp',JSON.stringify(lg.relue));
+chk('La pastille JP est dans le coin haut droit',lg.pastille&&lg.pastille.texte==='JP'&&lg.pastille.haut<8&&lg.pastille.droite<8,JSON.stringify(lg.pastille));
+chk('...en rouge',lg.pastille&&lg.pastille.fond==='rgb(220, 38, 38)',lg.pastille&&lg.pastille.fond);
+chk('Une couleur différente par langue',new Set(lg.couleurs).size===5,JSON.stringify(lg.couleurs));
+chk('Pas de langue, pas de pastille',lg.sansPastille===true);
+chk('Toutes les étiquettes s\'affichent sur la carte',lg.etiquettesTuile.join('|')==='Alakazam|Classeur|Gradée|PSA 9',lg.etiquettesTuile.join('|'));
+chk('Filtrer par une étiquette qui n\'est pas la première',lg.filtre.join('|')==='Limonde AR',lg.filtre.join('|'));
+chk('Grouper par première étiquette',lg.groupes.includes('Alakazam')&&lg.groupes.includes('Noé')&&lg.groupes[lg.groupes.length-1]==='Sans étiquette',lg.groupes.join('|'));
+chk('...une carte n\'apparaît que dans le groupe de sa PREMIÈRE étiquette',!lg.groupes.includes('Gradée')&&lg.dansGradee.length===0,lg.groupes.join('|'));
+chk('...groupes par ordre alphabétique',(()=>{ const g=lg.groupes.slice(0,-1); return g.join()===g.slice().sort((a,b)=>a.localeCompare(b,'fr')).join(); })(),lg.groupes.join('|'));
+chk('Le choix du regroupement est mémorisé',lg.memorise==='etiquette');
+
+console.log('=== 9 quater. UN ONGLET DE LA VERSION PRÉCÉDENTE ===');
+const ancien=await p.evaluate(async()=>{
+  // L'onglet tel que la v1.68.0 l'a créé : colonne « ou », pas de langue.
+  FEUILLE=[['id','section','nom','url','prix','vente','ou','image','drive_id','ref','cote','ordre','etat','raison','created_at','updated_at'],
+           ['caV1','S','Ancienne','', '2','','Noé','','','','','1','','','x','x']];
+  cartesLoaded=false; await loadCartes();
+  const c=cartes.find(x=>x.id==='caV1');
+  return {entete:FEUILLE[0].join(),tags:c&&c.tags,langue:c&&c.langue};
+});
+chk('L\'en-tête d\'un ancien onglet est mis à jour',/,etiquettes,.*,langue$/.test(ancien.entete),ancien.entete);
+chk('...et son « ou » devient la première étiquette',(ancien.tags||[]).join()==='Noé'&&ancien.langue==='',JSON.stringify(ancien));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
@@ -424,13 +540,14 @@ chk('Un site inconnu ne fait rien deviner',url.autre===null);
 console.log('=== 11. SÛRETÉ, SAUVEGARDE ===');
 const su2=await p.evaluate(async()=>{
   const out={};
-  const c={id:caId(),section:'<b>s</b>',nom:'<img src=x onerror="window.PWN=1">',url:'javascript:alert(1)',prix:1,vente:null,ou:'',
+  const c={id:caId(),section:'<b>s</b>',nom:'<img src=x onerror="window.PWN=1">',url:'javascript:alert(1)',prix:1,vente:null,tags:['<i>t</i>'],langue:'xx',
     image:'',drive_id:'',ref:'',cote:null,ordre:5000,etat:'',raison:'',created_at:td(),updated_at:td()};
   await caSauver([c]);
   const relue=caDeLigne(FEUILLE.find(x=>x[0]===c.id));
   out.urlJs=relue.url;
   renderCartes(); await new Promise(r=>setTimeout(r,300));
-  out.pwn=!!window.PWN; out.injection=!!document.querySelector('.ca-tuile img[onerror*="PWN"]')||!!document.querySelector('.ca-sec-t b');
+  out.pwn=!!window.PWN; out.injection=!!document.querySelector('.ca-tuile img[onerror*="PWN"]')||!!document.querySelector('.ca-sec-t b')||!!document.querySelector('.ca-ou i');
+  out.langueInconnue=relue.langue;
   out.piege=await caResoudreUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/javascript/javascript-ZZ1');
   out.sauvegarde=BK_TABLES.some(t=>t[0]==='cartes'&&t[2]()===cartes);
   return out;
@@ -439,6 +556,7 @@ chk('Une adresse javascript: n\'est pas retenue',su2.urlJs==='',su2.urlJs);
 chk('Un nom ou une section piégés ne s\'exécutent pas',su2.pwn===false&&su2.injection===false);
 chk('Une image piégée renvoyée par une base est refusée',!!su2.piege&&!su2.piege.img,JSON.stringify(su2.piege));
 chk('Les cartes font partie de la sauvegarde',su2.sauvegarde===true);
+chk('Une langue inconnue n\'est pas retenue',su2.langueInconnue==='',su2.langueInconnue);
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
