@@ -54,7 +54,7 @@ await p.evaluate(async src=>{
     o.onerror=()=>r(); });
   window.ANNUL=[]; window.offerUndo=(m,fn)=>{ ANNUL.push({m,fn}); };
   CA_PAUSE=20; CA_DELAI_ECR=30; CA_PAUSE_HOTE=30; CA_ESPACE=5;
-  window.GROUPE_DEFAUT=caGroupe;
+  window.GROUPE_DEFAUT=caGroupe; window.TRI_DEFAUT=caTri;
   accessToken='T'; cfg.spreadsheetId='S'; notesLoaded=true;
   try{ localStorage.removeItem('kanban_cartes_dossier'); }catch(e){}
   await new Promise(r=>{ const q=indexedDB.deleteDatabase('kanban-cartes'); q.onsuccess=q.onerror=q.onblocked=r; });
@@ -424,7 +424,7 @@ const bp=await p.evaluate(async()=>{
 });
 const rgb=h=>{ const n=parseInt(h.replace('#',''),16); return `rgb(${n>>16}, ${n>>8&255}, ${n&255})`; };
 chk('Prix d\'achat à gauche, en jaune',bp.gagne[0].c==='ca-prix'&&bp.gagne[0].col===rgb(bp.vars.jaune));
-chk('Prix de vente à droite de l\'étiquette',bp.gagne.map(e=>e.c.split(' ')[0]).join()==='ca-prix,ca-ou,ca-vente'&&bp.gagne[2].x>bp.gagne[1].x);
+chk('Prix de vente à droite de l\'étiquette',bp.gagne.map(e=>e.c.split(' ')[0]).join()==='ca-prix,ca-tagsl,ca-vente'&&bp.gagne[2].x>bp.gagne[1].x,JSON.stringify(bp.gagne));
 chk('Vente supérieure en vert, inférieure en rouge',bp.gagne[2].col===rgb(bp.vars.vert)&&bp.perd[2].col===rgb(bp.vars.rouge));
 chk('Égale, ou sans achat pour comparer : neutre',!/gain|perte/.test(bp.egal[2].c)&&bp.venteSeule.some(e=>/ca-vente/.test(e.c)&&!/gain|perte/.test(e.c)));
 chk('Sans prix de vente, rien à droite',bp.sansVente.every(e=>!/ca-vente/.test(e.c)));
@@ -663,6 +663,10 @@ const lg=await p.evaluate(async()=>{
     haut:pas.getBoundingClientRect().top-t.getBoundingClientRect().top,
     droite:t.getBoundingClientRect().right-pas.getBoundingClientRect().right};
   out.etiquettesTuile=[...t.querySelectorAll('.ca-ou')].map(e=>e.textContent);
+  out.plus=(t.querySelector('.ca-plus')||{}).textContent;
+  out.survol=(t.querySelector('.ca-tagsl')||{getAttribute:()=>''}).getAttribute('title');
+  const meta=t.querySelector('.ca-meta').getBoundingClientRect();
+  out.uneLigne=meta.height<24;
   // Les couleurs : une par langue, toutes différentes.
   out.couleurs=['fr','jp','en','kr','cn'].map(l=>{ const e=document.createElement('span'); e.className='ca-lg ca-lg-'+l;
     document.body.appendChild(e); const c2=getComputedStyle(e).backgroundColor; e.remove(); return c2; });
@@ -693,7 +697,9 @@ chk('La pastille JP est dans le coin haut droit',lg.pastille&&lg.pastille.texte=
 chk('...en rouge',lg.pastille&&lg.pastille.fond==='rgb(220, 38, 38)',lg.pastille&&lg.pastille.fond);
 chk('Une couleur différente par langue',new Set(lg.couleurs).size===5,JSON.stringify(lg.couleurs));
 chk('Pas de langue, pas de pastille',lg.sansPastille===true);
-chk('Toutes les étiquettes s\'affichent sur la carte',lg.etiquettesTuile.join('|')==='Alakazam|Classeur|Gradée|PSA 9',lg.etiquettesTuile.join('|'));
+chk('Plusieurs étiquettes : la première, puis « +3 »',lg.etiquettesTuile.join('|')==='Alakazam'&&lg.plus==='+3',JSON.stringify([lg.etiquettesTuile,lg.plus]));
+chk('...toutes lisibles au survol',lg.survol==='Alakazam, Classeur, Gradée, PSA 9',lg.survol);
+chk('...et la ligne des prix reste sur une seule ligne',lg.uneLigne===true);
 chk('Filtrer par une étiquette qui n\'est pas la première',lg.filtre.join('|')==='Limonde AR',lg.filtre.join('|'));
 chk('Grouper par première étiquette',lg.groupes.includes('Alakazam')&&lg.groupes.includes('Noé')&&(!lg.groupes.includes('Sans étiquette')||lg.groupes[lg.groupes.length-1]==='Sans étiquette'),lg.groupes.join('|'));
 chk('...une carte n\'apparaît que dans le groupe de sa PREMIÈRE étiquette',!lg.groupes.includes('Gradée')&&lg.dansGradee.length===0,lg.groupes.join('|'));
@@ -876,6 +882,27 @@ chk('Une carte sans étiquette garde le nom de sa section, en étiquette',mg.m1=
 chk('...sauf un nom fabriqué par l\'import (« Tableau 2 »)',mg.m2==='',JSON.stringify(mg));
 chk('...et une carte déjà étiquetée n\'est pas touchée',mg.m3==='Wizard',JSON.stringify(mg));
 chk('La colonne « section » reste intacte dans le classeur',mg.colonne==='Cadeau Noé',mg.colonne);
+
+console.log('=== 9 nonies. ALIGNEMENT, TRI PAR DÉFAUT ===');
+const al=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,prix)=>({id:caId(),section:'',nom,url:'',prix,vente:null,tags:['Alignement'],langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:30000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
+  const sauve=cartes; const triAvant=caTri;
+  cartes=[mk('Petite',2),mk('Grande',40),mk('Moyenne',9),mk('Sans prix',null)];
+  caTri=GROUPE_DEFAUT&&window.TRI_DEFAUT; caGroupe='etiquette'; renderCartes(); await new Promise(r=>setTimeout(r,250));
+  const tu=[...document.querySelectorAll('.ca-sec')][0].querySelectorAll('.ca-tuile');
+  // Le défaut : aucun texte parasite au-dessus des images, toutes au même niveau.
+  out.textesParasites=[...tu].map(t=>[...t.childNodes].filter(n=>n.nodeType===3&&n.textContent.trim()).map(n=>n.textContent.trim()).join(''));
+  out.hauts=[...tu].map(t=>Math.round(t.querySelector('.ca-img').getBoundingClientRect().top-t.getBoundingClientRect().top));
+  out.ordre=[...tu].map(t=>t.querySelector('.ca-nom').textContent);
+  out.premiereOption=document.querySelectorAll('.ca-tri')[1].options[0].value;
+  cartes=sauve; caTri=triAvant; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  return out;
+});
+chk('Aucun numéro parasite sur les tuiles',al.textesParasites.every(t=>t===''),JSON.stringify(al.textesParasites));
+chk('...toutes les images au même niveau',new Set(al.hauts).size===1,JSON.stringify(al.hauts));
+chk('Tri par défaut : prix décroissant',al.ordre.join('|')==='Grande|Moyenne|Petite|Sans prix'&&al.premiereOption==='prix-',JSON.stringify(al));
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({

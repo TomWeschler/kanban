@@ -1278,7 +1278,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-img-nom small{display:block;margin-top:0.4rem;font-size:0.6rem;color:var(--accent);opacity:0.8}
 .ca-nom{font-size:0.74rem;font-weight:600;line-height:1.25;overflow:hidden;display:-webkit-box;
   -webkit-line-clamp:2;-webkit-box-orient:vertical}
-.ca-meta{display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;margin-top:auto}
+.ca-meta{display:flex;gap:0.35rem;align-items:center;flex-wrap:nowrap;margin-top:auto;min-width:0}
+.ca-tagsl{display:flex;align-items:center;gap:0.2rem;min-width:0;overflow:hidden}
+.ca-tagsl .ca-ou{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ca-plus{font-family:var(--font-mono);font-size:0.56rem;color:var(--text-dim);flex-shrink:0}
+.ca-prix,.ca-vente{flex-shrink:0}
 .ca-prix{font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:var(--warn)}
 .ca-tuile{position:relative}
 /* La langue : une pastille au coin haut droit, une couleur par langue. */
@@ -15780,7 +15784,8 @@ const LS_CA_DOSSIER='kanban_cartes_dossier';
 // pour ne pas refaire une seule recherche déjà faite.
 const LS_CA_IMG='kanban_cartes_img2';
 let cartes=[], cartesLoaded=false, cartesLoadedAt=0;
-let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0;
+// Tri par défaut : prix décroissant — les cartes qui comptent d'abord.
+let caRecherche='', caOu='', caTri='prix-', caEd=null, caGen=0;
 // Regrouper par section (l'origine des cartes) ou par PREMIÈRE étiquette — la
 // principale, celle qu'on met en tête. Mémorisé sur l'appareil.
 // Par défaut : la PREMIÈRE ÉTIQUETTE. Les sections héritées de l'import
@@ -16503,7 +16508,7 @@ async function renderCartes(){
         <option value="set"${caGroupe==='set'?' selected':''}>Par set</option>
       </select>
       <select class="ca-tri" onchange="caTri=this.value;caRedessiner()">
-        ${[['ordre','Ordre de saisie'],['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z']].map(([v,l])=>
+        ${[['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z'],['ordre','Ordre de saisie']].map(([v,l])=>
           `<option value="${v}"${caTri===v?' selected':''}>${l}</option>`).join('')}
       </select>
       ${lieux.length>1&&!parSet?`<div class="ca-lieux">${['',...lieux].map(o=>
@@ -16523,7 +16528,7 @@ function caSectionsHtml(vis){
         // à côté de son nom, là où on le cherche.
         l.length&&caHors.some(h=>h.toLowerCase()===String(s.titre).toLowerCase())?`<span class="ca-sec-cadeau">${caEur(caSomme(l))}</span>`:''}
         <span class="ca-sec-n">${l.length} · ${caEur(caSomme(l))}</span></div>
-      <div class="ca-grille">${l.map(caTuile).join('')}</div>
+      <div class="ca-grille">${l.map(c=>caTuile(c)).join('')}</div>
     </section>`).join('');
   return html||'<div class="ca-vide">Aucune carte ne correspond.</div>';
 }
@@ -16538,6 +16543,15 @@ const caImgTag=src=>`<img src="${MD_ATT(src)}" alt="" loading="lazy" referrerpol
 const caImgVide=(c,etat)=>`<span class="ca-img-nom">${tdEsc(c.nom)}${
   etat==='attente'?'<small class="ca-att">chargement…</small>'
   :!c.url||caAbsente(c)?'<small>＋ ajouter une image</small>':''}</span>`;
+// Les étiquettes tiennent sur UNE ligne, entre les deux prix : la première, puis
+// « +2 » pour les suivantes, toutes lisibles au survol. Plusieurs étiquettes
+// en entier faisaient passer la ligne à deux étages, et le prix de vente
+// partait seul sur la seconde.
+function caTagsHtml(c){
+  const t=caTags(c.tags); if(!t.length)return '';
+  return `<span class="ca-tagsl" title="${MD_ATT(t.join(', '))}"><span class="ca-ou">${tdEsc(t[0])}</span>${
+    t.length>1?`<span class="ca-plus">+${t.length-1}</span>`:''}</span>`;
+}
 function caTuile(c,extra){
   const im=caImmediate(c);
   const lg=caLangue(c);
@@ -16545,7 +16559,7 @@ function caTuile(c,extra){
     ${lg?`<span class="ca-lg ca-lg-${lg[0]}" title="${lg[1]}">${lg[2]}</span>`:''}${extra||''}
     <div class="ca-img${im?'':' attente'}">${im?caImgTag(im):caImgVide(c,'attente')}</div>
     <div class="ca-nom">${tdEsc(c.nom)}</div>
-    <div class="ca-meta">${c.prix!=null?`<span class="ca-prix">${caEur(c.prix)}</span>`:''}${caTags(c.tags).map(t=>`<span class="ca-ou">${tdEsc(t)}</span>`).join('')}${caVenteHtml(c)}</div>
+    <div class="ca-meta">${c.prix!=null?`<span class="ca-prix">${caEur(c.prix)}</span>`:''}${caTagsHtml(c)}${caVenteHtml(c)}</div>
   </button>`;
 }
 function caImgKo(img){ const b=img.parentNode; if(!b)return; b.classList.add('attente');
@@ -19254,7 +19268,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.72.2';
+const APP_VERSION='v1.72.3';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
