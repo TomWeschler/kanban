@@ -1315,6 +1315,13 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-tag-x:hover,.ca-tag-g:hover{color:var(--text)}
 .ca-aide{text-transform:none;letter-spacing:0;color:var(--text-dim);opacity:0.8}
 .ca-img.travail{border-color:var(--accent)}
+/* Réordonner : les groupes se replient en une liste de titres, à flèches. */
+.ca-sec.plie .ca-sec-h{margin:0;padding:0.45rem 0.6rem;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.ca-sec.plie{margin-bottom:0.35rem}
+.ca-ord{display:flex;gap:0.2rem;margin-right:0.5rem}
+.ca-ord-b{width:1.7rem;height:1.6rem;border:1px solid var(--border2);background:var(--surface2);color:var(--text);border-radius:5px;cursor:pointer;font-size:0.8rem}
+.ca-ord-b:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.ca-ord-b:disabled{opacity:0.25;cursor:default}
 /* Les sets : numéro, exemplaires, cases manquantes grisées, progression. */
 .ca-num{position:absolute;top:0.2rem;left:0.2rem;z-index:2;font-family:var(--font-mono);font-size:0.55rem;font-weight:700;
   background:rgba(0,0,0,0.65);color:#fff;border-radius:4px;padding:0.05rem 0.3rem}
@@ -16207,13 +16214,68 @@ async function loadCartes(){
   if(tout.length&&(tout[0]||[]).join('|')!==CA_HEADER.join('|'))await sheetPut(`${CA_SHEET}!A1`,[CA_HEADER]);
   const l=tout.slice(1).filter(x=>x[0]);
   const m={};
-  l.forEach(x=>{ const c=caDeLigne(x); if(!c.id)return; if(c.nom)m[c.id]=c; else delete m[c.id]; });
+  l.forEach(x=>{ const c=caDeLigne(x); if(!c.id)return;
+    if(c.id===CA_CFG_ID){ caCfgLire(String(x[13]==null?'':x[13])); return; }   // le réglage n'est pas une carte
+    if(c.nom)m[c.id]=c; else delete m[c.id]; });
   cartes=Object.values(m);
   cartesLoaded=true; cartesLoadedAt=Date.now();
   caMigrerSections();
   cacheSet('cartes',cartes);
 }
 const caParId=id=>cartes.find(c=>c.id===id)||null;
+// ── L'ordre des groupes ───────────────────────────────────────────────────
+// Choisi à la main, il est rangé dans l'onglet « cartes » lui-même, sur une
+// ligne de réglage (clé « cfg:ordre », le détail en colonne N) : il suit donc
+// d'un appareil à l'autre, et la sauvegarde du classeur l'emporte avec le
+// reste. Cette ligne n'est jamais lue comme une carte.
+// Un groupe absent de l'ordre choisi — une étiquette nouvelle — se range à la
+// suite, par ordre alphabétique ; « Sans étiquette » reste toujours en dernier.
+const CA_CFG_ID='cfg:ordre';
+let caOrdre={etiquette:[],set:[]};
+try{ const o=JSON.parse(localStorage.getItem('kanban_cartes_ordre')||'null'); if(o)caOrdre={etiquette:o.etiquette||[],set:o.set||[]}; }catch(e){}
+function caCfgLire(v){
+  try{ const o=JSON.parse(v||'{}'); caOrdre={etiquette:Array.isArray(o.etiquette)?o.etiquette:[],set:Array.isArray(o.set)?o.set:[]}; }catch(e){}
+  try{ localStorage.setItem('kanban_cartes_ordre',JSON.stringify(caOrdre)); }catch(e){}
+}
+async function caCfgSauver(){
+  try{ localStorage.setItem('kanban_cartes_ordre',JSON.stringify(caOrdre)); }catch(e){}
+  if(!accessToken)return true;
+  const r=new Array(CA_HEADER.length).fill('');
+  r[0]=CA_CFG_ID; r[2]='(réglage : ordre des groupes)'; r[13]=JSON.stringify(caOrdre); r[15]=td();
+  return sheetBatchUpsert(CA_SHEET,[r]);
+}
+const caOrdreNorm=t=>tabSansAccent(String(t)).toLowerCase();
+// Sans ordre choisi, chacun garde son ordre naturel : alphabétique pour les
+// groupes d'étiquettes, ordre de SORTIE pour les sets (Set de base d'abord).
+function caOrdonner(liste,mode,titre){
+  const rang=new Map((caOrdre[mode]||[]).map((t,i)=>[caOrdreNorm(t),i]));
+  const orig=new Map(liste.map((x,i)=>[x,i]));
+  return liste.slice().sort((a,b)=>{
+    const ra=rang.get(caOrdreNorm(titre(a))), rb=rang.get(caOrdreNorm(titre(b)));
+    if(ra!=null&&rb!=null)return ra-rb;
+    if(ra!=null)return -1; if(rb!=null)return 1;
+    return mode==='set'?orig.get(a)-orig.get(b):String(titre(a)).localeCompare(String(titre(b)),'fr');
+  });
+}
+let caReordonner=false;
+function caOrdreBascule(){ caReordonner=!caReordonner; renderCartes(); }
+async function caDeplacer(mode,titre,delta){
+  const titres=mode==='set'?caOrdonner(CA_SETS,'set',x=>x[1]).map(x=>x[1])
+    :caOrdonner(caSections().filter(g=>g.titre!=='Sans étiquette'),'etiquette',g=>g.titre).map(g=>g.titre);
+  const i=titres.findIndex(t=>caOrdreNorm(t)===caOrdreNorm(titre));
+  const j=delta==='haut'?0:delta==='bas'?titres.length-1:i+delta;
+  if(i<0||j<0||j>=titres.length||i===j)return;
+  const [t]=titres.splice(i,1); titres.splice(j,0,t);
+  caOrdre[mode]=titres;
+  renderCartes();
+  await caCfgSauver();
+}
+function caOrdreRaz(mode){ caOrdre[mode]=[]; renderCartes(); caCfgSauver(); }
+const caFleches=(mode,titre,i,n)=>caReordonner?`<span class="ca-ord">
+  <button class="ca-ord-b" ${i===0?'disabled':''} title="Tout en haut" onclick="caDeplacer('${mode}',this.closest('.ca-sec').dataset.t,'haut')">⤒</button>
+  <button class="ca-ord-b" ${i===0?'disabled':''} title="Monter" onclick="caDeplacer('${mode}',this.closest('.ca-sec').dataset.t,-1)">↑</button>
+  <button class="ca-ord-b" ${i>=n-1?'disabled':''} title="Descendre" onclick="caDeplacer('${mode}',this.closest('.ca-sec').dataset.t,1)">↓</button>
+  <button class="ca-ord-b" ${i>=n-1?'disabled':''} title="Tout en bas" onclick="caDeplacer('${mode}',this.closest('.ca-sec').dataset.t,'bas')">⤓</button></span>`:'';
 // Le champ « section » a disparu, au profit de la première étiquette. Une carte
 // SANS étiquette dont la section portait un vrai nom ne doit pas tomber pour
 // autant dans « Sans étiquette » : ce nom devient sa première étiquette. Les
@@ -16486,7 +16548,7 @@ function caSections(){
   });
   let l=[...m].map(([titre,cs])=>({titre,cartes:cs}));
   // Par étiquette : ordre alphabétique, les cartes sans étiquette en dernier.
-  if(par==='etiquette')l=l.filter(g=>g.titre).sort((a,b)=>a.titre.localeCompare(b.titre,'fr'))
+  if(par==='etiquette')l=caOrdonner(l.filter(g=>g.titre),'etiquette',g=>g.titre)
     .concat(l.filter(g=>!g.titre).map(g=>({titre:'Sans étiquette',cartes:g.cartes})));
   return l;
 }
@@ -16541,6 +16603,8 @@ async function renderCartes(){
       <div class="jp-titre"><span class="ca-titre">Cartes</span>
         <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${parSet?`${CA_SETS.length} sets`:`${secs.length} groupe${secs.length>1?'s':''}`}</span></div>
       <div class="ca-actions">
+        <button class="btn-nav${caReordonner?'':' out'}" onclick="caOrdreBascule()" title="Choisir l'ordre des groupes">${caReordonner?'✓ Terminé':'⇅ Ordre'}</button>
+        ${caReordonner&&(caOrdre[caGroupe==='set'?'set':'etiquette']||[]).length?`<button class="btn-nav out" onclick="caOrdreRaz('${caGroupe==='set'?'set':'etiquette'}')" title="Revenir à l'ordre d'origine">${caGroupe==='set'?'Ordre de sortie':'Ordre alphabétique'}</button>`:''}
         <button class="btn-nav out" onclick="caChiffresBascule()" title="${caChiffres?'Masquer':'Afficher'} les totaux">${caChiffres?'Masquer':'Afficher'} les chiffres</button>
         <button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button></div>
     </div>
@@ -16570,14 +16634,15 @@ async function renderCartes(){
   caChargerImages(parSet?sv.vues:vues,++caGen);
 }
 function caSectionsHtml(vis){
-  const html=vis.filter(x=>x.l.length).map(({s,l})=>`
-    <section class="ca-sec">
-      <div class="ca-sec-h"><span class="ca-sec-t">${tdEsc(s.titre)}</span>${
+  const ordonnables=vis.filter(x=>x.s.titre!=='Sans étiquette').length;
+  const html=vis.filter(x=>x.l.length||caReordonner).map(({s,l},i)=>`
+    <section class="ca-sec${caReordonner?' plie':''}" data-t="${MD_ATT(s.titre)}">
+      <div class="ca-sec-h">${s.titre!=='Sans étiquette'?caFleches('etiquette',s.titre,i,ordonnables):''}<span class="ca-sec-t">${tdEsc(s.titre)}</span>${
         // Un groupe de cadeaux n'entre pas dans la valeur : son total s'écrit
         // à côté de son nom, là où on le cherche.
         l.length&&caHors.some(h=>h.toLowerCase()===String(s.titre).toLowerCase())?`<span class="ca-sec-cadeau">${caEur(caSomme(l))}</span>`:''}
         <span class="ca-sec-n">${l.length} · ${caEur(caSomme(l))}</span></div>
-      <div class="ca-grille">${l.map(c=>caTuile(c)).join('')}</div>
+      ${caReordonner?'':`<div class="ca-grille">${l.map(c=>caTuile(c)).join('')}</div>`}
     </section>`).join('');
   return html||'<div class="ca-vide">Aucune carte ne correspond.</div>';
 }
@@ -16755,7 +16820,8 @@ function caSetsVue(){
   const eues={};
   cartes.forEach(c=>{ const k=caCaseDe(c); if(k)(eues[k]=eues[k]||[]).push(c); });
   const vues=[];
-  const html=CA_SETS.map(([sid,nom,l])=>{
+  const sets=caOrdonner(CA_SETS,'set',x=>x[1]);
+  const html=sets.map(([sid,nom,l],ix)=>{
     const nb=l.filter(([n])=>eues[sid+'/'+n]).length;
     const valeur=l.reduce((t,[n])=>t+caSomme((eues[sid+'/'+n]||[]).filter(c=>!caHorsTotal(c))),0);
     const cases=l.filter(([n,nm])=>(!q||tabSansAccent(nm+' '+n).includes(q))&&(!caManquantes||!eues[sid+'/'+n]));
@@ -16770,11 +16836,11 @@ function caSetsVue(){
         <div class="ca-meta"><span class="ca-manque-t">manquante</span></div></button>`;
     }).join('');
     const pc=Math.round(nb/l.length*100);
-    return `<section class="ca-sec">
-      <div class="ca-sec-h"><span class="ca-sec-t">${tdEsc(nom)}</span>
+    return `<section class="ca-sec${caReordonner?' plie':''}" data-t="${MD_ATT(nom)}">
+      <div class="ca-sec-h">${caFleches('set',nom,ix,sets.length)}<span class="ca-sec-t">${tdEsc(nom)}</span>
         <span class="ca-prog" title="${pc} %"><span style="width:${pc}%"></span></span>
         <span class="ca-sec-n">${nb} / ${l.length}${valeur?` · ${caEur(valeur)}`:''}</span></div>
-      ${tuiles?`<div class="ca-grille">${tuiles}</div>`:'<div class="ca-vide-s">'+(caManquantes&&nb===l.length?'Set complet !':'Aucune carte ne correspond.')+'</div>'}
+      ${caReordonner?'':tuiles?`<div class="ca-grille">${tuiles}</div>`:'<div class="ca-vide-s">'+(caManquantes&&nb===l.length?'Set complet !':'Aucune carte ne correspond.')+'</div>'}
     </section>`;
   }).join('');
   return {html,vues};
@@ -19361,7 +19427,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.72.8';
+const APP_VERSION='v1.73.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

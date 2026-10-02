@@ -1044,6 +1044,65 @@ chk('Échap ferme la liste, pas la fiche',sg.fermee&&sg.ficheOuverte,JSON.string
 chk('Une étiquette nouvelle se pose toujours avec Entrée',sg.nouvelle.includes('Nouvelle'),JSON.stringify(sg.nouvelle));
 chk('Un clic sur une suggestion la pose',sg.clic.includes('Wizard'),JSON.stringify(sg.clic));
 
+console.log('=== 9 duodecies. L\'ORDRE DES GROUPES ===');
+const og=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,tags)=>({id:caId(),section:'',nom,url:'',prix:1,vente:null,tags,langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:60000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
+  const sauve=cartes, sauveO=JSON.parse(JSON.stringify(caOrdre));
+  caOrdre={etiquette:[],set:[]};
+  cartes=[mk('a',['Wizard']),mk('b',['Alakazam']),mk('c',['Noé']),mk('d',[]),mk('e',['Gym'])];
+  caGroupe='etiquette'; caRecherche=''; caOu=''; caReordonner=false; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  const titres=()=>[...document.querySelectorAll('.ca-sec-t')].map(x=>x.textContent);
+  out.defaut=titres();
+  out.bouton=[...document.querySelectorAll('.ca-actions button')].some(b=>/Ordre/.test(b.textContent));
+  caOrdreBascule(); await new Promise(r=>setTimeout(r,150));
+  out.plie=document.querySelectorAll('.ca-sec.plie').length>0&&!document.querySelector('.ca-grille');
+  out.flechesSans=!!document.querySelector('.ca-sec[data-t="Sans étiquette"] .ca-ord');
+  // Monter Wizard tout en haut, descendre Alakazam d'un cran.
+  ECRITURES.length=0;
+  await caDeplacer('etiquette','Wizard','haut');
+  await caDeplacer('etiquette','Alakazam',1);
+  out.apres=titres();
+  out.cfg=ECRITURES.flat().filter(r=>r[0]==='cfg:ordre').pop();
+  // Le premier ne peut plus monter.
+  out.premierBloque=document.querySelector('.ca-sec .ca-ord-b').disabled;
+  caOrdreBascule(); await new Promise(r=>setTimeout(r,150));
+  out.deplie=!!document.querySelector('.ca-grille');
+  // Une étiquette nouvelle se range à la suite, par ordre alphabétique.
+  cartes.push(mk('f',['Bulbizarre'])); renderCartes(); await new Promise(r=>setTimeout(r,150));
+  out.nouvelle=titres();
+  // L'ordre suit d'un appareil à l'autre : relu depuis le classeur.
+  const ligne=FEUILLE.find(x=>x[0]==='cfg:ordre');
+  caOrdre={etiquette:[],set:[]};
+  cartesLoaded=false; const sauveF=FEUILLE;
+  FEUILLE=[CA_HEADER.slice(),ligne];
+  await loadCartes();
+  out.relu=caOrdre.etiquette.join('|'); out.pasUneCarte=cartes.length===0;
+  FEUILLE=sauveF;
+  // Les sets aussi.
+  cartes=[mk('g',['Wizard'])]; caGroupe='set'; caReordonner=true; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  await caDeplacer('set','Team Rocket','haut');
+  out.sets=titres().slice(0,2);
+  caOrdreRaz('set'); await new Promise(r=>setTimeout(r,100));
+  out.setsRaz=titres()[0];
+  caReordonner=false; caGroupe='etiquette'; cartes=sauve; caOrdre=sauveO; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Par défaut, les groupes suivent l\'ordre alphabétique',og.defaut.join('|')==='Alakazam|Gym|Noé|Wizard|Sans étiquette',og.defaut.join('|'));
+chk('Un bouton « ⇅ Ordre »',og.bouton===true);
+chk('...qui replie les groupes en une liste de titres à flèches',og.plie===true);
+chk('« Sans étiquette » reste en dernier, sans flèches',og.flechesSans===false);
+chk('Monter tout en haut, descendre d\'un cran',og.apres.join('|')==='Wizard|Gym|Alakazam|Noé|Sans étiquette',og.apres.join('|'));
+chk('...le premier ne peut plus monter',og.premierBloque===true);
+chk('L\'ordre est écrit dans le classeur, sur sa ligne de réglage',
+    !!og.cfg&&JSON.parse(og.cfg[13]).etiquette.join('|')==='Wizard|Gym|Alakazam|Noé',JSON.stringify(og.cfg));
+chk('« Terminé » rend les cartes',og.deplie===true);
+chk('Une étiquette nouvelle se range à la suite, par ordre alphabétique',og.nouvelle.join('|')==='Wizard|Gym|Alakazam|Noé|Bulbizarre|Sans étiquette',og.nouvelle.join('|'));
+chk('L\'ordre se relit depuis le classeur, et le réglage n\'est pas une carte',og.relu==='Wizard|Gym|Alakazam|Noé'&&og.pasUneCarte,JSON.stringify(og));
+chk('Les sets se réordonnent aussi',og.sets.join('|')==='Team Rocket|Set de base',og.sets.join('|'));
+chk('...et reviennent à l\'ordre d\'origine d\'un clic',og.setsRaz==='Set de base',og.setsRaz);
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
