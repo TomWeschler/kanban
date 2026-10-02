@@ -1305,6 +1305,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-tag-x:hover,.ca-tag-g:hover{color:var(--text)}
 .ca-aide{text-transform:none;letter-spacing:0;color:var(--text-dim);opacity:0.8}
 .ca-img.travail{border-color:var(--accent)}
+.ca-sec-cadeau{font-family:var(--font-mono);font-size:0.8rem;font-weight:700;color:var(--warn)}
 .ca-hors{background:none;border:none;padding:0;font:inherit;color:var(--warn);cursor:pointer;text-transform:none;letter-spacing:0}
 .ca-hors:hover{text-decoration:underline}
 .ca-ass{display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.6rem;padding:0.5rem 0.7rem;
@@ -16426,8 +16427,8 @@ async function renderCartes(){
   const comptees=vues.filter(c=>!caHorsTotal(c));
   const vente=comptees.filter(c=>c.vente!=null);
   const exclues=vues.length-comptees.length;
-  const hors=exclues?` <button class="ca-hors" onclick="caHorsRegler()" title="Régler les étiquettes exclues">hors ${tdEsc(caHors.join(', '))}</button>`
-    :caHors.length?'':` <button class="ca-hors" onclick="caHorsRegler()" title="Exclure des étiquettes des totaux">⚙</button>`;
+  // Rien d'écrit : on sait ce qu'on a exclu. Un ⚙ discret suffit pour régler.
+  const hors=` <button class="ca-hors" onclick="caHorsRegler()" title="Étiquettes exclues des totaux${caHors.length?' : '+MD_ATT(caHors.join(', ')):''}">⚙</button>`;
   const kpi=(l,v)=>`<div class="jp-kpi"><div class="jp-kpi-l">${l}</div><div class="jp-kpi-v">${v}</div></div>`;
   el.innerHTML=`
     <div class="ca-tete">
@@ -16465,7 +16466,10 @@ async function renderCartes(){
 function caSectionsHtml(vis){
   const html=vis.filter(x=>x.l.length).map(({s,l})=>`
     <section class="ca-sec">
-      <div class="ca-sec-h"><span class="ca-sec-t">${tdEsc(s.titre)}</span>
+      <div class="ca-sec-h"><span class="ca-sec-t">${tdEsc(s.titre)}</span>${
+        // Un groupe de cadeaux n'entre pas dans la valeur : son total s'écrit
+        // à côté de son nom, là où on le cherche.
+        l.length&&caHors.some(h=>h.toLowerCase()===String(s.titre).toLowerCase())?`<span class="ca-sec-cadeau">${caEur(caSomme(l))}</span>`:''}
         <span class="ca-sec-n">${l.length} · ${caEur(caSomme(l))}</span></div>
       <div class="ca-grille">${l.map(caTuile).join('')}</div>
     </section>`).join('');
@@ -19099,7 +19103,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.71.0';
+const APP_VERSION='v1.71.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

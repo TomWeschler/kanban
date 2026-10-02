@@ -754,6 +754,10 @@ const cg=await p.evaluate(async()=>{
   out.groupes=[...document.querySelectorAll('.ca-sec-t')].map(x=>x.textContent);
   out.totalNoe=([...document.querySelectorAll('.ca-sec')].find(x=>x.querySelector('.ca-sec-t').textContent==='Noé')||{querySelector:()=>({textContent:''})})
     .querySelector('.ca-sec-n').textContent;
+  out.aCote=(([...document.querySelectorAll('.ca-sec')].find(x=>x.querySelector('.ca-sec-t').textContent==='Noé')||{}).querySelector||(()=>null)).call?
+    ([...document.querySelectorAll('.ca-sec')].find(x=>x.querySelector('.ca-sec-t').textContent==='Noé').querySelector('.ca-sec-cadeau')||{}).textContent:null;
+  out.aCoteAutres=[...document.querySelectorAll('.ca-sec')].filter(x=>x.querySelector('.ca-sec-t').textContent!=='Noé'&&x.querySelector('.ca-sec-cadeau')).length;
+  out.motHors=/hors/i.test(document.querySelector('.ca-tete').textContent);
   out.cadeauxVisibles=[...document.querySelectorAll('.ca-nom')].filter(x=>/Cadeau/.test(x.textContent)).length;
   // Réglable : plus aucune étiquette exclue.
   window.prompt=()=>''; caHorsRegler(); await new Promise(r=>setTimeout(r,200));
@@ -766,9 +770,12 @@ const cg=await p.evaluate(async()=>{
 chk('Par défaut, les cartes sont regroupées par première étiquette',cg.defaut==='etiquette',cg.defaut);
 chk('...plus de « Tableau 2 », « Tableau 3 »',!cg.groupes.some(g=>/^Tableau/.test(g)),cg.groupes.join('|'));
 chk('...les cartes sans étiquette dans « Sans étiquette », à la fin',cg.groupes[cg.groupes.length-1]==='Sans étiquette',cg.groupes.join('|'));
-chk('Les cadeaux (Noé) ne comptent pas dans la valeur',cg.kpi['Valeur hors Noé']==='20 €',JSON.stringify(cg.kpi));
+chk('Les cadeaux (Noé) ne comptent pas dans la valeur',cg.kpi['Valeur ⚙']==='20 €',JSON.stringify(cg.kpi));
 chk('...même en deuxième étiquette, et quelle que soit la casse',cg.kpi['Prix de vente']==='12 €',JSON.stringify(cg.kpi));
 chk('...mais restent affichés, et leur section garde son total',cg.cadeauxVisibles===2&&/20\s€/.test(cg.totalNoe),JSON.stringify(cg));
+chk('« hors Noé » n\'est plus écrit',cg.motHors===false);
+chk('Le total de Noé s\'écrit à côté du nom de son groupe',/^20\s€$/.test(cg.aCote||''),String(cg.aCote));
+chk('...et seulement pour un groupe de cadeaux',cg.aCoteAutres===0,String(cg.aCoteAutres));
 chk('L\'exclusion se règle',cg.kpiSans['Valeur ⚙']==='45 €'&&cg.memo==='Noé',JSON.stringify([cg.kpiSans,cg.memo]));
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
