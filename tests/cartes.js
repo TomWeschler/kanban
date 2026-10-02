@@ -125,7 +125,14 @@ await p.evaluate(async src=>{
     }
     if(u.startsWith('https://api.tcgdex.net/v2/fr/cards?name=')){
       APPELS.push(u);
-      const n=decodeURIComponent(u.split('name=')[1]);
+      const par=new URL(u).searchParams, n=par.get('name');
+      const pg=+par.get('pagination:page')||1, nb=+par.get('pagination:itemsPerPage')||30;
+      // 600 Pikachu, servis par pages comme le fait la base.
+      if(n==='Pikachu'){ const tous=Array.from({length:600},(_,i)=>({id:'pk-'+i,localId:String(i),name:'Pikachu',
+        image:`https://assets.tcgdex.net/fr/sv/x/${i}`})); return rep(tous.slice((pg-1)*nb,pg*nb)); }
+      // Une base qui ignorerait la pagination : tout, à chaque page.
+      if(n==='Sourdingue'){ PAGES_SOURDES=(window.PAGES_SOURDES||0)+1;
+        return rep(Array.from({length:300},(_,i)=>({id:'sd-'+i,localId:String(i),name:'Sourdingue',image:`https://assets.tcgdex.net/fr/sv/y/${i}`}))); }
       if(n==='Flagadoss')return rep([
         {id:'sv03.5-080',localId:'080',name:'Flagadoss',image:'https://assets.tcgdex.net/fr/sv/sv03.5/080'},
         {id:'swsh1-055',localId:'055',name:'Flagadoss',image:'https://assets.tcgdex.net/fr/swsh/swsh1/055'},
@@ -365,7 +372,7 @@ const ch=await p.evaluate(async()=>{
   caOuvrir(c.id); await new Promise(r=>setTimeout(r,100));
   APPELS.length=0;
   const l=await caChercher('Flagadoss Shiny AR');
-  out.requetes=APPELS.map(u=>decodeURIComponent(u.split('name=')[1]));
+  out.requetes=APPELS.map(u=>new URL(u).searchParams.get('name'));
   out.trouves=l.length;
   caPoserImage(l[0].img);
   await caEnregistrer(); await new Promise(r=>setTimeout(r,500)); await caVider();
@@ -386,6 +393,26 @@ chk('La recherche par nom retire les qualificatifs',ch.requetes[0]==='Flagadoss'
 chk('L\'image choisie est enregistrée puis archivée',/080\/high\.webp$/.test(ch.choix.image)&&/^d/.test(ch.choix.drive),JSON.stringify(ch.choix));
 chk('Une photo est envoyée dans Drive et montrée tout de suite',/^blob:/.test(ch.apercuPhoto),ch.apercuPhoto);
 chk('...et devient l\'image de la carte, sur tous les appareils',ch.photo.image===''&&/^d/.test(ch.photo.drive)&&/photo\.webp$/.test(ch.photo.nom||''),JSON.stringify(ch.photo));
+
+console.log('=== 7 bis. CHOISIR L\'IMAGE : SANS LIMITE ===');
+const sl=await p.evaluate(async()=>{
+  const out={};
+  APPELS.length=0;
+  const l=await caChercher('Pikachu');
+  out.nb=l.length; out.pages=APPELS.length; out.uniques=new Set(l.map(x=>x.img)).size;
+  // Le sélecteur les affiche toutes.
+  caOuvrir(cartes[0].id); await new Promise(r=>setTimeout(r,100));
+  document.getElementById('caPickQ').value='Pikachu'; await caPickChercher();
+  out.affichees=document.querySelectorAll('#caPickRes .ca-pick').length;
+  modalFerme('caPickModal'); caFermer();
+  window.PAGES_SOURDES=0;
+  const s2=await caChercher('Sourdingue');
+  out.sourde={nb:s2.length,pages:window.PAGES_SOURDES};
+  return out;
+});
+chk('« Choisir l\'image » rend TOUS les résultats, page après page',sl.nb===600&&sl.uniques===600&&sl.pages===3,JSON.stringify(sl));
+chk('...et le sélecteur les affiche tous',sl.affichees===600,String(sl.affichees));
+chk('Une base qui ignore la pagination ne fait pas boucler',sl.sourde.nb===300&&sl.sourde.pages===2,JSON.stringify(sl.sourde));
 
 console.log('=== 8. UNE IMAGE EFFACÉE DU DRIVE ===');
 const ef=await p.evaluate(async()=>{

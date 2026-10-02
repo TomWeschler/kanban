@@ -16108,16 +16108,29 @@ async function caResoudreUrl(u){
 // TCGdex est la base ouverte qui les connaît. On retire les mots qui ne sont
 // pas le nom du Pokémon (« Shiny », « AR », « full art »…) en raccourcissant
 // la requête jusqu'à obtenir des résultats.
+// TOUS les résultats, sans limite. La base les rend par pages : on les demande
+// une à une jusqu'à la dernière. Si elle ignore la pagination et rend tout
+// d'un coup, la page suivante n'apporte rien de neuf et l'on s'arrête là.
+let CA_PAR_PAGE=250;
+async function caChercherTout(q){
+  const vus=new Map();
+  for(let page=1;page<=40;page++){
+    const rr=await caGet(`${CA_API_DEX}/fr/cards?name=${encodeURIComponent(q)}&pagination:page=${page}&pagination:itemsPerPage=${CA_PAR_PAGE}`);
+    const d=rr.ok&&Array.isArray(rr.json)?rr.json:[];
+    const avant=vus.size;
+    d.forEach(x=>{ if(x&&x.image&&x.id&&!vus.has(x.id))vus.set(x.id,x); });
+    if(d.length<CA_PAR_PAGE||vus.size===avant)break;
+  }
+  return [...vus.values()];
+}
 async function caChercher(nom){
   const mots=caNet(nom).replace(/\b(jp|shiny|ar|sar|ir|sir|full ?art|promo|reverse|holo|ex|gx|vmax|vstar|v)\b/gi,' ')
     .replace(/[-–(),]/g,' ').split(/\s+/).filter(w=>w.length>1&&!/\d/.test(w));
   for(let k=Math.min(mots.length,3);k>=1;k--){
     const q=mots.slice(0,k).join(' ');
-    const rr=await caGet(`${CA_API_DEX}/fr/cards?name=${encodeURIComponent(q)}`);
-    const d=rr.ok?rr.json:null;
-    const l=(Array.isArray(d)?d:[]).filter(x=>x&&x.image);
-    if(l.length)return l.slice(0,60).map(x=>({img:caDexImage(x.image),petite:caDexImage(x.image,'low'),
-                                               nom:x.name,ref:`${x.id||''}`}));
+    const l=await caChercherTout(q);
+    if(l.length)return l.map(x=>({img:caDexImage(x.image),petite:caDexImage(x.image,'low'),
+                                  nom:x.name,ref:`${x.id||''}`}));
   }
   return [];
 }
@@ -19268,7 +19281,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.72.3';
+const APP_VERSION='v1.72.4';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
