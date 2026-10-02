@@ -1301,6 +1301,12 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-lg-choix.on.ca-lg-cn{background:#d97706}
 .ca-tags{display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;background:var(--surface2);border:1px solid var(--border);
   padding:0.3rem 0.4rem;min-height:2.2rem;cursor:text}
+.ca-tags{position:relative}
+.ca-sugg{position:absolute;left:0;right:0;top:100%;z-index:20;margin-top:2px;background:var(--surface);
+  border:1px solid var(--border2);border-radius:7px;box-shadow:0 8px 20px rgba(0,0,0,0.45);max-height:12rem;overflow-y:auto;
+  display:flex;flex-direction:column}
+.ca-sugg-i{text-align:left;background:none;border:none;color:var(--text);font:inherit;font-size:0.78rem;padding:0.35rem 0.6rem;cursor:pointer}
+.ca-sugg-i.on,.ca-sugg-i:hover{background:var(--accent-dim);color:var(--accent)}
 .ca-tags input{flex:1;min-width:6rem;border:none!important;background:none!important;padding:0.1rem 0.2rem!important;outline:none}
 .ca-tag{display:inline-flex;align-items:center;gap:0.2rem;border:1px solid var(--border2);border-radius:99px;
   padding:0.05rem 0.25rem 0.05rem 0.55rem;font-size:0.7rem;color:var(--text)}
@@ -2584,8 +2590,10 @@ body,body *{font-family:var(--font-body)}
         <div class="field"><label>Étiquettes <span class="ca-aide">— la première sert au regroupement</span></label>
           <div class="ca-tags" id="caTagsBox" onclick="document.getElementById('caTagIn').focus()">
             <span id="caTagsListe"></span>
-            <input type="text" id="caTagIn" list="caOuListe" autocomplete="off" placeholder="ajouter…"
-              onkeydown="caTagTouche(event)" onchange="caTagAjouter(this.value)" onblur="caTagAjouter(this.value)">
+            <input type="text" id="caTagIn" autocomplete="off" placeholder="ajouter…"
+              onkeydown="caTagTouche(event)" oninput="caSuggDessiner()" onfocus="caSuggDessiner()"
+              onblur="setTimeout(()=>{ caSuggFermer(); caTagAjouter(this.value); },120)">
+            <div class="ca-sugg" id="caSugg" hidden></div>
           </div><datalist id="caOuListe"></datalist></div>
       </div>
     </div>
@@ -16896,8 +16904,39 @@ function caTagAjouter(v){
   document.getElementById('caTagIn').value='';
   if(n.length!==caEd.tags.length){ caEd.tags=n; caTagsDessiner(); }
 }
+// SUGGESTIONS « COMMENCE PAR ». La liste du navigateur (datalist) cherchait le
+// texte n'importe où — « set » proposait « Reset », « Wizard » arrivait sur
+// « ar » — et ce comportement ne se règle pas. Celle-ci ne propose que les
+// étiquettes qui COMMENCENT par ce qu'on tape, sans tenir compte des
+// majuscules ni des accents, par ordre alphabétique, sans celles déjà posées.
+let caSuggL=[], caSuggI=-1;
+function caSuggDessiner(){
+  const inp=document.getElementById('caTagIn'), box=document.getElementById('caSugg');
+  if(!caEd||!inp||!box)return;
+  const q=tabSansAccent(inp.value.trim()).toLowerCase();
+  const deja=new Set(caEd.tags.map(t=>tabSansAccent(t).toLowerCase()));
+  caSuggL=q?caToutesEtiquettes().filter(t=>{ const k=tabSansAccent(t).toLowerCase(); return k.startsWith(q)&&!deja.has(k); }):[];
+  caSuggI=caSuggL.length?0:-1;
+  if(!caSuggL.length){ box.hidden=true; box.innerHTML=''; return; }
+  box.innerHTML=caSuggL.map((t,i)=>`<button type="button" class="ca-sugg-i${i===caSuggI?' on':''}"
+    onmousedown="event.preventDefault();caSuggPrendre(${i})">${tdEsc(t)}</button>`).join('');
+  box.hidden=false;
+}
+function caSuggSurligner(){
+  document.querySelectorAll('#caSugg .ca-sugg-i').forEach((b,i)=>b.classList.toggle('on',i===caSuggI));
+}
+function caSuggPrendre(i){ const t=caSuggL[i]; if(t==null)return; caTagAjouter(t); caSuggFermer();
+  document.getElementById('caTagIn').focus(); }
+function caSuggFermer(){ const b=document.getElementById('caSugg'); if(b){ b.hidden=true; b.innerHTML=''; } caSuggL=[]; caSuggI=-1; }
 function caTagTouche(e){
-  if(e.key==='Enter'||e.key===','){ e.preventDefault(); caTagAjouter(e.target.value); }
+  const ouvert=caSuggL.length>0;
+  if(ouvert&&e.key==='ArrowDown'){ e.preventDefault(); caSuggI=(caSuggI+1)%caSuggL.length; caSuggSurligner(); return; }
+  if(ouvert&&e.key==='ArrowUp'){ e.preventDefault(); caSuggI=(caSuggI-1+caSuggL.length)%caSuggL.length; caSuggSurligner(); return; }
+  if(ouvert&&e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); caSuggFermer(); return; }
+  // Entrée ou Tab prennent la suggestion surlignée ; sans suggestion, Entrée
+  // pose ce qui est tapé, tel quel — une étiquette nouvelle.
+  if(ouvert&&(e.key==='Enter'||e.key==='Tab')&&caSuggI>=0){ e.preventDefault(); caSuggPrendre(caSuggI); return; }
+  if(e.key==='Enter'||e.key===','){ e.preventDefault(); caTagAjouter(e.target.value); caSuggFermer(); }
   else if(e.key==='Backspace'&&!e.target.value&&caEd.tags.length){ caEd.tags.pop(); caTagsDessiner(); }
 }
 function caTagRetirer(i){ caEd.tags.splice(i,1); caTagsDessiner(); }
@@ -19322,7 +19361,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.72.7';
+const APP_VERSION='v1.72.8';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

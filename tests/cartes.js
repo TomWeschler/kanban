@@ -998,6 +998,52 @@ chk('Filtrer par une étiquette trouve toutes ses graphies',et.filtre==='abc',et
 chk('Une étiquette qui n\'est plus portée disparaît',!et.apres.includes('Zébi'),et.apres.join('|'));
 chk('Les suggestions de la fiche sont triées, sans étiquette orpheline',et.suggestions.join('|')==='alakazam|Écarlate|Set de Base|Wizard',et.suggestions.join('|'));
 
+console.log('=== 9 undecies. SUGGESTIONS « COMMENCE PAR » ===');
+const sg=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,tags)=>({id:caId(),section:'',nom,url:'',prix:1,vente:null,tags,langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:50000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td()});
+  const sauve=cartes;
+  cartes=[mk('a',['Set de Base','Wizard']),mk('b',['Reset','Écarlate']),mk('c',['Sabrina','Échange']),mk('d',['Gym'])];
+  renderCartes(); await new Promise(r=>setTimeout(r,150));
+  caOuvrir(cartes[3].id); await new Promise(r=>setTimeout(r,120));
+  const inp=document.getElementById('caTagIn');
+  const taper=v=>{ inp.value=v; inp.dispatchEvent(new Event('input')); };
+  const vus=()=>[...document.querySelectorAll('#caSugg .ca-sugg-i')].map(b=>b.textContent);
+  const touche=k=>inp.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));
+  inp.focus();
+  taper('se'); out.se=vus();
+  taper('ar'); out.ar=vus();
+  taper('e'); out.e=vus();          // « É » compte comme « e »
+  taper('S'); out.S=vus();
+  out.lie=!inp.hasAttribute('list');
+  // Au clavier : flèche bas, Entrée.
+  taper('s'); touche('ArrowDown'); out.surligne=(document.querySelector('#caSugg .ca-sugg-i.on')||{}).textContent;
+  touche('Enter'); await new Promise(r=>setTimeout(r,30));
+  out.pose=caEd.tags.slice(); out.vide=inp.value;
+  // Déjà posée : plus proposée.
+  taper('s'); out.sansDeja=vus();
+  // Échap ferme la liste sans fermer la fiche.
+  touche('Escape'); out.fermee=document.getElementById('caSugg').hidden; out.ficheOuverte=document.getElementById('caModal').classList.contains('open');
+  // Une étiquette nouvelle se pose quand même.
+  taper('Nouvelle'); touche('Enter'); out.nouvelle=caEd.tags.slice();
+  // Au clic.
+  taper('wiz'); document.querySelector('#caSugg .ca-sugg-i').dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));
+  out.clic=caEd.tags.slice();
+  caFermer(); cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('« se » propose ce qui COMMENCE par « se », pas « Reset »',sg.se.join('|')==='Set de Base',sg.se.join('|'));
+chk('« ar » ne propose rien : aucune étiquette ne commence ainsi',sg.ar.length===0,sg.ar.join('|'));
+chk('Sans tenir compte des accents',sg.e.join('|')==='Écarlate|Échange',sg.e.join('|'));
+chk('...ni des majuscules, par ordre alphabétique',sg.S.join('|')==='Sabrina|Set de Base',sg.S.join('|'));
+chk('La liste du navigateur, qui cherchait « contient », n\'est plus branchée',sg.lie===true);
+chk('Flèche bas, Entrée : la suggestion est posée',sg.surligne==='Set de Base'&&sg.pose.join('|')==='Gym|Set de Base'&&sg.vide==='',JSON.stringify(sg));
+chk('Une étiquette déjà posée n\'est plus proposée',sg.sansDeja.join('|')==='Sabrina',sg.sansDeja.join('|'));
+chk('Échap ferme la liste, pas la fiche',sg.fermee&&sg.ficheOuverte,JSON.stringify([sg.fermee,sg.ficheOuverte]));
+chk('Une étiquette nouvelle se pose toujours avec Entrée',sg.nouvelle.includes('Nouvelle'),JSON.stringify(sg.nouvelle));
+chk('Un clic sur une suggestion la pose',sg.clic.includes('Wizard'),JSON.stringify(sg.clic));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
