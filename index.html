@@ -1302,6 +1302,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-tags{display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;background:var(--surface2);border:1px solid var(--border);
   padding:0.3rem 0.4rem;min-height:2.2rem;cursor:text}
 .ca-tags{position:relative}
+.ca-code{display:flex;gap:0.4rem}
+.ca-code input{flex:1;font-family:var(--font-mono)!important}
 .ca-sugg{position:absolute;left:0;right:0;top:100%;z-index:20;margin-top:2px;background:var(--surface);
   border:1px solid var(--border2);border-radius:7px;box-shadow:0 8px 20px rgba(0,0,0,0.45);max-height:12rem;overflow-y:auto;
   display:flex;flex-direction:column}
@@ -1331,6 +1333,12 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-manque .ca-img img{filter:grayscale(1);opacity:0.35}
 .ca-manque .ca-nom{color:var(--text-dim)}
 .ca-manque:hover{opacity:1}
+.ca-manque.cochable{cursor:copy}
+.ca-manque.cochable:hover{border-color:var(--green);opacity:1}
+.ca-manque.cochable:hover .ca-img img{filter:none;opacity:0.85}
+.ca-cocher-l{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap}
+.ca-cocher-r{display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;color:var(--text-dim);flex-wrap:wrap}
+.ca-cocher-tag{flex:0 0 9rem;min-width:0;padding:0.25rem 0.5rem}
 .ca-manque-t{font-family:var(--font-mono);font-size:0.56rem;color:var(--text-dim)}
 .ca-holo{color:var(--warn)}
 .ca-prog{flex:0 1 160px;height:6px;border-radius:99px;background:var(--surface3);overflow:hidden;margin-left:0.6rem}
@@ -2585,6 +2593,10 @@ body,body *{font-family:var(--font-body)}
         </div>
       </div>
       <div class="ca-fiche-ch">
+        <div class="field"><label>Code imprimé sur la carte <span class="ca-aide">— en bas à gauche</span></label>
+          <div class="ca-code"><input type="text" id="caCode" autocomplete="off" spellcheck="false" placeholder="ex : FLO 223, OBF 223/197, SV4a 326"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();caPrecharger();}">
+          <button class="btn-nav" type="button" onclick="caPrecharger()">Pré-charger</button></div></div>
         <div class="field"><label>Nom</label><input type="text" id="caNom" autocomplete="off" placeholder="ex : Flagadoss AR"></div>
         <div class="field"><label>Adresse de la fiche (Cardmarket…)</label>
           <input type="url" id="caUrl" autocomplete="off" placeholder="https://www.cardmarket.com/fr/Pokemon/Products/Singles/…" onchange="caUrlChange()" onpaste="setTimeout(caUrlChange,0)">
@@ -2607,6 +2619,7 @@ body,body *{font-family:var(--font-body)}
     <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem">
       <button class="btn-nav out" id="caSuppr" onclick="caSupprimer()" style="margin-right:auto;color:var(--danger)">Supprimer</button>
       <button class="btn-nav out" onclick="caFermer()">Annuler</button>
+      <button class="btn-nav out" id="caSuivante" onclick="caEnregistrer(true)" title="Enregistrer, puis ouvrir une nouvelle fiche avec les mêmes étiquettes et la même langue">Enregistrer + suivante</button>
       <button class="btn-nav" onclick="caEnregistrer()">Enregistrer</button>
     </div>
   </div>
@@ -16305,7 +16318,11 @@ async function caSauver(liste){
 // Ce que fait la machine (image trouvée, archivée) est regroupé : cent cartes
 // résolues font une écriture, pas cent.
 let caAttenteEcr={}, caAttenteT=null, CA_DELAI_ECR=3000;
-function caPlusTard(c){
+// Une carte supprimée — ou un ajout annulé — pendant que son image se
+// prépare ne doit pas revenir : le traitement de l'image se termine après
+// coup, et réécrivait la carte. Seul un ajout explicite (« nouvelle ») crée.
+function caPlusTard(c,nouvelle){
+  if(!nouvelle&&!caParId(c.id))return;
   c.updated_at=td(); caPoser(c); caAttenteEcr[c.id]=c;
   cacheSet('cartes',cartes);
   clearTimeout(caAttenteT); caAttenteT=setTimeout(caVider,CA_DELAI_ECR);
@@ -16629,7 +16646,13 @@ async function renderCartes(){
     </div>
     <div class="ca-etat" id="caEtat"></div>
     </div>
-    ${parSet?`<label class="ca-manq"><input type="checkbox" ${caManquantes?'checked':''} onchange="caManquantes=this.checked;caRedessiner()"> manquantes seulement</label>`:''}
+    ${parSet?`<div class="ca-cocher-l">
+      <label class="ca-manq"><input type="checkbox" ${caManquantes?'checked':''} onchange="caManquantes=this.checked;caRedessiner()"> manquantes seulement</label>
+      <button class="btn-nav${caCocher?'':' out'}" onclick="caCocherBascule()" title="Un clic sur une case grise ajoute la carte">${caCocher?'✓ Fin du cochage':'☑ Cocher mes cartes'}</button>
+      ${caCocher?`<span class="ca-cocher-r">étiquette <input type="text" class="ca-q ca-cocher-tag" value="${MD_ATT(caCocherTag)}" placeholder="ex : Wizard" onchange="caCocherReglage(this.value,null)">
+        langue <select class="ca-tri" onchange="caCocherReglage(null,this.value)">${[['','—']].concat(CA_LANGUES.map(l=>[l[0],l[2]])).map(([v,l])=>`<option value="${v}"${caCocherLg===v?' selected':''}>${l}</option>`).join('')}</select>
+        <span class="ca-aide">un clic sur une case grise l'ajoute</span></span>`:''}
+    </div>`:''}
     <div id="caSections">${parSet?sv.html:caSectionsHtml(vis)}</div>`;
   caChargerImages(parSet?sv.vues:vues,++caGen);
 }
@@ -16829,7 +16852,7 @@ function caSetsVue(){
       const l2=eues[sid+'/'+n];
       if(l2){ vues.push(l2[0]);
         return caTuile(l2[0],`<span class="ca-num">${tdEsc(n)}</span>${l2.length>1?`<span class="ca-nb" title="${l2.length} exemplaires">×${l2.length}</span>`:''}`); }
-      return `<button class="ca-tuile ca-manque" onclick="caCase('${sid}','${MD_ATT(n)}')" title="Il te manque : ${MD_ATT(nm)} (${MD_ATT(n)})">
+      return `<button class="ca-tuile ca-manque${caCocher?' cochable':''}" onclick="${caCocher?'caCocherCase':'caCase'}('${sid}','${MD_ATT(n)}')" title="${caCocher?'Clic : je l\'ai':'Il te manque'} : ${MD_ATT(nm)} (${MD_ATT(n)})">
         <span class="ca-num">${tdEsc(n)}</span>
         <div class="ca-img"><img src="${caCaseImg(sid,n)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></div>
         <div class="ca-nom">${tdEsc(nm)}${holo?' <span class="ca-holo" title="Holo">★</span>':''}</div>
@@ -16887,6 +16910,136 @@ function caCaseNouvelle(){
   document.getElementById('caInfo').innerHTML=`${tdEsc(e.set)} n° ${tdEsc(e.n)} — l'image sera enregistrée dans Google Drive.`;
 }
 
+// ── Le code imprimé sur la carte ──────────────────────────────────────────
+// En bas à gauche de chaque carte récente : le code de l'extension et le
+// numéro — « OBF 223/197 » en anglais, « FLO 223/197 » en français,
+// « SV4a 326/190 » en japonais. C'est tout ce qu'il faut pour retrouver la
+// carte : nul besoin de chercher son adresse sur Cardmarket.
+// Table TCGdex (221 extensions, octobre 2026) : [id, série, code officiel,
+// code français, nombre de chiffres du numéro (0 : sans zéros de tête)].
+const CA_DEX=[["base4","base","B2","",0],["base1","base","BS","BAS",0],["base3","base","FO","FOS",0],["base2","base","JU","JUN",0],["base5","base","RO","ROC",0],["wp","base","","",0],["basep","base","","",0],["bwp","bw","BWP","PBW",0],["bw1","bw","BLW","N&B",0],["bw7","bw","BCR","FFR",0],["bw5","bw","DEX","EOB",0],["dv1","bw","DRV","CDR",0],["bw6","bw","DRX","DEX",0],["bw2","bw","EP","PEM",0],["bw11","bw","LTR","",0],["bw4","bw","NXD","DFU",0],["bw3","bw","NVI","NVI",0],["bw10","bw","PLB","EPL",0],["bw9","bw","PLF","GPL",0],["bw8","bw","PLS","",0],["rc","bw","","",0],["col1","col","COL","LDL",0],["dpp","dp","","",0],["dp1","dp","DP","D&P",0],["dp4","dp","GE","DAS",0],["dp6","dp","LA","EDL",0],["dp5","dp","MD","AMJ",0],["dp2","dp","MT","TMY",0],["dp3","dp","SW","MSQ",0],["dp7","dp","SF","TEM",0],["ecard2","ecard","AQ","AQU",0],["bog","ecard","","",0],["ecard1","ecard","EX","EXP",0],["sp","ecard","","",0],["ecard3","ecard","SK","",0],["ex14","ex","CG","GDC",0],["ex11","ex","DS","ESD",0],["ex8","ex","DX","DEO",0],["ex15","ex","DF","IDR",0],["ex3","ex","DR","DRG",0],["ex9","ex","EM","EME",0],["ex6","ex","RG","RFV",0],["ex5","ex","HL","LOU",0],["ex13","ex","HP","FAN",0],["ex12","ex","LM","CDL",0],["ex5.5","ex","","",0],["ex16","ex","PK","GDP",0],["ex1","ex","RS","R&S",0],["ex2","ex","SS","TES",0],["ex4","ex","MA","M&A",0],["ex7","ex","TR","",0],["exu","ex","","",0],["ex10","ex","UF","FCH",0],["gym2","gym","G2","",0],["gym1","gym","G1","",0],["hgssp","hgss","","",0],["hgss1","hgss","HS","HGS",0],["hgss4","hgss","TRI","TRI",0],["hgss3","hgss","UND","IND",0],["hgss2","hgss","UL","DCH",0],["lc","lc","LC","",0],["2013bw","mc","","",0],["2018sm-fr","mc","","",0],["2019sm-fr","mc","","",0],["2011bw","mc","MCD11","M11",0],["2012bw","mc","MCD12","M12",0],["2014xy","mc","MCD14","M14",0],["2015xy","mc","MCD15","M15",0],["2016xy","mc","MCD16","M16",0],["2017sm","mc","MCD17","M17",0],["2018sm","mc","MCD18","",0],["2019sm","mc","MCD19","",0],["2021swsh","mc","MCD21","M21",0],["2022swsh","mc","MCD22","M22",0],["2023sv","mc","MCD23","M23",0],["2024sv","mc","MCD24","M24",0],["30th","me","30C","",3],["30th-c","me","30C","",3],["me02.5","me","ASC","HER",3],["me04","me","CRI","",3],["mep","me","MEP","",3],["me01","me","MEG","",3],["me03","me","POR","ORP",3],["me02","me","PFL","",3],["me05","me","PBL","",3],["jumbo","misc","","",0],["miscp","misc","","",3],["neo4","neo","N4","NDT",0],["neo2","neo","N2","NDS",0],["neo1","neo","N1","NGS",0],["neo3","neo","N3","NRE",0],["si1","neo","SI","",0],["np","pop","","",0],["pop1","pop","P1","P01",0],["pop2","pop","P2","P02",0],["pop3","pop","P3","P03",0],["pop4","pop","P4","P04",0],["pop5","pop","P5","",0],["pop6","pop","P6","",0],["pop7","pop","P7","P07",0],["pop8","pop","P8","",0],["pop9","pop","P9","P09",0],["pl4","pl","AR","",0],["pl1","pl","PL","PLA",0],["ru1","pl","RM","",0],["pl2","pl","RR","REM",0],["pl3","pl","SV","VSU",0],["A3","tcgp","","",0],["B1a","tcgp","","",0],["A3b","tcgp","","",0],["A3a","tcgp","","",0],["B2","tcgp","","",0],["A1","tcgp","","",0],["B1","tcgp","","",0],["A1a","tcgp","","",0],["B2a","tcgp","","",0],["P-A","tcgp","","",0],["A4a","tcgp","","",0],["A2b","tcgp","","",0],["A2","tcgp","","",0],["A2a","tcgp","","",0],["A4","tcgp","","",0],["sv03.5","sv","MEW","151",3],["sv10.5b","sv","BLK","",3],["sv10","sv","DRI","RVD",3],["sv09","sv","JTG","",3],["mfb","sv","MFB","",0],["sv03","sv","OBF","FLO",3],["sv02","sv","PAL","EAP",3],["sv04.5","sv","PAF","DDP",3],["sv04","sv","PAR","FAP",3],["sv08.5","sv","PRE","",3],["svp","sv","SVP","",3],["sv01","sv","SVI","E&V",3],["sv06.5","sv","SFA","FNE",3],["sv07","sv","SCR","",3],["sv08","sv","SSP","ETD",3],["sv05","sv","TEF","FTP",3],["sv06","sv","TWM","MCR",3],["sv10.5w","sv","WHT","",3],["sm3","sm","BUS","OAR",0],["sm7","sm","CES","TCE",0],["sm12","sm","CEC","ECO",0],["sm4","sm","CIN","INC",0],["det1","sm","DET","DPI",0],["sm7.5","sm","DRM","MDD",0],["sm6","sm","FLI","LUI",0],["sm2","sm","GRI","GAS",0],["sma","sm","","",0],["sm115","sm","HIF","DOC",0],["sm8","sm","LOT","TPD",0],["smp","sm","SMP","PSM",0],["sm3.5","sm","SLG","LBR",0],["sm1","sm","SUM","S&L",0],["sm9","sm","TEU","DDC",0],["sm5","sm","UPR","UPR",0],["sm10","sm","UNB","AIF",0],["sm11","sm","UNM","HES",0],["swsh10tg","swsh","ASR:TG","",0],["swsh10","swsh","ASR","ASR",3],["swsh5","swsh","BST","STC",0],["swsh9tg","swsh","BRS:TG","STA:TG",0],["swsh9","swsh","BRS","STA",3],["cel25cc","swsh","CEL:CC","",0],["cel25","swsh","CEL","CEL",0],["swsh3.5","swsh","CPA","VDM",0],["swsh6","swsh","CRE","REG",0],["swsh12.5gg","swsh","CRZ:GG","",0],["swsh12.5","swsh","CRZ","ZEN",3],["swsh3","swsh","DAA","TEM",0],["swsh7","swsh","EVS","EVC",0],["swsh8","swsh","FST","PDF",0],["swsh11tg","swsh","LOR:TG","",0],["swsh11","swsh","LOR","ORP",3],["fut2020","swsh","FUT20","",0],["swsh10.5","swsh","PGO","PGO",0],["swsh2","swsh","RCL","CDR",0],["swshp","swsh","","",0],["swsh4.5sv","swsh","SHF:SV","",0],["swsh4.5","swsh","SHF","DRA",0],["swsh12tg","swsh","SIT:TG","",0],["swsh12","swsh","SIT","TAR",3],["swsh1","swsh","SSH","E&B",0],["swsh4","swsh","VIV","VOL",0],["tk-bw-e","tk","TK5E","MIN",0],["tk-bw-z","tk","TK5Z","ZOR",0],["tk-dp-l","tk","TK3L","LUC",0],["tk-dp-m","tk","TK3M","MAN",0],["tk-ex-latia","tk","TK1A","KDA",0],["tk-ex-latio","tk","TK1O","KDL",0],["tk-ex-m","tk","TK2M","NEG",0],["tk-ex-p","tk","TK2P","POS",0],["tk-hs-g","tk","TK4G","LEV",0],["tk-hs-r","tk","TK4R","RAI",0],["tk-sm-r","tk","TK10A","RAL",0],["tk-sm-l","tk","TK10L","LOU",0],["tk-xy-b","tk","TK7A","SCA",0],["tk-xy-latia","tk","TK8A","LTA",0],["tk-xy-latio","tk","TK8O","LTS",0],["tk-xy-n","tk","TK6N","BRU",0],["tk-xy-p","tk","TK9P","PLB",0],["tk-xy-su","tk","TK9S","SUI",0],["tk-xy-sy","tk","TK6S","NYM",0],["tk-xy-w","tk","TK7B","GRO",0],["xy7","xy","AOR","ORA",0],["xy9","xy","BKP","RUP",0],["xy8","xy","BKT","IMP",0],["dc1","xy","DCR","DBD",0],["xy12","xy","EVO","EVO",0],["xy10","xy","FCO","IDD",0],["xy2","xy","FLF","ETI",0],["xy3","xy","FFI","PFU",0],["g1","xy","GEN","GEN",0],["xy0","xy","KSS","BAK",0],["xy4","xy","PHF","VSP",0],["xy5","xy","PRC","PRI",0],["xy6","xy","ROS","CRU",0],["xy11","xy","STS","OFV",0],["xyp","xy","XYP","PXY",0],["xy1","xy","XY","XY",0],["xya","xy","","",0]];
+function caCodesConnus(){
+  if(caCodesConnus.l)return caCodesConnus.l;
+  const l=new Set();
+  CA_DEX.forEach(([,,o,f])=>{ if(o)l.add(o); if(f)l.add(f); });
+  CA_JA.forEach(([id])=>l.add(id));
+  return caCodesConnus.l=[...l].sort((a,b)=>b.length-a.length);
+}
+// « OBF 223 », « obf223 », « FLO 223/197 », « SV4a-326 », « CRZ GG22 »…
+function caCodeLire(txt){
+  const t=String(txt||'').trim().replace(/\s*\/\s*\d+\s*$/,'');
+  let m=/^(.+?)[\s\-_]+([A-Za-z]{0,4}\d{1,3}[a-z]?)$/.exec(t);
+  if(m)return {code:m[1].trim(),num:m[2]};
+  // Collé : le plus long code connu qui commence le texte.
+  const b=t.toLowerCase();
+  for(const c of caCodesConnus()){
+    const r=t.slice(c.length);
+    if(b.startsWith(c.toLowerCase())&&/^[A-Za-z]{0,4}\d{1,3}$/.test(r))return {code:c,num:r};
+  }
+  return null;
+}
+// Les extensions possibles pour un code, la plus probable d'abord. Un code
+// français dit une carte française, un code officiel une carte anglaise (les
+// cartes françaises récentes portent leur propre code), un code japonais une
+// carte japonaise. Certains codes servent à deux extensions : on essaiera
+// chacune, celle où le numéro existe l'emporte.
+function caCodeCandidats(code,langue){
+  const k=String(code).toUpperCase(), l=[];
+  CA_DEX.forEach(([id,serie,o,f,pad])=>{
+    const deO=o&&o.toUpperCase()===k, deF=f&&f.toUpperCase()===k;
+    if(deF)l.push({set:id,serie,pad,api:'fr',langue:deO?'':'fr',rang:1});
+    else if(deO)l.push({set:id,serie,pad,api:'en',langue:f?'en':'',rang:2,code:o});
+  });
+  CA_JA.forEach(([id,serie])=>{ if(id.toUpperCase()===k)l.push({set:id,serie,pad:3,api:'ja',langue:'jp',rang:3}); });
+  // La langue déjà choisie sur la fiche passe devant.
+  const pref={jp:'ja',fr:'fr',en:'en'}[langue];
+  return l.sort((a,b)=>((b.api===pref)-(a.api===pref))||(a.rang-b.rang));
+}
+const caLocalId=(num,pad)=>/^\d+$/.test(num)?(pad?String(+num).padStart(pad,'0'):String(+num)):String(num).toUpperCase();
+const caDexCote=c=>{ const p=c&&c.pricing&&c.pricing.cardmarket; if(!p)return null;
+  const v=[p.trend,p.avg,p.avg30].find(x=>Number.isFinite(x)); return v==null?null:v; };
+// {nom, image, langue, ref, cote} — ou {erreur}
+async function caCodeResoudre(txt,langue){
+  const lu=caCodeLire(txt);
+  if(!lu)return {erreur:'Code illisible : tape le code et le numéro, par exemple « FLO 223 ».'};
+  const cands=caCodeCandidats(lu.code,langue);
+  if(!cands.length)return {erreur:`Code « ${lu.code} » inconnu.`};
+  let passager=false;
+  for(const k of cands){
+    const local=caLocalId(lu.num,k.pad), id=`${k.set}-${local}`;
+    // Le nom en français quand il existe ; l'image dans la langue de la carte.
+    const langNom=k.api==='ja'?'ja':'fr';
+    const r=await caGet(`${CA_API_DEX}/${langNom}/cards/${encodeURIComponent(id)}`);
+    let carte=r.ok?r.json:null;
+    if(!r.ok&&r.passager)passager=true;
+    let img=carte&&carte.image?carte.image:'';
+    const langImg=k.api==='ja'?'ja':(langue==='en'||k.api==='en')?'en':'fr';
+    if(langImg!==langNom||!carte){
+      const r2=await caGet(`${CA_API_DEX}/${langImg}/cards/${encodeURIComponent(id)}`);
+      if(r2.ok&&r2.json){ if(!carte)carte=r2.json; if(r2.json.image)img=r2.json.image; }
+      else if(r2.passager)passager=true;
+    }
+    if(!carte)continue;                                // pas de carte à ce numéro : extension suivante
+    if(!img&&k.code){                                  // pas d'image chez TCGdex : l'adresse fixe de pokemontcg.io
+      const c=caCandidats({code:k.code,num:lu.num});
+      if(c.length)img=c[0].img;
+    }
+    const nomSet=(CA_EXT.find(e=>e[2]===k.code)||[])[1]||k.set;
+    return {nom:carte.name||'',image:img?(/\.(png|webp|jpe?g)$/.test(img)?img:caDexImage(img)):'',langue:k.langue,
+      ref:`${carte.set&&carte.set.name||nomSet} ${local}`,cote:caDexCote(carte),autres:cands.length-1};
+  }
+  return {erreur:passager?'La base ne répond pas pour l\'instant — réessaie dans un moment.'
+    :`Aucune carte n° ${lu.num} dans l'extension « ${lu.code} ».`};
+}
+async function caPrecharger(){
+  if(!caEd)return;
+  const champ=document.getElementById('caCode'), info=document.getElementById('caInfo');
+  const v=champ.value.trim(); if(!v){ champ.focus(); return; }
+  info.textContent='Recherche de la carte…';
+  const r=await caCodeResoudre(v,caEd.langue);
+  if(!caEd||document.getElementById('caCode').value.trim()!==v)return;
+  if(r.erreur){ info.textContent=r.erreur; return; }
+  // On remplit ce qu'on peut, sans écraser ce qui a déjà été saisi.
+  const nom=document.getElementById('caNom');
+  if(!nom.value.trim()||nom.value.trim()===caEd.nomPre)nom.value=r.nom;
+  caEd.nomPre=r.nom;
+  if(r.langue&&!caEd.langue){ caEd.langue=r.langue; caLgsDessiner(); }
+  if(r.image){ caEd.image=r.image; caEd.photo=null; caEd.trouve=null; caApercu(null); }
+  caEd.ref=r.ref; caEd.cote=r.cote;
+  info.innerHTML=[tdEsc(r.ref),r.cote!=null?`Cote Cardmarket : <b>${caEur(r.cote)}</b>`:'',
+    r.image?'':'pas d\'image chez TCGdex : ajoute ta photo',
+    r.autres?`(${r.autres} autre${r.autres>1?'s':''} extension${r.autres>1?'s':''} porte${r.autres>1?'nt':''} ce code)`:''].filter(Boolean).join(' · ');
+  document.getElementById('caPrix').focus();
+}
+
+// ── Le mode « cocher » des sets ───────────────────────────────────────────
+// Pour parcourir un set avec son classeur à côté : un clic sur une case grise
+// ajoute la carte, sans ouvrir de fiche. Nom et image viennent du set ; une
+// étiquette et une langue communes s'appliquent à tous les ajouts. Les prix
+// pourront attendre. Chaque ajout s'annule.
+let caCocher=false;
+let caCocherTag=(()=>{ try{ return localStorage.getItem('kanban_cartes_cocher_tag')||''; }catch(e){ return ''; } })();
+let caCocherLg=(()=>{ try{ return localStorage.getItem('kanban_cartes_cocher_lg')||''; }catch(e){ return ''; } })();
+function caCocherBascule(){ caCocher=!caCocher; renderCartes(); }
+function caCocherReglage(tag,lg){
+  if(tag!=null){ caCocherTag=String(tag).trim(); try{ localStorage.setItem('kanban_cartes_cocher_tag',caCocherTag); }catch(e){} }
+  if(lg!=null){ caCocherLg=lg; try{ localStorage.setItem('kanban_cartes_cocher_lg',lg); }catch(e){} }
+}
+function caCocherCase(sid,n){
+  const st=CA_SETS.find(x=>x[0]===sid); if(!st)return;
+  const e=st[2].find(x=>x[0]===n); if(!e)return;
+  const c={id:caId(),section:'',nom:e[1],url:'',prix:null,vente:null,tags:caTags(caCocherTag),langue:caCocherLg,
+    image:caCaseImg(sid,n,'hd'),drive_id:'',ref:`${st[1]} ${n}`,cote:null,
+    ordre:cartes.reduce((m,x)=>Math.max(m,x.ordre||0),0)+1,etat:'',raison:'',created_at:td(),updated_at:td()};
+  caPlusTard(c,true);                                 // regroupées : vingt clics, une écriture
+  caRedessiner();
+  offerUndo(`${e[1]} (${st[1]} ${n}) ajoutée`,async()=>{
+    cartes=cartes.filter(x=>x.id!==c.id); delete caAttenteEcr[c.id]; cacheSet('cartes',cartes);
+    if(accessToken)await sheetBatchUpsert(CA_SHEET,[caTombe(c.id)]);
+    caRedessiner();
+  });
+}
+
 // ── L'assistant : associer les images à la main, à la chaîne ──────────────
 // Pour les cartes dont l'adresse ne dit rien — ou qui n'en ont pas — : une
 // carte après l'autre, la recherche lancée sur son nom, un clic pour choisir,
@@ -16941,7 +17094,9 @@ function caReessayer(){
 function caOuvrir(id){
   const c=id?caParId(id):null;
   if(id&&!c){ toast('Carte introuvable','err'); renderCartes(); return; }
-  caEd={id:id||null,image:null,photo:null,trouve:null,urlInitiale:c?c.url:''};
+  caEd={id:id||null,image:null,photo:null,trouve:null,urlInitiale:c?c.url:'',ref:null,cote:null,nomPre:''};
+  document.getElementById('caCode').value='';
+  document.getElementById('caSuivante').style.display=c?'none':'';
   document.getElementById('caModalTitre').textContent=c?'CARTE':'NOUVELLE CARTE';
   document.getElementById('caNom').value=c?c.nom:'';
   document.getElementById('caUrl').value=c?c.url:'';
@@ -17051,7 +17206,7 @@ async function caUrlChange(){
   caEd.trouve=r; caApercu(null);
 }
 function caFermer(){ modalFerme('caModal'); caEd=null; }
-async function caEnregistrer(){
+async function caEnregistrer(suivante){
   if(!caEd)return;
   const nom=document.getElementById('caNom').value.trim();
   const url=document.getElementById('caUrl').value.trim();
@@ -17066,17 +17221,23 @@ async function caEnregistrer(){
     tags:caTags(caEd.tags.concat(document.getElementById('caTagIn').value)),langue:caEd.langue});
   // L'image suit ce qu'on a fait : photo, choix, ou adresse nouvelle.
   if(caEd.photo){ Object.assign(c,{drive_id:caEd.photo.id,image:'',etat:'',raison:''}); }
-  else if(caEd.image!=null){ Object.assign(c,{image:caWeb(caEd.image),drive_id:'',etat:'',raison:''}); }
+  else if(caEd.image!=null){ Object.assign(c,{image:caWeb(caEd.image),drive_id:'',etat:'',raison:''});
+    if(caEd.ref!=null){ c.ref=caEd.ref; c.cote=caEd.cote==null?null:caEd.cote; } }
   else if(c.url!==(avant?avant.url:'')){
     const t=caEd.trouve;
     Object.assign(c,{drive_id:'',ref:'',cote:null,
       image:t&&t.img?t.img:'',etat:t&&t.introuvable?CA_ABSENTE:'',raison:t&&t.introuvable||''});
     if(t&&t.img){ c.ref=t.ref||''; c.cote=t.cote==null?null:t.cote; }
   }
+  // « Enregistrer + suivante » : une fiche neuve, mêmes étiquettes et même
+  // langue, le curseur dans le champ du code — pour enchaîner une pile.
+  const suite=suivante?{tags:caTags(c.tags),langue:c.langue||''}:null;
   caFermer();
-  const ok=await caSauver([c]);
+  const ok=suite?(caSauver([c]),true):await caSauver([c]);
   if(!ok){ toast('ÉCHEC de l\'enregistrement','err'); }
   renderCartes();
+  if(suite){ caOuvrir(null); caEd.tags=suite.tags; caEd.langue=suite.langue; caTagsDessiner(); caLgsDessiner();
+    setTimeout(()=>document.getElementById('caCode').focus(),50); }
   offerUndo(avant?`« ${nom} » modifiée`:`« ${nom} » ajoutée`,async()=>{
     if(avant)await caSauver([avant]);
     else{ cartes=cartes.filter(x=>x.id!==c.id); cacheSet('cartes',cartes);
@@ -19427,7 +19588,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.73.0';
+const APP_VERSION='v1.74.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

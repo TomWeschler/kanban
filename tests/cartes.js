@@ -104,7 +104,14 @@ await p.evaluate(async src=>{
   };
   // ── Les bases publiques et les sites d'images simulés
   window.APPELS=[]; window.IMAGES=[]; window.SATURE={}; window.IMG404=[]; window.IMGLENTE=[];
-  window.CAPRICE={}; window.EN_VOL=0; window.EN_VOL_MAX=0;
+  window.CAPRICE={}; window.EN_VOL=0; window.EN_VOL_MAX=0; window.APPELS_DEX=[];
+  window.CARTES_DEX={
+    'sv03-223':{fr:{name:'Dracaufeu ex',image:'https://assets.tcgdex.net/fr/sv/sv03/223',set:{name:'Flammes Obsidiennes'},pricing:{cardmarket:{trend:23.4}}},
+                en:{name:'Charizard ex',image:'https://assets.tcgdex.net/en/sv/sv03/223',set:{name:'Obsidian Flames'}}},
+    'sv03-012':{fr:{name:'Sans image',set:{name:'Flammes Obsidiennes'}}},
+    'SV4a-326':{ja:{name:'フーディンex',image:'https://assets.tcgdex.net/ja/SV/SV4a/326',set:{name:'シャイニートレジャーex'}}},
+    'swsh3-136':{fr:{name:'Carte TEM',image:'https://assets.tcgdex.net/fr/swsh/swsh3/136',set:{name:'Ténèbres Embrasées'}}},
+    'sv03.5-006':{fr:{name:'Dracaufeu ex',image:'https://assets.tcgdex.net/fr/sv/sv03.5/006',set:{name:'151'}}}};
   window.fetch=async (u,o={})=>{
     u=String(u);
     const rep=j=>({ok:true,status:200,json:async()=>j});
@@ -123,6 +130,11 @@ await p.evaluate(async src=>{
       if(/javascript/.test(q))return rep({data:[{images:{large:'javascript:alert(1)'}}]});
       return rep({data:[]});
     }
+    // Les fiches de cartes, par identifiant.
+    let fk=/^https:\/\/api\.tcgdex\.net\/v2\/(fr|en|ja)\/cards\/([^?]+)$/.exec(u);
+    if(fk){ APPELS_DEX.push(fk[1]+':'+decodeURIComponent(fk[2]));
+      const c=(window.CARTES_DEX[decodeURIComponent(fk[2])]||{})[fk[1]];
+      return c?rep(c):{ok:false,status:404,json:async()=>null}; }
     if(u.startsWith('https://api.tcgdex.net/v2/en/cards?name=')){
       const n=new URL(u).searchParams.get('name'), pg=+new URL(u).searchParams.get('pagination:page')||1;
       if(n==='abra'&&pg===1)return rep([
@@ -1102,6 +1114,110 @@ chk('Une étiquette nouvelle se range à la suite, par ordre alphabétique',og.n
 chk('L\'ordre se relit depuis le classeur, et le réglage n\'est pas une carte',og.relu==='Wizard|Gym|Alakazam|Noé'&&og.pasUneCarte,JSON.stringify(og));
 chk('Les sets se réordonnent aussi',og.sets.join('|')==='Team Rocket|Set de base',og.sets.join('|'));
 chk('...et reviennent à l\'ordre d\'origine d\'un clic',og.setsRaz==='Set de base',og.setsRaz);
+
+console.log('=== 9 terdecies. LE CODE IMPRIMÉ SUR LA CARTE ===');
+const cd=await p.evaluate(async()=>{
+  const out={};
+  out.lire=['OBF 223','obf223','FLO 223/197','SV4a 326/190','sv4a326','CRZ GG22','151 006','E&V 012','n\'importe quoi']
+    .map(t=>{ const r=caCodeLire(t); return r?r.code+'|'+r.num:null; });
+  const c1=k=>caCodeCandidats(k,'').map(x=>`${x.set}:${x.api}:${x.langue}`);
+  out.cand={FLO:c1('FLO'),OBF:c1('OBF'),SV4A:c1('sv4a'),XY:c1('XY'),TEM:c1('TEM')};
+  APPELS_DEX.length=0;
+  out.flo=await caCodeResoudre('FLO 223/197','');
+  out.floAppels=APPELS_DEX.slice();
+  out.obf=await caCodeResoudre('OBF 223','');
+  out.ja=await caCodeResoudre('SV4a 326','');
+  out.tem=await caCodeResoudre('TEM 136','');
+  out.mew=await caCodeResoudre('151 6','');
+  out.sansImage=await caCodeResoudre('OBF 12','');
+  out.inconnu=await caCodeResoudre('ZZZ 12','');
+  out.illisible=await caCodeResoudre('bonjour','');
+  out.absent=await caCodeResoudre('FLO 999','');
+  // La fiche : pré-charger, puis enregistrer + suivante.
+  const sauve=cartes; cartes=[];
+  caOuvrir(null); await new Promise(r=>setTimeout(r,100));
+  out.suivanteVisible=document.getElementById('caSuivante').style.display!=='none';
+  caEd.tags=['Pile du jour']; caTagsDessiner();
+  const code=document.getElementById('caCode'); code.value='FLO 223';
+  code.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+  await new Promise(r=>setTimeout(r,250));
+  out.fiche={nom:document.getElementById('caNom').value,langue:caEd.langue,image:caEd.image,
+    info:document.getElementById('caInfo').textContent,focus:document.activeElement&&document.activeElement.id};
+  document.getElementById('caPrix').value='3';
+  await caEnregistrer(true); await new Promise(r=>setTimeout(r,250));
+  const c=cartes[0];
+  out.carte=c&&{nom:c.nom,prix:c.prix,langue:c.langue,image:c.image,ref:c.ref,cote:c.cote,tags:c.tags};
+  out.suite={ouverte:document.getElementById('caModal').classList.contains('open'),tags:caEd&&caEd.tags,langue:caEd&&caEd.langue,
+    code:document.getElementById('caCode').value,focus:document.activeElement&&document.activeElement.id,nom:document.getElementById('caNom').value};
+  // Un nom déjà tapé n'est pas écrasé.
+  document.getElementById('caNom').value='Mon nom à moi';
+  document.getElementById('caCode').value='SV4a 326'; await caPrecharger();
+  out.nomGarde=document.getElementById('caNom').value; out.langueGardee=caEd.langue;
+  caFermer();
+  // Une carte existante n'a pas « Enregistrer + suivante ».
+  caOuvrir(c.id); await new Promise(r=>setTimeout(r,80));
+  out.suivanteExistante=document.getElementById('caSuivante').style.display==='none';
+  caFermer();
+  cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Le code se lit sous toutes ses formes',JSON.stringify(cd.lire)===JSON.stringify(['OBF|223','OBF|223','FLO|223','SV4a|326','SV4a|326','CRZ|GG22','151|006','E&V|012',null]),JSON.stringify(cd.lire));
+chk('« FLO » : code français, carte française',cd.cand.FLO[0]==='sv03:fr:fr',JSON.stringify(cd.cand.FLO));
+chk('« OBF » : code officiel, carte anglaise',cd.cand.OBF[0]==='sv03:en:en',JSON.stringify(cd.cand.OBF));
+chk('« sv4a » : extension japonaise',cd.cand.SV4A[0]==='SV4a:ja:jp',JSON.stringify(cd.cand.SV4A));
+chk('« XY », commun à l\'anglais et au français, ne présume pas de la langue',cd.cand.XY[0]==='xy1:fr:',JSON.stringify(cd.cand.XY));
+chk('« FLO 223 » : nom français, image française, langue, extension, cote',
+    cd.flo.nom==='Dracaufeu ex'&&/assets\.tcgdex\.net\/fr\/sv\/sv03\/223\/high\.webp$/.test(cd.flo.image)&&cd.flo.langue==='fr'
+    &&cd.flo.ref==='Flammes Obsidiennes 223'&&cd.flo.cote===23.4,JSON.stringify(cd.flo));
+chk('...en une seule requête',cd.floAppels.length===1,JSON.stringify(cd.floAppels));
+chk('« OBF 223 » : nom français, image ANGLAISE',cd.obf.nom==='Dracaufeu ex'&&/\/en\/sv\/sv03\/223\//.test(cd.obf.image)&&cd.obf.langue==='en',JSON.stringify(cd.obf));
+chk('« SV4a 326 » : la carte japonaise',cd.ja.nom==='フーディンex'&&/\/ja\/SV\/SV4a\/326\//.test(cd.ja.image)&&cd.ja.langue==='jp',JSON.stringify(cd.ja));
+chk('Code partagé : l\'extension où le numéro existe l\'emporte',cd.tem.nom==='Carte TEM'&&cd.tem.autres>=1,JSON.stringify(cd.tem));
+chk('Le numéro prend ses zéros quand l\'extension en met (« 151 6 » → 006)',cd.mew.nom==='Dracaufeu ex'&&/sv03\.5\/006/.test(cd.mew.image),JSON.stringify(cd.mew));
+chk('Sans image chez TCGdex : l\'adresse fixe de pokemontcg.io',cd.sansImage.image==='https://images.pokemontcg.io/sv3/12_hires.png',JSON.stringify(cd.sansImage));
+chk('Les erreurs disent quoi faire',/inconnu/.test(cd.inconnu.erreur)&&/illisible/.test(cd.illisible.erreur)&&/Aucune carte n° 999/.test(cd.absent.erreur),JSON.stringify([cd.inconnu,cd.illisible,cd.absent]));
+chk('« Pré-charger » remplit la fiche, puis passe au prix',
+    cd.fiche.nom==='Dracaufeu ex'&&cd.fiche.langue==='fr'&&/sv03\/223/.test(cd.fiche.image||'')&&/Cote Cardmarket : 23,40/.test(cd.fiche.info)&&cd.fiche.focus==='caPrix',JSON.stringify(cd.fiche));
+chk('La carte enregistrée garde tout',cd.carte&&cd.carte.nom==='Dracaufeu ex'&&cd.carte.prix===3&&cd.carte.langue==='fr'&&/sv03\/223/.test(cd.carte.image)
+    &&cd.carte.ref==='Flammes Obsidiennes 223'&&cd.carte.cote===23.4&&cd.carte.tags.join()==='Pile du jour',JSON.stringify(cd.carte));
+chk('« Enregistrer + suivante » rouvre une fiche neuve, mêmes étiquettes et langue, curseur dans le code',
+    cd.suite.ouverte&&cd.suite.tags.join()==='Pile du jour'&&cd.suite.langue==='fr'&&cd.suite.code===''&&cd.suite.nom===''&&cd.suite.focus==='caCode',JSON.stringify(cd.suite));
+chk('Un nom déjà tapé n\'est pas écrasé, une langue choisie non plus',cd.nomGarde==='Mon nom à moi'&&cd.langueGardee==='fr',JSON.stringify([cd.nomGarde,cd.langueGardee]));
+chk('Le bouton n\'apparaît que pour une carte nouvelle',cd.suivanteVisible&&cd.suivanteExistante);
+
+console.log('=== 9 quattuordecies. COCHER DANS UN SET ===');
+const co=await p.evaluate(async()=>{
+  const out={};
+  const sauve=cartes;
+  cartes=[{id:caId(),section:'',nom:'Hors set',url:'',prix:1,vente:null,tags:[],langue:'',image:'',drive_id:'',ref:'',cote:null,ordre:1,etat:'',raison:'',created_at:td(),updated_at:td()}];
+  caGroupe='set'; caManquantes=false; caRecherche=''; caCocher=false; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  out.bouton=[...document.querySelectorAll('.ca-cocher-l button')].map(b=>b.textContent.trim());
+  caCocherBascule(); await new Promise(r=>setTimeout(r,150));
+  caCocherReglage('Wizard','fr');
+  ECRITURES.length=0; const delai=CA_DELAI_ECR; CA_DELAI_ECR=2000;
+  // Trois clics sur des cases grises.
+  for(const n of ['1','2','58']){ const b=[...document.querySelectorAll('.ca-sec')][0].querySelectorAll('.ca-tuile')[+n-1];
+    b.click(); await new Promise(r=>setTimeout(r,30)); }
+  out.nb=cartes.length-1;
+  out.cartes=cartes.slice(1).map(c=>({nom:c.nom,tags:c.tags.join(),langue:c.langue,case:caCaseDe(c),prix:c.prix}));
+  out.ficheOuverte=document.getElementById('caModal').classList.contains('open')||document.getElementById('caCaseModal').classList.contains('open');
+  out.compte=[...document.querySelectorAll('.ca-sec')][0].querySelector('.ca-sec-n').textContent;
+  out.ecrituresImmediates=ECRITURES.length;
+  await caVider(); CA_DELAI_ECR=delai;
+  const ids=new Set(cartes.slice(1).map(c=>c.id));
+  out.premiere=(ECRITURES[0]||[]).filter(r=>ids.has(r[0])).length;
+  await ANNUL[ANNUL.length-1].fn(); await new Promise(r=>setTimeout(r,600)); await caVider();
+  out.apresAnnul=cartes.length-1;
+  caCocher=false; caGroupe='etiquette'; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Un bouton « ☑ Cocher mes cartes » dans la vue par set',co.bouton.includes('☑ Cocher mes cartes'),JSON.stringify(co.bouton));
+chk('Un clic sur une case grise ajoute la carte, sans ouvrir de fiche',co.nb===3&&co.ficheOuverte===false,JSON.stringify(co));
+chk('...avec son nom, sa case, l\'étiquette et la langue choisies',
+    JSON.stringify(co.cartes.map(c=>[c.nom,c.case,c.tags,c.langue]))===JSON.stringify([['Alakazam','base1/1','Wizard','fr'],['Tortank','base1/2','Wizard','fr'],['Pikachu','base1/58','Wizard','fr']]),JSON.stringify(co.cartes));
+chk('...et la case devient possédée',/^3 \/ 102/.test(co.compte),co.compte);
+chk('Les ajouts sont regroupés : une seule écriture pour trois clics',co.ecrituresImmediates===0&&co.premiere===3,JSON.stringify(co));
+chk('Chaque ajout s\'annule — et ne revient pas quand son image finit de se préparer',co.apresAnnul===2,String(co.apresAnnul));
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
