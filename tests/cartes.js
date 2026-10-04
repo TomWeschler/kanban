@@ -921,7 +921,7 @@ chk('La case se lit aussi dans une image TCGdex (« Choisir l\'image… »)',
 chk('La case d\'une carte se lit dans son image ou son adresse Cardmarket',
     ps.cases.join()==='base1/1,base1/1,base1/10,base1/4,,',ps.cases.join());
 chk('Chaque set s\'affiche, toutes ses cartes par ordre de numéro',
-    ps.titres.join('|')==='Set de base|Jungle|Fossile|Team Rocket|Gym Heroes|Gym Challenge'&&ps.tuilesBase===102&&ps.ordre.join()==='1,2,3,4,5',JSON.stringify(ps));
+    ps.titres.slice(0,6).join('|')==='Set de base|Jungle|Fossile|Team Rocket|Gym Heroes|Gym Challenge'&&ps.tuilesBase===102&&ps.ordre.join()==='1,2,3,4,5',JSON.stringify(ps));
 chk('La progression compte les cartes possédées, les cadeaux hors valeur',ps.compte==='3 / 102 · 76 €',ps.compte);
 chk('Une carte possédée s\'affiche, avec ses exemplaires',ps.t1.possedee&&ps.t1.nb==='×2'&&ps.t1.nom==='Alakazam SDB',JSON.stringify(ps.t1));
 chk('Une carte manquante est grisée, avec son image',ps.t3.manque&&/grayscale\(1\)/.test(ps.t3.gris)&&ps.t3.img==='https://images.pokemontcg.io/base1/3.png',JSON.stringify(ps.t3));
@@ -1218,6 +1218,59 @@ chk('...avec son nom, sa case, l\'étiquette et la langue choisies',
 chk('...et la case devient possédée',/^3 \/ 102/.test(co.compte),co.compte);
 chk('Les ajouts sont regroupés : une seule écriture pour trois clics',co.ecrituresImmediates===0&&co.premiere===3,JSON.stringify(co));
 chk('Chaque ajout s\'annule — et ne revient pas quand son image finit de se préparer',co.apresAnnul===2,String(co.apresAnnul));
+
+console.log('=== 9 quindecies. LES LIGNÉES ===');
+const li=await p.evaluate(async()=>{
+  const out={};
+  out.lignees=CA_LIGNEES.map(x=>[x[0],x[1],x[2].length,x[2].filter(e=>e[0].startsWith('ja:')).length]);
+  const tout=CA_LIGNEES.flatMap(x=>x[2]);
+  out.noms=['Abra de Morgane',"Draco d'Érika",'Dracolosse obscur','Léviator obscur','Magicarpe'].map(n=>tout.some(e=>e[1]===n));
+  out.tronques=tout.filter(e=>/ d$/.test(e[1])).length+CA_SETS.flatMap(x=>x[2]).filter(e=>/ d$/.test(e[1])).length;
+  const mk=(nom,o)=>({id:caId(),section:'',nom,url:'',prix:2,vente:null,tags:[],langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:70000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td(),...o});
+  // La même carte, quatre façons de la connaître.
+  const viaPt=mk('Alakazam ex 151 (pokemontcg)',{image:'https://images.pokemontcg.io/sv3pt5/65_hires.png'});
+  const viaDex=mk('Alakazam ex 151 (TCGdex)',{image:'https://assets.tcgdex.net/fr/sv/sv03.5/065/high.webp'});
+  const viaCm=mk('Alakazam ex 151 (Cardmarket)',{url:'https://www.cardmarket.com/fr/Pokemon/Products/Singles/151/Alakazam-ex-V1-MEW065'});
+  const jp=mk('Alakazam ex JP',{url:'https://www.cardmarket.com/fr/Pokemon/Products/Singles/Pokemon-Card-151/Alakazam-ex-V2-sv2a065'});
+  out.cles=[viaPt,viaDex,viaCm,jp].map(caCaseDe);
+  const sauve=cartes;
+  cartes=[viaPt,viaDex,viaCm,jp,mk('Alakazam SDB',{image:'https://images.pokemontcg.io/base1/1_hires.png'})];
+  caGroupe='set'; caRecherche=''; caManquantes=false; caCocher=false; renderCartes(); await new Promise(r=>setTimeout(r,300));
+  const sec=[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t==='Abra · Kadabra · Alakazam');
+  out.compte=sec.querySelector('.ca-sec-n').textContent;
+  out.compteBase=[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t==='Set de base').querySelector('.ca-sec-n').textContent;
+  const t=[...sec.querySelectorAll('.ca-tuile')];
+  out.premiere=t[0]&&{num:t[0].querySelector('.ca-num').textContent,possedee:!t[0].classList.contains('ca-manque')};
+  const mJp=t.find(x=>x.classList.contains('ca-manque')&&x.querySelector('.ca-lg-jp'));
+  out.manqueJp=mJp&&{img:mJp.querySelector('img').getAttribute('src'),ext:mJp.querySelector('.ca-manque-t').textContent};
+  out.nb3=(sec.querySelector('.ca-nb')||{}).textContent;
+  out.sous=document.querySelector('.ca-tete .jp-sous').textContent;
+  // Cocher une case japonaise : la langue suit.
+  caCocher=true; caCocherReglage('', 'fr'); renderCartes(); await new Promise(r=>setTimeout(r,150));
+  const caseJa=CA_LIGNEES[0][2].find(e=>e[0].startsWith('ja:')&&!cartes.some(c=>caCaseDe(c)===e[0]));
+  caCocherCase('alakazam',caseJa[0]); await new Promise(r=>setTimeout(r,80));
+  const nv=cartes[cartes.length-1];
+  out.cocheJp={langue:nv.langue,cle:caCaseDe(nv),attendu:caseJa[0],nom:nv.nom};
+  caCocher=false; caGroupe='etiquette'; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Trois lignées, en anglais et en japonais',
+    JSON.stringify(li.lignees.map(x=>[x[0],x[1]]))===JSON.stringify([['alakazam','Abra · Kadabra · Alakazam'],['dracolosse','Minidraco · Draco · Dracolosse'],['leviator','Magicarpe · Léviator']])
+    &&li.lignees.every(x=>x[2]>50&&x[3]>20),JSON.stringify(li.lignees));
+chk('Des noms français, y compris les dresseurs et les « obscurs »',li.noms.every(Boolean),JSON.stringify(li.noms));
+chk('Plus aucun nom tronqué à l\'apostrophe',li.tronques===0,String(li.tronques));
+chk('La même carte trouve sa case par pokemontcg.io, TCGdex ou Cardmarket',
+    li.cles[0]==='sv3pt5/65'&&li.cles[1]==='sv3pt5/65'&&li.cles[2]==='sv3pt5/65',JSON.stringify(li.cles));
+chk('...et la japonaise a la sienne',li.cles[3]==='ja:SV2a/065',li.cles[3]);
+chk('Une carte compte dans son set ET dans sa lignée',/^1 \/ 102/.test(li.compteBase)&&/^3 \//.test(li.compte),JSON.stringify([li.compteBase,li.compte]));
+chk('...avec ses exemplaires réunis',li.nb3==='×3',String(li.nb3));
+chk('Dans une lignée, chaque case dit son extension et son numéro',li.premiere&&/Set de Base 1/i.test(li.premiere.num)&&li.premiere.possedee,JSON.stringify(li.premiere));
+chk('Une case japonaise manquante : pastille JP, image TCGdex',
+    li.manqueJp&&/assets\.tcgdex\.net\/ja\//.test(li.manqueJp.img),JSON.stringify(li.manqueJp));
+chk('Le sous-titre compte sets et lignées',/6 sets, 3 lignées/.test(li.sous),li.sous);
+chk('Cocher une case japonaise donne une carte japonaise, dans sa case',
+    li.cocheJp.langue==='jp'&&li.cocheJp.cle===li.cocheJp.attendu,JSON.stringify(li.cocheJp));
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
