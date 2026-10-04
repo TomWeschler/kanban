@@ -193,7 +193,7 @@ console.log('=== 1. IMPORTER LA NOTE, UNE FOIS ===');
 const im=await p.evaluate(async()=>{
   const out={};
   switchPage('cartes'); await new Promise(r=>setTimeout(r,300));
-  out.ongletCree=!!FEUILLE&&FEUILLE[0].join()==='id,section,nom,url,prix,vente,etiquettes,image,drive_id,ref,cote,ordre,etat,raison,created_at,updated_at,langue';
+  out.ongletCree=!!FEUILLE&&FEUILLE[0].join()==='id,section,nom,url,prix,vente,etiquettes,image,drive_id,ref,cote,ordre,etat,raison,created_at,updated_at,langue,case';
   out.propose=document.getElementById('caWrap').textContent.replace(/\s+/g,' ');
   const avantNote=caNoteDe().content;
   APPELS.length=0;
@@ -788,7 +788,7 @@ const ancien=await p.evaluate(async()=>{
   const c=cartes.find(x=>x.id==='caV1');
   return {entete:FEUILLE[0].join(),tags:c&&c.tags,langue:c&&c.langue};
 });
-chk('L\'en-tête d\'un ancien onglet est mis à jour',/,etiquettes,.*,langue$/.test(ancien.entete),ancien.entete);
+chk('L\'en-tête d\'un ancien onglet est mis à jour',/,etiquettes,.*,langue,case$/.test(ancien.entete),ancien.entete);
 chk('...et son « ou » devient la première étiquette',(ancien.tags||[]).join()==='Noé'&&ancien.langue==='',JSON.stringify(ancien));
 
 console.log('=== 9 quinquies. MASQUER LES CHIFFRES ===');
@@ -929,8 +929,8 @@ chk('Les cartes hors de ces sets n\'y apparaissent pas',ps.horsSet===true);
 chk('Le sous-titre compte les sets',/6 sets/.test(ps.sous),ps.sous);
 chk('« Manquantes seulement »',ps.manquantes===99,String(ps.manquantes));
 chk('La recherche filtre les cases',ps.recherche.join('|')==='Kadabra',ps.recherche.join('|'));
-chk('Une case manquante propose les cartes sans set qui y ressemblent',
-    /SET DE BASE — N° 32/.test(ps.modale.titre)&&ps.modale.nom==='Kadabra'&&ps.modale.proposees.join()==='Kadabra SDB',JSON.stringify(ps.modale));
+chk('Une case manquante propose TOUTES les cartes, les ressemblantes d\'abord',
+    /SET DE BASE — N° 32/.test(ps.modale.titre)&&ps.modale.nom==='Kadabra'&&ps.modale.proposees[0]==='Kadabra SDB'&&ps.modale.proposees.length===6,JSON.stringify(ps.modale));
 chk('...et y range la carte choisie, prix et étiquettes compris',
     ps.lie.case==='base1/32'&&ps.lie.image==='https://images.pokemontcg.io/base1/32_hires.png'&&/^4 \/ 102/.test(ps.lie.compte),JSON.stringify(ps.lie));
 chk('« Je l\'ai » ouvre une fiche préremplie',ps.fiche.nom==='Pikachu'&&/base1\/58_hires/.test(ps.fiche.image||''),JSON.stringify(ps.fiche));
@@ -1374,6 +1374,54 @@ chk('Ma carte japonaise remplit la case internationale',
 chk('...la case le dit : « +JP », et l\'équivalent au survol',fu.t148.marque&&/aussi en japonais : SV4a 253/.test(fu.t148.titre||''),JSON.stringify(fu.t148));
 chk('...et la case japonaise séparée a disparu',fu.plusDeTuileSv4a253===true);
 chk('La lignée Métamorph est affichée',fu.metamorph===true);
+
+console.log('=== 9 duodevicies. RANGER UNE CARTE À LA MAIN ===');
+const rm=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,o)=>({id:caId(),section:'',nom,url:'',prix:3,vente:null,tags:['Magicarpe'],langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:1,etat:'',raison:'',created_at:td(),updated_at:td(),case:'',...o});
+  const sauve=cartes;
+  // Une japonaise qu'aucune base ne rapproche : sa propre image, aucune case.
+  const jp=mk('Magicarpe JP rare',{langue:'jp',image:'https://exemple.fr/ma-photo-jp.png'});
+  const ailleurs=mk('Abra rangée ailleurs',{image:'https://images.pokemontcg.io/base1/43_hires.png'});
+  cartes=[jp,ailleurs,mk('Sans rapport',{tags:['Divers']})];
+  out.avant=caCaseDe(jp);
+  caGroupe='set'; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  caCase('base1','35'); await new Promise(r=>setTimeout(r,150));
+  const items=()=>[...document.querySelectorAll('#caCaseRes .ca-case-c')];
+  out.toutes=items().length; out.compteur=document.getElementById('caCaseNb').textContent;
+  out.recherche=document.getElementById('caCaseQ').value;
+  out.premiere=items()[0].querySelector('b').textContent;
+  out.mini=!!items()[0].querySelector('.ca-case-mini img');
+  out.deja=(items().find(b=>/Abra rangée ailleurs/.test(b.textContent))||{textContent:''}).textContent.replace(/\s+/g,' ');
+  const q=document.getElementById('caCaseQ'); q.value='sans'; q.dispatchEvent(new Event('input'));
+  out.filtre=items().map(b=>b.querySelector('b').textContent);
+  q.value=''; q.dispatchEvent(new Event('input'));
+  await caCaseLier(jp.id); await new Promise(r=>setTimeout(r,150));
+  const r=caParId(jp.id);
+  out.apres={case:caCaseDe(r),image:r.image,langue:r.langue};
+  out.ligne=FEUILLE.find(x=>x[0]===jp.id); out.ligne=out.ligne&&out.ligne[17];
+  out.compte=[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t==='Set de base').querySelector('.ca-sec-n').textContent;
+  // La fiche le dit, et l'on peut l'en sortir.
+  caGroupe='etiquette'; renderCartes(); await new Promise(r=>setTimeout(r,120));
+  caOuvrir(jp.id); await new Promise(r=>setTimeout(r,100));
+  out.fiche=document.getElementById('caCaseFiche').textContent.replace(/\s+/g,' ');
+  document.querySelector('#caCaseFiche .ca-lienbtn').click(); await caEnregistrer(); await new Promise(r=>setTimeout(r,120));
+  out.sortie=caCaseDe(caParId(jp.id));
+  cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Une japonaise non reconnue n\'a pas de case',rm.avant==='',rm.avant);
+chk('La fenêtre propose toutes mes cartes, sans recherche préremplie',rm.toutes===3&&rm.recherche===''&&/3 cartes/.test(rm.compteur),JSON.stringify(rm));
+chk('...les ressemblantes d\'abord, avec leur miniature',rm.premiere==='Magicarpe JP rare'&&rm.mini===true,JSON.stringify(rm));
+chk('...et dit où une carte est déjà rangée',/rangée dans : Set de base 43/.test(rm.deja),rm.deja);
+chk('La recherche filtre la liste',rm.filtre.join('|')==='Sans rapport',rm.filtre.join('|'));
+chk('Relier la range dans la case, et elle GARDE son image japonaise',
+    rm.apres.case==='base1/35'&&rm.apres.image==='https://exemple.fr/ma-photo-jp.png'&&rm.apres.langue==='jp',JSON.stringify(rm.apres));
+chk('...le choix est écrit dans la table',rm.ligne==='base1/35',String(rm.ligne));
+chk('...et la case est comptée (avec l\'Abra déjà rangée)',/^2 \/ 102/.test(rm.compte),rm.compte);
+chk('La fiche dit où la carte est rangée',/Rangée à la main dans : Set de base 35/.test(rm.fiche),rm.fiche);
+chk('...et l\'on peut l\'en sortir',rm.sortie==='',rm.sortie);
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({

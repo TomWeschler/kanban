@@ -1355,6 +1355,14 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-case-c{text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:0.4rem 0.6rem;
   color:var(--text);font:inherit;font-size:0.78rem;cursor:pointer;display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap}
 .ca-case-c:hover{border-color:var(--accent)}
+.ca-case-c{flex-wrap:nowrap}
+.ca-case-mini{flex:0 0 34px;height:47px;border-radius:3px;overflow:hidden;background:var(--surface3)}
+.ca-case-mini img{width:100%;height:100%;object-fit:cover;display:block}
+.ca-case-txt{display:flex;flex-direction:column;gap:0.15rem;min-width:0}
+.ca-case-n{display:flex;align-items:center;gap:0.35rem}
+.ca-case-l{display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center}
+.ca-case-deja{font-size:0.62rem;color:var(--warn)}
+.ca-lg-mini{position:static;display:inline-flex;min-width:0;height:auto;font-size:0.5rem;padding:0 0.25rem;box-shadow:none;border-width:1px}
 .ca-sec-cadeau{font-family:var(--font-mono);font-size:0.8rem;font-weight:700;color:var(--warn)}
 .ca-hors{background:none;border:none;padding:0;font:inherit;color:var(--warn);cursor:pointer;text-transform:none;letter-spacing:0}
 .ca-hors:hover{text-decoration:underline}
@@ -2612,6 +2620,7 @@ body,body *{font-family:var(--font-body)}
           <div class="field"><label>Prix de vente</label><input type="text" inputmode="decimal" id="caVente" placeholder="—"></div>
         </div>
         <div class="field"><label>Langue</label><div class="ca-lgs" id="caLgs"></div></div>
+        <div class="ca-info" id="caCaseFiche"></div>
         <div class="field"><label>Étiquettes <span class="ca-aide">— la première sert au regroupement</span></label>
           <div class="ca-tags" id="caTagsBox" onclick="document.getElementById('caTagIn').focus()">
             <span id="caTagsListe"></span>
@@ -2640,7 +2649,7 @@ body,body *{font-family:var(--font-body)}
       <div>
         <div class="ca-case-nom" id="caCaseNom"></div>
         <button class="btn-nav" onclick="caCaseNouvelle()" style="margin:0.5rem 0 1rem">＋ Je l'ai : l'ajouter</button>
-        <div class="field"><label>Ou c'est une carte déjà saisie, sans set</label>
+        <div class="field"><label>Ou c'est une de mes cartes <span class="ca-aide" id="caCaseNb"></span></label>
           <input type="search" id="caCaseQ" class="ca-q" oninput="caCaseListe()" placeholder="Chercher dans mes cartes…"></div>
         <div class="ca-case-res" id="caCaseRes"></div>
       </div>
@@ -15805,7 +15814,7 @@ const CA_SHEET='cartes';
 // désormais PLUSIEURS étiquettes, séparées par des virgules. La langue arrive
 // en dernière colonne, pour ne rien décaler.
 const CA_HEADER=['id','section','nom','url','prix','vente','etiquettes','image','drive_id','ref','cote',
-                 'ordre','etat','raison','created_at','updated_at','langue'];
+                 'ordre','etat','raison','created_at','updated_at','langue','case'];
 const CA_LANGUES=[['fr','Français','FR'],['jp','Japonais','JP'],['en','Anglais','EN'],
                   ['kr','Coréen','KR'],['cn','Chinois','CN']];
 const caLangue=c=>CA_LANGUES.find(l=>l[0]===c.langue)||null;
@@ -16203,8 +16212,8 @@ const caId=()=>'ca'+Date.now().toString(36)+(caSeq=(caSeq+1)%46656).toString(36)
 const caNum=v=>v==null||v===''?'':String(v);
 const caRow=c=>[c.id,c.section||'',c.nom||'',c.url||'',caNum(c.prix),caNum(c.vente),caTags(c.tags).join(', '),
   c.image||'',c.drive_id||'',c.ref||'',caNum(c.cote),String(c.ordre||0),c.etat||'',c.raison||'',
-  c.created_at||'',c.updated_at||'',c.langue||''];
-const caTombe=id=>[id,'','','','','','','','','','','','','','',td(),''];
+  c.created_at||'',c.updated_at||'',c.langue||'',c.case||''];
+const caTombe=id=>[id,'','','','','','','','','','','','','','',td(),'',''];
 function caDeLigne(x){
   const g=i=>String(x[i]==null?'':x[i]).trim();
   const n=i=>{ const v=g(i); return v===''?null:nbFr(v,null); };
@@ -16212,7 +16221,7 @@ function caDeLigne(x){
   return {id:g(0),section:g(1),nom:g(2),url:caWeb(g(3)),prix:n(4),vente:n(5),tags:caTags(g(6)),
     image:caWeb(g(7)),drive_id:g(8)==='-'?'':g(8),ref:g(9),cote:n(10),ordre:parseInt(g(11),10)||0,
     etat:g(12),raison:g(13),created_at:g(14),updated_at:g(15),
-    langue:CA_LANGUES.some(l=>l[0]===lg)?lg:''};
+    langue:CA_LANGUES.some(l=>l[0]===lg)?lg:'',case:g(17)};
 }
 async function ensureCartesSheet(){
   const titles=await sheetTitres();
@@ -16228,7 +16237,7 @@ async function ensureCartesSheet(){
 async function loadCartes(){
   if(!accessToken)return;
   await ensureCartesSheet();
-  const [tout]=await sheetBatchGet([`${CA_SHEET}!A:Q`]);
+  const [tout]=await sheetBatchGet([`${CA_SHEET}!A:R`]);
   // L'en-tête suit le schéma : l'onglet reste lisible tel quel dans Sheets.
   if(tout.length&&(tout[0]||[]).join('|')!==CA_HEADER.join('|'))await sheetPut(`${CA_SHEET}!A1`,[CA_HEADER]);
   const l=tout.slice(1).filter(x=>x[0]);
@@ -16922,7 +16931,11 @@ function caCleDe(c){
   return k;
 }
 // La case d'une carte dans les collections suivies, ou rien.
-const caCaseDe=c=>{ let k=caCleDe(c); if(CA_ALIAS.has(k))k=CA_ALIAS.get(k); return CA_CLES_SUIVIES.has(k)?k:''; };
+// Une case choisie À LA MAIN l'emporte : une carte japonaise que rien ne
+// rapproche de son équivalent peut ainsi se ranger dans le set, en gardant
+// sa propre image.
+const caCaseDe=c=>{ let k=c.case||caCleDe(c); if(CA_ALIAS.has(k))k=CA_ALIAS.get(k); return CA_CLES_SUIVIES.has(k)?k:''; };
+const caCaseLibelle=k=>{ for(const col of CA_COLLECTIONS){ const e=col.cases.find(x=>x.k===k); if(e)return `${e.ext} ${e.num}`; } return k; };
 // L'image d'une case, à partir de sa seule clé.
 function caCaseImage(k,q){
   if(k.startsWith('ja:')){ const [set,local]=k.slice(3).split('/');
@@ -16982,23 +16995,43 @@ function caCase(cid,k){
   document.getElementById('caCaseTitre').textContent=`${e.ext.toUpperCase()} — N° ${e.num}`;
   document.getElementById('caCaseImg').innerHTML=`<img src="${caCaseImage(e.k,'hd')}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`;
   document.getElementById('caCaseNom').textContent=e.nom;
-  document.getElementById('caCaseQ').value=tabSansAccent(e.nom).split(/[\s'-]/)[0];
+  document.getElementById('caCaseQ').value='';
   caCaseListe();
   modalOuvre('caCaseModal');
 }
+// TOUTES les cartes sont proposées — y compris celles qu'une case a déjà
+// reconnues : une japonaise peut avoir été prise pour une autre. Celles qui
+// ressemblent à la case viennent d'abord ; la recherche filtre le reste.
 function caCaseListe(){
+  if(!caCaseEd)return;
   const q=tabSansAccent(document.getElementById('caCaseQ').value.trim());
-  const l=cartes.filter(c=>!caCaseDe(c)&&(!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')).includes(q)))
-    .sort((a,b)=>a.nom.localeCompare(b.nom,'fr')).slice(0,40);
-  document.getElementById('caCaseRes').innerHTML=l.length?l.map(c=>`<button class="ca-case-c" onclick="caCaseLier('${MD_ATT(c.id)}')">
-      <b>${tdEsc(c.nom)}</b>${c.prix!=null?` <span class="ca-prix">${caEur(c.prix)}</span>`:''}${caTags(c.tags).map(t=>` <span class="ca-ou">${tdEsc(t)}</span>`).join('')}</button>`).join('')
-    :'<div class="ca-vide-s">Aucune carte sans set ne correspond.</div>';
+  const mot=tabSansAccent(caCaseEd.nom).split(/[\s'-]/)[0];
+  const proche=c=>tabSansAccent(c.nom).includes(mot)?0:1;
+  const l=cartes.filter(c=>!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')+' '+(c.ref||'')).includes(q))
+    .sort((a,b)=>(proche(a)-proche(b))||a.nom.localeCompare(b.nom,'fr'));
+  document.getElementById('caCaseNb').textContent=`${l.length} carte${l.length>1?'s':''}`;
+  document.getElementById('caCaseRes').innerHTML=l.length?l.map(c=>{
+    const im=caImmediate(c), k=caCaseDe(c);
+    return `<button class="ca-case-c" onclick="caCaseLier('${MD_ATT(c.id)}')" data-k="${MD_ATT(c.id)}">
+      <span class="ca-case-mini">${im?`<img src="${MD_ATT(im)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</span>
+      <span class="ca-case-txt"><span class="ca-case-n"><b>${tdEsc(c.nom)}</b>${c.langue?`<span class="ca-lg ca-lg-${c.langue} ca-lg-mini">${tdEsc((caLangue(c)||[])[2]||'')}</span>`:''}</span>
+        <span class="ca-case-l">${c.prix!=null?`<span class="ca-prix">${caEur(c.prix)}</span> `:''}${caTags(c.tags).map(t=>`<span class="ca-ou">${tdEsc(t)}</span>`).join(' ')}
+        ${k?`<span class="ca-case-deja">${k===caCaseEd.k?'déjà dans cette case':'rangée dans : '+tdEsc(caCaseLibelle(k))}</span>`:''}</span></span></button>`;
+  }).join(''):'<div class="ca-vide-s">Aucune carte ne correspond.</div>';
+  // Les miniatures archivées viennent de l'appareil, un peu après.
+  l.forEach(async c=>{ if(caImmediate(c))return; const u=await caLocale(c); if(!u)return;
+    const b=document.querySelector(`.ca-case-c[data-k="${CSS.escape(c.id)}"] .ca-case-mini`);
+    if(b&&!b.querySelector('img'))b.innerHTML=`<img src="${MD_ATT(u)}" alt="">`; });
 }
 async function caCaseLier(id){
   const c=caParId(id); if(!c||!caCaseEd)return;
   const avant={...c};
-  const v={...c,image:caCaseImage(caCaseEd.k,'hd'),drive_id:'',etat:'',raison:'',
-    ref:`${caCaseEd.set} ${caCaseEd.n}`};
+  // La carte est RANGÉE dans la case ; son image n'est pas remplacée — une
+  // carte japonaise garde son image japonaise. Sans image, elle prend celle
+  // de la case.
+  const aImage=!!(c.image||(c.drive_id&&c.drive_id!=='-'));
+  const v={...c,case:caCaseEd.k,ref:c.ref||`${caCaseEd.set} ${caCaseEd.n}`};
+  if(!aImage)Object.assign(v,{image:caCaseImage(caCaseEd.k,'hd'),drive_id:'',etat:'',raison:''});
   if(caCaseEd.jp&&!v.langue)v.langue='jp';
   modalFerme('caCaseModal'); caCaseEd=null;
   await caSauver([v]);
@@ -17214,7 +17247,7 @@ function caOuvrir(id){
   document.getElementById('caTagIn').value='';
   document.getElementById('caOuListe').innerHTML=caToutesEtiquettes()
     .map(o=>`<option value="${MD_ATT(o)}">`).join('');
-  caTagsDessiner(); caLgsDessiner();
+  caTagsDessiner(); caLgsDessiner(); caCaseFiche(c);
   document.getElementById('caSuppr').style.display=c?'':'none';
   caLienMaj(c?c.url:'');
   caApercu(c);
@@ -17274,6 +17307,11 @@ function caLgsDessiner(){
   document.getElementById('caLgs').innerHTML=[['','—','—']].concat(CA_LANGUES).map(([v,l,c])=>
     `<button type="button" class="ca-lg-choix${caEd.langue===v?' on':''}${v?' ca-lg-'+v:''}" onclick="caEd.langue='${v}';caLgsDessiner()" title="${l}">${v?c:'Aucune'}</button>`).join('');
 }
+function caCaseFiche(c){
+  const el=document.getElementById('caCaseFiche'); if(!el)return;
+  const k=c&&c.case;
+  el.innerHTML=k?`Rangée à la main dans : <b>${tdEsc(caCaseLibelle(k))}</b> <button type="button" class="ca-lienbtn" onclick="caEd.caseRetiree=true;caCaseFiche(null)">retirer</button>`:'';
+}
 function caLienMaj(u){
   document.getElementById('caLien').innerHTML=caWeb(u)?`<a href="${MD_ATT(caWeb(u))}" target="_blank" rel="noopener">Ouvrir la fiche ↗</a>`:'';
 }
@@ -17327,6 +17365,7 @@ async function caEnregistrer(suivante){
   Object.assign(c,{nom,url:caWeb(url),
     prix:num('caPrix'),vente:num('caVente'),
     tags:caTags(caEd.tags.concat(document.getElementById('caTagIn').value)),langue:caEd.langue});
+  if(caEd.caseRetiree)c.case='';
   // L'image suit ce qu'on a fait : photo, choix, ou adresse nouvelle.
   if(caEd.photo){ Object.assign(c,{drive_id:caEd.photo.id,image:'',etat:'',raison:''}); }
   else if(caEd.image!=null){ Object.assign(c,{image:caWeb(caEd.image),drive_id:'',etat:'',raison:''});
@@ -19701,7 +19740,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.77.1';
+const APP_VERSION='v1.78.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
