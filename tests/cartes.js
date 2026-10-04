@@ -1256,20 +1256,20 @@ const li=await p.evaluate(async()=>{
   caCocher=false; caGroupe='etiquette'; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
   return out;
 });
-chk('Trois lignées, en anglais et en japonais',
-    JSON.stringify(li.lignees.map(x=>[x[0],x[1]]))===JSON.stringify([['alakazam','Abra · Kadabra · Alakazam'],['dracolosse','Minidraco · Draco · Dracolosse'],['leviator','Magicarpe · Léviator']])
-    &&li.lignees.every(x=>x[2]>50&&x[3]>20),JSON.stringify(li.lignees));
+chk('Quatre lignées, Métamorph comprise',
+    JSON.stringify(li.lignees.map(x=>[x[0],x[1]]))===JSON.stringify([['alakazam','Abra · Kadabra · Alakazam'],['dracolosse','Minidraco · Draco · Dracolosse'],['leviator','Magicarpe · Léviator'],['metamorph','Métamorph']])
+    &&li.lignees.every(x=>x[2]>25),JSON.stringify(li.lignees));
 chk('Des noms français, y compris les dresseurs et les « obscurs »',li.noms.every(Boolean),JSON.stringify(li.noms));
 chk('Plus aucun nom tronqué à l\'apostrophe',li.tronques===0,String(li.tronques));
 chk('La même carte trouve sa case par pokemontcg.io, TCGdex ou Cardmarket',
     li.cles[0]==='sv3pt5/65'&&li.cles[1]==='sv3pt5/65'&&li.cles[2]==='sv3pt5/65',JSON.stringify(li.cles));
-chk('...et la japonaise a la sienne',li.cles[3]==='ja:SV2a/065',li.cles[3]);
-chk('Une carte compte dans son set ET dans sa lignée',/^1 \/ 102/.test(li.compteBase)&&/^3 \//.test(li.compte),JSON.stringify([li.compteBase,li.compte]));
-chk('...avec ses exemplaires réunis',li.nb3==='×3',String(li.nb3));
+chk('...et sa version japonaise remplit la MÊME case',li.cles[3]==='sv3pt5/65',li.cles[3]);
+chk('Une carte compte dans son set ET dans sa lignée',/^1 \/ 102/.test(li.compteBase)&&/^2 \//.test(li.compte),JSON.stringify([li.compteBase,li.compte]));
+chk('...avec ses exemplaires réunis, toutes langues',li.nb3==='×4',String(li.nb3));
 chk('Dans une lignée, chaque case dit son extension et son numéro',li.premiere&&/Set de Base 1/i.test(li.premiere.num)&&li.premiere.possedee,JSON.stringify(li.premiere));
 chk('Une case japonaise manquante : pastille JP, image TCGdex',
     li.manqueJp&&/assets\.tcgdex\.net\/ja\//.test(li.manqueJp.img),JSON.stringify(li.manqueJp));
-chk('Le sous-titre compte sets et lignées',/6 sets, 3 lignées/.test(li.sous),li.sous);
+chk('Le sous-titre compte sets et lignées',/6 sets, 4 lignées/.test(li.sous),li.sous);
 chk('Cocher une case japonaise donne une carte japonaise, dans sa case',
     li.cocheJp.langue==='jp'&&li.cocheJp.cle===li.cocheJp.attendu,JSON.stringify(li.cocheJp));
 
@@ -1331,6 +1331,45 @@ chk('...et le trou laissé dans l\'ancienne se referme',oc.trouA.join('|')==='A2
 chk('Une suppression referme le trou',oc.posB==='B2:1,A3:2',oc.posB);
 chk('Un nouvel ajout arrive en dernier',oc.nouveau.join('|')==='A2|A1|A4',oc.nouveau.join('|'));
 chk('Avec une recherche, pas de flèches, et l\'on dit pourquoi',oc.flechesRecherche===0&&oc.aide===true,JSON.stringify(oc));
+
+console.log('=== 9 septendecies. UNE CASE PAR CARTE, TOUTES LANGUES ===');
+const fu=await p.evaluate(async()=>{
+  const out={};
+  const cas=k=>CA_COLLECTIONS.flatMap(x=>x.cases).find(c=>c.k===k);
+  out.paf148=cas('sv4pt5/148'); out.paf215=cas('sv4pt5/215'); out.base43=cas('base1/43');
+  out.plusDeCaseJa=['ja:SV4a/253','ja:SV4a/326','ja:PMCG1/043'].every(k=>!CA_CLES_SUIVIES.has(k));
+  out.alias=['ja:SV4a/253','ja:SV4a/326','ja:PMCG1/043','ja:SV4a/073'].map(k=>CA_ALIAS.get(k));
+  out.tailles=CA_LIGNEES.map(x=>x[2].length);
+  // Le cas de la capture : l'Abra shiny japonaise remplit la case de Destinées de Paldea.
+  const mk=(nom,url,image)=>({id:caId(),section:'',nom,url,prix:2,vente:null,tags:['Alakazam'],langue:'jp',image:image||'',drive_id:'',ref:'',cote:null,
+    ordre:1,etat:'',raison:'',created_at:td(),updated_at:td()});
+  const sauve=cartes;
+  cartes=[mk('Abra Shiny sv4a','https://www.cardmarket.com/en/Pokemon/Products/Singles/Shiny-Treasure-ex/Abra-V2-sv4a253'),
+          mk('Alakazam Shiny sv4a','','https://assets.tcgdex.net/ja/SV/SV4a/326/high.webp')];
+  out.cles=cartes.map(caCaseDe);
+  caGroupe='set'; caRecherche=''; caManquantes=false; caCocher=false; renderCartes(); await new Promise(r=>setTimeout(r,300));
+  const sec=[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t==='Abra · Kadabra · Alakazam');
+  const tuiles=[...sec.querySelectorAll('.ca-tuile')];
+  const t148=tuiles.find(t=>/Destinées de Paldea 148/.test(t.querySelector('.ca-num').textContent));
+  out.t148={possedee:t148&&!t148.classList.contains('ca-manque'),nom:t148&&t148.querySelector('.ca-nom').textContent,
+    marque:t148&&!!t148.querySelector('.ca-alt'),titre:t148&&t148.querySelector('.ca-num').getAttribute('title')};
+  out.plusDeTuileSv4a253=!tuiles.some(t=>/SV4a 253/.test(t.querySelector('.ca-num').textContent));
+  out.metamorph=!![...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t==='Métamorph');
+  caGroupe='etiquette'; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('L\'Abra shiny SV4a 253 et l\'Abra PAF 148 ne font qu\'une case',
+    JSON.stringify(fu.paf148.alt)===JSON.stringify(['ja:SV4a/253'])&&fu.alias[0]==='sv4pt5/148',JSON.stringify(fu.paf148));
+chk('...de même l\'Alakazam ex SV4a 326 et la PAF 215, malgré une homonyme de 151',fu.alias[1]==='sv4pt5/215',String(fu.alias[1]));
+chk('L\'Expansion Pack japonais rejoint le Set de base, pas le Base Set 2',fu.alias[2]==='base1/43',String(fu.alias[2]));
+chk('Une illustration réimprimée deux fois au Japon rejoint une seule case',fu.alias[3]==='sv3pt5/63',String(fu.alias[3]));
+chk('Les impressions fusionnées n\'ont plus de case à elles',fu.plusDeCaseJa===true);
+chk('Moins de cases : une par carte',fu.tailles[0]<70&&fu.tailles[1]<120&&fu.tailles[2]<125,JSON.stringify(fu.tailles));
+chk('Ma carte japonaise remplit la case internationale',
+    fu.cles.join()==='sv4pt5/148,sv4pt5/215'&&fu.t148.possedee&&fu.t148.nom==='Abra Shiny sv4a',JSON.stringify([fu.cles,fu.t148]));
+chk('...la case le dit : « +JP », et l\'équivalent au survol',fu.t148.marque&&/aussi en japonais : SV4a 253/.test(fu.t148.titre||''),JSON.stringify(fu.t148));
+chk('...et la case japonaise séparée a disparu',fu.plusDeTuileSv4a253===true);
+chk('La lignée Métamorph est affichée',fu.metamorph===true);
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
