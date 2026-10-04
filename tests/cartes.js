@@ -1225,7 +1225,10 @@ const li=await p.evaluate(async()=>{
   const out={};
   out.lignees=CA_LIGNEES.map(x=>[x[0],x[1],x[2].length,x[2].filter(e=>e[0].startsWith('ja:')).length]);
   const tout=CA_LIGNEES.flatMap(x=>x[2]);
-  out.noms=['Abra de Morgane',"Draco d'Érika",'Dracolosse obscur','Léviator obscur','Magicarpe'].map(n=>tout.some(e=>e[1]===n));
+  out.noms=['Abra de Morgane',"Draco d'Érika",'Dracolosse obscur',"Magicarpe d'Ondine",'Magicarpe'].map(n=>tout.some(e=>e[1]===n));
+  const mag=CA_LIGNEES.find(x=>x[0]==='magicarpe');
+  out.sansLeviator=!!mag&&mag[2].every(e=>/magicarpe/i.test(e[1]));
+  out.magNb=mag?mag[2].length:0;
   out.tronques=tout.filter(e=>/ d$/.test(e[1])).length+CA_SETS.flatMap(x=>x[2]).filter(e=>/ d$/.test(e[1])).length;
   const mk=(nom,o)=>({id:caId(),section:'',nom,url:'',prix:2,vente:null,tags:[],langue:'',image:'',drive_id:'',ref:'',cote:null,
     ordre:70000+cartes.length,etat:'',raison:'',created_at:td(),updated_at:td(),...o});
@@ -1257,9 +1260,10 @@ const li=await p.evaluate(async()=>{
   return out;
 });
 chk('Quatre lignées, Métamorph comprise',
-    JSON.stringify(li.lignees.map(x=>[x[0],x[1]]))===JSON.stringify([['alakazam','Abra · Kadabra · Alakazam'],['dracolosse','Minidraco · Draco · Dracolosse'],['leviator','Magicarpe · Léviator'],['metamorph','Métamorph']])
+    JSON.stringify(li.lignees.map(x=>[x[0],x[1]]))===JSON.stringify([['alakazam','Abra · Kadabra · Alakazam'],['dracolosse','Minidraco · Draco · Dracolosse'],['magicarpe','Magicarpe'],['metamorph','Métamorph']])
     &&li.lignees.every(x=>x[2]>25),JSON.stringify(li.lignees));
 chk('Des noms français, y compris les dresseurs et les « obscurs »',li.noms.every(Boolean),JSON.stringify(li.noms));
+chk('La lignée Magicarpe ne garde que les Magicarpe, sans Léviator',li.sansLeviator===true&&li.magNb>40,JSON.stringify([li.sansLeviator,li.magNb]));
 chk('Plus aucun nom tronqué à l\'apostrophe',li.tronques===0,String(li.tronques));
 chk('La même carte trouve sa case par pokemontcg.io, TCGdex ou Cardmarket',
     li.cles[0]==='sv3pt5/65'&&li.cles[1]==='sv3pt5/65'&&li.cles[2]==='sv3pt5/65',JSON.stringify(li.cles));
