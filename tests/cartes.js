@@ -364,7 +364,7 @@ const ge=await p.evaluate(async()=>{
   document.getElementById('caPrix').value='4';
   await caEnregistrer(); await new Promise(r=>setTimeout(r,600)); await caVider();
   const n=cartes.find(x=>x.nom==='Axolotto promo');
-  out.ajout={section:n.section,image:n.image,drive:n.drive_id,ordre:n.ordre,max:Math.max(...cartes.map(x=>x.ordre))};
+  out.ajout={section:n.section,image:n.image,drive:n.drive_id,ordre:n.ordre,max:cartes.filter(x=>caTags(x.tags)[0]===caTags(n.tags)[0]).length};
   out.recherchesApres=svp()-out.requetesFiche;
   out.sections=[...document.querySelectorAll('.ca-sec-t')].map(x=>x.textContent);
   // d. Supprimer : pierre tombale, et annulable.
@@ -387,7 +387,7 @@ chk('Une adresse collée dans la fiche est résolue sur-le-champ',/Trouvée depu
 chk('...et ce résultat est enregistré, sans seconde recherche',
     /svp\/121_hires/.test(ge.ajout.image)&&ge.requetesFiche===1&&ge.recherchesApres===0&&ge.baseFiche===0,JSON.stringify(ge));
 chk('...puis archivé',/^d/.test(ge.ajout.drive),ge.ajout.drive);
-chk('Une nouvelle carte se range en dernier',ge.ajout.ordre===ge.ajout.max);
+chk('Une nouvelle carte se range en dernier de sa section',ge.ajout.ordre===ge.ajout.max,JSON.stringify(ge.ajout));
 chk('Une étiquette nouvelle fait un groupe nouveau',ge.sections.includes('Nouvelle étiquette'),ge.sections.join('|'));
 chk('Supprimer laisse une pierre tombale',ge.tombe===true&&ge.disparue===true);
 chk('...et s\'annule',ge.revenue===true);
@@ -969,12 +969,13 @@ const al=await p.evaluate(async()=>{
   out.hauts=[...tu].map(t=>Math.round(t.querySelector('.ca-img').getBoundingClientRect().top-t.getBoundingClientRect().top));
   out.ordre=[...tu].map(t=>t.querySelector('.ca-nom').textContent);
   out.premiereOption=document.querySelectorAll('.ca-tri')[1].options[0].value;
+  out.triDefaut=window.TRI_DEFAUT;
   cartes=sauve; caTri=triAvant; renderCartes(); await new Promise(r=>setTimeout(r,200));
   return out;
 });
 chk('Aucun numéro parasite sur les tuiles',al.textesParasites.every(t=>t===''),JSON.stringify(al.textesParasites));
 chk('...toutes les images au même niveau',new Set(al.hauts).size===1,JSON.stringify(al.hauts));
-chk('Tri par défaut : prix décroissant',al.ordre.join('|')==='Grande|Moyenne|Petite|Sans prix'&&al.premiereOption==='prix-',JSON.stringify(al));
+chk('Tri par défaut : l\'ordre de la section',al.ordre.join('|')==='Petite|Grande|Moyenne|Sans prix'&&al.premiereOption==='ordre'&&al.triDefaut==='ordre',JSON.stringify(al));
 
 console.log('=== 9 decies. LA LISTE DES ÉTIQUETTES ===');
 const et=await p.evaluate(async()=>{
@@ -1271,6 +1272,65 @@ chk('Une case japonaise manquante : pastille JP, image TCGdex',
 chk('Le sous-titre compte sets et lignées',/6 sets, 3 lignées/.test(li.sous),li.sous);
 chk('Cocher une case japonaise donne une carte japonaise, dans sa case',
     li.cocheJp.langue==='jp'&&li.cocheJp.cle===li.cocheJp.attendu,JSON.stringify(li.cocheJp));
+
+console.log('=== 9 sedecies. L\'ORDRE DES CARTES DANS UNE SECTION ===');
+const oc=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,tags,ordre)=>({id:caId(),section:'',nom,url:'',prix:1,vente:null,tags,langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre,etat:'',raison:'',created_at:td(),updated_at:td()});
+  const sauve=cartes;
+  // Des ordres hérités : un compteur global, avec un trou et un doublon.
+  cartes=[mk('A1',['A'],10),mk('A2',['A'],40),mk('A3',['A'],40),mk('B1',['B'],2),mk('B2',['B'],77)];
+  ECRITURES.length=0;
+  caCompacter(); await caVider();
+  const pos=()=>Object.fromEntries(cartes.map(c=>[c.nom,c.ordre]));
+  out.compacte=pos(); out.ecrites=ECRITURES.flat().length;
+  // Déjà d'aplomb : rien n'est écrit.
+  ECRITURES.length=0; caCompacter(); await caVider(); out.rienAEcrire=ECRITURES.length;
+  caGroupe='etiquette'; caTri='ordre'; caRecherche=''; caOu=''; caDeplacement=false;
+  renderCartes(); await new Promise(r=>setTimeout(r,150));
+  const noms=k=>[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t===k).querySelectorAll('.ca-nom');
+  out.boutonDeplacer=[...document.querySelectorAll('.ca-actions button')].some(b=>/Déplacer/.test(b.textContent));
+  caDeplacementBascule(); await new Promise(r=>setTimeout(r,150));
+  out.fleches=document.querySelectorAll('.ca-dep').length;
+  out.imbriques=document.querySelectorAll('.ca-tuile button, .ca-tuile .ca-dep').length;
+  out.tuilesIntactes=document.querySelectorAll('.ca-tuile-dep > .ca-tuile').length;
+  // A3 tout au début, puis A1 d'un cran à droite.
+  const a3=cartes.find(c=>c.nom==='A3'), a1=cartes.find(c=>c.nom==='A1');
+  caDeplacerCarte(a3.id,'debut'); caDeplacerCarte(a1.id,1); await new Promise(r=>setTimeout(r,100));
+  out.apres=[...noms('A')].map(x=>x.textContent);
+  out.positions=pos();
+  // Une carte qui change de section arrive EN DERNIER de la nouvelle.
+  caOuvrir(cartes.find(c=>c.nom==='A3').id); await new Promise(r=>setTimeout(r,80));
+  caEd.tags=['B']; caTagsDessiner(); await caEnregistrer(); await new Promise(r=>setTimeout(r,150));
+  out.changeB=[...noms('B')].map(x=>x.textContent);
+  out.trouA=[...noms('A')].map(x=>x.textContent); out.posA=cartes.filter(c=>c.tags[0]==='A').map(c=>c.ordre).sort().join();
+  // Une suppression referme le trou.
+  caOuvrir(cartes.find(c=>c.nom==='B1').id); await new Promise(r=>setTimeout(r,80));
+  await caSupprimer(); await new Promise(r=>setTimeout(r,100));
+  out.posB=cartes.filter(c=>c.tags[0]==='B').sort((a,b)=>a.ordre-b.ordre).map(c=>c.nom+':'+c.ordre).join();
+  // Un nouvel ajout arrive en dernier.
+  caOuvrir(null); await new Promise(r=>setTimeout(r,80));
+  document.getElementById('caNom').value='A4'; caEd.tags=['A']; caTagsDessiner();
+  await caEnregistrer(); await new Promise(r=>setTimeout(r,150));
+  out.nouveau=[...noms('A')].map(x=>x.textContent);
+  // Avec une recherche, les flèches se retirent : la voisine visible ne serait pas la vraie.
+  caRecherche='A'; renderCartes(); await new Promise(r=>setTimeout(r,120));
+  out.flechesRecherche=document.querySelectorAll('.ca-dep').length; out.aide=!!document.querySelector('.ca-aide-dep');
+  caRecherche=''; caDeplacement=false; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Les ordres hérités deviennent 1, 2, 3… par section, trous et doublons résorbés',
+    JSON.stringify(oc.compacte)===JSON.stringify({A1:1,A2:2,A3:3,B1:1,B2:2}),JSON.stringify(oc.compacte));
+chk('...seules les cartes changées sont écrites, puis plus rien',oc.ecrites===5&&oc.rienAEcrire===0,JSON.stringify([oc.ecrites,oc.rienAEcrire]));
+chk('Un bouton « ✥ Déplacer » met des flèches sur les cartes',oc.boutonDeplacer&&oc.fleches===5,JSON.stringify(oc));
+chk('...sous les tuiles, jamais dedans : une tuile est un bouton',oc.imbriques===0&&oc.tuilesIntactes===5,JSON.stringify([oc.imbriques,oc.tuilesIntactes]));
+chk('Tout au début, puis d\'un cran : l\'ordre suit',oc.apres.join('|')==='A3|A2|A1'&&oc.positions.A3===1&&oc.positions.A1===3,JSON.stringify(oc));
+chk('Une carte qui change de section arrive en dernier de la nouvelle',oc.changeB.join('|')==='B1|B2|A3',oc.changeB.join('|'));
+chk('...et le trou laissé dans l\'ancienne se referme',oc.trouA.join('|')==='A2|A1'&&oc.posA==='1,2',JSON.stringify([oc.trouA,oc.posA]));
+chk('Une suppression referme le trou',oc.posB==='B2:1,A3:2',oc.posB);
+chk('Un nouvel ajout arrive en dernier',oc.nouveau.join('|')==='A2|A1|A4',oc.nouveau.join('|'));
+chk('Avec une recherche, pas de flèches, et l\'on dit pourquoi',oc.flechesRecherche===0&&oc.aide===true,JSON.stringify(oc));
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({

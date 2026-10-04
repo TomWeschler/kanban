@@ -1317,6 +1317,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-tag-x:hover,.ca-tag-g:hover{color:var(--text)}
 .ca-aide{text-transform:none;letter-spacing:0;color:var(--text-dim);opacity:0.8}
 .ca-img.travail{border-color:var(--accent)}
+.ca-tuile-dep{display:flex;flex-direction:column;gap:0.3rem}
+.ca-tuile-dep .ca-tuile{flex:1}
+.ca-dep{display:flex;justify-content:center;gap:0.25rem}
+.ca-aide-dep{font-size:0.7rem;color:var(--warn)}
 /* Réordonner : les groupes se replient en une liste de titres, à flèches. */
 .ca-sec.plie .ca-sec-h{margin:0;padding:0.45rem 0.6rem;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
 .ca-sec.plie{margin-bottom:0.35rem}
@@ -15815,8 +15819,8 @@ const LS_CA_DOSSIER='kanban_cartes_dossier';
 // pour ne pas refaire une seule recherche déjà faite.
 const LS_CA_IMG='kanban_cartes_img2';
 let cartes=[], cartesLoaded=false, cartesLoadedAt=0;
-// Tri par défaut : prix décroissant — les cartes qui comptent d'abord.
-let caRecherche='', caOu='', caTri='prix-', caEd=null, caGen=0;
+// Tri par défaut : l'ORDRE de chaque section, choisi à la main.
+let caRecherche='', caOu='', caTri='ordre', caEd=null, caGen=0, caDeplacement=false;
 // Regrouper par section (l'origine des cartes) ou par PREMIÈRE étiquette — la
 // principale, celle qu'on met en tête. Mémorisé sur l'appareil.
 // Par défaut : la PREMIÈRE ÉTIQUETTE. Les sections héritées de l'import
@@ -16234,6 +16238,9 @@ async function loadCartes(){
   cartes=Object.values(m);
   cartesLoaded=true; cartesLoadedAt=Date.now();
   caMigrerSections();
+  // Les ordres hérités (un compteur global) deviennent des positions par
+  // section ; trous et doublons se résorbent ici, une fois pour toutes.
+  caCompacter();
   cacheSet('cartes',cartes);
 }
 const caParId=id=>cartes.find(c=>c.id===id)||null;
@@ -16544,6 +16551,7 @@ async function caImporter(){
   if(!l.length){ toast('Rien à importer','err'); return; }
   showLoad(true);
   const ok=await caSauver(l);
+  caCompacter();
   showLoad(false);
   toast(ok?`${l.length} cartes importées — la note n'a pas été modifiée`:'ÉCHEC de l\'import','');
   renderCartes();
@@ -16552,15 +16560,51 @@ async function caImporter(){
 // ── La page ───────────────────────────────────────────────────────────────
 const caEur=v=>v==null?'—':v.toLocaleString('fr-FR',{minimumFractionDigits:Number.isInteger(v)?0:2,maximumFractionDigits:2})+' €';
 const caSomme=l=>l.reduce((s,c)=>s+(c.prix||0),0);
-// Les sections dans l'ordre de leur première carte.
+// La section d'une carte : sa première étiquette, sous sa graphie commune.
+// Une même étiquette, quelle que soit sa graphie, fait un seul groupe.
+function caGroupeCle(){
+  const norm=t=>tabSansAccent(t).toLowerCase();
+  const canon=new Map(caToutesEtiquettes().map(t=>[norm(t),t]));
+  return c=>{ const t=caTags(c.tags)[0]; return t?canon.get(norm(t))||t:''; };
+}
+// L'ORDRE D'UNE SECTION. Le champ « ordre » d'une carte est sa position dans
+// sa section : 1, 2, 3… À égalité, la plus ancienne passe devant.
+const caParOrdre=(a,b)=>((a.ordre||0)-(b.ordre||0))||String(a.created_at||'').localeCompare(String(b.created_at||''))||String(a.id).localeCompare(String(b.id));
+// Après chaque ajout, suppression, changement d'étiquette ou déplacement : on
+// renumérote chaque section 1, 2, 3… sans trou ni doublon. Seules les cartes
+// dont la position change sont réécrites — et regroupées en une écriture.
+function caCompacter(){
+  const cle=caGroupeCle(), m=new Map();
+  cartes.forEach(c=>{ const k=cle(c); if(!m.has(k))m.set(k,[]); m.get(k).push(c); });
+  let n=0;
+  m.forEach(l=>l.sort(caParOrdre).forEach((c,i)=>{ if(c.ordre!==i+1){ c.ordre=i+1; caPlusTard(c); n++; } }));
+  return n;
+}
+// Une carte qui arrive dans une section — nouvelle, ou changée d'étiquette —
+// se range EN DERNIER.
+function caEnDernier(c){
+  const cle=caGroupeCle(), k=cle(c);
+  c.ordre=cartes.filter(x=>x.id!==c.id&&cle(x)===k).reduce((m,x)=>Math.max(m,x.ordre||0),0)+1;
+}
+// Déplacer une carte dans sa section : -1 / +1, ou tout au début / à la fin.
+function caDeplacerCarte(id,sens){
+  const c=caParId(id); if(!c)return;
+  const cle=caGroupeCle(), k=cle(c);
+  const l=cartes.filter(x=>cle(x)===k).sort(caParOrdre);
+  const i=l.findIndex(x=>x.id===id);
+  const j=sens==='debut'?0:sens==='fin'?l.length-1:i+sens;
+  if(i<0||j<0||j>=l.length||i===j)return;
+  l.splice(j,0,l.splice(i,1)[0]);
+  l.forEach((x,p)=>{ if(x.ordre!==p+1){ x.ordre=p+1; caPlusTard(x); } });
+  caRedessiner();
+}
+function caDeplacementBascule(){ caDeplacement=!caDeplacement; if(caDeplacement)caTri='ordre'; renderCartes(); }
+// Les sections dans l'ordre choisi.
 function caSections(){
   const par='etiquette';
   const m=new Map();
-  // Une même étiquette, quelle que soit sa graphie, fait un seul groupe.
-  const norm=t=>tabSansAccent(t).toLowerCase();
-  const canon=new Map(caToutesEtiquettes().map(t=>[norm(t),t]));
-  const cle=c=>{ const t=caTags(c.tags)[0]; return t?canon.get(norm(t))||t:''; };
-  cartes.slice().sort((a,b)=>(a.ordre||0)-(b.ordre||0)).forEach(c=>{
+  const cle=caGroupeCle();
+  cartes.slice().sort(caParOrdre).forEach(c=>{
     const t=cle(c);
     if(!m.has(t))m.set(t,[]); m.get(t).push(c);
   });
@@ -16589,6 +16633,9 @@ async function renderCartes(){
     try{ await caVider(); await loadCartes(); }catch(e){ toast('Lecture de l\'onglet « cartes » impossible','err'); }
   }
   if(curPage!=='cartes')return;
+  // Filet : quoi qu'il se soit passé (annulation, autre appareil), les ordres
+  // de chaque section sont remis d'aplomb. Rien n'est écrit s'ils le sont.
+  caCompacter();
   // La note n'est lue que pour proposer l'import : pas de chargement réseau si
   // les cartes sont déjà là.
   if(!cartes.length&&accessToken&&!notesLoaded){ try{ await loadNotes(); }catch(e){} }
@@ -16621,6 +16668,7 @@ async function renderCartes(){
       <div class="jp-titre"><span class="ca-titre">Cartes</span>
         <span class="jp-sous">${cartes.length} carte${cartes.length>1?'s':''} · ${parSet?`${CA_SETS.length} sets, ${CA_LIGNEES.length} lignées`:`${secs.length} groupe${secs.length>1?'s':''}`}</span></div>
       <div class="ca-actions">
+        ${caGroupe!=='set'&&!caReordonner?`<button class="btn-nav${caDeplacement?'':' out'}" onclick="caDeplacementBascule()" title="Changer l'ordre des cartes dans leur section">${caDeplacement?'✓ Fin du déplacement':'✥ Déplacer'}</button>`:''}
         <button class="btn-nav${caReordonner?'':' out'}" onclick="caOrdreBascule()" title="Choisir l'ordre des groupes">${caReordonner?'✓ Terminé':'⇅ Ordre'}</button>
         ${caReordonner&&(caOrdre[caGroupe==='set'?'set':'etiquette']||[]).length?`<button class="btn-nav out" onclick="caOrdreRaz('${caGroupe==='set'?'set':'etiquette'}')" title="Revenir à l'ordre d'origine">${caGroupe==='set'?'Ordre de sortie':'Ordre alphabétique'}</button>`:''}
         <button class="btn-nav out" onclick="caChiffresBascule()" title="${caChiffres?'Masquer':'Afficher'} les totaux">${caChiffres?'Masquer':'Afficher'} les chiffres</button>
@@ -16639,13 +16687,14 @@ async function renderCartes(){
         <option value="set"${caGroupe==='set'?' selected':''}>Par set</option>
       </select>
       <select class="ca-tri" onchange="caTri=this.value;caRedessiner()">
-        ${[['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z'],['ordre','Ordre de saisie']].map(([v,l])=>
+        ${[['ordre','Ordre'],['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z']].map(([v,l])=>
           `<option value="${v}"${caTri===v?' selected':''}>${l}</option>`).join('')}
       </select>
       ${lieux.length>1&&!parSet?`<div class="ca-lieux">${['',...lieux].map(o=>
         `<button class="sb-tag${caOu===o?' active':''}" onclick="caOu=this.dataset.o;renderCartes()" data-o="${MD_ATT(o)}">${o?tdEsc(o):'Tous'}</button>`).join('')}</div>`:''}
     </div>
     <div class="ca-etat" id="caEtat"></div>
+    ${caDeplacement&&!parSet&&(caTri!=='ordre'||caRecherche.trim()||caOu)?'<div class="ca-aide-dep">Pour déplacer des cartes, retire la recherche et le filtre : on déplace une carte parmi TOUTES celles de sa section.</div>':''}
     </div>
     ${parSet?`<div class="ca-cocher-l">
       <label class="ca-manq"><input type="checkbox" ${caManquantes?'checked':''} onchange="caManquantes=this.checked;caRedessiner()"> manquantes seulement</label>
@@ -16657,7 +16706,17 @@ async function renderCartes(){
     <div id="caSections">${parSet?sv.html:caSectionsHtml(vis)}</div>`;
   caChargerImages(parSet?sv.vues:vues,++caGen);
 }
+// Déplacer n'a de sens que sur la section entière, rangée par ordre : avec un
+// filtre ou un autre tri, la voisine visible ne serait pas la vraie voisine.
+// Les flèches vont SOUS la tuile, pas dedans : une tuile est un bouton, et un
+// bouton ne peut pas en contenir d'autres — le navigateur la refermait trop tôt.
+const caFlechesCarte=(c,i,n)=>`<span class="ca-dep">
+  <button class="ca-ord-b" ${i===0?'disabled':''} title="Tout au début" onclick="caDeplacerCarte('${MD_ATT(c.id)}','debut')">⇤</button>
+  <button class="ca-ord-b" ${i===0?'disabled':''} title="Avancer" onclick="caDeplacerCarte('${MD_ATT(c.id)}',-1)">←</button>
+  <button class="ca-ord-b" ${i>=n-1?'disabled':''} title="Reculer" onclick="caDeplacerCarte('${MD_ATT(c.id)}',1)">→</button>
+  <button class="ca-ord-b" ${i>=n-1?'disabled':''} title="Tout à la fin" onclick="caDeplacerCarte('${MD_ATT(c.id)}','fin')">⇥</button></span>`;
 function caSectionsHtml(vis){
+  const deplacable=caTri==='ordre'&&!caRecherche.trim()&&!caOu;
   const ordonnables=vis.filter(x=>x.s.titre!=='Sans étiquette').length;
   const html=vis.filter(x=>x.l.length||caReordonner).map(({s,l},i)=>`
     <section class="ca-sec${caReordonner?' plie':''}" data-t="${MD_ATT(s.titre)}">
@@ -16666,7 +16725,8 @@ function caSectionsHtml(vis){
         // à côté de son nom, là où on le cherche.
         l.length&&caHors.some(h=>h.toLowerCase()===String(s.titre).toLowerCase())?`<span class="ca-sec-cadeau">${caEur(caSomme(l))}</span>`:''}
         <span class="ca-sec-n">${l.length} · ${caEur(caSomme(l))}</span></div>
-      ${caReordonner?'':`<div class="ca-grille">${l.map(c=>caTuile(c)).join('')}</div>`}
+      ${caReordonner?'':`<div class="ca-grille">${l.map((c,i)=>caDeplacement&&deplacable
+        ?`<div class="ca-tuile-dep">${caTuile(c)}${caFlechesCarte(c,i,l.length)}</div>`:caTuile(c)).join('')}</div>`}
     </section>`).join('');
   return html||'<div class="ca-vide">Aucune carte ne correspond.</div>';
 }
@@ -17067,6 +17127,7 @@ function caCocherCase(cid,k){
   const c={id:caId(),section:'',nom:e.nom,url:'',prix:null,vente:null,tags:caTags(caCocherTag),langue:jp?'jp':caCocherLg,
     image:caCaseImage(e.k,'hd'),drive_id:'',ref:`${e.ext} ${n}`,cote:null,
     ordre:cartes.reduce((m,x)=>Math.max(m,x.ordre||0),0)+1,etat:'',raison:'',created_at:td(),updated_at:td()};
+  caEnDernier(c);
   caPlusTard(c,true);                                 // regroupées : vingt clics, une écriture
   caRedessiner();
   offerUndo(`${e.nom} (${e.ext} ${n}) ajoutée`,async()=>{
@@ -17269,7 +17330,11 @@ async function caEnregistrer(suivante){
   // langue, le curseur dans le champ du code — pour enchaîner une pile.
   const suite=suivante?{tags:caTags(c.tags),langue:c.langue||''}:null;
   caFermer();
+  // Nouvelle carte, ou carte changée de section : en dernier dans sa section.
+  const cleG=caGroupeCle();
+  if(!avant||cleG(avant)!==cleG(c))caEnDernier(c);
   const ok=suite?(caSauver([c]),true):await caSauver([c]);
+  caCompacter();
   if(!ok){ toast('ÉCHEC de l\'enregistrement','err'); }
   renderCartes();
   if(suite){ caOuvrir(null); caEd.tags=suite.tags; caEd.langue=suite.langue; caTagsDessiner(); caLgsDessiner();
@@ -17286,6 +17351,7 @@ async function caSupprimer(){
   const c=caParId(caEd.id); caFermer(); if(!c)return;
   cartes=cartes.filter(x=>x.id!==c.id); cacheSet('cartes',cartes);
   if(accessToken)await sheetBatchUpsert(CA_SHEET,[caTombe(c.id)]);
+  caCompacter();                                      // le trou laissé se referme
   renderCartes();
   // L'image reste dans Drive : l'annulation la retrouve telle quelle.
   offerUndo(`« ${c.nom} » supprimée`,async()=>{ await caSauver([c]); renderCartes(); });
@@ -19624,7 +19690,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.75.0';
+const APP_VERSION='v1.76.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
