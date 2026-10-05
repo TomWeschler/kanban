@@ -1525,6 +1525,36 @@ chk('Les couleurs se relisent depuis le classeur',coul.relue==='#e85d4a',coul.re
 chk('...et un réglage d\'avant les couleurs se lit sans erreur',coul.ancienne==='{}',coul.ancienne);
 chk('En vue par set, filtrer ne change pas la teinte',coul.setStable===true,String(coul.setStable));
 
+console.log('=== 9 duovicies. LES FILTRES À LA COULEUR DES SECTIONS ===');
+const fc=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,tags)=>({id:caId(),section:'',nom,url:'',prix:5,vente:null,tags,langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:1,etat:'',raison:'',created_at:td(),updated_at:td(),case:''});
+  const sauve=cartes, sauveO=JSON.parse(JSON.stringify(caOrdre));
+  cartes=[mk('A',['Alpha','Second']),mk('B',['Bravo'])];
+  caOrdre={etiquette:[],set:[],couleur:{'etiquette:bravo':'#f28ab2'}};
+  caGroupe='etiquette'; caRecherche=''; caOu=''; caReordonner=false; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  const puce=o=>document.querySelector(`.ca-lieux .sb-tag[data-o="${o}"]`);
+  const sec=t=>[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t===t);
+  out.alpha=[puce('Alpha').style.getPropertyValue('--sec'),sec('Alpha').style.getPropertyValue('--sec')];
+  out.bravo=puce('Bravo').style.getPropertyValue('--sec');
+  out.second=puce('Second').getAttribute('style');
+  out.tous=puce('').getAttribute('style');
+  caOu='Bravo'; renderCartes(); await new Promise(r=>setTimeout(r,100));
+  out.actif=getComputedStyle(puce('Bravo')).backgroundColor;
+  caOu=''; caGroupe='set'; caSetFiltrer(''); await new Promise(r=>setTimeout(r,200));
+  const ps=[...document.querySelectorAll('.ca-setf .sb-tag')];
+  out.sets=ps.slice(1).every(b=>{ const s=[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t===b.textContent);
+    return s&&b.style.getPropertyValue('--sec')===s.style.getPropertyValue('--sec')&&b.style.getPropertyValue('--sec'); });
+  caGroupe='etiquette'; cartes=sauve; caOrdre=sauveO; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Un filtre d\'étiquette prend la couleur de sa section',fc.alpha[0]&&fc.alpha[0]===fc.alpha[1],JSON.stringify(fc.alpha));
+chk('...y compris une couleur choisie',fc.bravo==='#f28ab2',fc.bravo);
+chk('...une étiquette sans section, et « Tous », restent neutres',fc.second===null&&fc.tous===null,JSON.stringify([fc.second,fc.tous]));
+chk('...le filtre actif est rempli de sa couleur',fc.actif==='rgb(242, 138, 178)',fc.actif);
+chk('Chaque filtre de set a la couleur de sa collection',fc.sets===true,String(fc.sets));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),

@@ -1364,6 +1364,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-hors-cat{margin-top:0.8rem;padding-top:0.6rem;border-top:1px dashed var(--border2)}
 .ca-hors-t{font-size:0.78rem;font-weight:600;margin-bottom:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:baseline}
 .ca-setf{margin-bottom:0.2rem}
+/* Les filtres portent la couleur de leur section. */
+.ca-lieux .sb-tag.ca-f[style]{border-color:color-mix(in srgb,var(--sec) 65%,transparent);
+  color:color-mix(in srgb,var(--sec) 70%,var(--text));background:color-mix(in srgb,var(--sec) 10%,transparent)}
+.ca-lieux .sb-tag.ca-f[style]:hover{border-color:var(--sec);color:var(--text)}
+.ca-lieux .sb-tag.ca-f.active[style]{background:var(--sec);border-color:var(--sec);color:#09090e}
 .ca-setf .sb-tag{font-size:0.62rem;padding:3px 9px}
 /* La rareté, en bas à gauche de l'image. */
 .ca-rar{position:absolute;left:0.35rem;bottom:3.3rem;z-index:2;font-family:var(--font-mono);font-size:0.72rem;font-weight:700;
@@ -16728,6 +16733,13 @@ async function renderCartes(){
   const secs=caSections();
   const lieux=caToutesEtiquettes();
   if(caOu&&!lieux.includes(caOu))caOu='';
+  // Un filtre d'étiquette prend la couleur de la section du même nom, s'il y
+  // en a une ; une étiquette qui n'est jamais la première reste neutre.
+  const rangEt=new Map(secs.map((g,i)=>[caOrdreNorm(g.titre),{i,titre:g.titre}]));
+  const caFiltreStyle=(mode,r,titre)=>{
+    if(mode==='etiquette'){ if(!r)return ''; titre=r.titre; r=r.i; }
+    const c=caCouleur(mode,titre,r); return c?` style="--sec:${c}"`:'';
+  };
   const vis=secs.map(s=>({s,l:caVisibles(s)}));
   const sv=parSet?caSetsVue():null;
   const vues=vis.flatMap(x=>x.l);
@@ -16766,13 +16778,13 @@ async function renderCartes(){
           `<option value="${v}"${caTri===v?' selected':''}>${l}</option>`).join('')}
       </select>
       ${lieux.length>1&&!parSet?`<div class="ca-lieux">${['',...lieux].map(o=>
-        `<button class="sb-tag${caOu===o?' active':''}" onclick="caOu=this.dataset.o;renderCartes()" data-o="${MD_ATT(o)}">${o?tdEsc(o):'Tous'}</button>`).join('')}</div>`:''}
+        `<button class="sb-tag${caOu===o?' active':''}${o&&rangEt.has(caOrdreNorm(o))?' ca-f':''}" onclick="caOu=this.dataset.o;renderCartes()" data-o="${MD_ATT(o)}"${o?caFiltreStyle('etiquette',rangEt.get(caOrdreNorm(o))):''}>${o?tdEsc(o):'Tous'}</button>`).join('')}</div>`:''}
     </div>
     <div class="ca-etat" id="caEtat"></div>
     ${caDeplacement&&!parSet&&(caTri!=='ordre'||caRecherche.trim()||caOu)?'<div class="ca-aide-dep">Pour déplacer des cartes, retire la recherche et le filtre : on déplace une carte parmi TOUTES celles de sa section.</div>':''}
     </div>
     ${parSet&&!caReordonner?`<div class="ca-lieux ca-setf">${[['','Tous']].concat(caOrdonner(CA_COLLECTIONS,'set',x=>x.nom).map(c=>[c.id,c.nom]))
-      .map(([id,n])=>`<button class="sb-tag${caSetFiltre===id?' active':''}" onclick="caSetFiltrer('${id}')">${tdEsc(n)}</button>`).join('')}</div>`:''}
+      .map(([id,n],i)=>`<button class="sb-tag${caSetFiltre===id?' active':''}${id?' ca-f':''}" onclick="caSetFiltrer('${id}')"${id?caFiltreStyle('set',i-1,n):''}>${tdEsc(n)}</button>`).join('')}</div>`:''}
     ${parSet?`<div class="ca-cocher-l">
       <label class="ca-manq"><input type="checkbox" ${caManquantes?'checked':''} onchange="caManquantes=this.checked;caRedessiner()"> manquantes seulement</label>
       <button class="btn-nav${caCocher?'':' out'}" onclick="caCocherBascule()" title="Un clic sur une case grise ajoute la carte">${caCocher?'✓ Fin du cochage':'☑ Cocher mes cartes'}</button>
@@ -19857,7 +19869,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.81.0';
+const APP_VERSION='v1.82.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
