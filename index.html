@@ -1257,9 +1257,24 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
   font-size:0.78rem;padding:0.4rem 0.5rem;border-radius:8px}
 .ca-lieux{display:flex;gap:0.3rem;flex-wrap:wrap}
 .ca-lieux .sb-tag{font-size:0.62rem;padding:3px 9px}
-.ca-sec-h{display:flex;align-items:baseline;gap:0.6rem;margin:0.3rem 0 0.55rem;
-  border-bottom:1px solid var(--border);padding-bottom:0.35rem}
-.ca-sec-t{font-weight:700;font-size:0.95rem}
+.ca-sec-h{display:flex;align-items:center;gap:0.6rem;margin:0 0 0.7rem;
+  border-bottom:1px solid color-mix(in srgb,var(--sec,var(--border)) 40%,var(--border));padding-bottom:0.45rem}
+.ca-sec-t{font-weight:700;font-size:1.02rem;color:color-mix(in srgb,var(--sec,var(--text)) 55%,var(--text))}
+/* Chaque section est un panneau à part, teinté de sa couleur, bien espacé du
+   suivant : on voit d'un coup d'œil qu'on change de collection. */
+.ca-sec{background:color-mix(in srgb,var(--sec,transparent) 9%,var(--bg));
+  border:1px solid color-mix(in srgb,var(--sec,var(--border)) 35%,var(--border));
+  border-left:5px solid var(--sec,var(--border2));border-radius:12px;
+  padding:0.85rem 0.95rem 1rem;margin-bottom:1.8rem}
+.ca-sec[data-neutre]{background:var(--surface2)}
+.ca-coul{width:0.95rem;height:0.95rem;border-radius:50%;flex:none;cursor:pointer;padding:0;
+  background:var(--sec,transparent);border:2px solid color-mix(in srgb,var(--sec,var(--text-dim)) 60%,var(--text))}
+.ca-coul:hover{transform:scale(1.2)}
+.ca-coul-menu{position:absolute;z-index:3000;display:flex;flex-wrap:wrap;gap:0.35rem;max-width:12.5rem;padding:0.5rem;
+  background:var(--surface2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.ca-coul-ch{width:1.7rem;height:1.7rem;border-radius:50%;border:2px solid var(--border2);background:var(--surface3);
+  color:var(--text-dim);font-size:0.56rem;font-family:var(--font-mono);cursor:pointer;padding:0}
+.ca-coul-ch.active{border-color:var(--text);box-shadow:0 0 0 2px var(--accent)}
 .ca-sec-n{margin-left:auto;font-family:var(--font-mono);font-size:0.64rem;color:var(--text-dim)}
 .ca-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:0.75rem}
 .ca-tuile{display:flex;flex-direction:column;gap:0.3rem;background:var(--surface);border:1px solid var(--border);
@@ -1322,8 +1337,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-dep{display:flex;justify-content:center;gap:0.25rem}
 .ca-aide-dep{font-size:0.7rem;color:var(--warn)}
 /* Réordonner : les groupes se replient en une liste de titres, à flèches. */
-.ca-sec.plie .ca-sec-h{margin:0;padding:0.45rem 0.6rem;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
-.ca-sec.plie{margin-bottom:0.35rem}
+.ca-sec.plie .ca-sec-h{margin:0;padding:0;border:0}
+.ca-sec.plie{margin-bottom:0.35rem;padding:0.45rem 0.6rem;border-radius:8px}
 .ca-ord{display:flex;gap:0.2rem;margin-right:0.5rem}
 .ca-ord-b{width:1.7rem;height:1.6rem;border:1px solid var(--border2);background:var(--surface2);color:var(--text);border-radius:5px;cursor:pointer;font-size:0.8rem}
 .ca-ord-b:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
@@ -16277,17 +16292,19 @@ const caParId=id=>cartes.find(c=>c.id===id)||null;
 // Un groupe absent de l'ordre choisi — une étiquette nouvelle — se range à la
 // suite, par ordre alphabétique ; « Sans étiquette » reste toujours en dernier.
 const CA_CFG_ID='cfg:ordre';
-let caOrdre={etiquette:[],set:[]};
-try{ const o=JSON.parse(localStorage.getItem('kanban_cartes_ordre')||'null'); if(o)caOrdre={etiquette:o.etiquette||[],set:o.set||[]}; }catch(e){}
+let caOrdre={etiquette:[],set:[],couleur:{}};
+const caCfgNorm=o=>({etiquette:Array.isArray(o.etiquette)?o.etiquette:[],set:Array.isArray(o.set)?o.set:[],
+  couleur:o.couleur&&typeof o.couleur==='object'&&!Array.isArray(o.couleur)?o.couleur:{}});
+try{ const o=JSON.parse(localStorage.getItem('kanban_cartes_ordre')||'null'); if(o)caOrdre=caCfgNorm(o); }catch(e){}
 function caCfgLire(v){
-  try{ const o=JSON.parse(v||'{}'); caOrdre={etiquette:Array.isArray(o.etiquette)?o.etiquette:[],set:Array.isArray(o.set)?o.set:[]}; }catch(e){}
+  try{ caOrdre=caCfgNorm(JSON.parse(v||'{}')); }catch(e){}
   try{ localStorage.setItem('kanban_cartes_ordre',JSON.stringify(caOrdre)); }catch(e){}
 }
 async function caCfgSauver(){
   try{ localStorage.setItem('kanban_cartes_ordre',JSON.stringify(caOrdre)); }catch(e){}
   if(!accessToken)return true;
   const r=new Array(CA_HEADER.length).fill('');
-  r[0]=CA_CFG_ID; r[2]='(réglage : ordre des groupes)'; r[13]=JSON.stringify(caOrdre); r[15]=td();
+  r[0]=CA_CFG_ID; r[2]='(réglage : ordre et couleurs des groupes)'; r[13]=JSON.stringify(caOrdre); r[15]=td();
   return sheetBatchUpsert(CA_SHEET,[r]);
 }
 const caOrdreNorm=t=>tabSansAccent(String(t)).toLowerCase();
@@ -16322,6 +16339,39 @@ const caFleches=(mode,titre,i,n)=>caReordonner?`<span class="ca-ord">
   <button class="ca-ord-b" ${i===0?'disabled':''} title="Monter" onclick="caDeplacer('${mode}',this.closest('.ca-sec').dataset.t,-1)">↑</button>
   <button class="ca-ord-b" ${i>=n-1?'disabled':''} title="Descendre" onclick="caDeplacer('${mode}',this.closest('.ca-sec').dataset.t,1)">↓</button>
   <button class="ca-ord-b" ${i>=n-1?'disabled':''} title="Tout en bas" onclick="caDeplacer('${mode}',this.closest('.ca-sec').dataset.t,'bas')">⤓</button></span>`:'';
+// La couleur d'une section : sans choix, chacune prend la suivante de la
+// palette, pour qu'on voie où l'une finit et l'autre commence ; « aucune »
+// la rend neutre. Le choix suit la section (par son nom), d'un appareil à
+// l'autre, dans la même ligne de réglage que l'ordre.
+const CA_COULEURS=['#5b8def','#56c596','#f2994a','#b07cf0','#e85d4a','#3fb8c9','#f2c94c','#f28ab2','#9aa0a6'];
+const caCoulCle=(mode,titre)=>mode+':'+caOrdreNorm(titre);
+function caCouleur(mode,titre,ix){
+  const c=(caOrdre.couleur||{})[caCoulCle(mode,titre)];
+  if(c==='aucune')return '';
+  return CA_COULEURS.includes(c)?c:CA_COULEURS[ix%CA_COULEURS.length];
+}
+const caSecStyle=(mode,titre,ix)=>{ const c=caCouleur(mode,titre,ix); return c?` style="--sec:${c}"`:' data-neutre="1"'; };
+const caPastille=(mode,titre)=>caReordonner?'':`<button class="ca-coul" title="Couleur de la section" onclick="caCouleurMenu('${mode}',this)"></button>`;
+function caCouleurMenu(mode,btn){
+  document.querySelectorAll('.ca-coul-menu').forEach(x=>x.remove());
+  const titre=btn.closest('.ca-sec').dataset.t, cle=caCoulCle(mode,titre), cur=(caOrdre.couleur||{})[cle]||'';
+  const m=document.createElement('div'); m.className='ca-coul-menu';
+  m.innerHTML=[['','A','Automatique']].concat(CA_COULEURS.map(c=>[c,'',c]),[['aucune','∅','Aucune']]).map(([v,t,titreB])=>
+    `<button class="ca-coul-ch${cur===v?' active':''}" data-v="${v}" title="${titreB}"${CA_COULEURS.includes(v)?` style="background:${v}"`:''}>${t}</button>`).join('');
+  m.addEventListener('click',e=>{ const b=e.target.closest('.ca-coul-ch'); if(!b)return; e.stopPropagation(); m.remove(); caCouleurChoisir(mode,titre,b.dataset.v); });
+  document.body.appendChild(m);
+  const r=btn.getBoundingClientRect();
+  m.style.top=(r.bottom+window.scrollY+6)+'px';
+  m.style.left=Math.max(8,Math.min(r.left+window.scrollX,window.innerWidth-m.offsetWidth-8))+'px';
+  setTimeout(()=>document.addEventListener('click',function f(e){ if(!m.contains(e.target)){ m.remove(); document.removeEventListener('click',f); } }),0);
+}
+async function caCouleurChoisir(mode,titre,v){
+  const cle=caCoulCle(mode,titre);
+  caOrdre.couleur=caOrdre.couleur||{};
+  if(v)caOrdre.couleur[cle]=v; else delete caOrdre.couleur[cle];
+  renderCartes();
+  await caCfgSauver();
+}
 // Le champ « section » a disparu, au profit de la première étiquette. Une carte
 // SANS étiquette dont la section portait un vrai nom ne doit pas tomber pour
 // autant dans « Sans étiquette » : ce nom devient sa première étiquette. Les
@@ -16745,9 +16795,10 @@ const caFlechesCarte=(c,i,n)=>`<span class="ca-dep">
 function caSectionsHtml(vis){
   const deplacable=caTri==='ordre'&&!caRecherche.trim()&&!caOu;
   const ordonnables=vis.filter(x=>x.s.titre!=='Sans étiquette').length;
+  const rang=new Map(vis.map((x,i)=>[x.s.titre,i]));
   const html=vis.filter(x=>x.l.length||caReordonner).map(({s,l},i)=>`
-    <section class="ca-sec${caReordonner?' plie':''}" data-t="${MD_ATT(s.titre)}">
-      <div class="ca-sec-h">${s.titre!=='Sans étiquette'?caFleches('etiquette',s.titre,i,ordonnables):''}<span class="ca-sec-t">${tdEsc(s.titre)}</span>${
+    <section class="ca-sec${caReordonner?' plie':''}" data-t="${MD_ATT(s.titre)}"${caSecStyle('etiquette',s.titre,rang.get(s.titre))}>
+      <div class="ca-sec-h">${s.titre!=='Sans étiquette'?caFleches('etiquette',s.titre,i,ordonnables):''}${caPastille('etiquette',s.titre)}<span class="ca-sec-t">${tdEsc(s.titre)}</span>${
         // Un groupe de cadeaux n'entre pas dans la valeur : son total s'écrit
         // à côté de son nom, là où on le cherche.
         l.length&&caHors.some(h=>h.toLowerCase()===String(s.titre).toLowerCase())?`<span class="ca-sec-cadeau">${caEur(caSomme(l))}</span>`:''}
@@ -17010,6 +17061,9 @@ function caSetsVue(){
   cartes.forEach(c=>{ const k=caCaseDe(c); if(k)(eues[k]=eues[k]||[]).push(c); });
   const vues=[];
   let cols=caOrdonner(CA_COLLECTIONS,'set',x=>x.nom);
+  // La couleur automatique suit le rang dans TOUTES les collections : filtrer
+  // n'en change pas la teinte.
+  const tous=cols.slice(), caRang=col=>tous.indexOf(col);
   // Pendant qu'on réordonne, toutes les collections restent visibles.
   if(caSetFiltre&&!caReordonner&&cols.some(c=>c.id===caSetFiltre))cols=cols.filter(c=>c.id===caSetFiltre);
   const html=cols.map((col,ix)=>{
@@ -17036,8 +17090,8 @@ function caSetsVue(){
     const hors=caManquantes?[]:caHorsCatalogue(col).filter(c=>!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')).includes(q));
     hors.forEach(c=>vues.push(c));
     const vHors=caSomme(hors.filter(c=>!caHorsTotal(c)));
-    return `<section class="ca-sec${caReordonner?' plie':''}" data-t="${MD_ATT(col.nom)}">
-      <div class="ca-sec-h">${caFleches('set',col.nom,ix,cols.length)}<span class="ca-sec-t">${tdEsc(col.nom)}</span>
+    return `<section class="ca-sec${caReordonner?' plie':''}" data-t="${MD_ATT(col.nom)}"${caSecStyle('set',col.nom,caRang(col))}>
+      <div class="ca-sec-h">${caFleches('set',col.nom,ix,cols.length)}${caPastille('set',col.nom)}<span class="ca-sec-t">${tdEsc(col.nom)}</span>
         <span class="ca-prog" title="${pc} %"><span style="width:${pc}%"></span></span>
         <span class="ca-sec-n">${nb} / ${l.length}${hors.length?` + ${hors.length} hors catalogue`:''}${valeur+vHors?` · ${caEur(valeur+vHors)}`:''}</span></div>
       ${caReordonner?'':tuiles?`<div class="ca-grille">${tuiles}</div>`:'<div class="ca-vide-s">'+(caManquantes&&nb===l.length?'Collection complète !':'Aucune carte ne correspond.')+'</div>'}
@@ -19803,7 +19857,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.80.0';
+const APP_VERSION='v1.81.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

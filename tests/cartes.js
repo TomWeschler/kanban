@@ -1485,6 +1485,46 @@ chk('...un filtre ne montre que sa collection',JSON.stringify(hc.filtre)==='["Ma
 chk('...le choix est gardé sur l\'appareil',hc.garde==='magicarpe',String(hc.garde));
 chk('...et réordonner montre toutes les collections',hc.reord===hc.nbCol,String(hc.reord));
 
+console.log('=== 9 unvicies. LA COULEUR DES SECTIONS ===');
+const coul=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,t)=>({id:caId(),section:'',nom,url:'',prix:5,vente:null,tags:[t],langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:1,etat:'',raison:'',created_at:td(),updated_at:td(),case:''});
+  const sauve=cartes, sauveO=JSON.parse(JSON.stringify(caOrdre));
+  cartes=[mk('A','Alpha'),mk('B','Bravo'),mk('C','Charlie')];
+  caOrdre.couleur={}; caGroupe='etiquette'; caRecherche=''; caOu=''; caReordonner=false; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  const sec=t=>[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t===t);
+  const teinte=t=>sec(t).style.getPropertyValue('--sec');
+  out.auto=['Alpha','Bravo','Charlie'].map(teinte);
+  out.marge=parseFloat(getComputedStyle(sec('Alpha')).marginBottom);
+  sec('Bravo').querySelector('.ca-coul').click(); await new Promise(r=>setTimeout(r,50));
+  out.choix=document.querySelectorAll('.ca-coul-menu .ca-coul-ch').length;
+  [...document.querySelectorAll('.ca-coul-menu .ca-coul-ch')].find(b=>b.dataset.v==='#f28ab2').click(); await new Promise(r=>setTimeout(r,100));
+  out.rose=teinte('Bravo'); out.menuFerme=!document.querySelector('.ca-coul-menu');
+  out.ligne=JSON.parse((FEUILLE.find(x=>x[0]===CA_CFG_ID)||[])[13]||'{}').couleur;
+  caCouleurChoisir('etiquette','Charlie','aucune'); await new Promise(r=>setTimeout(r,100));
+  out.neutre=sec('Charlie').hasAttribute('data-neutre')&&!teinte('Charlie');
+  caCfgLire(JSON.stringify({etiquette:[],set:[],couleur:{'etiquette:alpha':'#e85d4a'}})); renderCartes(); await new Promise(r=>setTimeout(r,100));
+  out.relue=teinte('Alpha');
+  caCfgLire(JSON.stringify({etiquette:['Bravo'],set:[]})); out.ancienne=JSON.stringify(caOrdre.couleur);
+  // En vue par set, filtrer ne change pas la teinte d'une collection.
+  caOrdre.couleur={}; caGroupe='set'; caSetFiltrer(''); await new Promise(r=>setTimeout(r,200));
+  const avant=teinte('Magicarpe');
+  caSetFiltrer('magicarpe'); await new Promise(r=>setTimeout(r,150));
+  out.setStable=avant&&teinte('Magicarpe')===avant;
+  caSetFiltrer(''); caGroupe='etiquette'; cartes=sauve; caOrdre=sauveO; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Sans choix, deux sections voisines ont deux couleurs différentes',coul.auto.every(Boolean)&&new Set(coul.auto).size===3,JSON.stringify(coul.auto));
+chk('...et sont bien espacées',coul.marge>=24,String(coul.marge));
+chk('La pastille ouvre la palette : auto, 9 couleurs, aucune',coul.choix===11,String(coul.choix));
+chk('Choisir une couleur la pose sur la section et ferme la palette',coul.rose==='#f28ab2'&&coul.menuFerme,JSON.stringify(co));
+chk('...le choix est écrit dans la ligne de réglage',coul.ligne&&coul.ligne['etiquette:bravo']==='#f28ab2',JSON.stringify(coul.ligne));
+chk('« Aucune » rend la section neutre',coul.neutre===true,String(coul.neutre));
+chk('Les couleurs se relisent depuis le classeur',coul.relue==='#e85d4a',coul.relue);
+chk('...et un réglage d\'avant les couleurs se lit sans erreur',coul.ancienne==='{}',coul.ancienne);
+chk('En vue par set, filtrer ne change pas la teinte',coul.setStable===true,String(coul.setStable));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
