@@ -1409,6 +1409,23 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-vente{font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:var(--text-mid);margin-left:auto}
 .ca-vente.gain{color:var(--green)}
 .ca-vente.perte{color:var(--danger)}
+.ca-gain{color:var(--green)}
+.ca-perte{color:var(--danger)}
+.jp-kpi-v small{font-size:0.62em;opacity:0.8}
+.ca-ind{margin-top:0.5rem;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:0.45rem 0.7rem}
+.ca-ind summary{cursor:pointer;font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-mid)}
+.ca-ind summary .ca-aide{text-transform:none;letter-spacing:0;margin-left:0.4rem}
+.ca-ind-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.6rem;margin-top:0.6rem}
+.ca-ind-b{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.6rem}
+.ca-ind-t{font-weight:700;font-size:0.78rem;margin-bottom:0.35rem}
+.ca-ind-l{display:flex;gap:0.5rem;align-items:baseline;width:100%;background:none;border:0;padding:0.18rem 0;
+  color:var(--text);font:inherit;font-size:0.76rem;cursor:pointer;text-align:left;border-top:1px solid var(--border)}
+.ca-ind-l:first-of-type{border-top:0}
+.ca-ind-l:hover .ca-ind-n{color:var(--accent)}
+.ca-ind-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ca-ind-v{font-family:var(--font-mono);font-size:0.7rem;font-weight:700;white-space:nowrap}
+.ca-ind-v small{font-weight:400;color:var(--text-dim)}
+.ca-ind-vide{font-size:0.7rem;color:var(--text-dim)}
 /* Le bandeau reste épinglé en haut pendant qu'on fait défiler la collection. */
 .ca-tete{position:sticky;top:0;z-index:5;display:flex;flex-direction:column;gap:0.9rem;
   margin:0 -1.5rem;padding:1.25rem 1.5rem 0.7rem;background:var(--bg);
@@ -16765,7 +16782,8 @@ async function renderCartes(){
       ${kpi(caRecherche||caOu?'Cartes affichées':'Cartes',vues.length)}
       ${kpi('Valeur'+hors,caEur(caSomme(comptees)))}
       ${vente.length?kpi('Prix de vente',caEur(vente.reduce((s,c)=>s+c.vente,0))):''}
-    </div>`:''}
+      ${caPvTotale(comptees)}
+    </div>${caIndicateursHtml(comptees)}`:''}
     <div class="ca-barre">
       <input type="search" class="ca-q" id="caQ" placeholder="Chercher une carte…" value="${MD_ATT(caRecherche)}"
         oninput="caRecherche=this.value;caRedessiner()">
@@ -16819,6 +16837,43 @@ function caSectionsHtml(vis){
         ?`<div class="ca-tuile-dep">${caTuile(c)}${caFlechesCarte(c,i,l.length)}</div>`:caTuile(c)).join('')}</div>`}
     </section>`).join('');
   return html||'<div class="ca-vide">Aucune carte ne correspond.</div>';
+}
+// ── Les indicateurs ──
+// Ce que vaut une carte aujourd'hui : le prix de vente qu'on a noté, à défaut
+// la cote Cardmarket relevée avec l'image. La plus-value se lit contre le
+// prix d'achat ; sans prix d'achat (un cadeau, un oubli), pas de plus-value.
+const caEstimee=c=>c.vente!=null?c.vente:c.cote!=null?c.cote:null;
+const caPv=c=>c.prix!=null&&c.prix>0&&caEstimee(c)!=null?caEstimee(c)-c.prix:null;
+const caPvPct=c=>{ const v=caPv(c); return v==null?null:v/c.prix*100; };
+const caPct=p=>`${p>0?'+':''}${Math.round(p)} %`;
+const caSigne=v=>`${v>0?'+':v<0?'−':''}${caEur(Math.abs(v))}`;
+function caPvTotale(l){
+  const a=l.filter(c=>caPv(c)!=null); if(!a.length)return '';
+  const pv=a.reduce((s,c)=>s+caPv(c),0), base=a.reduce((s,c)=>s+c.prix,0);
+  return `<div class="jp-kpi" title="Sur ${a.length} carte${a.length>1?'s':''} dont on connaît le prix d'achat et un prix de vente ou une cote">
+    <div class="jp-kpi-l">Plus-value</div><div class="jp-kpi-v ${pv>0?'ca-gain':pv<0?'ca-perte':''}">${caSigne(pv)} <small>${caPct(pv/base*100)}</small></div></div>`;
+}
+const LS_CA_IND='kanban_cartes_indicateurs';
+let caIndOuvert=(()=>{ try{ return localStorage.getItem(LS_CA_IND)!=='non'; }catch(e){ return true; } })();
+function caIndBascule(d){ caIndOuvert=d.open; try{ localStorage.setItem(LS_CA_IND,d.open?'oui':'non'); }catch(e){} }
+function caIndicateursHtml(l){
+  const top=(f,sens,n=5)=>l.filter(c=>f(c)!=null&&(!sens||Math.sign(f(c))===sens)).sort((a,b)=>sens<0?f(a)-f(b):f(b)-f(a)).slice(0,n);
+  const ligne=(c,droite,cls)=>`<button class="ca-ind-l" onclick="caOuvrir('${MD_ATT(c.id)}')" title="${MD_ATT(c.nom)}">
+    <span class="ca-ind-n">${tdEsc(c.nom)}</span><span class="ca-ind-v${cls?' '+cls:''}">${droite}</span></button>`;
+  const bloc=(titre,cs,droite,cls,aide)=>`<div class="ca-ind-b"><div class="ca-ind-t">${titre}</div>${cs.length
+    ?cs.map(c=>ligne(c,droite(c),typeof cls==='function'?cls(c):cls)).join(''):`<div class="ca-ind-vide">${aide}</div>`}</div>`;
+  const sansPv='Il faut un prix d\'achat et un prix de vente (ou une cote).';
+  const blocs=[
+    bloc('Les plus chères',top(c=>c.prix,0),c=>caEur(c.prix),'','Aucun prix d\'achat.'),
+    bloc('Les plus estimées',top(caEstimee,0),c=>caEur(caEstimee(c))+(c.vente==null?' <small>cote</small>':''),'','Aucun prix de vente ni cote.'),
+    bloc('Plus-values en €',top(caPv,1),c=>caSigne(caPv(c)),'ca-gain',sansPv),
+    bloc('Plus-values en %',top(caPvPct,1),c=>caPct(caPvPct(c)),'ca-gain',sansPv),
+    bloc('Moins-values en €',top(caPv,-1),c=>caSigne(caPv(c)),'ca-perte','Aucune carte en perte.'),
+  ];
+  const conn=l.filter(c=>caPv(c)!=null).length;
+  return `<details class="ca-ind"${caIndOuvert?' open':''} ontoggle="caIndBascule(this)"><summary>Indicateurs
+    <span class="ca-aide">${l.length} carte${l.length>1?'s':''}${conn?` · plus-value connue pour ${conn}`:''} — prix de vente, à défaut cote Cardmarket</span></summary>
+    <div class="ca-ind-g">${blocs.join('')}</div></details>`;
 }
 // Le prix de vente se lit CONTRE le prix d'achat : rouge s'il est plus bas,
 // vert s'il est plus haut, neutre s'il est égal ou sans prix d'achat.
@@ -19869,7 +19924,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.82.0';
+const APP_VERSION='v1.83.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

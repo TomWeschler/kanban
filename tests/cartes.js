@@ -1555,6 +1555,39 @@ chk('...une étiquette sans section, et « Tous », restent neutres',fc.second==
 chk('...le filtre actif est rempli de sa couleur',fc.actif==='rgb(242, 138, 178)',fc.actif);
 chk('Chaque filtre de set a la couleur de sa collection',fc.sets===true,String(fc.sets));
 
+console.log('=== 9 tervicies. LES INDICATEURS ===');
+const ind=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,prix,vente,cote,tags)=>({id:caId(),section:'',nom,url:'',prix,vente,tags:tags||['X'],langue:'',image:'',drive_id:'',ref:'',cote,
+    ordre:1,etat:'',raison:'',created_at:td(),updated_at:td(),case:''});
+  const sauve=cartes;
+  cartes=[mk('Chère',100,150,null),mk('Doublée',10,30,null),mk('Perdante',50,20,null),mk('Par la cote',40,null,60),
+    mk('Sans achat',null,80,null),mk('Cadeau',0,500,null,['Noé']),mk('Égale',5,5,null),mk('Sans rien',3,null,null)];
+  caGroupe='etiquette'; caRecherche=''; caOu=''; caChiffres=true; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  const blocs=[...document.querySelectorAll('.ca-ind-b')].map(b=>({t:b.querySelector('.ca-ind-t').textContent,
+    l:[...b.querySelectorAll('.ca-ind-l')].map(x=>x.querySelector('.ca-ind-n').textContent+'='+x.querySelector('.ca-ind-v').textContent.replace(/\s+/g,' ').trim())}));
+  out.blocs=Object.fromEntries(blocs.map(b=>[b.t,b.l]));
+  out.ouvert=document.querySelector('.ca-ind').open;
+  out.pv=[...document.querySelectorAll('.jp-kpi')].find(k=>/Plus-value/.test(k.textContent));
+  out.pv=out.pv&&out.pv.querySelector('.jp-kpi-v').textContent.replace(/\s+/g,' ').trim();
+  const ouvrir=caOuvrir; caOuvrir=(id=>{ out.ouvre=caParId(id).nom; });
+  document.querySelector('.ca-ind-l').click(); caOuvrir=ouvrir;
+  caChiffres=false; renderCartes(); await new Promise(r=>setTimeout(r,100));
+  out.masque=!document.querySelector('.ca-ind');
+  caChiffres=true; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+const B=ind.blocs, eu=s=>s.replace(/ | /g,' ');
+chk('Les 5 plus chères, par prix d\'achat, sans les cadeaux',(B['Les plus chères']||[]).map(x=>x.split('=')[0]).join('|')==='Chère|Perdante|Par la cote|Doublée|Égale',JSON.stringify(B['Les plus chères']));
+chk('Les plus estimées : le prix de vente, à défaut la cote',(B['Les plus estimées']||[]).slice(0,3).map(x=>x.split('=')[0]).join('|')==='Chère|Sans achat|Par la cote'&&/cote/.test(B['Les plus estimées'][2]),JSON.stringify(B['Les plus estimées']));
+chk('Plus-values en € : les gagnantes seules, la plus forte d\'abord',(B['Plus-values en €']||[]).map(x=>x.split('=')[0]).join('|')==='Chère|Doublée|Par la cote',JSON.stringify(B['Plus-values en €']));
+chk('Plus-values en % : la doublée devant la chère',(B['Plus-values en %']||[]).map(x=>eu(x)).join('|')==='Doublée=+200 %|Chère=+50 %|Par la cote=+50 %',JSON.stringify(B['Plus-values en %']));
+chk('Moins-values : la perdante',(B['Moins-values en €']||[]).map(x=>x.split('=')[0]).join('|')==='Perdante',JSON.stringify(B['Moins-values en €']));
+chk('La plus-value totale, en € et en %',/^\+\s?60/.test(eu(ind.pv||''))&&/\+29 %/.test(eu(ind.pv||'')),ind.pv);
+chk('Le panneau est ouvert par défaut',ind.ouvert===true,String(ind.ouvert));
+chk('Un clic ouvre la fiche de la carte',ind.ouvre==='Chère',ind.ouvre);
+chk('« Masquer les chiffres » cache aussi les indicateurs',ind.masque===true,String(ind.masque));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
