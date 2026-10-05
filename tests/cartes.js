@@ -1449,6 +1449,42 @@ chk('Une carte possédée montre sa rareté',ra.possedee&&ra.possedee.txt==='★
 chk('...une manquante aussi : ● commune, ◆ peu commune',ra.commune&&ra.commune.txt==='●'&&ra.peu&&ra.peu.txt==='◆',JSON.stringify([ra.commune,ra.peu]));
 chk('...sans bouton imbriqué dans une tuile',ra.dansBouton===0,String(ra.dansBouton));
 
+console.log('=== 9 vicies. HORS CATALOGUE ET FILTRE PAR SET ===');
+const hc=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,o)=>({id:caId(),section:'',nom,url:'',prix:5,vente:null,tags:['Divers'],langue:'jp',image:'',drive_id:'',ref:'',cote:null,
+    ordre:1,etat:'',raison:'',created_at:td(),updated_at:td(),case:'',...o});
+  const sauve=cartes;
+  cartes=[mk('Abra Vending (Exclu JPN)'),mk('Carte CoroCoro',{tags:['Minidraco']}),mk('Koiking CoroCoro'),
+    mk('Kadabra déjà rangée',{case:'base1/32'}),mk('Pikachu promo')];
+  caGroupe='set'; caRecherche=''; caManquantes=false; caCocher=false; caReordonner=false; caSetFiltrer('');
+  await new Promise(r=>setTimeout(r,250));
+  const sec=t=>[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t===t);
+  const hors=t=>{ const s=sec(t); return s?[...s.querySelectorAll('.ca-hors-cat .ca-nom')].map(x=>x.textContent):null; };
+  out.abra=hors('Abra · Kadabra · Alakazam'); out.draco=hors('Minidraco · Draco · Dracolosse'); out.magi=hors('Magicarpe');
+  out.entete=sec('Abra · Kadabra · Alakazam').querySelector('.ca-sec-n').textContent;
+  out.sdb=hors('Set de base');
+  out.puces=[...document.querySelectorAll('.ca-setf .sb-tag')].map(b=>b.textContent);
+  out.nbCol=CA_COLLECTIONS.length;
+  caSetFiltrer('magicarpe'); await new Promise(r=>setTimeout(r,150));
+  out.filtre=[...document.querySelectorAll('.ca-sec')].map(x=>x.dataset.t);
+  out.active=document.querySelector('.ca-setf .sb-tag.active').textContent;
+  out.garde=localStorage.getItem('kanban_cartes_set_filtre');
+  caReordonner=true; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  out.reord=document.querySelectorAll('.ca-sec').length;
+  caReordonner=false; caSetFiltrer(''); caGroupe='etiquette'; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Une Vending sans case va dans la lignée d\'Abra',JSON.stringify(hc.abra)==='["Abra Vending (Exclu JPN)"]',JSON.stringify(hc.abra));
+chk('...une carte au nom muet suit sa première étiquette',JSON.stringify(hc.draco)==='["Carte CoroCoro"]',JSON.stringify(hc.draco));
+chk('...le nom japonais romanisé est reconnu',JSON.stringify(hc.magi)==='["Koiking CoroCoro"]',JSON.stringify(hc.magi));
+chk('...une carte rangée n\'y est pas, et la progression ne bouge pas',/^1 \/ \d+ \+ 1 hors catalogue/.test(hc.entete),hc.entete);
+chk('Un set complet n\'a pas de bloc hors catalogue',hc.sdb&&hc.sdb.length===0,JSON.stringify(hc.sdb));
+chk('Les filtres : « Tous » puis chaque collection',hc.puces[0]==='Tous'&&hc.puces.length===hc.nbCol+1&&hc.puces.includes('Magicarpe'),JSON.stringify(hc.puces));
+chk('...un filtre ne montre que sa collection',JSON.stringify(hc.filtre)==='["Magicarpe"]'&&hc.active==='Magicarpe',JSON.stringify(hc.filtre));
+chk('...le choix est gardé sur l\'appareil',hc.garde==='magicarpe',String(hc.garde));
+chk('...et réordonner montre toutes les collections',hc.reord===hc.nbCol,String(hc.reord));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),

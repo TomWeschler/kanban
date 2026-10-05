@@ -1346,6 +1346,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-cocher-tag{flex:0 0 9rem;min-width:0;padding:0.25rem 0.5rem}
 .ca-manque-t{font-family:var(--font-mono);font-size:0.56rem;color:var(--text-dim)}
 .ca-holo{color:var(--warn)}
+.ca-hors-cat{margin-top:0.8rem;padding-top:0.6rem;border-top:1px dashed var(--border2)}
+.ca-hors-t{font-size:0.78rem;font-weight:600;margin-bottom:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:baseline}
+.ca-setf{margin-bottom:0.2rem}
+.ca-setf .sb-tag{font-size:0.62rem;padding:3px 9px}
 /* La rareté, en bas à gauche de l'image. */
 .ca-rar{position:absolute;left:0.35rem;bottom:3.3rem;z-index:2;font-family:var(--font-mono);font-size:0.72rem;font-weight:700;
   border-radius:4px;padding:0.05rem 0.32rem;background:rgba(0,0,0,0.72);color:#e5e7eb;letter-spacing:0.02em;white-space:nowrap}
@@ -16717,6 +16721,8 @@ async function renderCartes(){
     <div class="ca-etat" id="caEtat"></div>
     ${caDeplacement&&!parSet&&(caTri!=='ordre'||caRecherche.trim()||caOu)?'<div class="ca-aide-dep">Pour déplacer des cartes, retire la recherche et le filtre : on déplace une carte parmi TOUTES celles de sa section.</div>':''}
     </div>
+    ${parSet&&!caReordonner?`<div class="ca-lieux ca-setf">${[['','Tous']].concat(caOrdonner(CA_COLLECTIONS,'set',x=>x.nom).map(c=>[c.id,c.nom]))
+      .map(([id,n])=>`<button class="sb-tag${caSetFiltre===id?' active':''}" onclick="caSetFiltrer('${id}')">${tdEsc(n)}</button>`).join('')}</div>`:''}
     ${parSet?`<div class="ca-cocher-l">
       <label class="ca-manq"><input type="checkbox" ${caManquantes?'checked':''} onchange="caManquantes=this.checked;caRedessiner()"> manquantes seulement</label>
       <button class="btn-nav${caCocher?'':' out'}" onclick="caCocherBascule()" title="Un clic sur une case grise ajoute la carte">${caCocher?'✓ Fin du cochage':'☑ Cocher mes cartes'}</button>
@@ -16970,12 +16976,42 @@ const CA_RAR={C:['●','Commune'],U:['◆','Peu commune'],R:['★','Rare'],H:['�
 const caRarHtml=k=>{ const r=CA_RARETES[k], d=r&&CA_RAR[r];
   return d?`<span class="ca-rar ca-rar-${r}" title="${MD_ATT(d[1])}">${d[0]}</span>`:''; };
 let caManquantes=false;
+// LES CARTES HORS CATALOGUE. Une carte de la famille qu'aucune case ne
+// reconnaît — Vending, CoroCoro, promos que les bases ignorent — a quand même
+// sa place dans sa lignée, à part : sinon la collection paraîtrait incomplète
+// de ce qu'elle a justement de plus rare. La famille se lit dans le NOM de la
+// carte (« Abra Vending »), à défaut dans sa première étiquette. Ces cartes ne
+// comptent pas dans « n / total » : c'est la progression du catalogue.
+// Les noms d'une famille, en français, en anglais et en japonais romanisé :
+// une carte saisie « Dratini Vending » ou « Koiking CoroCoro » s'y retrouve.
+const CA_LIGNEE_MOTS={alakazam:['casey','yungerer','foodin'],dracolosse:['dratini','dragonair','dragonite','miniryu','hakuryu','kairyu'],
+  magicarpe:['magikarp','koiking'],metamorph:['ditto','metamon']};
+const caMembres=col=>col.nom.split(' · ').map(t=>tabSansAccent(t).toLowerCase()).concat(CA_LIGNEE_MOTS[col.id]||[]);
+const caMots=t=>tabSansAccent(String(t||'')).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+function caHorsCatalogue(col){
+  if(!col.lignee)return [];
+  const m=caMembres(col);
+  return cartes.filter(c=>{
+    if(caCaseDe(c))return false;
+    const mots=caMots(c.nom);
+    if(mots.some(w=>m.includes(w)))return true;
+    // Le nom ne dit rien d'une autre famille : la première étiquette tranche.
+    const t=caMots(caTags(c.tags)[0]).join(' ');
+    return !!t&&m.includes(t)&&!CA_COLLECTIONS.some(o=>o!==col&&o.lignee&&caMots(c.nom).some(w=>caMembres(o).includes(w)));
+  }).sort(caParOrdre);
+}
+// LE FILTRE PAR SET : n'afficher qu'une collection, pour la voir d'un coup.
+const LS_CA_SETF='kanban_cartes_set_filtre';
+let caSetFiltre=(()=>{ try{ return localStorage.getItem(LS_CA_SETF)||''; }catch(e){ return ''; } })();
+function caSetFiltrer(id){ caSetFiltre=id; try{ localStorage.setItem(LS_CA_SETF,id); }catch(e){} renderCartes(); }
 function caSetsVue(){
   const q=tabSansAccent(caRecherche.trim());
   const eues={};
   cartes.forEach(c=>{ const k=caCaseDe(c); if(k)(eues[k]=eues[k]||[]).push(c); });
   const vues=[];
-  const cols=caOrdonner(CA_COLLECTIONS,'set',x=>x.nom);
+  let cols=caOrdonner(CA_COLLECTIONS,'set',x=>x.nom);
+  // Pendant qu'on réordonne, toutes les collections restent visibles.
+  if(caSetFiltre&&!caReordonner&&cols.some(c=>c.id===caSetFiltre))cols=cols.filter(c=>c.id===caSetFiltre);
   const html=cols.map((col,ix)=>{
     const l=col.cases;
     const nb=l.filter(e=>eues[e.k]).length;
@@ -16997,11 +17033,17 @@ function caSetsVue(){
         <div class="ca-meta"><span class="ca-manque-t">${col.lignee?tdEsc(e.ext):'manquante'}</span></div></button>`;
     }).join('');
     const pc=Math.round(nb/l.length*100);
+    const hors=caManquantes?[]:caHorsCatalogue(col).filter(c=>!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')).includes(q));
+    hors.forEach(c=>vues.push(c));
+    const vHors=caSomme(hors.filter(c=>!caHorsTotal(c)));
     return `<section class="ca-sec${caReordonner?' plie':''}" data-t="${MD_ATT(col.nom)}">
       <div class="ca-sec-h">${caFleches('set',col.nom,ix,cols.length)}<span class="ca-sec-t">${tdEsc(col.nom)}</span>
         <span class="ca-prog" title="${pc} %"><span style="width:${pc}%"></span></span>
-        <span class="ca-sec-n">${nb} / ${l.length}${valeur?` · ${caEur(valeur)}`:''}</span></div>
+        <span class="ca-sec-n">${nb} / ${l.length}${hors.length?` + ${hors.length} hors catalogue`:''}${valeur+vHors?` · ${caEur(valeur+vHors)}`:''}</span></div>
       ${caReordonner?'':tuiles?`<div class="ca-grille">${tuiles}</div>`:'<div class="ca-vide-s">'+(caManquantes&&nb===l.length?'Collection complète !':'Aucune carte ne correspond.')+'</div>'}
+      ${caReordonner||!hors.length?'':`<div class="ca-hors-cat"><div class="ca-hors-t">Hors catalogue — ${hors.length} carte${hors.length>1?'s':''} que les bases ne recensent pas
+          <span class="ca-aide">(Vending, CoroCoro, promos…) · comptées dans la valeur, pas dans la progression</span></div>
+        <div class="ca-grille">${hors.map(c=>caTuile(c,'<span class="ca-num">hors catalogue</span>')).join('')}</div></div>`}
     </section>`;
   }).join('');
   return {html,vues};
@@ -19761,7 +19803,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.79.0';
+const APP_VERSION='v1.80.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
