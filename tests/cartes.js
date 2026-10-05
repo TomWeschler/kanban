@@ -1423,6 +1423,32 @@ chk('...et la case est comptée (avec l\'Abra déjà rangée)',/^2 \/ 102/.test(
 chk('La fiche dit où la carte est rangée',/Rangée à la main dans : Set de base 35/.test(rm.fiche),rm.fiche);
 chk('...et l\'on peut l\'en sortir',rm.sortie==='',rm.sortie);
 
+console.log('=== 9 undevicies. LA RARETÉ ===');
+const ra=await p.evaluate(async()=>{
+  const out={};
+  out.base=['base1/1','base1/26','base1/32','base1/58'].map(k=>CA_RARETES[k]);
+  out.couverture=CA_COLLECTIONS.flatMap(x=>x.cases).filter(c=>CA_RARETES[c.k]).length/CA_COLLECTIONS.flatMap(x=>x.cases).length;
+  out.moderne=['sv4pt5/148','sv4pt5/215','sv3pt5/65'].map(k=>CA_RARETES[k]);
+  const sauve=cartes;
+  cartes=[{id:caId(),section:'',nom:'Alakazam SDB',url:'',prix:30,vente:null,tags:['Wizard'],langue:'',image:'https://images.pokemontcg.io/base1/1_hires.png',
+    drive_id:'',ref:'',cote:null,ordre:1,etat:'',raison:'',created_at:td(),updated_at:td(),case:''}];
+  caGroupe='set'; caRecherche=''; caManquantes=false; caCocher=false; renderCartes(); await new Promise(r=>setTimeout(r,250));
+  const sec=[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t==='Set de base');
+  const t=[...sec.querySelectorAll('.ca-tuile')];
+  const lire=x=>{ const r=x.querySelector('.ca-rar'); return r&&{txt:r.textContent,titre:r.getAttribute('title')}; };
+  out.possedee=lire(t[0]); out.rare=lire(t[25]); out.peu=lire(t[31]); out.commune=lire(t[57]);
+  out.dansBouton=document.querySelectorAll('.ca-tuile button').length;
+  caGroupe='etiquette'; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Set de base : Alakazam holo, Minidraco peu commune, Kadabra peu commune, Pikachu commune',
+    ra.base.join()==='H,U,U,C',JSON.stringify(ra.base));
+chk('Les raretés modernes ont leur catégorie (brillante, ultra)',ra.moderne[0]==='B'&&ra.moderne[1]==='B'&&ra.moderne[2]==='X',JSON.stringify(ra.moderne));
+chk('Presque toutes les cases ont une rareté connue',ra.couverture>0.95,String(ra.couverture));
+chk('Une carte possédée montre sa rareté',ra.possedee&&ra.possedee.txt==='★ Holo'&&ra.possedee.titre==='Rare holo',JSON.stringify(ra.possedee));
+chk('...une manquante aussi : ● commune, ◆ peu commune',ra.commune&&ra.commune.txt==='●'&&ra.peu&&ra.peu.txt==='◆',JSON.stringify([ra.commune,ra.peu]));
+chk('...sans bouton imbriqué dans une tuile',ra.dansBouton===0,String(ra.dansBouton));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
