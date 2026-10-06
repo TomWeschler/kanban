@@ -48,6 +48,7 @@ FR_PRE = {'dark': '{} obscur', 'light': '{} lumineux', 'radiant': '{} radieux', 
           'koga': '{} de Koga', 'rocket': '{} de la Team Rocket', 'clair': '{} de Sandra', 'lance': '{} de Peter'}
 SUF = ['VSTAR', 'VMAX', 'LV.X', 'BREAK', 'GX', 'EX', 'ex', 'V', 'δ', '★', 'E4', 'FB', 'G', '4']
 GRANDS = ('EX', 'GX', 'V', 'VMAX', 'VSTAR')
+RARETES_SANS_ILL = {'Hyper rare': 'Rare Rainbow'}
 # Extensions que les noms ne suffisent pas à relier d'une base à l'autre.
 LIENS_FORCES = {'base1': 'base1', 'hgss2': 'hgss2', 'hgss3': 'hgss3', 'hgss4': 'hgss4', 'svp': 'svp'}
 
@@ -119,15 +120,21 @@ def main(ptcg, dex, page='index.html'):
         if c: lien[pid] = c[0]
     for a, b in LIENS_FORCES.items():
         if b in dx: lien[a] = b
-    def nom_dex(pid, num):
+    # La fiche TCGdex d'une impression internationale : son nom français, et son
+    # illustrateur — pokemontcg.io ne le donne plus pour les extensions récentes
+    # (Mascarade Crépusculaire, Rivalités Destinées, Méga-Évolution…), et sans
+    # lui la carte japonaise ne retrouvait pas sa jumelle.
+    def dex_carte(pid, num):
         d = lien.get(pid)
-        if not d or d not in dx: return None
+        if not d or d not in dx: return None, None
         for cand in (num, num.zfill(3), num.zfill(2)):
             f = os.path.join(dx[d]['dir'], cand + '.ts')
             if os.path.exists(f):
-                m = re.search(r"name:\s*\{([^}]*)\}", open(f, encoding='utf-8').read(), re.S)
-                return champ(m.group(1), 'fr') if m else None
-        return None
+                t = open(f, encoding='utf-8').read()
+                m = re.search(r"name:\s*\{([^}]*)\}", t, re.S)
+                il = re.search(r"illustrator:\s*" + Q, t)
+                return (champ(m.group(1), 'fr') if m else None), ((il.group(1) or il.group(2)) if il else None)
+        return None, None
     def ext_fr(pid):
         d = lien.get(pid)
         return dx[d]['fr'] if d and d in dx and dx[d]['fr'] else pt[pid]['name']
@@ -144,12 +151,13 @@ def main(ptcg, dex, page='index.html'):
                 # Garde-fou : un nom français n'est retenu que s'il nomme bien le
                 # Pokémon. Une extension mal reliée donnerait sinon le nom d'une
                 # autre carte (« Trempette Épique » pour un Magicarpe).
-                nd = nom_dex(sid, c['number'])
+                nd, ild = dex_carte(sid, c['number'])
                 sans = lambda x: re.sub(r'[^a-z]', '', x.lower().replace('é', 'e').replace('è', 'e'))
                 if nd and sans(FR[mots[mem]]) not in sans(nd): nd = None
-                EN[fid].append({'k': sid + '/' + c['number'], 'cle': (mem, pre, suf, str(c.get('hp') or ''), ill(c.get('artist'))),
+                EN[fid].append({'k': sid + '/' + c['number'], 'cle': (mem, pre, suf, str(c.get('hp') or ''), ill(c.get('artist') or ild)),
                                 'n': nd or nom_fr(mem, pre, suf, mots), 's': ext_fr(sid),
-                                'num': c['number'], 'd': pt[sid]['releaseDate'].replace('/', '-'), 'set': sid})
+                                'num': c['number'], 'd': pt[sid]['releaseDate'].replace('/', '-'), 'set': sid,
+                                'rar': c.get('rarity') or ''})
     base = os.path.join(dex, 'data-asia')
     for serie in os.listdir(base):
         p = os.path.join(base, serie)
@@ -159,7 +167,9 @@ def main(ptcg, dex, page='index.html'):
             if not os.path.isdir(d): continue
             st = open(d + '.ts', encoding='utf-8').read() if os.path.exists(d + '.ts') else ''
             setid = id_de(st) or setdir
-            dt = re.search(r"ja:\s*['\"](\d{4}-\d\d-\d\d)", st)
+            # La date de sortie japonaise : « releaseDate: { ja: '…' } », ou une
+            # date seule, sans langue, pour beaucoup d'extensions.
+            dt = re.search(r"ja:\s*['\"](\d{4}-\d\d-\d\d)", st) or re.search(r"releaseDate:\s*['\"](\d{4}-\d\d-\d\d)", st)
             dt = dt.group(1) if dt else '9999'
             for f in os.listdir(d):
                 if not f.endswith('.ts'): continue
@@ -171,20 +181,29 @@ def main(ptcg, dex, page='index.html'):
                 hp = re.search(r"\bhp:\s*(\d+)", t)
                 il = re.search(r"illustrator:\s*" + Q, t)
                 ilv = (il.group(1) or il.group(2)) if il else ''
+                rj = re.search(r"rarity:\s*" + Q, t)
+                rjv = (rj.group(1) or rj.group(2)) if rj else ''
                 for fid, (mots, jmots, _) in FAMILLES.items():
                     if not any(w in nja for w in jmots): continue
                     mem, pre, suf = var_ja(nja, jmots)
                     if mem is None: continue
                     JA[fid].append({'k': 'ja:' + setid + '/' + f[:-3], 'cle': (mem, pre, suf, hp.group(1) if hp else '', ill(ilv)),
-                                    'n': nom_fr(mem, pre, suf, mots), 's': setid, 'num': f[:-3], 'd': dt, 'set': setid})
+                                    'n': nom_fr(mem, pre, suf, mots), 's': setid, 'num': f[:-3], 'd': dt, 'set': setid, 'rar': rjv})
     # 3. La fusion, famille par famille
     out = []
     for fid, (mots, _, titre) in FAMILLES.items():
-        idx = defaultdict(list)
-        for e in EN[fid]: idx[e['cle']].append(e)
+        idx = defaultdict(list); sans_ill = defaultdict(list)
+        for e in EN[fid]: idx[e['cle']].append(e); sans_ill[e['cle'][:4]].append(e)
         alias = {}
         for j in JA[fid]:
             cands = idx.get(j['cle'], [])
+            # TCGdex ne nomme pas l'illustrateur des « Hyper rare » japonaises de
+            # l'ère Soleil et Lune : ce sont les arc-en-ciel internationales.
+            if not cands and not j['cle'][4] and j['rar'] in RARETES_SANS_ILL:
+                # Sans illustrateur pour départager, la date le fait : l'équivalent
+                # sort dans l'année qui suit, pas une autre GX deux ans après.
+                cands = [e for e in sans_ill.get(j['cle'][:4], []) if e['rar'] == RARETES_SANS_ILL[j['rar']]
+                         and (jours(e['d'], j['d']) is not None and -30 <= jours(e['d'], j['d']) <= 365)]
             if not cands: continue
             if j['d'] != '9999':
                 sc = []

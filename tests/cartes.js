@@ -1674,6 +1674,20 @@ chk('Sur une carte existante : « Exemplaires en plus », 0 par défaut',mx.labe
 chk('...2 en plus font 3 cartes, et l\'annulation n\'enlève que les copies',mx.enPlus===3&&mx.enPlusAnnul===1&&/\+2 exemplaires/.test(mx.msgEd),JSON.stringify(mx));
 chk('Une modification simple n\'ajoute rien',mx.simple===1,String(mx.simple));
 
+console.log('=== 9 sexvicies. LES JUMELLES SANS ILLUSTRATEUR ===');
+const jm=await p.evaluate(()=>({
+  ondine:CA_ALIAS.get('ja:SV9a/025'), mc:CA_ALIAS.get('ja:MC/157'),
+  sm3n:CA_ALIAS.get('ja:SM3N/008'), duo:CA_ALIAS.get('ja:SM9/111'), dra:CA_ALIAS.get('ja:SM11/112'),
+  sm6a:CA_ALIAS.get('ja:SM6a/062'), m1s:CA_ALIAS.get('ja:M1S/038'),
+  rangee:caCaseDe({case:'ja:SV9a/025',image:'',url:''}),
+  plusCase:CA_CLES_SUIVIES.has('ja:SV9a/025')}));
+chk('Le Magicarpe d\'Ondine SV9a 025 est celui de Rivalités Destinées 48',jm.ondine==='sv10/48'&&jm.mc==='sv10/48',JSON.stringify(jm));
+chk('...il n\'a plus de case à part, et une carte rangée là va dans la case commune',jm.plusCase===false&&jm.rangee==='sv10/48',JSON.stringify(jm));
+chk('Les extensions récentes sans illustrateur chez pokemontcg.io fusionnent (Méga-Évolution)',jm.m1s==='me1/56',String(jm.m1s));
+chk('Une Hyper rare japonaise rejoint l\'arc-en-ciel internationale',jm.duo==='sm9/183'&&jm.dra==='sm11/248',JSON.stringify(jm));
+chk('...mais pas une GX sortie deux ans plus tard',jm.sm6a===undefined,String(jm.sm6a));
+chk('Une date japonaise sans langue est lue : SM3N va avec Ombres Ardentes, pas un Magicarpe de 2004',jm.sm3n==='sm3/32',String(jm.sm3n));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
