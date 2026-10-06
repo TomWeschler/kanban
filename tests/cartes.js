@@ -1588,6 +1588,36 @@ chk('Le panneau est ouvert par défaut',ind.ouvert===true,String(ind.ouvert));
 chk('Un clic ouvre la fiche de la carte',ind.ouvre==='Chère',ind.ouvre);
 chk('« Masquer les chiffres » cache aussi les indicateurs',ind.masque===true,String(ind.masque));
 
+console.log('=== 9 quatervicies. LES CHIFFRES SUIVENT LA RECHERCHE ===');
+const sr=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,prix,vente)=>({id:caId(),section:'',nom,url:'',prix,vente,tags:['X'],langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:1,etat:'',raison:'',created_at:td(),updated_at:td(),case:''});
+  const sauve=cartes;
+  cartes=[mk('Dracolosse',100,200),mk('Abra',10,5),mk('Kadabra',20,30)];
+  caGroupe='etiquette'; caRecherche=''; caOu=''; caChiffres=true; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  const kpi=l=>{ const k=[...document.querySelectorAll('#caKpis .jp-kpi')].find(x=>x.querySelector('.jp-kpi-l').textContent.startsWith(l)); return k&&k.querySelector('.jp-kpi-v').textContent.replace(/\s+/g,' ').trim(); };
+  const chere=()=>document.querySelector('.ca-ind-b .ca-ind-n').textContent;
+  const q=document.getElementById('caQ');
+  out.avant=[kpi('Cartes'),chere()];
+  q.focus(); q.value='abra'; q.dispatchEvent(new Event('input')); await new Promise(r=>setTimeout(r,80));
+  out.apres=[kpi('Cartes affichées'),kpi('Valeur'),chere()];
+  out.focus=document.activeElement===q;
+  out.horsTete=!document.getElementById('caInd').closest('.ca-tete');
+  caGroupe='set'; caSetFiltrer(''); await new Promise(r=>setTimeout(r,200));
+  out.setfTete=!!document.querySelector('.ca-tete .ca-setf');
+  const q2=document.getElementById('caQ'); q2.value='kadabra'; q2.dispatchEvent(new Event('input')); await new Promise(r=>setTimeout(r,80));
+  out.setKpi=kpi('Cartes affichées');
+  caRecherche=''; caGroupe='etiquette'; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Taper dans la recherche met à jour les totaux',sr.avant[0]==='3'&&sr.apres[0]==='2'&&/^30/.test(sr.apres[1]),JSON.stringify(sr));
+chk('...et les indicateurs',sr.avant[1]==='Dracolosse'&&sr.apres[2]==='Kadabra',JSON.stringify(sr));
+chk('...sans faire perdre le champ',sr.focus===true,String(sr.focus));
+chk('Les indicateurs sont sous le bandeau épinglé, pas dedans',sr.horsTete===true,String(sr.horsTete));
+chk('Les filtres de set sont dans le bandeau épinglé',sr.setfTete===true,String(sr.setfTete));
+chk('...et les totaux suivent aussi la recherche en vue par set',sr.setKpi==='1',String(sr.setKpi));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),

@@ -1363,7 +1363,9 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-holo{color:var(--warn)}
 .ca-hors-cat{margin-top:0.8rem;padding-top:0.6rem;border-top:1px dashed var(--border2)}
 .ca-hors-t{font-size:0.78rem;font-weight:600;margin-bottom:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:baseline}
-.ca-setf{margin-bottom:0.2rem}
+.ca-setf{margin:0}
+#caInd:empty{display:none}
+#caInd .ca-ind{margin:0.9rem 0 0.2rem}
 /* Les filtres portent la couleur de leur section. */
 .ca-lieux .sb-tag.ca-f[style]{border-color:color-mix(in srgb,var(--sec) 65%,transparent);
   color:color-mix(in srgb,var(--sec) 70%,var(--text));background:color-mix(in srgb,var(--sec) 10%,transparent)}
@@ -1456,11 +1458,15 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
   /* Épinglé, le bandeau doit laisser voir la collection : tout sur peu de lignes. */
   .ca-wrap{padding:0 0.8rem 4rem}
   .ca-tete{margin:0 -0.8rem;padding:0.7rem 0.8rem 0.5rem;gap:0.5rem}
+  /* Les filtres de set défilent sur une seule ligne, du doigt. */
+  .ca-tete .ca-setf{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .ca-tete .ca-setf .sb-tag{flex:none}
   .ca-titre{font-size:1.2rem}
   .ca-tete .jp-kpis{grid-template-columns:repeat(4,1fr);gap:0.3rem}
   .ca-tete .jp-kpi{padding:0.3rem 0.4rem}
   .ca-tete .jp-kpi-l{font-size:0.4rem;letter-spacing:0.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ca-tete .jp-kpi-v{font-size:0.78rem;margin-top:0}
+  .ca-tete .jp-kpi-v small{display:block;font-size:0.6rem;line-height:1.1}
   .ca-q{min-width:0}.ca-apercu{max-width:220px;margin:0 auto}
   .ca-grille{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}}
 .jp-wrap{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:1.25rem 1.5rem 3rem;
@@ -16721,6 +16727,27 @@ function caVisibles(s){
   if(caTri==='nom')l=l.slice().sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
   return l;
 }
+// Les totaux et les indicateurs se calculent sur les cartes affichées : ils
+// suivent la recherche à chaque frappe, sans redessiner le champ.
+function caKpisHtml(vues){
+  if(!caChiffres)return '';
+  const comptees=vues.filter(c=>!caHorsTotal(c));
+  const vente=comptees.filter(c=>c.vente!=null);
+  // Rien d'écrit : on sait ce qu'on a exclu. Un ⚙ discret suffit pour régler.
+  const hors=` <button class="ca-hors" onclick="caHorsRegler()" title="Étiquettes exclues des totaux${caHors.length?' : '+MD_ATT(caHors.join(', ')):''}">⚙</button>`;
+  const kpi=(l,v)=>`<div class="jp-kpi"><div class="jp-kpi-l">${l}</div><div class="jp-kpi-v">${v}</div></div>`;
+  return `<div class="jp-kpis">
+      ${kpi(caRecherche.trim()||caOu?'Cartes affichées':'Cartes',vues.length)}
+      ${kpi('Valeur'+hors,caEur(caSomme(comptees)))}
+      ${vente.length?kpi('Prix de vente',caEur(vente.reduce((s,c)=>s+c.vente,0))):''}
+      ${caPvTotale(comptees)}
+    </div>`;
+}
+function caChiffresMaj(vues){
+  const k=document.getElementById('caKpis'), i=document.getElementById('caInd');
+  if(k)k.innerHTML=caKpisHtml(vues);
+  if(i)i.innerHTML=caChiffres?caIndicateursHtml(vues.filter(c=>!caHorsTotal(c))):'';
+}
 async function renderCartes(){
   const el=document.getElementById('caWrap'); if(!el)return;
   // Relue toutes les deux minutes au plus : un autre appareil a pu passer. Ce
@@ -16760,12 +16787,6 @@ async function renderCartes(){
   const vis=secs.map(s=>({s,l:caVisibles(s)}));
   const sv=parSet?caSetsVue():null;
   const vues=vis.flatMap(x=>x.l);
-  const comptees=vues.filter(c=>!caHorsTotal(c));
-  const vente=comptees.filter(c=>c.vente!=null);
-  const exclues=vues.length-comptees.length;
-  // Rien d'écrit : on sait ce qu'on a exclu. Un ⚙ discret suffit pour régler.
-  const hors=` <button class="ca-hors" onclick="caHorsRegler()" title="Étiquettes exclues des totaux${caHors.length?' : '+MD_ATT(caHors.join(', ')):''}">⚙</button>`;
-  const kpi=(l,v)=>`<div class="jp-kpi"><div class="jp-kpi-l">${l}</div><div class="jp-kpi-v">${v}</div></div>`;
   el.innerHTML=`
     <div class="ca-tete">
     <div class="ca-hdr">
@@ -16778,12 +16799,7 @@ async function renderCartes(){
         <button class="btn-nav out" onclick="caChiffresBascule()" title="${caChiffres?'Masquer':'Afficher'} les totaux">${caChiffres?'Masquer':'Afficher'} les chiffres</button>
         <button class="btn-nav" onclick="caOuvrir(null)">+ Carte</button></div>
     </div>
-    ${caChiffres?`<div class="jp-kpis">
-      ${kpi(caRecherche||caOu?'Cartes affichées':'Cartes',vues.length)}
-      ${kpi('Valeur'+hors,caEur(caSomme(comptees)))}
-      ${vente.length?kpi('Prix de vente',caEur(vente.reduce((s,c)=>s+c.vente,0))):''}
-      ${caPvTotale(comptees)}
-    </div>${caIndicateursHtml(comptees)}`:''}
+    <div id="caKpis">${caKpisHtml(vues)}</div>
     <div class="ca-barre">
       <input type="search" class="ca-q" id="caQ" placeholder="Chercher une carte…" value="${MD_ATT(caRecherche)}"
         oninput="caRecherche=this.value;caRedessiner()">
@@ -16798,11 +16814,12 @@ async function renderCartes(){
       ${lieux.length>1&&!parSet?`<div class="ca-lieux">${['',...lieux].map(o=>
         `<button class="sb-tag${caOu===o?' active':''}${o&&rangEt.has(caOrdreNorm(o))?' ca-f':''}" onclick="caOu=this.dataset.o;renderCartes()" data-o="${MD_ATT(o)}"${o?caFiltreStyle('etiquette',rangEt.get(caOrdreNorm(o))):''}>${o?tdEsc(o):'Tous'}</button>`).join('')}</div>`:''}
     </div>
+        ${parSet&&!caReordonner?`<div class="ca-lieux ca-setf">${[['','Tous']].concat(caOrdonner(CA_COLLECTIONS,'set',x=>x.nom).map(c=>[c.id,c.nom]))
+      .map(([id,n],i)=>`<button class="sb-tag${caSetFiltre===id?' active':''}${id?' ca-f':''}" onclick="caSetFiltrer('${id}')"${id?caFiltreStyle('set',i-1,n):''}>${tdEsc(n)}</button>`).join('')}</div>`:''}
     <div class="ca-etat" id="caEtat"></div>
     ${caDeplacement&&!parSet&&(caTri!=='ordre'||caRecherche.trim()||caOu)?'<div class="ca-aide-dep">Pour déplacer des cartes, retire la recherche et le filtre : on déplace une carte parmi TOUTES celles de sa section.</div>':''}
     </div>
-    ${parSet&&!caReordonner?`<div class="ca-lieux ca-setf">${[['','Tous']].concat(caOrdonner(CA_COLLECTIONS,'set',x=>x.nom).map(c=>[c.id,c.nom]))
-      .map(([id,n],i)=>`<button class="sb-tag${caSetFiltre===id?' active':''}${id?' ca-f':''}" onclick="caSetFiltrer('${id}')"${id?caFiltreStyle('set',i-1,n):''}>${tdEsc(n)}</button>`).join('')}</div>`:''}
+    <div id="caInd">${caChiffres?caIndicateursHtml(vues.filter(c=>!caHorsTotal(c))):''}</div>
     ${parSet?`<div class="ca-cocher-l">
       <label class="ca-manq"><input type="checkbox" ${caManquantes?'checked':''} onchange="caManquantes=this.checked;caRedessiner()"> manquantes seulement</label>
       <button class="btn-nav${caCocher?'':' out'}" onclick="caCocherBascule()" title="Un clic sur une case grise ajoute la carte">${caCocher?'✓ Fin du cochage':'☑ Cocher mes cartes'}</button>
@@ -16922,8 +16939,9 @@ function caImgKo(img){ const b=img.parentNode; if(!b)return; b.classList.add('at
 // La recherche redessine la grille, pas le champ : sinon on perdrait le curseur.
 function caRedessiner(){
   const box=document.getElementById('caSections'); if(!box)return;
-  if(caGroupe==='set'){ const sv=caSetsVue(); box.innerHTML=sv.html; caChargerImages(sv.vues,++caGen); return; }
   const vis=caSections().map(s=>({s,l:caVisibles(s)}));
+  caChiffresMaj(vis.flatMap(x=>x.l));
+  if(caGroupe==='set'){ const sv=caSetsVue(); box.innerHTML=sv.html; caChargerImages(sv.vues,++caGen); return; }
   box.innerHTML=caSectionsHtml(vis);
   caChargerImages(vis.flatMap(x=>x.l),++caGen);
 }
@@ -19924,7 +19942,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.83.0';
+const APP_VERSION='v1.84.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
