@@ -1427,6 +1427,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-ind-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ca-ind-v{font-family:var(--font-mono);font-size:0.7rem;font-weight:700;white-space:nowrap}
 .ca-ind-v small{font-weight:400;color:var(--text-dim)}
+.ca-prix-l{display:grid;grid-template-columns:1fr 1fr 0.8fr;gap:0.7rem;align-items:end}
 .ca-ind-vide{font-size:0.7rem;color:var(--text-dim)}
 /* Le bandeau reste épinglé en haut pendant qu'on fait défiler la collection. */
 .ca-tete{position:sticky;top:0;z-index:5;display:flex;flex-direction:column;gap:0.9rem;
@@ -2673,9 +2674,11 @@ body,body *{font-family:var(--font-body)}
         <div class="field"><label>Adresse de la fiche (Cardmarket…)</label>
           <input type="url" id="caUrl" autocomplete="off" placeholder="https://www.cardmarket.com/fr/Pokemon/Products/Singles/…" onchange="caUrlChange()" onpaste="setTimeout(caUrlChange,0)">
           <div class="ca-lien" id="caLien"></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
-          <div class="field"><label>Prix d'achat</label><input type="text" inputmode="decimal" id="caPrix" placeholder="21"></div>
+        <div class="ca-prix-l">
+          <div class="field"><label>Prix d'achat</label><input type="text" inputmode="decimal" id="caPrix" placeholder="21" title="Prix d'un exemplaire"></div>
           <div class="field"><label>Prix de vente</label><input type="text" inputmode="decimal" id="caVente" placeholder="—"></div>
+          <div class="field"><label id="caNbL">Exemplaires</label><input type="number" inputmode="numeric" id="caNb" min="1" max="200" step="1" value="1"
+            title="Autant de cartes identiques, chacune sur sa ligne"></div>
         </div>
         <div class="field"><label>Langue</label><div class="ca-lgs" id="caLgs"></div></div>
         <div class="ca-info" id="caCaseFiche"></div>
@@ -16613,22 +16616,35 @@ async function caTraiter(c,montrer){
   if(!c.image)return caAbsente(c)?'introuvable':'vide';
   montrer(c.image);
   if(!accessToken||!navigator.onLine)return 'distante';
-  if(!octets&&caOctets[c.image])octets=caOctets[c.image];
-  if(!octets){
-    const t=await caTelecharger(c.image);
-    if(t.refus||t.absent)return 'distante';          // affichée depuis son site ; réessayée la prochaine fois
-    if(!t.blob)return 'passager';                     // délai : on réessaiera, rien n'est figé
-    octets=t.blob;
-  }
-  delete caOctets[c.image];
-  const p=await caReduire(octets);
-  const id=await caDriveEnvoyer(p,`${c.nom} — ${c.id}.webp`);
-  if(!id)return 'distante';                          // Drive refuse : on réessaiera
-  c.drive_id=id; caPlusTard(c);
-  await caIdb.set(id,p);
-  montrer(caObj[id]=URL.createObjectURL(p));
+  // Des exemplaires de la même carte partagent UN fichier Drive : déjà
+  // archivé pour une autre, ou en cours d'envoi, on le reprend.
+  const soeur=cartes.find(x=>x!==c&&x.image===c.image&&x.drive_id&&x.drive_id!=='-');
+  if(soeur){ c.drive_id=soeur.drive_id; caPlusTard(c); if(caObj[c.drive_id])montrer(caObj[c.drive_id]); return 'archivee'; }
+  const image=c.image;
+  let envoi=caEnvois[image];
+  if(!envoi)envoi=caEnvois[image]=(async()=>{
+    if(!octets&&caOctets[image])octets=caOctets[image];
+    if(!octets){
+      const t=await caTelecharger(image);
+      if(t.refus||t.absent)return {r:'distante'};     // affichée depuis son site ; réessayée la prochaine fois
+      if(!t.blob)return {r:'passager'};                // délai : on réessaiera, rien n'est figé
+      octets=t.blob;
+    }
+    delete caOctets[image];
+    const p=await caReduire(octets);
+    const id=await caDriveEnvoyer(p,`${c.nom} — ${c.id}.webp`);
+    if(!id)return {r:'distante'};                    // Drive refuse : on réessaiera
+    await caIdb.set(id,p);
+    caObj[id]=URL.createObjectURL(p);
+    return {id};
+  })().finally(()=>{ delete caEnvois[image]; });
+  const e=await envoi;
+  if(!e.id)return e.r;
+  c.drive_id=e.id; caPlusTard(c);
+  montrer(caObj[e.id]);
   return 'archivee';
 }
+const caEnvois={};
 
 
 // ── Importer la note « Cartes » ───────────────────────────────────────────
@@ -17445,6 +17461,10 @@ function caOuvrir(id){
   document.getElementById('caUrl').value=c?c.url:'';
   document.getElementById('caPrix').value=c&&c.prix!=null?String(c.prix).replace('.',','):'';
   document.getElementById('caVente').value=c&&c.vente!=null?String(c.vente).replace('.',','):'';
+  // Nouvelle carte : combien d'exemplaires. Carte existante : combien de plus.
+  const nbIn=document.getElementById('caNb');
+  nbIn.value=c?'0':'1'; nbIn.min=c?'0':'1';
+  document.getElementById('caNbL').textContent=c?'Exemplaires en plus':'Exemplaires';
   caEd.tags=c?caTags(c.tags):[]; caEd.langue=c?c.langue||'':'';
   document.getElementById('caTagIn').value='';
   document.getElementById('caOuListe').innerHTML=caToutesEtiquettes()
@@ -17554,6 +17574,7 @@ async function caUrlChange(){
   caEd.trouve=r; caApercu(null);
 }
 function caFermer(){ modalFerme('caModal'); caEd=null; }
+const CA_NB_MAX=200;
 async function caEnregistrer(suivante){
   if(!caEd)return;
   const nom=document.getElementById('caNom').value.trim();
@@ -17562,6 +17583,10 @@ async function caEnregistrer(suivante){
   if(url&&!caWeb(url)){ toast('Adresse invalide : elle doit commencer par https://','err'); return; }
   const num=id=>{ const v=document.getElementById(id).value.trim(); return v===''?null:nbFr(v,null); };
   const avant=caEd.id?caParId(caEd.id):null;
+  // Plusieurs exemplaires : autant de lignes, toutes pareilles, chacune la
+  // sienne — on en vend une, on en donne une, les autres restent.
+  const nbV=parseInt(document.getElementById('caNb').value,10);
+  const enPlus=Math.min(CA_NB_MAX,Math.max(0,(Number.isFinite(nbV)?nbV:avant?0:1)-(avant?0:1)));
   const c=avant?{...avant}:{id:caId(),created_at:td(),drive_id:'',image:'',etat:'',raison:'',ref:'',cote:null,
     ordre:cartes.reduce((m,x)=>Math.max(m,x.ordre||0),0)+1};
   Object.assign(c,{nom,url:caWeb(url),
@@ -17585,17 +17610,22 @@ async function caEnregistrer(suivante){
   // Nouvelle carte, ou carte changée de section : en dernier dans sa section.
   const cleG=caGroupeCle();
   if(!avant||cleG(avant)!==cleG(c))caEnDernier(c);
-  const ok=suite?(caSauver([c]),true):await caSauver([c]);
+  const k=cleG(c), dernier=Math.max(c.ordre||0,...cartes.filter(x=>x.id!==c.id&&cleG(x)===k).map(x=>x.ordre||0));
+  const copies=Array.from({length:enPlus},(_,i)=>({...c,id:caId(),created_at:td(),ordre:dernier+1+i}));
+  const lot=[c,...copies];
+  const ok=suite?(caSauver(lot),true):await caSauver(lot);
   caCompacter();
   if(!ok){ toast('ÉCHEC de l\'enregistrement','err'); }
   renderCartes();
   if(suite){ caOuvrir(null); caEd.tags=suite.tags; caEd.langue=suite.langue; caTagsDessiner(); caLgsDessiner();
     setTimeout(()=>document.getElementById('caCode').focus(),50); }
-  offerUndo(avant?`« ${nom} » modifiée`:`« ${nom} » ajoutée`,async()=>{
+  const xN=lot.length>1?` ×${avant?enPlus:lot.length}`:'';
+  offerUndo(avant?`« ${nom} » modifiée${enPlus?` (+${enPlus} exemplaire${enPlus>1?'s':''})`:''}`:`« ${nom} »${xN} ajoutée${lot.length>1?'s':''}`,async()=>{
+    const retirer=(avant?copies:lot).map(x=>x.id);
     if(avant)await caSauver([avant]);
-    else{ cartes=cartes.filter(x=>x.id!==c.id); cacheSet('cartes',cartes);
-          if(accessToken)await sheetBatchUpsert(CA_SHEET,[caTombe(c.id)]); }
-    renderCartes();
+    if(retirer.length){ cartes=cartes.filter(x=>!retirer.includes(x.id)); cacheSet('cartes',cartes);
+          if(accessToken)await sheetBatchUpsert(CA_SHEET,retirer.map(caTombe)); }
+    caCompacter(); renderCartes();
   });
 }
 async function caSupprimer(){
@@ -19942,7 +19972,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.84.0';
+const APP_VERSION='v1.85.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

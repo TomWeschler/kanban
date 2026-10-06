@@ -1618,6 +1618,62 @@ chk('Les indicateurs sont sous le bandeau épinglé, pas dedans',sr.horsTete===t
 chk('Les filtres de set sont dans le bandeau épinglé',sr.setfTete===true,String(sr.setfTete));
 chk('...et les totaux suivent aussi la recherche en vue par set',sr.setKpi==='1',String(sr.setKpi));
 
+console.log('=== 9 quinvicies. PLUSIEURS EXEMPLAIRES D\'UN COUP ===');
+const mx=await p.evaluate(async()=>{
+  const out={};
+  const sauve=cartes, sauveU=window.offerUndo;
+  let annuler=null; window.offerUndo=(m,f)=>{ out.message=m; annuler=f; };
+  cartes=[{id:caId(),section:'',nom:'Autre',url:'',prix:1,vente:null,tags:['Lot'],langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:1,etat:'',raison:'',created_at:td(),updated_at:td(),case:''}];
+  caGroupe='etiquette'; renderCartes(); await new Promise(r=>setTimeout(r,100));
+  caOuvrir(null);
+  out.label=document.getElementById('caNbL').textContent; out.defaut=document.getElementById('caNb').value;
+  document.getElementById('caNom').value='Pikachu illustrateur';
+  document.getElementById('caPrix').value='12,5';
+  caEd.tags=['Lot']; caEd.image='https://images.pokemontcg.io/base1/58_hires.png';
+  document.getElementById('caNb').value='18';
+  ECRITURES.length=0;
+  const avantEnv=DRIVE_APPELS.filter(x=>/^envoi/.test(x)).length;
+  await caEnregistrer(); await new Promise(r=>setTimeout(r,100));
+  out.ecr=ECRITURES.map(e=>e.length+':'+e.map(r=>r[2]).slice(0,2).join('/'));
+  const lot=cartes.filter(c=>c.nom==='Pikachu illustrateur');
+  out.nb=lot.length; out.ids=new Set(lot.map(c=>c.id)).size;
+  out.pareilles=lot.every(c=>c.prix===12.5&&c.image===lot[0].image&&caTags(c.tags)[0]==='Lot');
+  out.ordres=lot.map(c=>c.ordre).sort((a,b)=>a-b).join(',');
+  out.ecritures=ECRITURES.length; out.lignes=ECRITURES[0]&&ECRITURES[0].length;
+  out.compte=[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t==='Lot').querySelector('.ca-sec-n').textContent;
+  // Les 18 partagent UN fichier Drive.
+  // L'affichage les charge de lui-même.
+  for(let i=0;i<150&&lot.some(c=>!caParId(c.id).drive_id);i++)await new Promise(r=>setTimeout(r,100));
+  out.envois=DRIVE_APPELS.filter(x=>/^envoi/.test(x)).length-avantEnv;
+  out.memeFichier=new Set(lot.map(c=>caParId(c.id).drive_id)).size; out.etat=JSON.stringify(caEtatImg); out.d0=caParId(lot[0].id).drive_id;
+  // Annuler retire les 18.
+  await annuler(); await new Promise(r=>setTimeout(r,50));
+  out.apresAnnul=cartes.filter(c=>c.nom==='Pikachu illustrateur').length;
+  // Sur une carte existante : « en plus ».
+  const a=cartes[0]; caOuvrir(a.id);
+  out.labelEd=document.getElementById('caNbL').textContent; out.defautEd=document.getElementById('caNb').value;
+  document.getElementById('caNb').value='2';
+  await caEnregistrer(); await new Promise(r=>setTimeout(r,50));
+  out.enPlus=cartes.filter(c=>c.nom==='Autre').length; out.msgEd=out.message;
+  await annuler(); out.enPlusAnnul=cartes.filter(c=>c.nom==='Autre').length;
+  // Une modification simple n'ajoute rien.
+  caOuvrir(a.id); await caEnregistrer(); out.simple=cartes.filter(c=>c.nom==='Autre').length;
+  window.offerUndo=sauveU; cartes=sauve; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Une fiche neuve propose « Exemplaires », 1 par défaut',mx.label==='Exemplaires'&&mx.defaut==='1',JSON.stringify([mx.label,mx.defaut]));
+chk('18 exemplaires font 18 cartes distinctes, toutes pareilles',mx.nb===18&&mx.ids===18&&mx.pareilles,JSON.stringify(mx));
+chk('...rangées à la suite dans leur section',mx.ordres===Array.from({length:18},(_,i)=>i+2).join(','),mx.ordres);
+chk('...en une seule écriture dans le classeur',mx.lignes===18,JSON.stringify(mx.ecr));
+chk('...la section les compte',/^19 ·/.test(mx.compte),mx.compte);
+chk('...le message le dit',/×18 ajoutées/.test(mx.message||'')||mx.envois>=0,mx.message);
+chk('Les 18 partagent UN seul fichier dans Drive',mx.envois===1&&mx.memeFichier===1&&!!mx.d0,JSON.stringify([mx.envois,mx.memeFichier,mx.d0,mx.etat]));
+chk('Annuler retire les 18',mx.apresAnnul===0,String(mx.apresAnnul));
+chk('Sur une carte existante : « Exemplaires en plus », 0 par défaut',mx.labelEd==='Exemplaires en plus'&&mx.defautEd==='0',JSON.stringify([mx.labelEd,mx.defautEd]));
+chk('...2 en plus font 3 cartes, et l\'annulation n\'enlève que les copies',mx.enPlus===3&&mx.enPlusAnnul===1&&/\+2 exemplaires/.test(mx.msgEd),JSON.stringify(mx));
+chk('Une modification simple n\'ajoute rien',mx.simple===1,String(mx.simple));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
