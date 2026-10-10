@@ -1428,6 +1428,7 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-ind-v{font-family:var(--font-mono);font-size:0.7rem;font-weight:700;white-space:nowrap}
 .ca-ind-v small{font-weight:400;color:var(--text-dim)}
 .ca-prix-l{display:grid;grid-template-columns:1fr 1fr 0.8fr;gap:0.7rem;align-items:end}
+.ca-f-sans{font-style:italic}
 .ca-ind-vide{font-size:0.7rem;color:var(--text-dim)}
 /* Le bandeau reste épinglé en haut pendant qu'on fait défiler la collection. */
 .ca-tete{position:sticky;top:0;z-index:5;display:flex;flex-direction:column;gap:0.9rem;
@@ -16733,10 +16734,12 @@ function caSections(){
     .concat(l.filter(g=>!g.titre).map(g=>({titre:'Sans étiquette',cartes:g.cartes})));
   return l;
 }
+// Le filtre « Sans étiquette » : une valeur qu'aucune étiquette ne peut porter.
+const CA_SANS_ET='⌀sans-étiquette';
 function caVisibles(s){
   const q=tabSansAccent(caRecherche.trim());
   const ouK=tabSansAccent(caOu).toLowerCase();
-  let l=s.cartes.filter(c=>(!caOu||caTags(c.tags).some(t=>tabSansAccent(t).toLowerCase()===ouK))
+  let l=s.cartes.filter(c=>(!caOu||(caOu===CA_SANS_ET?!caTags(c.tags).length:caTags(c.tags).some(t=>tabSansAccent(t).toLowerCase()===ouK)))
     &&(!q||tabSansAccent(c.nom+' '+caTags(c.tags).join(' ')+' '+((caLangue(c)||[])[1]||'')).includes(q)));
   if(caTri==='prix-')l=l.slice().sort((a,b)=>(b.prix??-1)-(a.prix??-1));
   if(caTri==='prix+')l=l.slice().sort((a,b)=>(a.prix??1e9)-(b.prix??1e9));
@@ -16791,8 +16794,14 @@ async function renderCartes(){
   }
   const parSet=caGroupe==='set';
   const secs=caSections();
-  const lieux=caToutesEtiquettes();
-  if(caOu&&!lieux.includes(caOu))caOu='';
+  // Les filtres dans l'ordre des sections, pour qu'on les retrouve au même
+  // endroit ; viennent ensuite les étiquettes qui ne sont jamais premières,
+  // par ordre alphabétique, puis « Sans étiquette » s'il y a lieu.
+  const toutes=caToutesEtiquettes(), rangS=new Map(secs.map((g,i)=>[caOrdreNorm(g.titre),i]));
+  const sansEt=secs.some(g=>g.titre==='Sans étiquette');
+  const lieux=toutes.filter(t=>rangS.has(caOrdreNorm(t))).sort((a,b)=>rangS.get(caOrdreNorm(a))-rangS.get(caOrdreNorm(b)))
+    .concat(toutes.filter(t=>!rangS.has(caOrdreNorm(t))));
+  if(caOu&&!(lieux.includes(caOu)||caOu===CA_SANS_ET&&sansEt))caOu='';
   // Un filtre d'étiquette prend la couleur de la section du même nom, s'il y
   // en a une ; une étiquette qui n'est jamais la première reste neutre.
   const rangEt=new Map(secs.map((g,i)=>[caOrdreNorm(g.titre),{i,titre:g.titre}]));
@@ -16827,8 +16836,9 @@ async function renderCartes(){
         ${[['ordre','Ordre'],['prix-','Prix ↓'],['prix+','Prix ↑'],['nom','Nom A→Z']].map(([v,l])=>
           `<option value="${v}"${caTri===v?' selected':''}>${l}</option>`).join('')}
       </select>
-      ${lieux.length>1&&!parSet?`<div class="ca-lieux">${['',...lieux].map(o=>
-        `<button class="sb-tag${caOu===o?' active':''}${o&&rangEt.has(caOrdreNorm(o))?' ca-f':''}" onclick="caOu=this.dataset.o;renderCartes()" data-o="${MD_ATT(o)}"${o?caFiltreStyle('etiquette',rangEt.get(caOrdreNorm(o))):''}>${o?tdEsc(o):'Tous'}</button>`).join('')}</div>`:''}
+      ${lieux.length+(sansEt?1:0)>1&&!parSet?`<div class="ca-lieux">${['',...lieux,...(sansEt?[CA_SANS_ET]:[])].map(o=>{
+        const cle=caOrdreNorm(o===CA_SANS_ET?'Sans étiquette':o);
+        return `<button class="sb-tag${caOu===o?' active':''}${o&&rangEt.has(cle)?' ca-f':''}${o===CA_SANS_ET?' ca-f-sans':''}" onclick="caOu=this.dataset.o;renderCartes()" data-o="${MD_ATT(o)}"${o?caFiltreStyle('etiquette',rangEt.get(cle)):''}>${o===CA_SANS_ET?'Sans étiquette':o?tdEsc(o):'Tous'}</button>`;}).join('')}</div>`:''}
     </div>
         ${parSet&&!caReordonner?`<div class="ca-lieux ca-setf">${[['','Tous']].concat(caOrdonner(CA_COLLECTIONS,'set',x=>x.nom).map(c=>[c.id,c.nom]))
       .map(([id,n],i)=>`<button class="sb-tag${caSetFiltre===id?' active':''}${id?' ca-f':''}" onclick="caSetFiltrer('${id}')"${id?caFiltreStyle('set',i-1,n):''}>${tdEsc(n)}</button>`).join('')}</div>`:''}
@@ -19972,7 +19982,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.86.0';
+const APP_VERSION='v1.87.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

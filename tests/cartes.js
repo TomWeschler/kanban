@@ -1005,7 +1005,7 @@ const et=await p.evaluate(async()=>{
 });
 chk('Une étiquette écrite de deux façons ne compte qu\'une fois, sous sa graphie la plus répandue',
     et.liste.join('|')==='alakazam|Écarlate|Set de Base|Wizard|Zébi',et.liste.join('|'));
-chk('Les puces de filtre suivent, dans l\'ordre alphabétique',et.puces.join('|')==='Tous|alakazam|Écarlate|Set de Base|Wizard|Zébi',et.puces.join('|'));
+chk('Les puces de filtre suivent, dans l\'ordre des sections, puis les étiquettes secondes',et.puces.join('|')==='Tous|alakazam|Set de Base|Wizard|Zébi|Écarlate',et.puces.join('|'));
 chk('...et les groupes aussi : un seul « Set de Base »',et.groupes.filter(g=>/^set de base$/i.test(g)).length===1,et.groupes.join('|'));
 chk('Filtrer par une étiquette trouve toutes ses graphies',et.filtre==='abc',et.filtre);
 chk('Une étiquette qui n\'est plus portée disparaît',!et.apres.includes('Zébi'),et.apres.join('|'));
@@ -1687,6 +1687,36 @@ chk('Les extensions récentes sans illustrateur chez pokemontcg.io fusionnent (M
 chk('Une Hyper rare japonaise rejoint l\'arc-en-ciel internationale',jm.duo==='sm9/183'&&jm.dra==='sm11/248',JSON.stringify(jm));
 chk('...mais pas une GX sortie deux ans plus tard',jm.sm6a===undefined,String(jm.sm6a));
 chk('Une date japonaise sans langue est lue : SM3N va avec Ombres Ardentes, pas un Magicarpe de 2004',jm.sm3n==='sm3/32',String(jm.sm3n));
+
+console.log('=== 9 septvicies. LES FILTRES DANS L\'ORDRE DES SECTIONS ===');
+const fo=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,tags)=>({id:caId(),section:'',nom,url:'',prix:5,vente:null,tags,langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre:1,etat:'',raison:'',created_at:td(),updated_at:td(),case:''});
+  const sauve=cartes, sauveO=JSON.parse(JSON.stringify(caOrdre));
+  cartes=[mk('a',['Zèbre','Annexe']),mk('b',['Banane']),mk('c',['Mangue']),mk('d',[]),mk('e',[])];
+  caOrdre={etiquette:['Mangue','Zèbre','Banane'],set:[],couleur:{}};
+  caGroupe='etiquette'; caRecherche=''; caOu=''; caReordonner=false; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  const puces=()=>[...document.querySelectorAll('.ca-lieux .sb-tag')];
+  out.ordre=puces().map(b=>b.textContent);
+  out.sections=[...document.querySelectorAll('.ca-sec-t')].map(x=>x.textContent);
+  const sans=puces().find(b=>b.textContent==='Sans étiquette');
+  out.couleurSans=sans&&sans.style.getPropertyValue('--sec')===[...document.querySelectorAll('.ca-sec')].find(x=>x.dataset.t==='Sans étiquette').style.getPropertyValue('--sec');
+  sans.click(); await new Promise(r=>setTimeout(r,100));
+  out.filtre=[...document.querySelectorAll('.ca-tuile .ca-nom')].map(x=>x.textContent).join(',');
+  out.actif=(document.querySelector('.ca-lieux .sb-tag.active')||{}).textContent;
+  // Plus aucune carte sans étiquette : le filtre disparaît, et se relâche.
+  cartes=cartes.filter(c=>caTags(c.tags).length); renderCartes(); await new Promise(r=>setTimeout(r,100));
+  out.disparu=!puces().some(b=>b.textContent==='Sans étiquette')&&caOu==='';
+  caOu=''; cartes=sauve; caOrdre=sauveO; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Les filtres suivent l\'ordre des sections, puis les étiquettes secondes, puis « Sans étiquette »',
+    fo.ordre.join('|')==='Tous|Mangue|Zèbre|Banane|Annexe|Sans étiquette',fo.ordre.join('|'));
+chk('...le même ordre que les sections à l\'écran',fo.sections.join('|')==='Mangue|Zèbre|Banane|Sans étiquette',fo.sections.join('|'));
+chk('« Sans étiquette » a la couleur de sa section',fo.couleurSans===true,String(fo.couleurSans));
+chk('...et ne montre que les cartes sans étiquette',fo.filtre==='d,e'&&fo.actif==='Sans étiquette',JSON.stringify(fo));
+chk('...il disparaît quand toutes les cartes ont une étiquette',fo.disparu===true,String(fo.disparu));
 
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
