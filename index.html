@@ -1429,6 +1429,16 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .ca-ind-v small{font-weight:400;color:var(--text-dim)}
 .ca-prix-l{display:grid;grid-template-columns:1fr 1fr 0.8fr;gap:0.7rem;align-items:end}
 .ca-f-sans{font-style:italic}
+/* Glisser une carte */
+.ca-tuile{-webkit-touch-callout:none;-webkit-user-drag:none}
+.ca-tuile img{-webkit-user-drag:none;pointer-events:none}
+body.ca-glisse-on{cursor:grabbing;user-select:none;-webkit-user-select:none}
+.ca-fantome{position:fixed;z-index:4000;pointer-events:none;margin:0;opacity:0.92;transform:rotate(-3deg) scale(0.85);
+  transform-origin:top left;box-shadow:0 14px 30px rgba(0,0,0,.5);border-color:var(--accent)}
+.ca-glisse-src{opacity:0.3}
+.ca-sec.ca-cible{outline:2px dashed var(--sec,var(--accent));outline-offset:3px}
+.ca-lieux .sb-tag.ca-cible{transform:scale(1.18);box-shadow:0 0 0 2px var(--sec,var(--accent))}
+.ca-tuile.ca-avant{box-shadow:-5px 0 0 0 var(--sec,var(--accent))}
 .ca-ind-vide{font-size:0.7rem;color:var(--text-dim)}
 /* Le bandeau reste épinglé en haut pendant qu'on fait défiler la collection. */
 .ca-tete{position:sticky;top:0;z-index:5;display:flex;flex-direction:column;gap:0.9rem;
@@ -16719,6 +16729,133 @@ function caDeplacerCarte(id,sens){
   caRedessiner();
 }
 function caDeplacementBascule(){ caDeplacement=!caDeplacement; if(caDeplacement)caTri='ordre'; renderCartes(); }
+// ── Glisser une carte ──
+// Vue par étiquette : on prend une carte et on la pose dans une autre section
+// — ou sur un filtre du bandeau, quand la section est loin. Elle en prend
+// l'étiquette en PREMIÈRE position (les autres restent) ; posée sur une carte,
+// elle se range juste avant. À la souris, il suffit de tirer ; au doigt, on
+// appuie un instant avant de tirer, sinon c'est le défilement qui gagne.
+// Fait avec les événements de pointeur : le glisser-déposer du navigateur
+// n'existe pas sur écran tactile.
+let caGl=null;
+const CA_GL_APPUI=350, CA_GL_SEUIL=6;
+function caGlisseInit(el){
+  if(el.dataset.glisse)return; el.dataset.glisse='1';
+  el.addEventListener('pointerdown',caGlDebut);
+  el.addEventListener('dragstart',e=>{ if(e.target.closest('.ca-tuile'))e.preventDefault(); });
+  document.addEventListener('pointermove',caGlBouge,{passive:true});
+  document.addEventListener('pointerup',caGlFin);
+  document.addEventListener('pointercancel',()=>caGlNettoyer());
+  // Une fois la carte prise au doigt, la page ne défile plus sous lui.
+  document.addEventListener('touchmove',e=>{ if(caGl&&caGl.actif)e.preventDefault(); },{passive:false});
+  document.addEventListener('contextmenu',e=>{ if(caGl)e.preventDefault(); });
+}
+function caGlDebut(e){
+  if(caGroupe!=='etiquette'||caReordonner||e.button>0)return;
+  const t=e.target.closest('.ca-tuile[data-k]'); if(!t||t.classList.contains('ca-manque'))return;
+  caGlNettoyer();
+  caGl={id:t.dataset.k,el:t,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,pid:e.pointerId,doigt:e.pointerType!=='mouse',actif:false};
+  if(caGl.doigt)caGl.timer=setTimeout(()=>caGlActiver(),CA_GL_APPUI);
+}
+function caGlActiver(){
+  const g=caGl; if(!g||g.actif)return;
+  g.actif=true;
+  const r=g.el.getBoundingClientRect();
+  const f=g.el.cloneNode(true); f.classList.add('ca-fantome'); f.removeAttribute('onclick');
+  f.style.width=r.width+'px'; g.dx=g.x0-r.left; g.dy=g.y0-r.top;
+  document.body.appendChild(f); g.f=f;
+  g.el.classList.add('ca-glisse-src'); document.body.classList.add('ca-glisse-on');
+  try{ navigator.vibrate&&navigator.vibrate(15); }catch(e){}
+  caGlPlacer(); caGlDefiler();
+}
+function caGlBouge(e){
+  const g=caGl; if(!g||e.pointerId!==g.pid)return;
+  g.x=e.clientX; g.y=e.clientY;
+  const d=Math.hypot(g.x-g.x0,g.y-g.y0);
+  if(!g.actif){
+    if(g.doigt){ if(d>10)caGlNettoyer(); }       // il fait défiler : on le laisse
+    else if(d>CA_GL_SEUIL)caGlActiver();
+    return;
+  }
+  caGlPlacer();
+}
+// La cible sous le doigt : un filtre du bandeau, sinon une section, et dans
+// la section, la carte devant laquelle se ranger.
+function caGlCible(x,y){
+  const sous=document.elementFromPoint(x,y); if(!sous)return null;
+  const puce=sous.closest('.ca-lieux .sb-tag[data-o]');
+  if(puce&&puce.dataset.o)return {el:puce,titre:puce.dataset.o===CA_SANS_ET?null:puce.dataset.o};
+  const sec=sous.closest('#caSections .ca-sec[data-t]'); if(!sec)return null;
+  const tu=sous.closest('.ca-tuile[data-k]');
+  return {el:sec,titre:sec.dataset.t==='Sans étiquette'?null:sec.dataset.t,avant:tu&&tu.dataset.k!==caGl.id?tu:null};
+}
+function caGlPlacer(){
+  const g=caGl; if(!g||!g.f)return;
+  g.f.style.left=(g.x-g.dx*0.85)+'px'; g.f.style.top=(g.y-g.dy*0.85)+'px';
+  const c=caGlCible(g.x,g.y);
+  if(g.c&&(!c||g.c.el!==c.el))g.c.el.classList.remove('ca-cible');
+  if(g.c&&g.c.avant&&(!c||g.c.avant!==c.avant))g.c.avant.classList.remove('ca-avant');
+  if(c){ c.el.classList.add('ca-cible'); if(c.avant)c.avant.classList.add('ca-avant'); }
+  g.c=c;
+}
+// Près du bord, la liste défile toute seule pour atteindre les sections loin.
+function caGlDefiler(){
+  const g=caGl; if(!g||!g.actif)return;
+  const w=document.getElementById('caWrap'), tete=w&&w.querySelector('.ca-tete');
+  if(w){
+    const haut=(tete?tete.getBoundingClientRect().bottom:w.getBoundingClientRect().top)+50, bas=Math.min(window.innerHeight,w.getBoundingClientRect().bottom)-50;
+    const v=g.y<haut?-Math.min(24,(haut-g.y)/2):g.y>bas?Math.min(24,(g.y-bas)/2):0;
+    if(v){ w.scrollTop+=v; caGlPlacer(); }
+  }
+  g.raf=requestAnimationFrame(caGlDefiler);
+}
+function caGlNettoyer(){
+  const g=caGl; caGl=null; if(!g)return;
+  clearTimeout(g.timer); cancelAnimationFrame(g.raf);
+  if(g.f)g.f.remove();
+  g.el.classList.remove('ca-glisse-src'); document.body.classList.remove('ca-glisse-on');
+  if(g.c){ g.c.el.classList.remove('ca-cible'); if(g.c.avant)g.c.avant.classList.remove('ca-avant'); }
+}
+function caGlFin(e){
+  const g=caGl; if(!g||e.pointerId!==g.pid)return;
+  const actif=g.actif, c=g.c, id=g.id;
+  caGlNettoyer();
+  if(!actif)return;
+  // Le clic qui suit le lâcher n'ouvre pas la fiche.
+  const stop=ev=>{ ev.stopPropagation(); ev.preventDefault(); };
+  window.addEventListener('click',stop,{capture:true,once:true}); setTimeout(()=>window.removeEventListener('click',stop,{capture:true}),60);
+  if(c)caDeposer(id,c.titre,c.avant?c.avant.dataset.k:null);
+}
+// Poser une carte : titre = l'étiquette de la section (null : « Sans
+// étiquette », toutes retirées) ; avantId = la carte devant laquelle se ranger.
+async function caDeposer(id,titre,avantId){
+  const c=caParId(id); if(!c)return false;
+  const cle=caGroupeCle(), avant={tags:caTags(c.tags),ordre:c.ordre};
+  const k0=cle(c);
+  const n=titre==null?'':caOrdreNorm(titre);
+  c.tags=titre==null?[]:[titre,...avant.tags.filter(t=>caOrdreNorm(t)!==n)];
+  const k=cle(c), change=caOrdreNorm(k)!==caOrdreNorm(k0);
+  // Ranger à une place précise n'a de sens que sur la section entière, dans
+  // son ordre : avec un filtre ou un autre tri, la voisine n'est pas la vraie.
+  const posable=caTri==='ordre'&&!caRecherche.trim()&&!caOu;
+  const voisins=[];
+  if(posable&&(avantId||change)){
+    const l=cartes.filter(x=>x.id!==c.id&&cle(x)===k).sort(caParOrdre);
+    let i=avantId?l.findIndex(x=>x.id===avantId):-1; if(i<0)i=l.length;
+    l.splice(i,0,c);
+    l.forEach((x,p)=>{ if(x.ordre!==p+1){ x.ordre=p+1; if(x!==c)voisins.push(x); } });
+  } else if(change)caEnDernier(c);
+  if(!change&&c.ordre===avant.ordre&&!voisins.length){ c.tags=avant.tags; return false; }
+  voisins.forEach(x=>caPlusTard(x));
+  await caSauver([c]);
+  caCompacter();
+  renderCartes();
+  if(change)offerUndo(`« ${c.nom} » → ${titre==null?'Sans étiquette':titre}`,async()=>{
+    const x=caParId(id); if(!x)return;
+    x.tags=avant.tags; x.ordre=avant.ordre; await caSauver([x]); caCompacter(); renderCartes();
+  });
+  return true;
+}
 // Les sections dans l'ordre choisi.
 function caSections(){
   const par='etiquette';
@@ -16769,6 +16906,7 @@ function caChiffresMaj(vues){
 }
 async function renderCartes(){
   const el=document.getElementById('caWrap'); if(!el)return;
+  caGlisseInit(el);
   // Relue toutes les deux minutes au plus : un autre appareil a pu passer. Ce
   // qui attend d'être écrit part AVANT, sinon la relecture l'effacerait.
   if(accessToken&&(!cartesLoaded||Date.now()-cartesLoadedAt>NOTES_STALE)){
@@ -19982,7 +20120,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.87.0';
+const APP_VERSION='v1.88.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

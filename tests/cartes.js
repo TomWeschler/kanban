@@ -1718,6 +1718,93 @@ chk('« Sans étiquette » a la couleur de sa section',fo.couleurSans===true,Str
 chk('...et ne montre que les cartes sans étiquette',fo.filtre==='d,e'&&fo.actif==='Sans étiquette',JSON.stringify(fo));
 chk('...il disparaît quand toutes les cartes ont une étiquette',fo.disparu===true,String(fo.disparu));
 
+console.log('=== 9 octovicies. GLISSER UNE CARTE ===');
+await p.evaluate(async()=>{
+  const mk=(nom,tags,ordre)=>({id:'gl-'+nom,section:'',nom,url:'',prix:5,vente:null,tags,langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre,etat:'',raison:'',created_at:td(),updated_at:td(),case:''});
+  window.GL_SAUVE={cartes,ordre:JSON.parse(JSON.stringify(caOrdre)),ouvrir:caOuvrir,undo:window.offerUndo};
+  cartes=[mk('A1',['Alpha','Bonus'],1),mk('A2',['Alpha'],2),mk('B1',['Beta'],1),mk('B2',['Beta'],2),mk('S1',[],1)];
+  caOrdre={etiquette:['Alpha','Beta'],set:[],couleur:{}};
+  window.GL_OUVERTES=[]; caOuvrir=id=>GL_OUVERTES.push(id);
+  window.GL_UNDO=null; window.offerUndo=(m,f)=>{ GL_UNDO={m,f}; };
+  caGroupe='etiquette'; caRecherche=''; caOu=''; caTri='ordre'; caReordonner=false; caDeplacement=false; renderCartes();
+  await new Promise(r=>setTimeout(r,200));
+});
+const centre=async sel=>p.evaluate(s=>{ const e=document.querySelector(s); e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; },sel);
+const glisser=async(de,vers)=>{
+  const a=await centre(de); await p.mouse.move(a.x,a.y); await p.mouse.down();
+  await p.mouse.move(a.x+15,a.y+10,{steps:3});
+  const b=await p.evaluate(s=>{ const e=document.querySelector(s); const r=e.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; },vers);
+  await p.mouse.move(b.x,b.y,{steps:8}); await p.waitForTimeout(60);
+  const pendant=await p.evaluate(()=>({fantome:!!document.querySelector('.ca-fantome'),cible:!!document.querySelector('.ca-cible')}));
+  await p.mouse.up(); await p.waitForTimeout(250);
+  return pendant;
+};
+const etat=()=>p.evaluate(()=>({
+  tags:Object.fromEntries(cartes.map(c=>[c.nom,caTags(c.tags).join('+')])),
+  sec:Object.fromEntries([...document.querySelectorAll('.ca-sec')].map(s=>[s.dataset.t,[...s.querySelectorAll('.ca-tuile .ca-nom')].map(x=>x.textContent).join(',')])),
+  ligne:(FEUILLE.find(x=>x[0]==='gl-A1')||[])[6], ouvertes:GL_OUVERTES.slice(), undo:GL_UNDO&&GL_UNDO.m}));
+// 1. A1 posée sur B2 : elle passe dans Beta, juste avant B2, et garde « Bonus ».
+const g1=await glisser('.ca-tuile[data-k="gl-A1"]','.ca-tuile[data-k="gl-B2"]');
+const e1=await etat();
+chk('Pendant le glisser, la carte suit le pointeur et la cible s\'allume',g1.fantome&&g1.cible,JSON.stringify(g1));
+chk('Posée sur une carte d\'une autre section, elle en prend l\'étiquette en premier, et garde les autres',e1.tags.A1==='Beta+Alpha+Bonus',e1.tags.A1);
+chk('...elle se range juste avant la carte visée',e1.sec.Beta==='B1,A1,B2'&&e1.sec.Alpha==='A2',JSON.stringify(e1.sec));
+chk('...c\'est écrit dans le classeur',/^Beta/.test(e1.ligne||''),String(e1.ligne));
+chk('...le lâcher n\'ouvre pas la fiche',e1.ouvertes.length===0,JSON.stringify(e1.ouvertes));
+chk('...et l\'on peut annuler',/A1.*Beta/.test(e1.undo||''),String(e1.undo));
+await p.evaluate(async()=>{ await GL_UNDO.f(); await new Promise(r=>setTimeout(r,100)); });
+const e1b=await etat();
+chk('L\'annulation la remet à sa place',e1b.tags.A1==='Alpha+Bonus'&&e1b.sec.Alpha==='A1,A2',JSON.stringify(e1b.sec));
+// 2. Dans sa propre section : changer l'ordre.
+await glisser('.ca-tuile[data-k="gl-A2"]','.ca-tuile[data-k="gl-A1"]');
+const e2=await etat();
+chk('Dans sa section, la poser devant une autre change l\'ordre',e2.sec.Alpha==='A2,A1'&&e2.tags.A2==='Alpha',JSON.stringify(e2.sec));
+// 3. Sur un filtre du bandeau.
+await glisser('.ca-tuile[data-k="gl-B1"]','.ca-lieux .sb-tag[data-o="Alpha"]');
+const e3=await etat();
+chk('Posée sur un filtre du bandeau, elle rejoint cette section, en dernier',e3.tags.B1==='Alpha+Beta'&&/,B1$/.test(e3.sec.Alpha),JSON.stringify(e3));
+// 4. Dans « Sans étiquette » : plus aucune étiquette.
+await glisser('.ca-tuile[data-k="gl-B2"]','.ca-sec[data-t="Sans étiquette"]');
+const e4=await etat();
+chk('Posée dans « Sans étiquette », elle perd ses étiquettes',e4.tags.B2===''&&/B2/.test(e4.sec['Sans étiquette']),JSON.stringify(e4));
+// 5. Un simple clic ouvre toujours la fiche.
+const a5=await centre('.ca-tuile[data-k="gl-S1"]'); await p.waitForTimeout(100); await p.mouse.click(a5.x,a5.y); await p.waitForTimeout(100);
+const e5=await etat();
+chk('Un simple clic ouvre toujours la fiche',e5.ouvertes.join()==='gl-S1',JSON.stringify(e5.ouvertes));
+// 6. Au doigt : glisser vite fait défiler ; un appui prolongé prend la carte.
+const doigt=await p.evaluate(async()=>{
+  const out={};
+  const t=document.querySelector('.ca-tuile[data-k="gl-A2"]'); t.scrollIntoView({block:'center'});
+  const r=t.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;
+  const pe=(type,el,x,y)=>el.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:7,pointerType:'touch',clientX:x,clientY:y,button:0}));
+  pe('pointerdown',t,x,y); pe('pointermove',document,x,y+30);
+  await new Promise(r=>setTimeout(r,450)); out.defile=!document.querySelector('.ca-fantome'); pe('pointerup',document,x,y+30);
+  pe('pointerdown',t,x,y); await new Promise(r=>setTimeout(r,450));
+  out.pris=!!document.querySelector('.ca-fantome');
+  const cible=document.querySelector('.ca-sec[data-t="Sans étiquette"]'); cible.scrollIntoView({block:'center'});
+  const rb=cible.getBoundingClientRect();
+  pe('pointermove',document,rb.left+rb.width/2,rb.top+rb.height/2); pe('pointerup',document,rb.left+rb.width/2,rb.top+rb.height/2);
+  await new Promise(r=>setTimeout(r,250));
+  out.tags=caTags(caParId('gl-A2').tags).join('+');
+  return out;
+});
+chk('Au doigt, un geste rapide fait défiler sans prendre la carte',doigt.defile===true,JSON.stringify(doigt));
+chk('...un appui prolongé la prend, et on la pose ailleurs',doigt.pris&&doigt.tags==='',JSON.stringify(doigt));
+// 7. En vue par set, rien ne se glisse.
+const parSet=await p.evaluate(async()=>{
+  caGroupe='set'; renderCartes(); await new Promise(r=>setTimeout(r,200));
+  const t=document.querySelector('.ca-tuile'); const r=t.getBoundingClientRect();
+  t.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:3,pointerType:'mouse',clientX:r.left+5,clientY:r.top+5,button:0}));
+  document.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:3,pointerType:'mouse',clientX:r.left+80,clientY:r.top+80}));
+  const f=!!document.querySelector('.ca-fantome');
+  document.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:3,pointerType:'mouse',clientX:r.left+80,clientY:r.top+80}));
+  const S=window.GL_SAUVE; cartes=S.cartes; caOrdre=S.ordre; caOuvrir=S.ouvrir; window.offerUndo=S.undo;
+  caGroupe='etiquette'; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return f;
+});
+chk('En vue par set, on ne glisse pas',parSet===false,String(parSet));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),
