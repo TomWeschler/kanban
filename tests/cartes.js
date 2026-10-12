@@ -1582,8 +1582,8 @@ chk('Les 5 plus chères, par prix d\'achat, sans les cadeaux',(B['Les plus chèr
 chk('Les plus estimées : le prix de vente, à défaut la cote',(B['Les plus estimées']||[]).slice(0,3).map(x=>x.split('=')[0]).join('|')==='Chère|Sans achat|Par la cote'&&/cote/.test(B['Les plus estimées'][2]),JSON.stringify(B['Les plus estimées']));
 chk('Plus-values en € : les gagnantes seules, la plus forte d\'abord — la cote ne compte pas',(B['Plus-values en €']||[]).map(x=>x.split('=')[0]).join('|')==='Chère|Doublée',JSON.stringify(B['Plus-values en €']));
 chk('Plus-values en % : la doublée devant la chère',(B['Plus-values en %']||[]).map(x=>eu(x)).join('|')==='Doublée=+200 %|Chère=+50 %',JSON.stringify(B['Plus-values en %']));
-chk('Moins-values : la perdante',(B['Moins-values en €']||[]).map(x=>x.split('=')[0]).join('|')==='Perdante',JSON.stringify(B['Moins-values en €']));
-chk('La plus-value totale : 0 pour une carte sans prix de vente, mais son achat compte',/^\+\s?40/.test(eu(ind.pv||''))&&/\+19 %/.test(eu(ind.pv||'')),ind.pv);
+chk('Moins-values : sans prix de vente, la carte perd son prix d\'achat',(B['Moins-values en €']||[]).map(x=>x.split('=')[0]).join('|')==='Par la cote|Perdante|Sans rien',JSON.stringify(B['Moins-values en €']));
+chk('La plus-value totale : un prix de vente absent compte pour 0',/^−\s?3/.test(eu(ind.pv||''))&&/-1 %/.test(eu(ind.pv||'')),ind.pv);
 chk('Le panneau est ouvert par défaut',ind.ouvert===true,String(ind.ouvert));
 chk('Un clic ouvre la fiche de la carte',ind.ouvre==='Chère',ind.ouvre);
 chk('« Masquer les chiffres » cache aussi les indicateurs',ind.masque===true,String(ind.masque));
