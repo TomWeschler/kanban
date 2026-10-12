@@ -17021,17 +17021,19 @@ function caSectionsHtml(vis){
 }
 // ── Les indicateurs ──
 // Ce que vaut une carte aujourd'hui : le prix de vente qu'on a noté, à défaut
-// la cote Cardmarket relevée avec l'image. La plus-value se lit contre le
-// prix d'achat ; sans prix d'achat (un cadeau, un oubli), pas de plus-value.
+// la cote Cardmarket relevée avec l'image (pour « Les plus estimées »).
+// La plus-value, elle, ne se lit que sur le prix de vente noté : sans lui,
+// elle vaut 0 — la cote ne fait pas gagner d'argent. Sans prix d'achat (un
+// cadeau, un oubli), pas de plus-value du tout.
 const caEstimee=c=>c.vente!=null?c.vente:c.cote!=null?c.cote:null;
-const caPv=c=>c.prix!=null&&c.prix>0&&caEstimee(c)!=null?caEstimee(c)-c.prix:null;
+const caPv=c=>c.prix!=null&&c.prix>0?(c.vente!=null?c.vente-c.prix:0):null;
 const caPvPct=c=>{ const v=caPv(c); return v==null?null:v/c.prix*100; };
 const caPct=p=>`${p>0?'+':''}${Math.round(p)} %`;
 const caSigne=v=>`${v>0?'+':v<0?'−':''}${caEur(Math.abs(v))}`;
 function caPvTotale(l){
   const a=l.filter(c=>caPv(c)!=null); if(!a.length)return '';
   const pv=a.reduce((s,c)=>s+caPv(c),0), base=a.reduce((s,c)=>s+c.prix,0);
-  return `<div class="jp-kpi" title="Sur ${a.length} carte${a.length>1?'s':''} dont on connaît le prix d'achat et un prix de vente ou une cote">
+  return `<div class="jp-kpi" title="Prix de vente moins prix d'achat, sur ${a.length} carte${a.length>1?'s':''} achetée${a.length>1?'s':''} — 0 pour celles sans prix de vente">
     <div class="jp-kpi-l">Plus-value</div><div class="jp-kpi-v ${pv>0?'ca-gain':pv<0?'ca-perte':''}">${caSigne(pv)} <small>${caPct(pv/base*100)}</small></div></div>`;
 }
 const LS_CA_IND='kanban_cartes_indicateurs';
@@ -17043,7 +17045,7 @@ function caIndicateursHtml(l){
     <span class="ca-ind-n">${tdEsc(c.nom)}</span><span class="ca-ind-v${cls?' '+cls:''}">${droite}</span></button>`;
   const bloc=(titre,cs,droite,cls,aide)=>`<div class="ca-ind-b"><div class="ca-ind-t">${titre}</div>${cs.length
     ?cs.map(c=>ligne(c,droite(c),typeof cls==='function'?cls(c):cls)).join(''):`<div class="ca-ind-vide">${aide}</div>`}</div>`;
-  const sansPv='Il faut un prix d\'achat et un prix de vente (ou une cote).';
+  const sansPv='Il faut un prix d\'achat et un prix de vente.';
   const blocs=[
     bloc('Les plus chères',top(c=>c.prix,0),c=>caEur(c.prix),'','Aucun prix d\'achat.'),
     bloc('Les plus estimées',top(caEstimee,0),c=>caEur(caEstimee(c))+(c.vente==null?' <small>cote</small>':''),'','Aucun prix de vente ni cote.'),
@@ -17053,7 +17055,7 @@ function caIndicateursHtml(l){
   ];
   const conn=l.filter(c=>caPv(c)!=null).length;
   return `<details class="ca-ind"${caIndOuvert?' open':''} ontoggle="caIndBascule(this)"><summary>Indicateurs
-    <span class="ca-aide">${l.length} carte${l.length>1?'s':''}${conn?` · plus-value connue pour ${conn}`:''} — prix de vente, à défaut cote Cardmarket</span></summary>
+    <span class="ca-aide">${l.length} carte${l.length>1?'s':''}${conn?` · plus-value sur ${conn} carte${conn>1?'s':''} achetée${conn>1?'s':''}, 0 sans prix de vente`:''}</span></summary>
     <div class="ca-ind-g">${blocs.join('')}</div></details>`;
 }
 // Le prix de vente se lit CONTRE le prix d'achat : rouge s'il est plus bas,
@@ -20120,7 +20122,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.88.0';
+const APP_VERSION='v1.89.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
