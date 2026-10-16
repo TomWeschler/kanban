@@ -1805,6 +1805,37 @@ const parSet=await p.evaluate(async()=>{
 });
 chk('En vue par set, on ne glisse pas',parSet===false,String(parSet));
 
+console.log('=== 9 novovicies. DÉPLACER AVEC UN FILTRE DE SECTION ===');
+const df=await p.evaluate(async()=>{
+  const out={};
+  const mk=(nom,tags,ordre)=>({id:'df-'+nom,section:'',nom,url:'',prix:5,vente:null,tags,langue:'',image:'',drive_id:'',ref:'',cote:null,
+    ordre,etat:'',raison:'',created_at:td(),updated_at:td(),case:''});
+  const sauve=cartes, sauveO=JSON.parse(JSON.stringify(caOrdre));
+  cartes=[mk('A1',['A'],1),mk('A2',['A'],2),mk('A3',['A'],3),mk('B1',['B','A'],1),mk('B2',['B'],2)];
+  caOrdre={etiquette:['A','B'],set:[],couleur:{}};
+  caGroupe='etiquette'; caRecherche=''; caOu='A'; caTri='ordre'; caReordonner=false; caDeplacement=true; renderCartes();
+  await new Promise(r=>setTimeout(r,200));
+  const fl=t=>document.querySelectorAll(`.ca-sec[data-t="${t}"] .ca-dep`).length;
+  out.flA=fl('A'); out.flB=fl('B');
+  out.aide=(document.querySelector('.ca-aide-dep')||{}).textContent||'';
+  caDeplacerCarte('df-A3','debut'); await new Promise(r=>setTimeout(r,100));
+  out.ordreA=[...document.querySelectorAll('.ca-sec[data-t="A"] .ca-nom')].map(x=>x.textContent).join(',');
+  // Glisser dans la section filtrée : la place est respectée.
+  await caDeposer('df-B1','A','df-A1'); await new Promise(r=>setTimeout(r,100));
+  out.pose=[...document.querySelectorAll('.ca-sec[data-t="A"] .ca-nom')].map(x=>x.textContent).join(',');
+  // Avec la recherche, plus rien ne se déplace.
+  caRecherche='A'; renderCartes(); await new Promise(r=>setTimeout(r,100));
+  out.flRech=document.querySelectorAll('.ca-dep').length;
+  out.aideRech=(document.querySelector('.ca-aide-dep')||{}).textContent||'';
+  caRecherche=''; caOu=''; caDeplacement=false; cartes=sauve; caOrdre=sauveO; renderCartes(); await new Promise(r=>setTimeout(r,150));
+  return out;
+});
+chk('Avec le filtre d\'une section, cette section garde ses flèches',df.flA===3,String(df.flA));
+chk('...pas une autre qui n\'en montre qu\'une partie, et l\'on dit pourquoi',df.flB===0&&/Seule la section « A »/.test(df.aide),JSON.stringify(df));
+chk('...et le déplacement marche',df.ordreA==='A3,A1,A2',df.ordreA);
+chk('Glisser dans la section filtrée respecte la place visée',df.pose==='A3,B1,A1,A2',df.pose);
+chk('Avec une recherche, plus de flèches, et l\'on dit de la retirer',df.flRech===0&&/retire la recherche/.test(df.aideRech),JSON.stringify(df));
+
 console.log('=== 10. LECTURE DES ADRESSES ===');
 const url=await p.evaluate(()=>({
   cm:caLireUrl('https://www.cardmarket.com/fr/Pokemon/Products/Singles/Paldean-Fates/Charmander-PAF109'),

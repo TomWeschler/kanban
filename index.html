@@ -16837,7 +16837,7 @@ async function caDeposer(id,titre,avantId){
   const k=cle(c), change=caOrdreNorm(k)!==caOrdreNorm(k0);
   // Ranger à une place précise n'a de sens que sur la section entière, dans
   // son ordre : avec un filtre ou un autre tri, la voisine n'est pas la vraie.
-  const posable=caTri==='ordre'&&!caRecherche.trim()&&!caOu;
+  const posable=caSectionEntiere(k||'Sans étiquette');
   const voisins=[];
   if(posable&&(avantId||change)){
     const l=cartes.filter(x=>x.id!==c.id&&cle(x)===k).sort(caParOrdre);
@@ -16981,7 +16981,8 @@ async function renderCartes(){
         ${parSet&&!caReordonner?`<div class="ca-lieux ca-setf">${[['','Tous']].concat(caOrdonner(CA_COLLECTIONS,'set',x=>x.nom).map(c=>[c.id,c.nom]))
       .map(([id,n],i)=>`<button class="sb-tag${caSetFiltre===id?' active':''}${id?' ca-f':''}" onclick="caSetFiltrer('${id}')"${id?caFiltreStyle('set',i-1,n):''}>${tdEsc(n)}</button>`).join('')}</div>`:''}
     <div class="ca-etat" id="caEtat"></div>
-    ${caDeplacement&&!parSet&&(caTri!=='ordre'||caRecherche.trim()||caOu)?'<div class="ca-aide-dep">Pour déplacer des cartes, retire la recherche et le filtre : on déplace une carte parmi TOUTES celles de sa section.</div>':''}
+    ${caDeplacement&&!parSet&&(caTri!=='ordre'||caRecherche.trim())?'<div class="ca-aide-dep">Pour déplacer des cartes, retire la recherche : on déplace une carte parmi TOUTES celles de sa section.</div>'
+      :caDeplacement&&!parSet&&caOu?`<div class="ca-aide-dep">Seule la section « ${tdEsc(caOu===CA_SANS_ET?'Sans étiquette':caOu)} » se déplace : les autres n'en montrent qu'une partie.</div>`:''}
     </div>
     <div id="caInd">${caChiffres?caIndicateursHtml(vues.filter(c=>!caHorsTotal(c))):''}</div>
     ${parSet?`<div class="ca-cocher-l">
@@ -17003,8 +17004,14 @@ const caFlechesCarte=(c,i,n)=>`<span class="ca-dep">
   <button class="ca-ord-b" ${i===0?'disabled':''} title="Avancer" onclick="caDeplacerCarte('${MD_ATT(c.id)}',-1)">←</button>
   <button class="ca-ord-b" ${i>=n-1?'disabled':''} title="Reculer" onclick="caDeplacerCarte('${MD_ATT(c.id)}',1)">→</button>
   <button class="ca-ord-b" ${i>=n-1?'disabled':''} title="Tout à la fin" onclick="caDeplacerCarte('${MD_ATT(c.id)}','fin')">⇥</button></span>`;
+// Déplacer n'a de sens que sur une section montrée EN ENTIER, dans son ordre.
+// La recherche en cache une partie : interdit. Un filtre d'étiquette, lui,
+// laisse entière la section du même nom — toutes ses cartes portent cette
+// étiquette, puisque c'est leur première ; les autres sections n'en montrent
+// que celles qui la portent en second, et ne se déplacent pas.
+const caSectionEntiere=titre=>caTri==='ordre'&&!caRecherche.trim()&&(!caOu||
+  (caOu===CA_SANS_ET?titre==='Sans étiquette':caOrdreNorm(titre)===caOrdreNorm(caOu)));
 function caSectionsHtml(vis){
-  const deplacable=caTri==='ordre'&&!caRecherche.trim()&&!caOu;
   const ordonnables=vis.filter(x=>x.s.titre!=='Sans étiquette').length;
   const rang=new Map(vis.map((x,i)=>[x.s.titre,i]));
   const html=vis.filter(x=>x.l.length||caReordonner).map(({s,l},i)=>`
@@ -17014,7 +17021,7 @@ function caSectionsHtml(vis){
         // à côté de son nom, là où on le cherche.
         l.length&&caHors.some(h=>h.toLowerCase()===String(s.titre).toLowerCase())?`<span class="ca-sec-cadeau">${caEur(caSomme(l))}</span>`:''}
         <span class="ca-sec-n">${l.length} · ${caEur(caSomme(l))}</span></div>
-      ${caReordonner?'':`<div class="ca-grille">${l.map((c,i)=>caDeplacement&&deplacable
+      ${caReordonner?'':`<div class="ca-grille">${l.map((c,i)=>caDeplacement&&caSectionEntiere(s.titre)
         ?`<div class="ca-tuile-dep">${caTuile(c)}${caFlechesCarte(c,i,l.length)}</div>`:caTuile(c)).join('')}</div>`}
     </section>`).join('');
   return html||'<div class="ca-vide">Aucune carte ne correspond.</div>';
@@ -20123,7 +20130,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.89.1';
+const APP_VERSION='v1.90.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
