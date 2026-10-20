@@ -1331,6 +1331,52 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .nba-opts tr.nba-neg td{opacity:0.55}
 .nba-opts td small{color:var(--text-dim)}
 .nba-cj-jour{border-top:3px solid var(--green)}
+/* L'avant-match, condensé */
+.nba-grille3{display:grid;grid-template-columns:minmax(260px,0.9fr) minmax(420px,1.5fr) minmax(250px,0.9fr);gap:0.8rem;align-items:start}
+@media (max-width:1180px){ .nba-grille3{grid-template-columns:minmax(260px,1fr) minmax(360px,1.4fr)} .nba-col-joueurs{grid-column:1/-1} }
+@media (max-width:760px){ .nba-grille3{grid-template-columns:1fr} .nba-col-conseil{order:-1} .nba-col-joueurs{grid-column:auto} }
+.nba-col{display:flex;flex-direction:column;gap:0.6rem;min-width:0}
+.nba-bloc{background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.55rem}
+.nba-bloc-t{display:flex;justify-content:space-between;align-items:center;gap:0.4rem;font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:0.3rem}
+.nba-mini{padding:2px 8px!important;font-size:0.62rem!important}
+.nba-face{width:100%;border-collapse:collapse;font-size:0.74rem}
+.nba-face td,.nba-face th{padding:0.16rem 0.3rem;border-bottom:1px solid var(--border)}
+.nba-face td{text-align:center;font-family:var(--font-mono);white-space:nowrap;width:30%}
+.nba-face th{font-weight:400;color:var(--text-mid);text-align:center;font-size:0.68rem}
+.nba-face tr:first-child td{font-family:inherit}
+.nba-face tr:first-child td small{display:block;color:var(--text-dim);font-size:0.55rem}
+.nba-face td.mieux{font-weight:700;color:var(--text)}
+.nba-face td:not(.mieux){color:var(--text-mid)}
+.nba-face tr.nba-prec td{font-family:var(--font-mono);font-size:0.54rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);padding-top:0.45rem;text-align:left}
+.nba-attendu{background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.6rem}
+.nba-score{display:flex;align-items:center;justify-content:center;gap:0.5rem;font-family:var(--font-mono);font-size:1.15rem}
+.nba-score>span{color:var(--text-dim)}
+.nba-score-l{text-align:center;font-size:0.76rem;margin:0.15rem 0}
+.nba-attendu .ca-aide{display:block;text-align:center;font-size:0.66rem}
+.nba-conseil{border-top:0!important;padding-top:0!important;gap:0.45rem!important;background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.6rem!important}
+.nba-cgrille{display:grid;grid-template-columns:auto 4.6rem auto auto;justify-content:start;gap:0.3rem 0.6rem;align-items:center;font-size:0.74rem}
+@media (max-width:420px){ .nba-conseil .nba-cgrille .nba-ci,.nba-conseil .nba-cj .nba-ci{width:3.5rem!important} .nba-cgrille{gap:0.3rem 0.35rem} }
+.nba-clib{font-size:0.72rem;color:var(--text-mid);white-space:nowrap}
+.nba-clib small{display:block;color:var(--text-dim);font-size:0.6rem}
+.nba-cgrille .nba-ci,.nba-cj .nba-ci{width:4.4rem!important}
+.nba-cc small{color:var(--text-dim);font-size:0.64rem}
+.nba-cj{display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center}
+.nba-cn{width:9.5rem!important}
+.nba-cs{padding:0.28rem 0.4rem!important;font-size:0.74rem!important}
+.nba-opts td,.nba-opts th{padding:0.22rem 0.3rem!important}
+.nba-opts .btn-nav{padding:3px 9px;font-size:0.68rem}
+.nba-marq{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem}
+@media (max-width:1180px) and (min-width:761px){ .nba-col-joueurs{display:grid;grid-template-columns:1fr 2fr;gap:0.6rem} }
+.nba-marq>div{background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.5rem;min-width:0}
+.nba-marq .ca-ind-l{font-size:0.72rem;padding:0.12rem 0}
+.nba-ci,.nba-cn,.nba-lval,.nba-date{min-width:0!important}
+.nba-bloc .nba-abs{font-size:0.76rem;display:flex;flex-wrap:wrap;gap:0.25rem;align-items:center}
+@media (max-width:760px){ .nba-cj .nba-cn{flex:1 1 100%!important;width:auto!important} .nba-marq{grid-template-columns:1fr} }
+.nba-abs{margin-bottom:0.25rem}
+.nba-avant{gap:0.6rem!important;padding:0 0.7rem 0.7rem!important}
+.nba-match-l{padding:0.4rem 0.8rem!important}
+
 .nba-verdict{font-size:0.84rem;line-height:1.45;padding:0.55rem 0.7rem;border-radius:8px;border:1px solid var(--border2);background:var(--surface2)}
 .nba-verdict.bon{border-color:var(--green);background:color-mix(in srgb,var(--green) 10%,var(--surface2))}
 .nba-tab tr.nba-prec td{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);padding-top:0.6rem}
@@ -16673,44 +16719,37 @@ function nbaVerdictHtml(opts,md){
   return `<div class="nba-verdict${cls}">${t}</div>`;
 }
 const nbaEvTxt=ev=>`${ev>0?'+':''}${Math.round(ev*100)} %`;
-// Le panneau du conseil, dans l'avant-match.
-function nbaConseilHtml(m){
-  const s=nbaSaison(), c=nbaCotesDu(m.id), md=nbaModele(m);
+// Le panneau du conseil, dans l'avant-match : la saisie des cotes, le verdict
+// et le tableau des issues. Le score attendu et les absences sont à côté.
+function nbaConseilHtml(m,md){
+  const s=nbaSaison(), c=nbaCotesDu(m.id);
+  if(md===undefined)md=nbaModele(m);
   const v=x=>x==null?'':String(x).replace('.',',');
   const inp=(id,val,ph)=>`<input type="text" inputmode="decimal" class="ca-q nba-ci" id="${id}" value="${MD_ATT(v(val))}" placeholder="${ph||'cote'}">`;
-  // Une étiquette et son champ restent ensemble quand la ligne se replie.
-  const cc=(lib,champ)=>`<span class="nba-cc">${lib}${champ}</span>`;
   const ml=c.ml||{}, hc=c.hc||{}, tot=c.tot||{};
   const joueurs=(c.joueurs&&c.joueurs.length?c.joueurs:[{stat:'pts'}]);
   const noms=[...new Set(nbaJoueurs.filter(j=>j.equipe===m.dom||j.equipe===m.ext).map(j=>j.joueur))].sort();
   const opts=c.ml||c.hc||c.tot?nbaOptions(m,s):[];
-  const abs=(t,a)=>a.liste.length?a.liste.map(x=>`<span class="nba-bl w${Math.round(x.w*4)}" title="${MD_ATT(x.detail)}">${tdEsc(x.joueur)} · ${tdEsc(nbaStatutFr(x.statut))}${x.cout?` <b>−${nbaF1(x.cout)}</b>`:''}</span>`).join(''):'<span class="ca-aide">aucune absence signalée</span>';
   const parier=o=>`nbaPariOuvrir(null,${MD_ATT(JSON.stringify({date:m.date,match_id:m.id,match:nbaMatchLib(m),marche:o.marche,equipe:o.equipe||'',joueur:o.joueur||'',
     stat:o.stat||'pts',sens:o.sens||'plus',ligne:o.ligne==null?null:o.ligne,cote:o.cote,mise:o.mise||null,proba:Math.round(o.p*1000)/1000,ev:Math.round(o.ev*1000)/1000}))})`;
+  const e=nbaEqHtml(m.ext), d=nbaEqHtml(m.dom);
+  // Une grille : une ligne par marché, les deux issues côte à côte.
   return `<div class="nba-conseil">
-    <div class="ca-ind-t">Cotes Winamax et conseil
-      <button class="btn-nav out" onclick="nbaBlessuresActualiser()" title="Relire la liste des blessés chez ESPN">↻ Blessures</button></div>
-    <div class="nba-cotes">
-      <div class="nba-cl"><span>Vainqueur</span>${cc(nbaEqHtml(m.ext),inp('nbaCMlExt',ml.ext))}${cc(nbaEqHtml(m.dom),inp('nbaCMlDom',ml.dom))}</div>
-      <div class="nba-cl"><span>Handicap</span>${cc(`<span class="ca-aide">ligne de</span>${nbaEqHtml(m.dom)}`,inp('nbaCHcLigne',hc.ligne,'ex : -5,5'))}${cc(nbaEqHtml(m.ext),inp('nbaCHcExt',hc.ext))}${cc(nbaEqHtml(m.dom),inp('nbaCHcDom',hc.dom))}</div>
-      <div class="nba-cl"><span>Total</span>${cc('<span class="ca-aide">ligne</span>',inp('nbaCTotLigne',tot.ligne,'ex : 224,5'))}${cc('<span class="ca-aide">plus</span>',inp('nbaCTotPlus',tot.plus))}${cc('<span class="ca-aide">moins</span>',inp('nbaCTotMoins',tot.moins))}</div>
-      ${joueurs.map(j=>`<div class="nba-cl nba-cj"><span>Joueur</span>
-        <input type="text" class="ca-q nba-cn" data-c="joueur" list="nbaCJoueurs" value="${MD_ATT(j.joueur||'')}" placeholder="nom">
-        <select class="ca-tri" data-c="stat">${NBA_STATS.map(([k,l])=>`<option value="${k}"${(j.stat||'pts')===k?' selected':''}>${l}</option>`).join('')}</select>
-        <input type="text" inputmode="decimal" class="ca-q nba-ci" data-c="ligne" value="${MD_ATT(v(j.ligne))}" placeholder="ligne">
-        ${cc('<span class="ca-aide">plus</span>',`<input type="text" inputmode="decimal" class="ca-q nba-ci" data-c="plus" value="${MD_ATT(v(j.plus))}" placeholder="cote">`)}
-        ${cc('<span class="ca-aide">moins</span>',`<input type="text" inputmode="decimal" class="ca-q nba-ci" data-c="moins" value="${MD_ATT(v(j.moins))}" placeholder="cote">`)}</div>`).join('')}
-      <datalist id="nbaCJoueurs">${noms.map(n=>`<option value="${MD_ATT(n)}">`).join('')}</datalist>
-      <div class="nba-act"><button class="btn-nav" onclick="nbaCotesEnregistrer('${MD_ATT(m.id)}')">Analyser</button>
-        <button class="btn-nav out" onclick="nbaCotesEnregistrer('${MD_ATT(m.id)}',true)">+ ligne joueur</button></div>
+    <div class="nba-bloc-t">Cotes Winamax</div>
+    <div class="nba-cgrille">
+      <span class="nba-clib">Vainqueur</span><span></span><span class="nba-cc">${e}${inp('nbaCMlExt',ml.ext)}</span><span class="nba-cc">${d}${inp('nbaCMlDom',ml.dom)}</span>
+      <span class="nba-clib">Handicap <small>ligne ${tdEsc(m.dom)}</small></span><span>${inp('nbaCHcLigne',hc.ligne,'-5,5')}</span><span class="nba-cc">${e}${inp('nbaCHcExt',hc.ext)}</span><span class="nba-cc">${d}${inp('nbaCHcDom',hc.dom)}</span>
+      <span class="nba-clib">Total</span><span>${inp('nbaCTotLigne',tot.ligne,'224,5')}</span><span class="nba-cc"><small>plus</small>${inp('nbaCTotPlus',tot.plus)}</span><span class="nba-cc"><small>moins</small>${inp('nbaCTotMoins',tot.moins)}</span>
     </div>
-    ${md?`<div class="nba-modele">
-      <div>Score attendu, ajusté : <b>${nbaEqHtml(m.ext)} ${nbaF1(md.pe)} – ${nbaF1(md.pd)} ${nbaEqHtml(m.dom)}</b> · total ${nbaF1(md.total)}
-        <span class="ca-aide">— écart-type : ${nbaF1(md.sdE)} sur l'écart, ${nbaF1(md.sdT)} sur le total${md.avecPrec?` · saison passée pour ${Math.round(md.a.attendu.partPrec*100)} %`:''}${md.n<10?` · <b>${md.n} match${md.n>1?'s':''} cette saison : prudence</b>`:''} · poids des stats ${Math.round(md.poids*100)} %</span></div>
-      ${md.fatD||md.fatE?`<div>Fatigue : ${md.fatE?`${nbaEqHtml(m.ext)} −1,5 (2ᵉ soir de suite) `:''}${md.fatD?`${nbaEqHtml(m.dom)} −1,5 (2ᵉ soir de suite)`:''}</div>`:''}
-      <div class="nba-abs">${nbaEqHtml(m.ext)} ${abs(m.ext,md.absE)}</div>
-      <div class="nba-abs">${nbaEqHtml(m.dom)} ${abs(m.dom,md.absD)}</div></div>`
-      :'<div class="ca-aide">Pas assez de matchs pour un modèle, ni cette saison ni la précédente : le conseil s\'en tient aux cotes.</div>'}
+    ${joueurs.map(j=>`<div class="nba-cj">
+        <input type="text" class="ca-q nba-cn" data-c="joueur" list="nbaCJoueurs" value="${MD_ATT(j.joueur||'')}" placeholder="joueur">
+        <select class="ca-tri nba-cs" data-c="stat">${NBA_STATS.map(([k,l])=>`<option value="${k}"${(j.stat||'pts')===k?' selected':''}>${l}</option>`).join('')}</select>
+        <input type="text" inputmode="decimal" class="ca-q nba-ci" data-c="ligne" value="${MD_ATT(v(j.ligne))}" placeholder="ligne">
+        <span class="nba-cc"><small>plus</small><input type="text" inputmode="decimal" class="ca-q nba-ci" data-c="plus" value="${MD_ATT(v(j.plus))}" placeholder="cote"></span>
+        <span class="nba-cc"><small>moins</small><input type="text" inputmode="decimal" class="ca-q nba-ci" data-c="moins" value="${MD_ATT(v(j.moins))}" placeholder="cote"></span></div>`).join('')}
+    <datalist id="nbaCJoueurs">${noms.map(n=>`<option value="${MD_ATT(n)}">`).join('')}</datalist>
+    <div class="nba-act"><button class="btn-nav" onclick="nbaCotesEnregistrer('${MD_ATT(m.id)}')">Analyser</button>
+      <button class="btn-nav out" onclick="nbaCotesEnregistrer('${MD_ATT(m.id)}',true)">+ ligne joueur</button></div>
     ${nbaVerdictHtml(opts,md)}
     ${opts.length?`<div class="nba-scroll"><table class="nba-tab nba-opts"><tr><th>Pari</th><th>Cote</th><th title="La probabilité selon Winamax, sa marge retirée">Winamax</th>
         <th title="La probabilité selon les statistiques">Stats</th><th title="Le mélange des deux, retenu pour le calcul">Retenue</th><th title="Probabilité retenue × cote − 1">Valeur</th><th>Mise</th><th></th></tr>
@@ -16718,8 +16757,7 @@ function nbaConseilHtml(m){
         <td>${v(o.cote)}</td><td>${nbaPc(o.pMarche)}</td><td>${nbaPc(o.pStat)}</td><td>${nbaPc(o.p)}</td>
         <td class="${nbaCls(o.ev)}">${nbaEvTxt(o.ev)}</td><td>${o.mise?nbaEur(o.mise):'—'}</td>
         <td>${o.valeur?`<button class="btn-nav" onclick="${parier(o)}">Parier</button>`:''}</td></tr>`).join('')}</table></div>
-      ${c.ml&&nbaMarge(c.ml.dom,c.ml.ext)!=null?`<div class="ca-aide">Marge de Winamax sur le vainqueur : ${Math.round(nbaMarge(c.ml.dom,c.ml.ext)*1000)/10} %.
-        En vert, les paris dont la valeur dépasse ${Math.round(NBA_SEUIL_VALEUR*100)} % ; la mise est un quart de Kelly, au plus ${Math.round(NBA_MISE_MAX*100)} % du compte (${nbaEur(nbaCompte(s))}).</div>`:''}`
+      <div class="ca-aide">${c.ml&&nbaMarge(c.ml.dom,c.ml.ext)!=null?`Marge de Winamax sur le vainqueur : ${Math.round(nbaMarge(c.ml.dom,c.ml.ext)*1000)/10} %. `:''}En vert : valeur ≥ ${Math.round(NBA_SEUIL_VALEUR*100)} %. Mise : un quart de Kelly, au plus ${Math.round(NBA_MISE_MAX*100)} % du compte (${nbaEur(nbaCompte(s))}).</div>`
       :'<div class="ca-aide">Saisis les cotes Winamax, puis « Analyser ».</div>'}
   </div>`;
 }
@@ -17191,43 +17229,68 @@ function nbaMatchsHtml(){
       ${nbaMatchVu===m.id?nbaAvantMatchHtml(m):''}</div>`).join('')
       :'<div class="ca-vide">Aucun match ce jour-là — ou pas encore lu : « ↻ Mettre à jour les stats », ou change de jour.</div>'}`;
 }
+// L'avant-match, en trois colonnes : les deux équipes face à face ; le score
+// attendu et le conseil ; les absences et les marqueurs. Une colonne sur
+// téléphone, le conseil d'abord.
 function nbaAvantMatchHtml(m){
-  const a=nbaAvantMatch(m);
-  const lig=(l,d,e,f=x=>x)=>`<tr><td>${l}</td><td>${f(e)}</td><td>${f(d)}</td></tr>`;
-  const r=x=>x==null?'—':x===0?'2ᵉ soir de suite':`${x} j`;
+  const a=nbaAvantMatch(m), fini=m.statut==='final', md=fini?null:nbaModele(m);
+  const e=nbaEqHtml(m.ext), d=nbaEqHtml(m.dom);
+  // Tant que la saison n'a aucun match, la comparaison est celle de la saison passée.
+  const vide=!a.d.j&&!a.e.j, avecPrec=a.prec.d.j||a.prec.e.j;
+  const B=vide&&avecPrec?{d:a.prec.d,e:a.prec.e}:{d:a.d,e:a.e};
+  const pct=r=>r&&r.v+r.d?r.v/(r.v+r.d):null;
+  // Une ligne : la valeur de chaque équipe, la meilleure en gras.
+  const lig=(lib,ve,vd,f,sens)=>{
+    const te=f(ve), tdv=f(vd);
+    if((te==='—'||te==null)&&(tdv==='—'||tdv==null))return '';
+    let me='',mdc='';
+    if(sens){ const ne=sens.val(ve), nd=sens.val(vd);
+      if(ne!=null&&nd!=null&&ne!==nd){ const ext=sens.haut?ne>nd:ne<nd; me=ext?' class="mieux"':''; mdc=ext?'':' class="mieux"'; } }
+    return `<tr><td${me}>${te}</td><th>${lib}</th><td${mdc}>${tdv}</td></tr>`;
+  };
+  const rec=x=>x&&x.v+x.d?nbaRec(x):'—', n1=x=>x==null?'—':nbaF1(x), sg=x=>x==null?'—':(x>0?'+':'')+nbaF1(x);
+  const HAUT={haut:true,val:x=>typeof x==='number'?x:pct(x)}, BAS={haut:false,val:x=>typeof x==='number'?x:pct(x)};
+  const repos=x=>x==null?'—':x===0?'2ᵉ soir':`${x} j`;
+  const comp=`<table class="nba-face"><tr><td>${e}<small>ext.</small></td><th></th><td>${d}<small>dom.</small></td></tr>
+    ${vide&&avecPrec?'<tr class="nba-prec"><td colspan="3">Saison passée — aucun match cette saison</td></tr>':''}
+    ${lig('Bilan',B.e,B.d,rec,HAUT)}${lig('Dans ce rôle',B.e.ext,B.d.dom,rec,HAUT)}${vide?'':lig('10 derniers',B.e.l10,B.d.l10,rec,HAUT)}
+    ${vide?'':lig('Série',B.e.serie||'—',B.d.serie||'—',x=>x)}
+    ${lig('Marqués (rôle)',B.e.pourExt,B.d.pourDom,n1,HAUT)}${lig('Encaissés (rôle)',B.e.contreExt,B.d.contreDom,n1,BAS)}
+    ${lig('Écart moyen',B.e.ecart,B.d.ecart,sg,HAUT)}${lig('Repos',a.reposExt,a.reposDom,repos,HAUT)}
+    ${lig('2ᵉ soir de suite',B.e.b2b,B.d.b2b,rec,HAUT)}${lig('Contre l\'écart',B.e.ats,B.d.ats,x=>x&&x.n?`${x.c}-${x.p}`:'—')}
+    ${lig('Au-dessus du total',B.e.ou,B.d.ou,x=>x&&x.n?`${x.o}-${x.u}`:'—')}${lig('1ʳᵉ mi-temps',B.e.mi1,B.d.mi1,n1,HAUT)}
+    ${!vide&&avecPrec?`<tr class="nba-prec"><td colspan="3">Saison passée</td></tr>
+      ${lig('Bilan',a.prec.e,a.prec.d,rec,HAUT)}${lig('Dans ce rôle',a.prec.e.ext,a.prec.d.dom,rec,HAUT)}${lig('Écart moyen',a.prec.e.ecart,a.prec.d.ecart,sg,HAUT)}`:''}</table>
+    ${a.h2h.length?`<div class="nba-h2h">Face-à-face cette saison : ${a.h2h.map(x=>`${x.dom?'':'@ '}${nbaEqHtml(x.adv)} ${x.pour}-${x.contre} ${x.v?'✓':'✗'}`).join(' · ')}</div>`:''}`;
+  // Le score attendu : celui du modèle (repos et absences compris), à défaut le brut.
+  const sc=md?{e:md.pe,d:md.pd,t:md.total,ec:md.ecart}:a.attendu?{e:a.attendu.ext,d:a.attendu.dom,t:a.attendu.total,ec:a.attendu.ecart}:null;
+  const details=md?[md.fatE?`${tdEsc(m.ext)} −1,5 (2ᵉ soir)`:'',md.fatD?`${tdEsc(m.dom)} −1,5 (2ᵉ soir)`:'',
+      md.absE.pts?`absences ${tdEsc(m.ext)} −${nbaF1(md.absE.pts)}`:'',md.absD.pts?`absences ${tdEsc(m.dom)} −${nbaF1(md.absD.pts)}`:'',
+      md.avecPrec?`saison passée pour ${Math.round(md.a.attendu.partPrec*100)} %`:'',`poids des stats ${Math.round(md.poids*100)} %`,
+      md.n<10?`<b>${md.n} match${md.n>1?'s':''} cette saison : prudence</b>`:''].filter(Boolean).join(' · ')
+    :a.attendu&&a.attendu.partPrec>0?`saison passée pour ${Math.round(a.attendu.partPrec*100)} %`:'';
+  const score=sc?`<div class="nba-attendu"><div class="nba-bloc-t">Score attendu</div>
+      <div class="nba-score">${e}<b>${nbaF1(sc.e)}</b><span>–</span><b>${nbaF1(sc.d)}</b>${d}</div>
+      <div class="nba-score-l">Total <b>${nbaF1(sc.t)}</b>${m.total!=null?` <small>(ligne ${String(m.total).replace('.',',')})</small>`:''} · écart ${sc.ec>0?d:e} <b>+${nbaF1(Math.abs(sc.ec))}</b>${m.spread!=null?` <small>(ligne ${tdEsc(m.dom)} ${m.spread>0?'+':''}${String(m.spread).replace('.',',')})</small>`:''}</div>
+      ${details?`<div class="ca-aide">${details}</div>`:''}</div>`
+    :'<div class="ca-aide">Pas assez de matchs pour un score attendu, ni cette saison ni la précédente.</div>';
+  // Les absences, puis les marqueurs, des deux équipes.
+  const abs=(t,x)=>`<div class="nba-abs">${nbaEqHtml(t)}${x&&x.liste.length?x.liste.map(b=>`<span class="nba-bl w${Math.round(b.w*4)}" title="${MD_ATT(b.detail)}">${tdEsc(b.joueur)} · ${tdEsc(nbaStatutFr(b.statut))}${b.cout?` <b>−${nbaF1(b.cout)}</b>`:''}</span>`).join(''):'<span class="ca-aide">aucune absence signalée</span>'}</div>`;
+  const absences=fini?'':`<div class="nba-bloc"><div class="nba-bloc-t">Absences
+      <button class="btn-nav out nba-mini" onclick="nbaBlessuresActualiser()" title="Relire la liste des blessés chez ESPN">↻ Blessures</button></div>
+    ${nbaBlesses.at?`${abs(m.ext,md?md.absE:nbaImpactAbsences(m.ext,m.date))}${abs(m.dom,md?md.absD:nbaImpactAbsences(m.dom,m.date))}`:'<div class="ca-aide">Blessures pas encore lues.</div>'}</div>`;
   // En tout début de saison, les marqueurs de la saison passée, en attendant.
   const joueurs=t=>{ let l=nbaJoueursListe().filter(x=>x.equipe===t); if(!l.length)l=nbaJoueursListe(null).filter(x=>x.equipe===t);
     return l.sort((p,q)=>(q.moy.pts||0)-(p.moy.pts||0)).slice(0,5); };
   const forme=x=>{ const l=nbaMatchsJoueur(x.id,null).filter(j=>j.date<m.date).slice(-5); return l.length?nbaF1(nbaMoy(l.map(j=>j.pts))):'—'; };
-  return `<div class="nba-avant">
-    <table class="nba-tab"><tr><th></th><th>${nbaEqHtml(m.ext)} <small>ext.</small></th><th>${nbaEqHtml(m.dom)} <small>dom.</small></th></tr>
-      ${lig('Bilan',a.d,a.e,x=>`${nbaRec(x)}`)}
-      ${lig('À domicile / à l\'extérieur',a.d.dom,a.e.ext,x=>nbaRec(x))}
-      ${lig('10 derniers',a.d.l10,a.e.l10,x=>nbaRec(x))}
-      ${lig('Série',a.d.serie||'—',a.e.serie||'—')}
-      ${lig('Points marqués (dans ce rôle)',a.d.pourDom,a.e.pourExt,nbaF1)}
-      ${lig('Points encaissés (dans ce rôle)',a.d.contreDom,a.e.contreExt,nbaF1)}
-      ${lig('Écart moyen',a.d.ecart,a.e.ecart,x=>x==null?'—':(x>0?'+':'')+nbaF1(x))}
-      ${lig('Repos',a.reposDom,a.reposExt,r)}
-      ${lig('2ᵉ soir de suite',a.d.b2b,a.e.b2b,x=>x.v+x.d?nbaRec(x):'—')}
-      ${lig('Contre l\'écart (ATS)',a.d.ats,a.e.ats,x=>x.n?`${x.c}-${x.p}`:'—')}
-      ${lig('Au-dessus du total',a.d.ou,a.e.ou,x=>x.n?`${x.o}-${x.u}`:'—')}
-      ${lig('1ʳᵉ mi-temps marquée',a.d.mi1,a.e.mi1,nbaF1)}
-      ${a.prec.d.j||a.prec.e.j?`<tr class="nba-prec"><td colspan="3">Saison passée</td></tr>
-        ${lig('Bilan',a.prec.d,a.prec.e,x=>x.j?nbaRec(x):'—')}
-        ${lig('À domicile / à l\'extérieur',a.prec.d.dom,a.prec.e.ext,x=>x.v+x.d?nbaRec(x):'—')}
-        ${lig('Points marqués (dans ce rôle)',a.prec.d.pourDom,a.prec.e.pourExt,nbaF1)}
-        ${lig('Points encaissés (dans ce rôle)',a.prec.d.contreDom,a.prec.e.contreExt,nbaF1)}
-        ${lig('Écart moyen',a.prec.d.ecart,a.prec.e.ecart,x=>x==null?'—':(x>0?'+':'')+nbaF1(x))}`:''}</table>
-    ${a.attendu?`<div class="nba-attendu">Score attendu : <b>${nbaEqHtml(m.ext)} ${nbaF1(a.attendu.ext)} – ${nbaF1(a.attendu.dom)} ${nbaEqHtml(m.dom)}</b>
-      · total ${nbaF1(a.attendu.total)}${m.total!=null?` <small>(ligne ${String(m.total).replace('.',',')})</small>`:''}
-      · écart ${a.attendu.ecart>0?nbaEqHtml(m.dom)+' +':nbaEqHtml(m.ext)+' +'}${nbaF1(Math.abs(a.attendu.ecart))}
-      <span class="ca-aide">— ce que chacune marque dans son rôle, moyenné avec ce que l'autre encaisse dans le sien${a.attendu.partPrec>0?` · saison passée pour ${Math.round(a.attendu.partPrec*100)} %`:''}</span></div>`:''}
-    ${a.h2h.length?`<div class="nba-h2h">Cette saison : ${a.h2h.map(x=>`${x.dom?'':'@ '}${nbaEqHtml(x.adv)} ${x.pour}-${x.contre} ${x.v?'✓':'✗'}`).join(' · ')}</div>`:''}
-    <div class="ca-ind-g">${[m.ext,m.dom].map(t=>`<div class="ca-ind-b nba-eq-b"${nbaEqStyle(t)}><div class="ca-ind-t">${nbaEqHtml(t)} — meilleurs marqueurs</div>${joueurs(t).map(x=>
+  const marq=`<div class="nba-marq">${[m.ext,m.dom].map(t=>`<div class="nba-eq-b"${nbaEqStyle(t)}><div class="nba-bloc-t">${nbaEqHtml(t)} marqueurs</div>${joueurs(t).map(x=>
       `<button class="ca-ind-l" onclick="nbaJoueurVoir('${MD_ATT(x.id)}')"><span class="ca-ind-n">${tdEsc(x.nom)}</span>
-        <span class="ca-ind-v">${nbaF1(x.moy.pts)} pts <small>5 der. ${forme(x)}</small></span></button>`).join('')||'<div class="ca-ind-vide">Pas encore de feuilles de match.</div>'}</div>`).join('')}</div>
-    ${m.statut!=='final'?nbaConseilHtml(m):''}
+        <span class="ca-ind-v">${nbaF1(x.moy.pts)} <small>5 der. ${forme(x)}</small></span></button>`).join('')||'<div class="ca-ind-vide">Pas encore de feuilles de match.</div>'}</div>`).join('')}</div>`;
+  return `<div class="nba-avant"><div class="nba-grille3">
+      <div class="nba-col nba-col-eq"><div class="nba-bloc"><div class="nba-bloc-t">Les deux équipes</div>${comp}</div></div>
+      <div class="nba-col nba-col-conseil">${score}${fini?'':nbaConseilHtml(m,md)}</div>
+      <div class="nba-col nba-col-joueurs">${absences}${marq}</div>
+    </div>
     <div class="nba-act"><button class="btn-nav" onclick="nbaPariOuvrir(null,{date:'${MD_ATT(m.date)}',match_id:'${MD_ATT(m.id)}',match:'${MD_ATT(nbaMatchLib(m))}'})">+ Parier sur ce match</button></div>
   </div>`;
 }
@@ -21590,7 +21653,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.94.0';
+const APP_VERSION='v1.95.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
