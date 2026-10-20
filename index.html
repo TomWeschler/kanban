@@ -1398,6 +1398,10 @@ td.nba-peu{opacity:0.5}
 .nba-jpostes{display:flex;flex-wrap:wrap;gap:0.3rem}
 .nba-jpostes .sb-tag{font-size:0.62rem;padding:3px 9px}
 .nba-joueurs td,.nba-joueurs th{padding:0.24rem 0.35rem}
+.nba-joueurs td{font-family:var(--font-mono);font-size:0.72rem}
+.nba-joueurs td.nba-jnom{font-family:inherit;font-size:0.78rem}
+.nba-num{display:inline-block;min-width:1.6rem;color:var(--text-dim);font-family:var(--font-mono);font-size:0.7rem}
+.nba-poste{color:var(--text-dim);font-size:0.7rem}
 .nba-go{display:inline-block;font-family:var(--font-mono);font-weight:800;font-size:0.66rem;letter-spacing:0.08em;padding:1px 7px;border-radius:5px;
   background:var(--green);color:#09090e;box-shadow:0 0 0 2px color-mix(in srgb,var(--green) 35%,transparent)}
 .nba-go-l{display:block;margin-top:0.2rem;color:var(--green);font-family:inherit;font-size:0.74rem}
@@ -16182,7 +16186,7 @@ const NBA_H={
   matchs:['id','date','heure','saison','type','dom','ext','dom_nom','ext_nom','score_dom','score_ext','qt_dom','qt_ext',
     'prolong','statut','spread','total','box','updated_at','mene_dom','mene_ext'],
   joueurs:['id','match','date','equipe','adv','dom','joueur_id','joueur','titulaire','min','pts','reb','ast','stl','blk',
-    'tov','fgm','fga','tpm','tpa','ftm','fta','oreb','pf','pm','poste'],
+    'tov','fgm','fga','tpm','tpa','ftm','fta','oreb','pf','pm','poste','maillot'],
   // Les gains des parties de poker gratuites : ils vont sur le même compte
   // Winamax que les paris, sans être des paris.
   poker:['id','saison','date','montant','notes','created_at','updated_at'],
@@ -16330,12 +16334,15 @@ const nbaMatchDeLigne=r=>{ const g=i=>String(r[i]==null?'':r[i]);
     statut:g(14),spread:nbaNum(g(15)),total:nbaNum(g(16)),box:g(17)==='1',updated_at:g(18),mene_dom:nbaNum(g(19)),mene_ext:nbaNum(g(20))}; };
 const NBA_JCHIFFRES=['min','pts','reb','ast','stl','blk','tov','fgm','fga','tpm','tpa','ftm','fta','oreb','pf','pm'];
 const nbaJoueurRow=j=>[j.id,j.match,j.date,j.equipe,j.adv,j.dom?'1':'0',j.joueur_id,j.joueur,j.titulaire?'1':'0',
-  ...NBA_JCHIFFRES.map(k=>String(j[k]==null?0:j[k])),j.poste||''];
+  ...NBA_JCHIFFRES.map(k=>String(j[k]==null?0:j[k])),j.poste||'',j.maillot||''];
 const nbaJoueurDe=r=>{ const g=i=>String(r[i]==null?'':r[i]);
   const j={id:g(0),match:g(1),date:g(2),equipe:nbaAbbr(g(3)),adv:nbaAbbr(g(4)),dom:g(5)==='1',joueur_id:g(6),joueur:g(7),titulaire:g(8)==='1'};
   NBA_JCHIFFRES.forEach((k,i)=>{ j[k]=Number(g(9+i))||0; });
-  j.poste=g(9+NBA_JCHIFFRES.length);
+  j.poste=g(9+NBA_JCHIFFRES.length); j.maillot=g(10+NBA_JCHIFFRES.length);
   return j; };
+// Le poste en court, comme sur une feuille de match : D (meneur, arrière),
+// AI (ailier), P (pivot) ; les postes mixtes en deux.
+const NBA_POSTE_COURT={PG:'D',SG:'D',G:'D',SF:'AI',PF:'AI',F:'AI',C:'P','G-F':'D/AI','F-C':'AI/P','C-F':'P/AI'};
 // Les postes. ESPN écrit « PG », « SG », « SF », « PF », « C », ou plus
 // vaguement « G », « F », « G-F », « F-C ». Pour filtrer, trois familles —
 // un poste mixte est dans les deux.
@@ -16348,6 +16355,7 @@ const nbaPosteDans=(p,fam)=>{ const f=NBA_POSTES.find(x=>x[0]===fam); return !!(
 // Le poste d'un joueur : sa dernière feuille de match qui le donne, sinon
 // l'effectif de son équipe lu chez ESPN.
 let nbaPostesEffectif=(()=>{ try{ return (JSON.parse(localStorage.getItem('kanban_nba_effectifs')||'null')||{}).postes||{}; }catch(e){ return {}; } })();
+let nbaMaillotsEffectif=(()=>{ try{ return (JSON.parse(localStorage.getItem('kanban_nba_effectifs')||'null')||{}).maillots||{}; }catch(e){ return {}; } })();
 
 // ── Le classeur ──
 async function nbaOnglets(){
@@ -17240,6 +17248,7 @@ function nbaBoxDe(j,m){
         out.push({id:`${m.id}:${(a.athlete||{}).id||''}`,match:m.id,date:m.date,equipe,adv:dom?m.ext:m.dom,dom,
           joueur_id:String((a.athlete||{}).id||''),joueur:(a.athlete||{}).displayName||'',titulaire:!!a.starter,
           poste:nbaPosteNorm(((a.athlete||{}).position||{}).abbreviation||((a.athlete||{}).position||{}).displayName||''),
+          maillot:String((a.athlete||{}).jersey||''),
           min:joue?n('MIN'):0,pts:n('PTS'),reb:n('REB'),ast:n('AST'),stl:n('STL'),blk:n('BLK'),tov:n('TO'),
           fgm:fg[0],fga:fg[1],tpm:tp[0],tpa:tp[1],ftm:ft[0],fta:ft[1],oreb:n('OREB'),pf:n('PF'),pm:n('+/-')});
       });
@@ -17355,18 +17364,20 @@ const LS_NBA_EFF='kanban_nba_effectifs';
 async function nbaEffectifs(force){
   let c=null; try{ c=JSON.parse(localStorage.getItem(LS_NBA_EFF)||'null'); }catch(e){}
   if(c&&c.postes)nbaPostesEffectif=c.postes;
+  if(c&&c.maillots)nbaMaillotsEffectif=c.maillots;
   if(!force&&c&&c.date===td())return;
-  const eq=Object.keys(NBA_EQUIPES), postes={...nbaPostesEffectif};
+  const eq=Object.keys(NBA_EQUIPES), postes={...nbaPostesEffectif}, maillots={...nbaMaillotsEffectif};
   await nbaParLots(eq,async t=>{
     try{
       const j=await nbaGet(`${NBA_ESPN}/teams/${t.toLowerCase()}/roster`);
       // L'effectif NBA est une liste ; d'autres sports le groupent par poste.
       const l=((j&&j.athletes)||[]).flatMap(a=>a&&a.items?a.items:[a]);
-      l.forEach(a=>{ if(a&&a.id&&a.position)postes[String(a.id)]=nbaPosteNorm(a.position.abbreviation||a.position.displayName); });
+      l.forEach(a=>{ if(!a||!a.id)return; if(a.position)postes[String(a.id)]=nbaPosteNorm(a.position.abbreviation||a.position.displayName);
+        if(a.jersey!=null&&a.jersey!=='')maillots[String(a.id)]=String(a.jersey); });
     }catch(e){}
   });
-  nbaPostesEffectif=postes;
-  try{ localStorage.setItem(LS_NBA_EFF,JSON.stringify({date:td(),postes})); }catch(e){}
+  nbaPostesEffectif=postes; nbaMaillotsEffectif=maillots;
+  try{ localStorage.setItem(LS_NBA_EFF,JSON.stringify({date:td(),postes,maillots})); }catch(e){}
   // L'onglet des joueurs a une colonne de plus : son en-tête suit.
   if(accessToken){ try{ const [h]=await sheetBatchGet([`${NBA_T.joueurs}!A1:${NBA_COL('joueurs')}1`]);
     if(h&&h.length&&(h[0]||[]).join('|')!==NBA_H.joueurs.join('|'))await sheetPut(`${NBA_T.joueurs}!A1`,[NBA_H.joueurs]); }catch(e){} }
@@ -17449,7 +17460,7 @@ function nbaMatchsJoueur(id,an=nbaAnneeCourante()){
 }
 function nbaMoyJoueur(l){
   const o={j:l.length};
-  ['min','pts','reb','ast','tpm','stl','blk','tov','pra'].forEach(k=>{ o[k]=nbaMoy(l.map(j=>nbaVal(j,k))); });
+  ['min','pts','reb','ast','tpm','stl','blk','tov','pra','fgm','fga','tpa','ftm','fta','pf','pm'].forEach(k=>{ o[k]=nbaMoy(l.map(j=>nbaVal(j,k))); });
   const s=k=>l.reduce((t,j)=>t+j[k],0);
   o.fg=s('fga')?s('fgm')/s('fga')*100:null; o.tp=s('tpa')?s('tpm')/s('tpa')*100:null; o.ft=s('fta')?s('ftm')/s('fta')*100:null;
   return o;
@@ -17463,8 +17474,9 @@ function nbaJoueursListe(an=nbaAnneeCourante()){
   const m=new Map();
   nbaJoueursDe(an).forEach(j=>{ if(!j.min)return; const x=m.get(j.joueur_id)||{id:j.joueur_id,nom:j.joueur,equipe:j.equipe,l:[],der:'',poste:'',derPoste:''};
     x.l.push(j); if(j.date>=x.der){ x.der=j.date; x.equipe=j.equipe; x.nom=j.joueur; }
-    if(j.poste&&j.date>=x.derPoste){ x.derPoste=j.date; x.poste=j.poste; } m.set(j.joueur_id,x); });
-  return [...m.values()].map(x=>({...x,poste:x.poste||nbaPostesEffectif[x.id]||'',moy:nbaMoyJoueur(x.l)}));
+    if(j.poste&&j.date>=x.derPoste){ x.derPoste=j.date; x.poste=j.poste; }
+    if(j.maillot&&j.date>=(x.derMaillot||'')){ x.derMaillot=j.date; x.maillot=j.maillot; } m.set(j.joueur_id,x); });
+  return [...m.values()].map(x=>({...x,poste:x.poste||nbaPostesEffectif[x.id]||'',maillot:x.maillot||nbaMaillotsEffectif[x.id]||'',moy:nbaMoyJoueur(x.l)}));
 }
 // L'avant-match : ce que disent les chiffres des deux équipes.
 function nbaAvantMatch(m){
@@ -18162,12 +18174,22 @@ const nbaJoueursVus=()=>{ const l=nbaJoueursListe(); if(l.length)return {l,prec:
 // La liste se filtre (équipe, poste, nom) et se trie sur chaque colonne ;
 // un deuxième clic renverse le tri.
 let nbaJEq='', nbaJPoste='', nbaJTri='pts', nbaJSens=-1;
-const NBA_JCOLS=[['nom','Joueur',x=>x.nom],['equipe','Éq.',x=>x.equipe],['poste','Poste',x=>x.poste],['j','MJ',x=>x.moy.j],['min','Min',x=>x.moy.min],
-  ['pts','Pts',x=>x.moy.pts],['reb','Reb',x=>x.moy.reb],['ast','Pas',x=>x.moy.ast],['tpm','3 pts',x=>x.moy.tpm],['stl','Int',x=>x.moy.stl],
-  ['blk','Ctr',x=>x.moy.blk],['tov','BP',x=>x.moy.tov],['fg','% tir',x=>x.moy.fg],['tp','% 3 pts',x=>x.moy.tp],['pra','PRA',x=>x.moy.pra],['f5','5 der. pts',x=>x.f5]];
+// Le format d'une feuille de match : Joueur, MIN, PTS, Tirs, 3PT, LF (chacun
+// suivi de sa réussite en %), REB, PA, STL, BLK, TO, FP, +/- — des moyennes
+// par match ; au survol de chaque titre, ce qu'il veut dire.
+const NBA_JCOLS=[['nom','Joueur',x=>x.nom,'Numéro, nom et poste — D : meneur ou arrière, AI : ailier, P : pivot'],
+  ['equipe','Éq.',x=>x.equipe,'Équipe'],['j','MJ',x=>x.moy.j,'Matchs joués'],['min','MIN',x=>x.moy.min,'Minutes jouées, par match'],
+  ['pts','PTS',x=>x.moy.pts,'Points, par match'],['fgm','Tirs',x=>x.moy.fgm,'Tirs réussis - tentés, par match'],['fg','Tirs %',x=>x.moy.fg,'Réussite au tir'],
+  ['tpm','3PT',x=>x.moy.tpm,'Tirs à 3 points réussis - tentés, par match'],['tp','3PT %',x=>x.moy.tp,'Réussite à 3 points'],
+  ['ftm','LF',x=>x.moy.ftm,'Lancers francs réussis - tentés, par match'],['ft','LF %',x=>x.moy.ft,'Réussite aux lancers francs'],
+  ['reb','REB',x=>x.moy.reb,'Rebonds, par match'],['ast','PA',x=>x.moy.ast,'Passes décisives, par match'],['stl','STL',x=>x.moy.stl,'Interceptions, par match'],
+  ['blk','BLK',x=>x.moy.blk,'Contres, par match'],['tov','TO',x=>x.moy.tov,'Balles perdues, par match'],['pf','FP',x=>x.moy.pf,'Fautes personnelles, par match'],
+  ['pm','+/-',x=>x.moy.pm,'Écart au score quand il est sur le terrain, par match'],['f5','5 der.',x=>x.f5,'Points, moyenne des 5 derniers matchs']];
+const nbaPaire=(a,b)=>a==null||b==null?'—':`${nbaF1(a)}-${nbaF1(b)}`;
+const nbaJoueurNom=x=>`${x.maillot?`<span class="nba-num">${tdEsc(x.maillot)}</span>`:''}<b>${tdEsc(x.nom)}</b>${x.poste?` <span class="nba-poste" title="${MD_ATT(NBA_POSTE_FR[x.poste]||x.poste)}">· ${tdEsc(NBA_POSTE_COURT[x.poste]||x.poste)}</span>`:''}`;
 function nbaJoueursFiltres(){
   const q=tabSansAccent(nbaJQ.trim()).toLowerCase();
-  const col=NBA_JCOLS.find(c=>c[0]===nbaJTri)||NBA_JCOLS[5], f=col[2];
+  const col=NBA_JCOLS.find(c=>c[0]===nbaJTri)||NBA_JCOLS.find(c=>c[0]==='pts'), f=col[2];
   return nbaJoueursVus().l.map(x=>({...x,f5:nbaMoy(x.l.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).slice(-5).map(j=>j.pts))}))
     .filter(x=>(!q||tabSansAccent(x.nom).toLowerCase().includes(q))&&(!nbaJEq||x.equipe===nbaJEq)&&(!nbaJPoste||nbaPosteDans(x.poste,nbaJPoste)))
     .sort((a,b)=>{ const va=f(a), vb=f(b);
@@ -18192,17 +18214,17 @@ function nbaJoueursRedessiner(){
   const el=document.getElementById('nbaJListe'); if(el)el.innerHTML=nbaJoueursTable(nbaJoueursFiltres());
   document.querySelectorAll('.nba-jpostes .sb-tag').forEach((b,i)=>b.classList.toggle('active',[''].concat(NBA_POSTES.map(p=>p[0]))[i]===nbaJPoste));
 }
-function nbaJTrier(k){ if(nbaJTri===k)nbaJSens=-nbaJSens; else{ nbaJTri=k; nbaJSens=['nom','equipe','poste','tov'].includes(k)?1:-1; } nbaJoueursRedessiner(); }
+function nbaJTrier(k){ if(nbaJTri===k)nbaJSens=-nbaJSens; else{ nbaJTri=k; nbaJSens=['nom','equipe','tov','pf'].includes(k)?1:-1; } nbaJoueursRedessiner(); }
 function nbaJoueursTable(tout){
   const l=tout.slice(0,150), pc=v=>v==null?'—':Math.round(v)+' %';
-  const th=([k,lib])=>`<th class="nba-tri${nbaJTri===k?' actif':''}" onclick="nbaJTrier('${k}')">${lib}${nbaJTri===k?(nbaJSens<0?' ↓':' ↑'):''}</th>`;
+  const th=([k,lib,,titre])=>`<th class="nba-tri${nbaJTri===k?' actif':''}" onclick="nbaJTrier('${k}')" title="${MD_ATT(titre||'')}">${lib}${nbaJTri===k?(nbaJSens<0?' ↓':' ↑'):''}</th>`;
   return `<div class="ca-aide">${tout.length} joueur${tout.length>1?'s':''}${tout.length>l.length?` — les ${l.length} premiers`:''} · un clic sur une colonne trie, un second renverse</div>
     <div class="nba-scroll"><table class="nba-tab nba-joueurs"><tr>${NBA_JCOLS.map(th).join('')}</tr>
-    ${l.map(x=>`<tr class="nba-eq-l"${nbaEqStyle(x.equipe)} onclick="nbaJoueurVu='${MD_ATT(x.id)}';renderNba()"><td><b>${tdEsc(x.nom)}</b></td><td>${nbaEqHtml(x.equipe)}</td>
-      <td title="${MD_ATT(NBA_POSTE_FR[x.poste]||'')}">${tdEsc(x.poste||'—')}</td><td>${x.moy.j}</td>
-      <td>${nbaF1(x.moy.min)}</td><td>${nbaF1(x.moy.pts)}</td><td>${nbaF1(x.moy.reb)}</td><td>${nbaF1(x.moy.ast)}</td><td>${nbaF1(x.moy.tpm)}</td>
-      <td>${nbaF1(x.moy.stl)}</td><td>${nbaF1(x.moy.blk)}</td><td>${nbaF1(x.moy.tov)}</td><td>${pc(x.moy.fg)}</td><td>${pc(x.moy.tp)}</td>
-      <td>${nbaF1(x.moy.pra)}</td><td>${nbaF1(x.f5)}</td></tr>`).join('')||`<tr><td colspan="${NBA_JCOLS.length}">Aucun joueur ne correspond.</td></tr>`}</table></div>`;
+    ${l.map(x=>{ const o=x.moy; return `<tr class="nba-eq-l"${nbaEqStyle(x.equipe)} onclick="nbaJoueurVu='${MD_ATT(x.id)}';renderNba()"><td class="nba-jnom">${nbaJoueurNom(x)}</td><td>${nbaEqHtml(x.equipe)}</td>
+      <td>${o.j}</td><td>${nbaF1(o.min)}</td><td><b>${nbaF1(o.pts)}</b></td>
+      <td>${nbaPaire(o.fgm,o.fga)}</td><td>${pc(o.fg)}</td><td>${nbaPaire(o.tpm,o.tpa)}</td><td>${pc(o.tp)}</td><td>${nbaPaire(o.ftm,o.fta)}</td><td>${pc(o.ft)}</td>
+      <td>${nbaF1(o.reb)}</td><td>${nbaF1(o.ast)}</td><td>${nbaF1(o.stl)}</td><td>${nbaF1(o.blk)}</td><td>${nbaF1(o.tov)}</td><td>${nbaF1(o.pf)}</td>
+      <td class="${nbaCls(o.pm)}">${o.pm==null?'—':(o.pm>0?'+':'')+nbaF1(o.pm)}</td><td>${nbaF1(x.f5)}</td></tr>`; }).join('')||`<tr><td colspan="${NBA_JCOLS.length}">Aucun joueur ne correspond.</td></tr>`}</table></div>`;
 }
 function nbaJoueurDetail(x){
   const an=nbaAnneeCourante(), lp=an==null?[]:nbaMatchsJoueur(x.id,an-1);
@@ -18228,8 +18250,14 @@ function nbaJoueurDetail(x){
       ${ligne!=null?`<div class="nba-chiffres">${passe(l,'Saison')}${passe(l.slice(-10),'10 derniers')}${passe(l.slice(-5),'5 derniers')}
         ${passe(l.filter(j=>j.dom),'Domicile')}${passe(l.filter(j=>!j.dom),'Extérieur')}${adv?passe(l.filter(j=>j.adv===adv),'Contre '+adv):''}</div>`
         :'<span class="ca-aide">Une ligne Winamax, et l\'on compte combien de fois il l\'a passée.</span>'}</div>
-    <table class="nba-tab"><tr><th>Date</th><th>Adv.</th><th>Min</th><th>Pts</th><th>Reb</th><th>Pas</th><th>3 pts</th><th>+/-</th></tr>${l.slice(-10).reverse().map(j=>
-      `<tr><td>${tdEsc(nbaDateLib(j.date))}</td><td>${j.dom?'':'@ '}${nbaEqHtml(j.adv)}</td><td>${j.min}</td><td>${j.pts}</td><td>${j.reb}</td><td>${j.ast}</td><td>${j.tpm}</td><td>${j.pm>0?'+':''}${j.pm}</td></tr>`).join('')}</table></div>`;
+    <div class="nba-scroll"><table class="nba-tab nba-joueurs">${(()=>{ const pcj=(a,b)=>b?Math.round(a/b*100)+' %':'—';
+      const t=[['Date',''],['Adv.','Adversaire (@ : à l\'extérieur)'],['MIN','Minutes'],['PTS','Points'],['Tirs','Tirs réussis - tentés'],['Tirs %','Réussite au tir'],
+        ['3PT','Tirs à 3 points réussis - tentés'],['3PT %','Réussite à 3 points'],['LF','Lancers francs réussis - tentés'],['LF %','Réussite aux lancers francs'],
+        ['REB','Rebonds'],['PA','Passes décisives'],['STL','Interceptions'],['BLK','Contres'],['TO','Balles perdues'],['FP','Fautes personnelles'],['+/-','Écart au score quand il est sur le terrain']];
+      return `<tr>${t.map(([a,b])=>`<th title="${MD_ATT(b)}">${a}</th>`).join('')}</tr>${l.slice(-10).reverse().map(j=>
+      `<tr><td>${tdEsc(nbaDateLib(j.date))}</td><td>${j.dom?'':'@ '}${nbaEqHtml(j.adv)}</td><td>${j.min}</td><td><b>${j.pts}</b></td><td>${j.fgm}-${j.fga}</td><td>${pcj(j.fgm,j.fga)}</td>
+        <td>${j.tpm}-${j.tpa}</td><td>${pcj(j.tpm,j.tpa)}</td><td>${j.ftm}-${j.fta}</td><td>${pcj(j.ftm,j.fta)}</td><td>${j.reb}</td><td>${j.ast}</td><td>${j.stl}</td><td>${j.blk}</td>
+        <td>${j.tov}</td><td>${j.pf}</td><td class="${nbaCls(j.pm)}">${j.pm>0?'+':''}${j.pm}</td></tr>`).join('')}`; })()}</table></div></div>`;
 }
 
 // ════════════════════════════════════════════════════
@@ -22499,7 +22527,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.102.1';
+const APP_VERSION='v1.103.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
