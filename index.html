@@ -1380,6 +1380,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .nba-qts td{font-family:var(--font-mono);font-size:0.7rem}
 .nba-qts th:nth-child(3n+4),.nba-qts td:nth-child(3n+4){border-right:1px solid var(--border2)}
 .nba-perf td{font-size:0.72rem}
+.nba-notes td small{color:var(--text-dim);font-size:0.6rem}
+.nba-face td small{color:var(--text-dim);font-size:0.58rem}
+.nba-face tr.nba-sit td{white-space:normal;font-family:inherit}
+.nba-face tr.nba-sit .nba-bl{display:inline-block;margin:1px 0;font-size:0.58rem}
 .nba-classements{display:grid;grid-template-columns:repeat(auto-fit,minmax(520px,1fr));gap:0.6rem}
 @media (max-width:640px){ .nba-classements{grid-template-columns:1fr} }
 .nba-class td,.nba-class th{padding:0.22rem 0.35rem}
@@ -16197,6 +16201,44 @@ const NBA_EQUIPES={ATL:['Hawks','#E03A3E'],BOS:['Celtics','#1E9E5A'],BKN:['Nets'
   NY:['Knicks','#F58426'],OKC:['Thunder','#1E90E0'],ORL:['Magic','#2F9BE8'],PHI:['76ers','#ED174C'],PHX:['Suns','#E56020'],
   POR:['Trail Blazers','#E8414A'],SAC:['Kings','#7B4CB0'],SA:['Spurs','#C4CED4'],TOR:['Raptors','#D7193F'],UTAH:['Jazz','#9B6FD6'],
   WSH:['Wizards','#E31837']};
+// ── Les notes d'équipe ──
+// Les points trompent : une équipe rapide marque beaucoup sans être forte.
+// On compte donc pour 100 possessions — une possession, c'est un tir tenté,
+// moins les rebonds offensifs, plus les balles perdues, plus 0,44 lancer
+// franc (la formule d'usage), lue dans les feuilles de match. Le rythme est
+// le nombre de possessions par 48 minutes. L'écart ajusté (« SRS ») corrige
+// l'écart moyen de la force des adversaires rencontrés.
+let nbaPossMemo={k:'',m:new Map()}, nbaNotesMemo={k:'',v:null};
+function nbaPossessions(){
+  const k=nbaJoueurs.length+':'+nbaMatchs.length;
+  if(nbaPossMemo.k===k)return nbaPossMemo.m;
+  const agg=new Map();
+  nbaJoueurs.forEach(j=>{ const c=j.match+'|'+j.equipe; const a=agg.get(c)||{fga:0,oreb:0,tov:0,fta:0}; a.fga+=j.fga; a.oreb+=j.oreb; a.tov+=j.tov; a.fta+=j.fta; agg.set(c,a); });
+  const m=new Map();
+  nbaMatchs.forEach(x=>{ if(!x.box)return; const a=agg.get(x.id+'|'+x.dom), b=agg.get(x.id+'|'+x.ext); if(!a||!b)return;
+    const pa=a.fga-a.oreb+a.tov+0.44*a.fta, pb=b.fga-b.oreb+b.tov+0.44*b.fta, poss=(pa+pb)/2; if(poss<40)return;
+    m.set(x.id,{poss,rythme:poss*48/(48+5*(x.prolong||0))}); });
+  nbaPossMemo={k,m}; return m;
+}
+function nbaNotes(){
+  const k=nbaJoueurs.length+':'+nbaMatchs.length+':'+nbaAnneeCourante();
+  if(nbaNotesMemo.k===k)return nbaNotesMemo.v;
+  const pz=nbaPossessions(), eqs=nbaEquipesConnues(), v={};
+  eqs.forEach(t=>{ const l=nbaVuDe(t), lp=l.filter(x=>pz.has(x.m.id)), sp=lp.reduce((s2,x)=>s2+pz.get(x.m.id).poss,0);
+    const net=ll=>{ const q=ll.filter(x=>pz.has(x.m.id)), ss=q.reduce((s2,x)=>s2+pz.get(x.m.id).poss,0); return ss?100*q.reduce((s2,x)=>s2+x.ecart,0)/ss:null; };
+    v[t]={n:l.length,np:lp.length,ortg:sp?100*lp.reduce((s2,x)=>s2+x.pour,0)/sp:null,drtg:sp?100*lp.reduce((s2,x)=>s2+x.contre,0)/sp:null,
+      rythme:lp.length?nbaMoy(lp.map(x=>pz.get(x.m.id).rythme)):null,ecart:nbaMoy(l.map(x=>x.ecart)),net10:net(l.slice(-10)),l}; v[t].net=v[t].ortg!=null?v[t].ortg-v[t].drtg:null; });
+  // L'écart ajusté : écart moyen + force moyenne des adversaires, jusqu'à stabilité.
+  let srs={}; eqs.forEach(t=>{ srs[t]=v[t].ecart||0; });
+  for(let it=0;it<30;it++){ const nv={}; eqs.forEach(t=>{ const l=v[t].l; nv[t]=(v[t].ecart||0)+(l.length?nbaMoy(l.map(x=>srs[x.adv]||0)):0); });
+    const moy=nbaMoy(Object.values(nv))||0; eqs.forEach(t=>{ nv[t]-=moy; }); srs=nv; }
+  eqs.forEach(t=>{ v[t].srs=srs[t]; delete v[t].l; });
+  // Les rangs : 1 = la meilleure attaque, la meilleure défense (la plus basse).
+  const rang=(cle,haut)=>{ eqs.filter(t=>v[t][cle]!=null).sort((a,b)=>haut?v[b][cle]-v[a][cle]:v[a][cle]-v[b][cle]).forEach((t,i)=>{ v[t]['r_'+cle]=i+1; }); };
+  rang('ortg',true); rang('drtg',false); rang('net',true); rang('srs',true); rang('rythme',true);
+  nbaNotesMemo={k,v}; return v;
+}
+const nbaRangTxt=r=>r?`${r}${r===1?'ᵉʳ':'ᵉ'}`:'—';
 // Les deux conférences.
 const NBA_EST=['ATL','BOS','BKN','CHA','CHI','CLE','DET','IND','MIA','MIL','NY','ORL','PHI','TOR','WSH'];
 const nbaConf=t=>NBA_EQUIPES[nbaAbbr(t)]?(NBA_EST.includes(nbaAbbr(t))?'Est':'Ouest'):'';
@@ -16739,12 +16781,14 @@ function nbaImpactAbsences(t,date){
 }
 // Le modèle d'un match : le score attendu, ajusté du repos (un deuxième soir
 // de suite coûte un point et demi) et des absences.
-function nbaModele(m){
+function nbaModele(m,o={}){
   const a=nbaAvantMatch(m); if(!a.attendu)return null;
-  const absD=nbaImpactAbsences(m.dom,m.date), absE=nbaImpactAbsences(m.ext,m.date);
+  // Pour rejouer un match passé, pas de blessures : on ne connaît que celles d'aujourd'hui.
+  const rien={liste:[],pts:0};
+  const absD=o.sansBlessures?rien:nbaImpactAbsences(m.dom,m.date), absE=o.sansBlessures?rien:nbaImpactAbsences(m.ext,m.date);
   const fatD=a.reposDom===0?1.5:0, fatE=a.reposExt===0?1.5:0;
   const pd=a.attendu.dom-absD.pts-fatD, pe=a.attendu.ext-absE.pts-fatE;
-  const disp=nbaDispersion(), n=Math.min(a.d.j,a.e.j);
+  const disp=o.disp||nbaDispersion(), n=Math.min(a.d.j,a.e.j);
   // Le poids des statistiques : avec la saison passée, un quart d'emblée (les
   // effectifs ont pu changer), puis la moitié au fil des matchs.
   const avecPrec=a.attendu.partPrec>0;
@@ -17459,7 +17503,7 @@ async function renderNba(){
   }
   if(nbaVue!=='defi'&&!nbaJoueursCharges){ try{ await nbaChargerJoueurs(); }catch(e){} }
   const s=nbaSaison();
-  const vues=[['defi','Défi'],['perf','Performance'],['matchs','Matchs'],['equipes','Équipes'],['croise','Croisements'],['joueurs','Joueurs']];
+  const vues=[['defi','Défi'],['perf','Performance'],['matchs','Matchs'],['equipes','Équipes'],['croise','Croisements'],['joueurs','Joueurs'],['test','Test du modèle']];
   el.innerHTML=`<div class="nba-tete">
       <div class="jp-titre"><span class="ca-titre">NBA</span><span class="jp-sous">${s?tdEsc(s.nom):'aucune saison'}</span></div>
       <div class="nba-saisons">${nbaSaisons.slice().sort((a,b)=>String(b.debut).localeCompare(String(a.debut))).map(x=>
@@ -17472,7 +17516,7 @@ async function renderNba(){
         <span id="nbaMajEtat" class="ca-aide"></span></span>`:''}</div>
     <div id="nbaCorps">${!s?`<div class="ca-vide"><div>Commence par créer la saison du défi : une mise de départ, puis tes paris.</div>
       <button class="btn-nav" onclick="nbaSaisonOuvrir(null)">+ Créer la saison</button></div>`
-      :nbaVue==='perf'?nbaPerfHtml(s):nbaVue==='matchs'?nbaMatchsHtml():nbaVue==='equipes'?nbaEquipesHtml():nbaVue==='croise'?nbaCroiseHtml():nbaVue==='joueurs'?nbaJoueursHtml():nbaDefiHtml(s)}</div>`;
+      :nbaVue==='perf'?nbaPerfHtml(s):nbaVue==='matchs'?nbaMatchsHtml():nbaVue==='equipes'?nbaEquipesHtml():nbaVue==='croise'?nbaCroiseHtml():nbaVue==='test'?nbaTestHtml():nbaVue==='joueurs'?nbaJoueursHtml():nbaDefiHtml(s)}</div>`;
   nbaMajAfficher();
 }
 function nbaVueChoisir(v){ nbaVue=v; try{ localStorage.setItem(LS_NBA_VUE,v); }catch(e){} renderNba(); }
@@ -17553,6 +17597,17 @@ function nbaSeries(l){
   r.forEach(p=>{ const g=nbaProfit(p)>0; if(g===cur)c++; else{ cur=g; c=1; } if(g)bestV=Math.max(bestV,c); else bestP=Math.max(bestP,c); });
   return {enCours:cur==null?'—':`${cur?'V':'D'}${c}`,bestV,bestP};
 }
+// La calibration : quand le conseil annonce 60 %, est-ce que ça passe 6 fois sur 10 ?
+function nbaCalibrationHtml(r){
+  const l=r.filter(p=>p.proba!=null&&p.statut!=='rembourse'&&p.statut!=='cashout');
+  if(!l.length)return '';
+  const tr=[[0,0.4,'moins de 40 %'],[0.4,0.5,'40 – 50 %'],[0.5,0.6,'50 – 60 %'],[0.6,0.7,'60 – 70 %'],[0.7,1.01,'70 % et plus']];
+  return `<div class="ca-ind-b"><div class="ca-ind-t">Calibration du conseil <span class="ca-aide">la probabilité annoncée, comparée à ce qui s'est passé · un écart durable dit que le modèle se trompe dans ce sens</span></div>
+    <div class="nba-scroll"><table class="nba-tab nba-perf"><tr><th>Annoncé</th><th>Paris</th><th>Moyenne annoncée</th><th>Réalisé</th><th>Écart</th></tr>
+    ${tr.map(([a,b,lib])=>{ const z=l.filter(p=>p.proba>=a&&p.proba<b); if(!z.length)return '';
+      const an=nbaMoy(z.map(p=>p.proba)), re=z.filter(p=>p.statut==='gagne').length/z.length, d=re-an;
+      return `<tr><td>${lib}</td><td>${z.length}</td><td>${Math.round(an*100)} %</td><td>${Math.round(re*100)} %</td><td class="${Math.abs(d)>=0.1?(d>0?'ca-gain':'ca-perte'):''}">${d>0?'+':''}${Math.round(d*100)} pts</td></tr>`; }).join('')}</table></div></div>`;
+}
 function nbaPerfHtml(s){
   const l=nbaParisSaison(s), b=nbaBilan(l), r=l.filter(nbaRegle);
   if(!r.length)return '<div class="ca-vide">Pas encore de pari réglé cette saison : les statistiques viendront avec eux.</div>';
@@ -17590,6 +17645,7 @@ function nbaPerfHtml(s){
       <span>Meilleure série : <b>${se.bestV}</b> gagnés de suite · pire : <b>${se.bestP}</b> perdus de suite</span>
       ${r.some(p=>p.protege)?`<span>Sauvés par la protection +20 : <b>${r.filter(p=>p.protege).length}</b> pari${r.filter(p=>p.protege).length>1?'s':''},
         <b class="ca-gain">${nbaSigne(nbaR2(r.filter(p=>p.protege).reduce((t,p)=>t+nbaRetour(p),0)))}</b> encaissés au lieu de rien</span>`:''}</div>
+    ${nbaCalibrationHtml(r)}
     <div class="nba-reps nba-reps-perf">
       ${tab('Par type de pari',nbaRepartition(l,p=>nomM(p.marche)))}
       ${tab('Domicile ou extérieur',roles,tdEsc,'l\'équipe jouée (ou celle du joueur)')}
@@ -17599,6 +17655,10 @@ function nbaPerfHtml(s){
       ${tab('Plus ou moins',nbaRepartition(l.filter(p=>p.marche==='total'||p.marche==='joueur'),p=>`${p.marche==='total'?'Total':'Joueur'} : ${p.sens==='moins'?'moins':'plus'}`))}
       ${tab('Paris joueurs, par statistique',nbaRepartition(l.filter(p=>p.marche==='joueur'),p=>(NBA_STATS.find(x=>x[0]===p.stat)||[])[1]||p.stat))}
       ${l.some(p=>p.ev!=null)?tab('Par valeur estimée',nbaRepartition(l,p=>p.ev==null?'sans conseil':p.ev>=NBA_SEUIL_VALEUR?`valeur ≥ ${Math.round(NBA_SEUIL_VALEUR*100)} %`:p.ev>=0?'valeur faible':'valeur négative'),tdEsc,'la méthode se juge ici'):''}
+      ${tab('Selon la situation de l\'équipe jouée',nbaRepartition(l,p=>{ const e=nbaEquipesDuPari(p).filter(x=>x.role&&!x.total); const out=[];
+          e.forEach(x=>{ const m=nbaMatchs.find(y=>y.id===p.match_id); const a=m&&nbaMatchsAnnotes(x.t).find(y=>y.m.id===m.id); nbaSituationsTxt(a).forEach(s2=>out.push(s2)); if(a&&!nbaSituationsTxt(a).length)out.push('Aucune situation particulière'); });
+          return [...new Set(out)]; }),tdEsc,'back-to-back, voyages, séries à l\'extérieur…')}
+      ${tab('Tes choix et le conseil',nbaRepartition(l,p=>p.ev==null?'Hors conseil':p.ev>=NBA_SEUIL_VALEUR?'Pari du conseil (valeur ≥ 5 %)':'Estimé, sous le seuil'),tdEsc,'les paris pris depuis le conseil, ceux en dessous, ceux de ton cru')}
       ${tab('Par jour de la semaine',nbaRepartition(l,p=>{ const d=new Date(p.date+'T12:00:00'); return isNaN(d)?'':JOURS_FR[d.getDay()]; }))}
       ${tab('Par mois',nbaRepartition(l,p=>String(p.date).slice(0,7)))}
     </div>`;
@@ -17745,6 +17805,15 @@ function nbaAvantMatchHtml(m){
     ${lig('Écart moyen',B.e.ecart,B.d.ecart,sg,HAUT)}${lig('Repos',a.reposExt,a.reposDom,repos,HAUT)}
     ${lig('2ᵉ soir de suite',B.e.b2b,B.d.b2b,rec,HAUT)}${lig('Contre l\'écart',B.e.ats,B.d.ats,x=>x&&x.n?`${x.c}-${x.p}`:'—')}
     ${lig('Au-dessus du total',B.e.ou,B.d.ou,x=>x&&x.n?`${x.o}-${x.u}`:'—')}${lig('1ʳᵉ mi-temps',B.e.mi1,B.d.mi1,n1,HAUT)}
+    ${(()=>{ const v=nbaNotes(), nd=v[m.dom]||{}, ne=v[m.ext]||{};
+      const rg=(x,r)=>x==null?'—':`${nbaF1(x)} <small>${nbaRangTxt(r)}</small>`;
+      return lig('Attaque /100',ne.ortg!=null?{x:ne.ortg,r:ne.r_ortg}:null,nd.ortg!=null?{x:nd.ortg,r:nd.r_ortg}:null,y=>y?rg(y.x,y.r):'—',{haut:true,val:y=>y?y.x:null})
+        +lig('Défense /100',ne.drtg!=null?{x:ne.drtg,r:ne.r_drtg}:null,nd.drtg!=null?{x:nd.drtg,r:nd.r_drtg}:null,y=>y?rg(y.x,y.r):'—',{haut:false,val:y=>y?y.x:null})
+        +lig('Net /100',ne.net!=null?{x:ne.net,r:ne.r_net}:null,nd.net!=null?{x:nd.net,r:nd.r_net}:null,y=>y?`${y.x>0?'+':''}${rg(y.x,y.r)}`:'—',{haut:true,val:y=>y?y.x:null})
+        +lig('Rythme',ne.rythme!=null?{x:ne.rythme,r:ne.r_rythme}:null,nd.rythme!=null?{x:nd.rythme,r:nd.r_rythme}:null,y=>y?rg(y.x,y.r):'—')
+        +lig('Écart ajusté',ne.srs!=null&&ne.n?{x:ne.srs,r:ne.r_srs}:null,nd.srs!=null&&nd.n?{x:nd.srs,r:nd.r_srs}:null,y=>y?`${y.x>0?'+':''}${rg(y.x,y.r)}`:'—',{haut:true,val:y=>y?y.x:null}); })()}
+    ${fini?'':(()=>{ const sd=nbaSituationsTxt(nbaSituationsAvant(m.dom,m)), se=nbaSituationsTxt(nbaSituationsAvant(m.ext,m));
+      return sd.length||se.length?`<tr class="nba-sit"><td>${sd.map(x=>`<span class="nba-bl w2">${tdEsc(x)}</span>`).join(' ')||'—'}</td><th>Situation</th><td>${se.map(x=>`<span class="nba-bl w2">${tdEsc(x)}</span>`).join(' ')||'—'}</td></tr>`:''; })()}
     ${[0,1,2,3].map(q=>lig(`${nbaQtLib(q+1)} gagné (rôle)`,B.e.qv[q].ext,B.d.qv[q].dom,x=>{ const p=nbaQtPct(x); return p==null?'—':`${Math.round(p*100)} % <small>${nbaQtTxt(x)}</small>`; },{haut:true,val:nbaQtPct})).join('')}
     ${!vide&&avecPrec?`<tr class="nba-prec"><td colspan="3">Saison passée</td></tr>
       ${lig('Bilan',a.prec.e,a.prec.d,rec,HAUT)}${lig('Dans ce rôle',a.prec.e.ext,a.prec.d.dom,rec,HAUT)}${lig('Écart moyen',a.prec.e.ecart,a.prec.d.ecart,sg,HAUT)}`:''}</table>
@@ -17788,8 +17857,9 @@ let nbaEqVue='classement', nbaTriQt='q0dom';
 function nbaEquipesHtml(){
   const l=nbaEquipesConnues().map(t=>({t,b:nbaBilanEquipe(nbaVuDe(t))}));
   if(!l.length)return '<div class="ca-vide">Pas encore de matchs : « ↻ Mettre à jour les stats ».</div>';
-  const bascule=`<div class="nba-act">${[['classement','Classement'],['bilan','Bilan'],['qt','Quarts-temps']].map(([v,t])=>`<button class="sb-tag${nbaEqVue===v?' active':''}" onclick="nbaEqVue='${v}';renderNba()">${t}</button>`).join('')}</div>`;
+  const bascule=`<div class="nba-act">${[['classement','Classement'],['notes','Attaque / défense'],['bilan','Bilan'],['qt','Quarts-temps']].map(([v,t])=>`<button class="sb-tag${nbaEqVue===v?' active':''}" onclick="nbaEqVue='${v}';renderNba()">${t}</button>`).join('')}</div>`;
   if(nbaEqVue==='qt')return bascule+nbaEquipesQtHtml(l);
+  if(nbaEqVue==='notes')return bascule+nbaNotesHtml();
   if(nbaEqVue==='classement')return bascule+(nbaEquipeVue?nbaEquipeDetail(nbaEquipeVue,nbaBilanEquipe(nbaVuDe(nbaEquipeVue))):'')+nbaClassementHtml(l);
   const pct=r=>r.v+r.d?r.v/(r.v+r.d):0;
   const cles={pct:x=>pct(x.b),dom:x=>pct(x.b.dom),ext:x=>pct(x.b.ext),l10:x=>pct(x.b.l10),pour:x=>x.b.pour,contre:x=>-x.b.contre,
@@ -17803,6 +17873,84 @@ function nbaEquipesHtml(){
       <td>${nbaEqHtml(t,{nom:true})}</td><td>${nbaRec(b)}</td><td>${nbaRec(b.dom)}</td><td>${nbaRec(b.ext)}</td><td>${nbaRec(b.l10)}</td>
       <td>${nbaF1(b.pour)}</td><td>${nbaF1(b.contre)}</td><td class="${nbaCls(b.ecart)}">${b.ecart>0?'+':''}${nbaF1(b.ecart)}</td><td>${nbaF1(b.total)}</td>
       <td>${b.ats.n?`${b.ats.c}-${b.ats.p}`:'—'}</td><td>${b.ou.n?`${b.ou.o}-${b.ou.u}`:'—'}</td><td>${tdEsc(b.serie)}</td></tr>`).join('')}</table></div>`;
+}
+// ── Le test du modèle sur les matchs passés ──
+// Chaque match joué de la saison est rejoué avec ce qu'on savait AVANT (les
+// matchs précédents, sans les blessures, qu'on ne connaît qu'au présent), et
+// le modèle choisit un côté : contre l'écart et sur le total, aux lignes
+// d'ESPN, et le vainqueur. Résultat comparé au score. Les paris sur l'écart
+// et le total se jouent à une cote de 1,91 environ : à cette cote, il faut
+// 52,4 % de réussite pour ne rien perdre. On lit aussi le résultat par niveau
+// de confiance et selon la situation de l'équipe choisie.
+const NBA_COTE_LIGNE=1.91;
+let nbaTest=null, nbaTestEnCours=false;
+function nbaTesterModele(){
+  const l=nbaJoues().slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const disp=nbaDispersion(), annot={};
+  nbaEquipesConnues().forEach(t=>{ annot[t]=new Map(nbaMatchsAnnotes(t).map(x=>[x.m.id,x])); });
+  const out=[];
+  l.forEach(m=>{
+    const md=nbaModele(m,{sansBlessures:true,disp}); if(!md||md.n<3)return;
+    const marge=m.score_dom-m.score_ext, tot=m.score_dom+m.score_ext;
+    const sit=t=>annot[t]&&annot[t].get(m.id);
+    if(m.spread!=null){ const p=nbaPhi((md.ecart+m.spread)/md.sdE), dom=p>=0.5, r=marge+m.spread;
+      out.push({m,type:'ecart',conf:dom?p:1-p,dom,t:dom?m.dom:m.ext,fav:dom?m.spread<0:m.spread>0,res:r===0?'n':(r>0)===dom?'g':'p',sit:sit(dom?m.dom:m.ext)}); }
+    if(m.total!=null){ const p=1-nbaPhi((m.total-md.total)/md.sdT), plus=p>=0.5, r=tot-m.total;
+      out.push({m,type:'total',conf:plus?p:1-p,plus,res:r===0?'n':(r>0)===plus?'g':'p'}); }
+    const pv=nbaPhi(md.ecart/md.sdE), dv=pv>=0.5;
+    out.push({m,type:'vainqueur',conf:dv?pv:1-pv,dom:dv,t:dv?m.dom:m.ext,res:(marge>0)===dv?'g':'p',sit:sit(dv?m.dom:m.ext)});
+  });
+  return out;
+}
+function nbaTestLancer(){
+  nbaTestEnCours=true; renderNba();
+  setTimeout(()=>{ try{ nbaTest={at:Date.now(),l:nbaTesterModele()}; }finally{ nbaTestEnCours=false; renderNba(); } },20);
+}
+function nbaTestBilan(l,cote){
+  const g=l.filter(x=>x.res==='g').length, p=l.filter(x=>x.res==='p').length, n=l.filter(x=>x.res==='n').length;
+  return {n:l.length,g,p,nul:n,pct:g+p?g/(g+p):null,roi:cote&&g+p+n?(g*(cote-1)-p)/(g+p+n):null};
+}
+function nbaTestHtml(){
+  const j=nbaJoues().length;
+  if(!j)return '<div class="ca-vide">Pas encore de matchs : « ↻ Mettre à jour les stats ».</div>';
+  const tete=`<div class="nba-act"><button class="btn-nav" onclick="nbaTestLancer()" ${nbaTestEnCours?'disabled':''}>${nbaTestEnCours?'Test en cours…':nbaTest?'↻ Relancer le test':'Lancer le test'}</button>
+    <span class="ca-aide">${j} matchs joués cette saison · chacun rejoué avec les seuls matchs d'avant · lignes d'écart et de total d'ESPN, à une cote de ${String(NBA_COTE_LIGNE).replace('.',',')} (il faut 52,4 % pour ne rien perdre)</span></div>`;
+  if(!nbaTest)return tete+'<div class="ca-aide">Le test rejoue toute la saison : quelques secondes.</div>';
+  const L=nbaTest.l, pc=x=>x==null?'—':(x*100).toFixed(1).replace('.',',')+' %', roi=x=>x==null?'—':`${x>0?'+':''}${Math.round(x*1000)/10} %`.replace('.',',');
+  const ligne=(lib,l,cote)=>{ const b=nbaTestBilan(l,cote);
+    return `<tr><td>${lib}</td><td>${b.n}</td><td>${b.g}-${b.p}${b.nul?`-${b.nul}`:''}</td><td class="${b.pct==null?'':b.pct>=0.524&&cote?'nba-qt-fort':cote&&b.pct<0.5?'nba-qt-faible':''}">${pc(b.pct)}</td><td class="${nbaCls(b.roi)}">${cote?roi(b.roi):'—'}</td></tr>`; };
+  const tab=(titre,rows,aide)=>`<div class="ca-ind-b"><div class="ca-ind-t">${titre}${aide?` <span class="ca-aide">${aide}</span>`:''}</div><div class="nba-scroll"><table class="nba-tab nba-perf">
+    <tr><th></th><th>Choix</th><th>G-P(-N)</th><th>Réussite</th><th>ROI</th></tr>${rows.join('')}</table></div></div>`;
+  const E=L.filter(x=>x.type==='ecart'), T=L.filter(x=>x.type==='total'), V=L.filter(x=>x.type==='vainqueur');
+  const tranches=(l,cote)=>[[0.5,0.53,'50 – 53 %'],[0.53,0.56,'53 – 56 %'],[0.56,0.6,'56 – 60 %'],[0.6,1.01,'60 % et plus']].map(([a,b,lib])=>ligne(lib,l.filter(x=>x.conf>=a&&x.conf<b),cote));
+  const sit=l=>[ligne('Équipe à domicile',l.filter(x=>x.dom),NBA_COTE_LIGNE),ligne('Équipe à l\'extérieur',l.filter(x=>!x.dom),NBA_COTE_LIGNE),
+    ligne('Favori',l.filter(x=>x.fav),NBA_COTE_LIGNE),ligne('Outsider',l.filter(x=>x.fav===false),NBA_COTE_LIGNE)]
+    .concat(NBA_SITUATIONS.map(([k,lib])=>ligne(lib,l.filter(x=>x.sit&&x.sit[k]),NBA_COTE_LIGNE)));
+  return tete+`<div class="nba-reps nba-reps-perf">
+    ${tab('En résumé',[ligne('Contre l\'écart',E,NBA_COTE_LIGNE),ligne('Total de points',T,NBA_COTE_LIGNE),ligne('Vainqueur (sans cote)',V,null)],'le côté que le modèle préfère, à chaque match')}
+    ${tab('Contre l\'écart, par confiance',tranches(E,NBA_COTE_LIGNE),'si la réussite monte avec la confiance, le modèle a quelque chose')}
+    ${tab('Total, par confiance',tranches(T,NBA_COTE_LIGNE))}
+    ${tab('Contre l\'écart, selon l\'équipe choisie',sit(E),'domicile, favori, situations de calendrier')}
+    ${tab('Vainqueur, par confiance',tranches(V,null),'sans cote du vainqueur chez ESPN : la réussite seule')}
+  </div>
+  <div class="ca-aide">Peu de matchs, peu de certitude : sur 50 choix, 56 % de réussite peut n'être que du hasard ; il en faut quelques centaines pour conclure.</div>`;
+}
+// Le classement en attaque et en défense, pour 100 possessions.
+let nbaNoteTri='net', nbaNoteSens=-1;
+function nbaNotesHtml(){
+  const v=nbaNotes(), eqs=Object.keys(v);
+  if(!eqs.some(t=>v[t].ortg!=null))return '<div class="ca-vide">Il faut les feuilles de match pour compter les possessions : « ↻ Mettre à jour les stats ».</div>';
+  const cols=[['t','Équipe'],['ortg','Attaque /100'],['drtg','Défense /100'],['net','Net /100'],['rythme','Rythme'],['srs','Écart ajusté'],['net10','Net 10 der.'],['np','MJ']];
+  const k=nbaNoteTri, l=eqs.slice().sort((a,b)=>k==='t'?nbaNoteSens*a.localeCompare(b):nbaNoteSens*((v[a][k]==null?-1e9:v[a][k])-(v[b][k]==null?-1e9:v[b][k])));
+  const th=([c,lib])=>`<th class="nba-tri${k===c?' actif':''}" onclick="if(nbaNoteTri==='${c}')nbaNoteSens=-nbaNoteSens;else{nbaNoteTri='${c}';nbaNoteSens=${c==='drtg'||c==='t'?1:-1};}renderNba()">${lib}${k===c?(nbaNoteSens<0?' ↓':' ↑'):''}</th>`;
+  const cr=(x,r)=>`<td>${nbaF1(x)} <small>${nbaRangTxt(r)}</small></td>`;
+  const sg=x=>x==null?'—':(x>0?'+':'')+nbaF1(x);
+  return `<div class="ca-aide">Attaque : points marqués pour 100 possessions (1ᵉʳ = la meilleure) · défense : points encaissés pour 100 possessions (1ᵉʳ = la plus solide) ·
+      rythme : possessions par 48 minutes · écart ajusté : l'écart moyen corrigé de la force des adversaires.</div>
+    <div class="nba-scroll"><table class="nba-tab nba-eqs nba-notes"><tr>${cols.map(th).join('')}</tr>
+    ${l.map(t=>{ const x=v[t]; return `<tr class="nba-eq-l"${nbaEqStyle(t)} onclick="nbaEqVue='bilan';nbaEquipeVue='${MD_ATT(t)}';renderNba()"><td>${nbaEqHtml(t,{nom:true})}</td>
+      ${cr(x.ortg,x.r_ortg)}${cr(x.drtg,x.r_drtg)}<td class="${nbaCls(x.net)}">${sg(x.net)} <small>${nbaRangTxt(x.r_net)}</small></td>${cr(x.rythme,x.r_rythme)}
+      <td class="${nbaCls(x.srs)}">${sg(x.srs)} <small>${nbaRangTxt(x.r_srs)}</small></td><td class="${nbaCls(x.net10)}">${sg(x.net10)}</td><td>${x.np}</td></tr>`; }).join('')}</table></div>`;
 }
 // Le classement des deux conférences : bilan, retard sur le premier, domicile,
 // extérieur, bilan dans la conférence, dix derniers, série, écart moyen.
@@ -17835,13 +17983,41 @@ function nbaClassementHtml(l){
 // domicile ou dehors, selon le repos (1er ou 2e match d'un back-to-back),
 // contre l'Est ou l'Ouest, contre le haut ou le bas du classement, sur les
 // 10 ou 20 derniers. Le tableau se trie sur chaque colonne et se filtre.
-let nbaX={lieu:'',repos:'',adv:'',per:'',conf:'',q:'',tri:'v',sens:-1}, nbaB2bTri='dv', nbaB2bSens=-1;
-// Les matchs d'une équipe, annotés : repos avant, back-to-back, adversaire.
-function nbaMatchsAnnotes(t){
-  const l=nbaVuDe(t), rep=nbaRepos(l);
-  const jour=d=>new Date(d+'T12:00:00').getTime();
-  return l.map((x,i)=>({...x,repos:rep[i],b2b2:rep[i]===0,b2b1:i<l.length-1&&Math.round((jour(l[i+1].m.date)-jour(x.m.date))/864e5)===1}));
+let nbaX={lieu:'',repos:'',adv:'',sit:'',per:'',conf:'',q:'',tri:'v',sens:-1}, nbaB2bTri='dv', nbaB2bSens=-1;
+// Les fuseaux horaires des salles (heures d'écart avec UTC, l'hiver) : pour les
+// longs voyages. Les autres équipes jouent à l'heure de l'Est (−5).
+const NBA_FUSEAU={GS:-8,LAC:-8,LAL:-8,POR:-8,SAC:-8,DEN:-7,UTAH:-7,PHX:-7,CHI:-6,DAL:-6,HOU:-6,MEM:-6,MIL:-6,MIN:-6,NO:-6,OKC:-6,SA:-6};
+const nbaFuseau=t=>NBA_FUSEAU[t]!=null?NBA_FUSEAU[t]:-5;
+const NBA_ALTITUDE=['DEN','UTAH'];
+// Les matchs d'une équipe, annotés : repos, back-to-back, et les situations
+// de calendrier — 3e match en 4 soirs, série à l'extérieur, retour à
+// domicile, long voyage, altitude, lendemain de prolongation.
+function nbaAnnoter(l,suivant){
+  const rep=nbaRepos(l), jour=d=>new Date(d+'T12:00:00').getTime();
+  return l.map((x,i)=>{
+    const prec=l[i-1], ici=x.m.dom;
+    const avantExt=(()=>{ let k=0; for(let j=i-1;j>=0&&!l[j].dom;j--)k++; return k; })();
+    const serieExt=x.dom?0:avantExt+1;
+    const t4=l.filter((y,j)=>j<=i&&jour(x.m.date)-jour(y.m.date)<=3*864e5).length;
+    const nx=i<l.length-1?l[i+1]:suivant;
+    return {...x,repos:rep[i],b2b2:rep[i]===0,b2b1:!!nx&&Math.round((jour(nx.m.date)-jour(x.m.date))/864e5)===1,
+      t3en4:t4>=3,serieExt,roadlong:!x.dom&&serieExt>=3,retour:x.dom&&avantExt>=3,
+      voyage:!!prec&&rep[i]!=null&&rep[i]<=1&&Math.abs(nbaFuseau(ici)-nbaFuseau(prec.m.dom))>=2,
+      altitude:!x.dom&&NBA_ALTITUDE.includes(ici),apresProl:!!prec&&(prec.m.prolong||0)>0&&rep[i]!=null&&rep[i]<=1};
+  });
 }
+function nbaMatchsAnnotes(t){ return nbaAnnoter(nbaVuDe(t)); }
+// Les situations d'une équipe pour un match à venir : ses matchs joués, puis celui-ci.
+function nbaSituationsAvant(t,m){
+  const l=nbaVuDe(t,nbaJouesTout()).filter(x=>x.m.date<m.date);
+  const ici={m,dom:m.dom===t,adv:m.dom===t?m.ext:m.dom,qt:[],qtc:[]};
+  const suiv=nbaMatchs.filter(y=>y.date>m.date&&(y.dom===t||y.ext===t)).sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0];
+  const a=nbaAnnoter(l.concat([ici]),suiv?{m:suiv}:null);
+  return a[a.length-1];
+}
+const NBA_SITUATIONS=[['b2b2','2e soir d\'un back-to-back'],['b2b1','1er soir d\'un back-to-back'],['t3en4','3e match en 4 soirs'],['roadlong','3e match de suite à l\'extérieur ou plus'],
+  ['retour','Retour à domicile après 3+ à l\'extérieur'],['voyage','Long voyage (2 fuseaux ou plus)'],['altitude','En altitude (Denver, Utah)'],['apresProl','Lendemain d\'une prolongation']];
+const nbaSituationsTxt=x=>x?NBA_SITUATIONS.filter(([k])=>x[k]).map(([,l])=>l):[];
 function nbaRangs(){
   const l=nbaEquipesConnues().map(t=>({t,b:nbaBilanEquipe(nbaVuDe(t))}));
   const pct=r=>r.v+r.d?r.v/(r.v+r.d):0;
@@ -17851,6 +18027,7 @@ const NBA_XFILTRES={
   lieu:[['','Domicile et extérieur'],['dom','À domicile'],['ext','À l\'extérieur']],
   repos:[['','Tout repos'],['b2b1','1er match d\'un back-to-back'],['b2b2','2e match d\'un back-to-back'],['r1','1 jour de repos'],['r2','2 jours ou plus']],
   adv:[['','Tous les adversaires'],['est','Contre l\'Est'],['ouest','Contre l\'Ouest'],['top','Contre le top 10'],['bas','Contre les 10 derniers']],
+  sit:[['','Toutes les situations']].concat(NBA_SITUATIONS),
   per:[['','Toute la saison'],['20','20 derniers matchs'],['10','10 derniers matchs']],
   conf:[['','Les deux conférences'],['Est','Équipes de l\'Est'],['Ouest','Équipes de l\'Ouest']]};
 function nbaCroiseLignes(f=nbaX){
@@ -17861,7 +18038,10 @@ function nbaCroiseLignes(f=nbaX){
     if(f.per)z=z.slice(-Number(f.per));
     z=z.filter(x=>(!f.lieu||(f.lieu==='dom')===x.dom)
       &&(!f.repos||(f.repos==='b2b1'?x.b2b1:f.repos==='b2b2'?x.b2b2:f.repos==='r1'?x.repos===1:x.repos!=null&&x.repos>=2))
-      &&(!f.adv||(f.adv==='est'?nbaConf(x.adv)==='Est':f.adv==='ouest'?nbaConf(x.adv)==='Ouest':f.adv==='top'?(rangs.get(x.adv)||99)<=10:(rangs.get(x.adv)||0)>nEq-10)));
+      &&(!f.adv||(f.adv==='est'?nbaConf(x.adv)==='Est':f.adv==='ouest'?nbaConf(x.adv)==='Ouest':f.adv==='top'?(rangs.get(x.adv)||99)<=10:(rangs.get(x.adv)||0)>nEq-10))
+      &&(!f.sit||x[f.sit]));
+    // L'attaque et la défense sur ces matchs, pour 100 possessions.
+    const pz=nbaPossessions(), zp=z.filter(x=>pz.has(x.m.id)), sp=zp.reduce((t2,x)=>t2+pz.get(x.m.id).poss,0);
     const q=i=>qv(z,x=>x.qt.length>i&&x.qtc.length>i?[x.qt[i],x.qtc[i]]:null);
     const ats=z.filter(x=>x.ats!=null), ou=z.filter(x=>x.ou!=null);
     return {t,n:z.length,v:{v:z.filter(x=>x.v).length,n:0,d:z.filter(x=>!x.v).length},q1:q(0),q2:q(1),q3:q(2),q4:q(3),
@@ -17869,16 +18049,17 @@ function nbaCroiseLignes(f=nbaX){
       mt2:qv(z,x=>x.qt.length>=4&&x.qtc.length>=4?[x.qt[2]+x.qt[3],x.qtc[2]+x.qtc[3]]:null),
       ats:{v:ats.filter(x=>x.ats>0).length,n:ats.filter(x=>x.ats===0).length,d:ats.filter(x=>x.ats<0).length},
       ou:{v:ou.filter(x=>x.ou>0).length,n:ou.filter(x=>x.ou===0).length,d:ou.filter(x=>x.ou<0).length},
-      pour:nbaMoy(z.map(x=>x.pour)),contre:nbaMoy(z.map(x=>x.contre)),ecart:nbaMoy(z.map(x=>x.ecart)),q1pts:nbaMoy(z.filter(x=>x.qt.length).map(x=>x.qt[0]))};
+      pour:nbaMoy(z.map(x=>x.pour)),contre:nbaMoy(z.map(x=>x.contre)),ecart:nbaMoy(z.map(x=>x.ecart)),q1pts:nbaMoy(z.filter(x=>x.qt.length).map(x=>x.qt[0])),
+      ortg:sp?100*zp.reduce((t2,x)=>t2+x.pour,0)/sp:null,drtg:sp?100*zp.reduce((t2,x)=>t2+x.contre,0)/sp:null};
   });
 }
 const NBA_XCOLS=[['t','Équipe'],['n','MJ'],['v','Match'],['q1','QT1'],['q2','QT2'],['q3','QT3'],['q4','QT4'],['mt1','1re MT'],['mt2','2e MT'],
-  ['ats','ATS'],['ou','Over'],['pour','Marqués'],['contre','Encaissés'],['ecart','Écart'],['q1pts','Pts QT1']];
-function nbaXTrier(k){ if(nbaX.tri===k)nbaX.sens=-nbaX.sens; else{ nbaX.tri=k; nbaX.sens=k==='t'||k==='contre'?1:-1; } nbaCroiseRedessiner(); }
+  ['ats','ATS'],['ou','Over'],['pour','Marqués'],['contre','Encaissés'],['ecart','Écart'],['ortg','Att. /100'],['drtg','Déf. /100'],['q1pts','Pts QT1']];
+function nbaXTrier(k){ if(nbaX.tri===k)nbaX.sens=-nbaX.sens; else{ nbaX.tri=k; nbaX.sens=k==='t'||k==='contre'||k==='drtg'?1:-1; } nbaCroiseRedessiner(); }
 function nbaXFiltrer(k,v){ nbaX[k]=v; nbaCroiseRedessiner(); }
 function nbaCroiseTable(){
   const l=nbaCroiseLignes(), k=nbaX.tri;
-  const val=x=>k==='t'?x.t:['pour','contre','ecart','q1pts','n'].includes(k)?x[k]:nbaQtPct(x[k]);
+  const val=x=>k==='t'?x.t:['pour','contre','ecart','q1pts','n','ortg','drtg'].includes(k)?x[k]:nbaQtPct(x[k]);
   l.sort((a,b)=>{ const va=val(a), vb=val(b); if(k==='t')return nbaX.sens*String(va).localeCompare(String(vb));
     return nbaX.sens*((va==null?-1e9:va)-(vb==null?-1e9:vb)); });
   const th=([c,lib])=>`<th class="nba-tri${k===c?' actif':''}" onclick="nbaXTrier('${c}')">${lib}${k===c?(nbaX.sens<0?' ↓':' ↑'):''}</th>`;
@@ -17887,7 +18068,8 @@ function nbaCroiseTable(){
   return `<div class="nba-scroll"><table class="nba-tab nba-croise"><tr>${NBA_XCOLS.map(th).join('')}</tr>
     ${l.map(x=>`<tr class="nba-eq-l"${nbaEqStyle(x.t)}><td>${nbaEqHtml(x.t,{nom:true})}</td><td>${x.n}</td>
       ${['v','q1','q2','q3','q4','mt1','mt2','ats','ou'].map(c=>cell(x[c],x.n)).join('')}
-      <td>${nbaF1(x.pour)}</td><td>${nbaF1(x.contre)}</td><td class="${nbaCls(x.ecart)}">${x.ecart==null?'—':(x.ecart>0?'+':'')+nbaF1(x.ecart)}</td><td>${nbaF1(x.q1pts)}</td></tr>`).join('')||`<tr><td colspan="${NBA_XCOLS.length}">Aucune équipe ne correspond.</td></tr>`}</table></div>`;
+      <td>${nbaF1(x.pour)}</td><td>${nbaF1(x.contre)}</td><td class="${nbaCls(x.ecart)}">${x.ecart==null?'—':(x.ecart>0?'+':'')+nbaF1(x.ecart)}</td>
+      <td>${nbaF1(x.ortg)}</td><td>${nbaF1(x.drtg)}</td><td>${nbaF1(x.q1pts)}</td></tr>`).join('')||`<tr><td colspan="${NBA_XCOLS.length}">Aucune équipe ne correspond.</td></tr>`}</table></div>`;
 }
 // Les back-to-back : le 1er et le 2e match comparés, et la part des matchs
 // où les trois meilleurs marqueurs de l'équipe n'ont pas joué — la gestion.
@@ -17929,9 +18111,9 @@ function nbaCroiseRedessiner(){
 function nbaCroiseHtml(){
   if(!nbaEquipesConnues().length)return '<div class="ca-vide">Pas encore de matchs : « ↻ Mettre à jour les stats ».</div>';
   const sel=k=>`<select class="ca-tri" data-x="${k}" onchange="nbaXFiltrer('${k}',this.value)">${NBA_XFILTRES[k].map(([v,l])=>`<option value="${v}"${nbaX[k]===v?' selected':''}>${l}</option>`).join('')}</select>`;
-  return `<div class="nba-xfiltres">${sel('lieu')}${sel('repos')}${sel('adv')}${sel('per')}${sel('conf')}
+  return `<div class="nba-xfiltres">${sel('lieu')}${sel('repos')}${sel('sit')}${sel('adv')}${sel('per')}${sel('conf')}
       <input type="search" class="ca-q" placeholder="Équipe…" value="${MD_ATT(nbaX.q)}" oninput="nbaX.q=this.value;nbaCroiseRedessiner()">
-      <button class="btn-nav out nba-mini" onclick="nbaX={...nbaX,lieu:'',repos:'',adv:'',per:'',conf:'',q:''};renderNba()">Tout effacer</button></div>
+      <button class="btn-nav out nba-mini" onclick="nbaX={...nbaX,lieu:'',repos:'',adv:'',sit:'',per:'',conf:'',q:''};renderNba()">Tout effacer</button></div>
     <div class="ca-ind-b"><div class="ca-ind-t">Taux de victoire, par équipe <span class="ca-aide">sur les matchs choisis ci-dessus · en vert ≥ 65 %, en rouge ≤ 35 %, pâle sous 5 matchs · un clic sur une colonne trie</span></div>
       <div id="nbaXTable">${nbaCroiseTable()}</div></div>
     <div class="ca-ind-b"><div class="ca-ind-t">Back-to-back : le 1er et le 2e match <span class="ca-aide">« stars au repos » : la part des matchs où les 3 meilleurs marqueurs n'ont pas joué — en rouge quand le 2e match en ménage nettement plus</span></div>
@@ -22314,7 +22496,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.101.0';
+const APP_VERSION='v1.102.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

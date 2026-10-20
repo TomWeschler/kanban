@@ -214,7 +214,7 @@ chk('...à domicile seulement',cx.dom==='1|100',cx.dom);
 chk('...1er et 2e match d\'un back-to-back',cx.b2b1==='1|100'&&cx.b2b2==='1|0|100',JSON.stringify([cx.b2b1,cx.b2b2]));
 chk('...contre une conférence, et par conférence',cx.est2==='1|100'&&cx.confEst==='BOS,NY',JSON.stringify([cx.est2,cx.confEst]));
 chk('...les deux mi-temps',cx.mt==='100|50',cx.mt);
-chk('Le tableau : match, QT1 à QT4, mi-temps, ATS, over, points',cx.colonnes==='Équipe|MJ|Match|QT1|QT2|QT3|QT4|1re MT|2e MT|ATS|Over|Marqués|Encaissés|Écart|Pts QT1',cx.colonnes);
+chk('Le tableau : match, QT1 à QT4, mi-temps, ATS, over, points',cx.colonnes==='Équipe|MJ|Match|QT1|QT2|QT3|QT4|1re MT|2e MT|ATS|Over|Marqués|Encaissés|Écart|Att. /100|Déf. /100|Pts QT1',cx.colonnes);
 chk('...trié par victoires, filtré, re-trié d\'un clic',cx.triV.startsWith('GS')&&/^.+\/1,1,1,1$/.test(cx.filtreB2b)&&cx.filtreConf.split(',').sort().join(',')==='GS,LAL'&&cx.triQ1==='q1',JSON.stringify(cx));
 chk('...et les filtres s\'effacent',cx.efface==='["",""]',cx.efface);
 chk('Back-to-back : 1er et 2e match comparés, et les stars au repos',cx.b2b==='1|1|0|-1|10|-2|0|0|Jayson Tatum'&&cx.b2bLal==='0|1',cx.b2b);
@@ -928,6 +928,77 @@ chk('...pas un match laissé vide',rj.vide===true);
 chk('...et marque GO le match où un pari a de la valeur, dans le tableau et sur la carte',rj.go&&rj.goTable&&rj.goCarte===1&&/GO ×1/.test(rj.resume),JSON.stringify(rj));
 chk('...le dit, et les conseils du jour le reprennent',/1 match à jouer : GO/.test(rj.toast)&&rj.conseils,rj.toast);
 chk('Les cotes saisies reviennent',rj.relu==='2,2',rj.relu);
+
+console.log('=== 8 septies. NOTES D\'ÉQUIPE, SITUATIONS, TEST DU MODÈLE, CALIBRATION ===');
+const nt=await p.evaluate(async()=>{
+  const out={};
+  // Des feuilles de match complètes : un « banc » par équipe et par match.
+  const banc=[];
+  ['g1','g2','g3','g4'].forEach(id=>{ const m=nbaMatchs.find(x=>x.id===id); [m.dom,m.ext].forEach(t=>banc.push({id:`${id}:banc${t}`,match:id,date:m.date,equipe:t,adv:t===m.dom?m.ext:m.dom,dom:t===m.dom,
+    joueur_id:'banc'+t,joueur:'Banc '+t,titulaire:false,min:100,pts:0,reb:0,ast:0,stl:0,blk:0,tov:12,fgm:0,fga:70,tpm:0,tpa:0,ftm:0,fta:20,oreb:10,pf:0,pm:0,poste:''})); });
+  const avant=nbaJoueurs; nbaJoueurs=nbaJoueurs.concat(banc);
+  const pz=nbaPossessions();
+  // g1 : BOS et NY, chacun 15+70 tirs, 1+10 rebonds offensifs, 2+12 balles perdues, 4+20 lancers : 15+70−11+14+0,44×24 = 98,56.
+  out.poss=Math.round(pz.get('g1').poss*100)/100;
+  const v=nbaNotes();
+  out.bos=[Math.round(v.BOS.ortg*10)/10,Math.round(v.BOS.drtg*10)/10,v.BOS.r_ortg,v.BOS.r_drtg].join('|');
+  out.ordreNet=Object.keys(v).sort((a,b)=>v[a].r_net-v[b].r_net).join(',');
+  out.srsSomme=Math.round(Object.values(v).reduce((t,x)=>t+x.srs,0)*1000)/1000;
+  out.srsDernier=Object.keys(v).sort((a,b)=>v[a].r_srs-v[b].r_srs).pop();
+  nbaEqVue='notes'; nbaVueChoisir('equipes'); await new Promise(r=>setTimeout(r,120));
+  out.tableNotes=[...document.querySelectorAll('.nba-notes th')].map(x=>x.textContent.replace(/[↓↑]/g,'').trim()).join('|');
+  out.premier=(document.querySelector('.nba-notes tr.nba-eq-l td b')||{}).textContent;
+  // L'avant-match donne les rangs, et la situation de chaque équipe.
+  nbaVueChoisir('matchs'); nbaJourVu='2026-10-22'; nbaMatchVu=''; renderNba(); await new Promise(r=>setTimeout(r,100));
+  nbaMatchChoisir('g5'); await new Promise(r=>setTimeout(r,150));
+  const face=(document.querySelector('.nba-face')||{textContent:''}).textContent.replace(/\s+/g,' ');
+  out.faceAtt=/Attaque \/100/.test(face)&&/Défense \/100/.test(face)&&/Écart ajusté/.test(face);
+  out.sit=(document.querySelector('.nba-face tr.nba-sit')||{textContent:''}).textContent.replace(/\s+/g,' ');
+  nbaJoueurs=avant;
+  // Les situations, sur un calendrier fabriqué pour LAL.
+  const c=nbaAnnoter([{m:{date:'2026-11-01',dom:'NY',prolong:1},dom:false},{m:{date:'2026-11-02',dom:'BOS',prolong:0},dom:false},
+    {m:{date:'2026-11-04',dom:'DEN',prolong:0},dom:false},{m:{date:'2026-11-06',dom:'LAL',prolong:0},dom:true}]);
+  out.situations=c.map(x=>nbaSituationsTxt(x).join('+')||'-').join(' / ');
+  // Le test du modèle : douze matchs fabriqués, MIL gagne toujours largement.
+  const syn=[];
+  for(let i=0;i<14;i++){ const d=`2026-12-${String(i*2+1).padStart(2,'0')}`, dom=i%2?'MIL':'CHI';
+    syn.push({id:'t'+i,date:d,heure:'',saison:2027,type:2,dom,ext:dom==='MIL'?'CHI':'MIL',dom_nom:'',ext_nom:'',score_dom:dom==='MIL'?120:100,score_ext:dom==='MIL'?100:112,
+      qt_dom:[30,30,30,30],qt_ext:[25,25,25,25],prolong:0,statut:'final',spread:dom==='MIL'?-3:2,total:215,box:false}); }
+  nbaMatchs=nbaMatchs.concat(syn);
+  nbaVueChoisir('test'); await new Promise(r=>setTimeout(r,100));
+  out.avantTest=/Lancer le test/.test(document.getElementById('nbaCorps').textContent);
+  nbaTestLancer(); await new Promise(r=>setTimeout(r,400));
+  const E=nbaTest.l.filter(x=>x.type==='ecart'&&/^t/.test(x.m.id)), T=nbaTest.l.filter(x=>x.type==='total'&&/^t/.test(x.m.id));
+  out.ecart=[E.length,E.every(x=>x.t==='MIL'),nbaTestBilan(E,1.91).g].join('|');
+  out.total=[T.length,T.filter(x=>x.plus===false).length].join('|');
+  out.bilan=(b=>[b.n,b.g,b.p,b.nul,Math.round(b.pct*1000),Math.round(b.roi*1000)].join('|'))(nbaTestBilan([{res:'g'},{res:'g'},{res:'p'},{res:'n'}],1.91));
+  out.affiche=[...document.querySelectorAll('#nbaCorps .ca-ind-t')].map(x=>x.childNodes[0].textContent.trim()).join('|');
+  nbaMatchs=nbaMatchs.filter(m=>!/^t\d+$/.test(m.id)); nbaTest=null;
+  // La calibration de tes paris, dans Performance.
+  const s=nbaSaison();
+  const pari=(id,proba,st)=>({id,saison:s.id,date:'2026-10-20',match_id:'g1',match:'NY @ BOS',marche:'autre',selection:'test '+id,cote:2,mise:1,statut:st,proba,ev:proba*2-1,created_at:td()});
+  await nbaPariSauver([pari('cal1',0.62,'gagne'),pari('cal2',0.65,'perdu'),pari('cal3',0.61,'gagne'),pari('cal4',0.45,'perdu')]);
+  nbaVueChoisir('perf'); await new Promise(r=>setTimeout(r,150));
+  out.calib=([...document.querySelectorAll('.ca-ind-b')].find(x=>/Calibration du conseil/.test(x.textContent))||{textContent:''}).textContent.replace(/\s+/g,' ');
+  out.titresPerf=[...document.querySelectorAll('.nba-reps .ca-ind-t')].map(x=>x.childNodes[0].textContent.trim()).join('|');
+  nbaParis=nbaParis.filter(p=>!/^cal/.test(p.id));
+  return out;
+});
+chk('Les possessions d\'un match, lues dans les feuilles',nt.poss===98.56,String(nt.poss));
+chk('Attaque et défense pour 100 possessions, et leurs rangs',/^\d+\.\d\|\d+\.\d\|[1-4]\|[1-4]$/.test(nt.bos),nt.bos);
+chk('...le net classe les équipes, NY dernière',nt.ordreNet.split(',').pop()==='NY',nt.ordreNet);
+chk('L\'écart ajusté à la force des adversaires : centré, NY dernière',Math.abs(nt.srsSomme)<0.01&&nt.srsDernier==='NY',JSON.stringify([nt.srsSomme,nt.srsDernier]));
+chk('Équipes › Attaque / défense : le tableau, trié par le net',nt.tableNotes==='Équipe|Attaque /100|Défense /100|Net /100|Rythme|Écart ajusté|Net 10 der.|MJ'&&!!nt.premier,nt.tableNotes);
+chk('L\'avant-match donne attaque, défense, écart ajusté, avec les rangs',nt.faceAtt===true);
+chk('...et la situation de calendrier de chaque équipe',/2e soir d'un back-to-back/.test(nt.sit)&&/3e match en 4 soirs/.test(nt.sit),nt.sit);
+chk('Les situations : back-to-back, lendemain de prolongation, série dehors, altitude, long voyage, retour',
+    nt.situations==="1er soir d'un back-to-back / 2e soir d'un back-to-back+Lendemain d'une prolongation / 3e match en 4 soirs+3e match de suite à l'extérieur ou plus+Long voyage (2 fuseaux ou plus)+En altitude (Denver, Utah) / Retour à domicile après 3+ à l'extérieur",nt.situations);
+chk('Le test du modèle : chaque match rejoué, le bon côté choisi',nt.avantTest&&/^\d+\|true\|\d+$/.test(nt.ecart)&&Number(nt.ecart.split('|')[0])>=8&&nt.ecart.split('|')[2]===nt.ecart.split('|')[0],nt.ecart);
+chk('...et le total aussi',Number(nt.total.split('|')[0])>=8,nt.total);
+chk('...la réussite et le ROI à une cote de 1,91',nt.bilan==='4|2|1|1|667|205',nt.bilan);
+chk('...affichés par confiance et par situation',/En résumé/.test(nt.affiche)&&/Contre l'écart, par confiance/.test(nt.affiche)&&/selon l'équipe choisie/.test(nt.affiche),nt.affiche);
+chk('Performance : la calibration du conseil',/60 – 70 %\s*3\s*63 %\s*67 %/.test(nt.calib),nt.calib);
+chk('...tes paris par situation, et tes choix comparés au conseil',/Selon la situation de l'équipe jouée/.test(nt.titresPerf)&&/Tes choix et le conseil/.test(nt.titresPerf),nt.titresPerf);
 
 console.log('=== 9. ESPN NE RÉPOND PAS ===');
 const ko=await p.evaluate(async()=>{
