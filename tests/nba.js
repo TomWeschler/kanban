@@ -480,7 +480,7 @@ const mig=await p.evaluate(async()=>{
   nbaCharge=false; await nbaCharger();
   return {entete:T_ONGLETS.nba_paris[0].join(','),paris:nbaParis.length};
 });
-chk('L\'en-tête d\'un onglet ancien suit les nouvelles colonnes, les paris restent',/,proba,valeur,legs$/.test(mig.entete)&&mig.paris>=7,JSON.stringify(mig));
+chk('L\'en-tête d\'un onglet ancien suit les nouvelles colonnes, les paris restent',/,proba,valeur,legs,protege$/.test(mig.entete)&&mig.paris>=7,JSON.stringify(mig));
 
 console.log('=== 8. RELIRE, SÛRETÉ, SAUVEGARDE ===');
 const re=await p.evaluate(async()=>{
@@ -700,6 +700,78 @@ chk('...et le combiné en cours se vide une fois parié',cb.vide===0,String(cb.v
 chk('...sans mise proposée quand la valeur est négative',cb.miseVide==='',cb.miseVide);
 chk('Chaque issue du conseil a son bouton « + combiné »',cb.boutonConseil>0,String(cb.boutonConseil));
 chk('Rouvrir un combiné garde le match de chaque sélection',cb.rouvert==='g1+g2',cb.rouvert);
+
+console.log('=== 8 quinquies. LA PROTECTION NBA (+20) ===');
+const pr=await p.evaluate(async()=>{
+  const out={};
+  // Le plus gros écart, lu dans le déroulé.
+  out.menes=JSON.stringify(nbaMenesDe({plays:[{homeScore:0,awayScore:0},{homeScore:10,awayScore:32},{homeScore:60,awayScore:58},{homeScore:101,awayScore:99}]}));
+  out.sansDeroule=nbaMenesDe({});
+  out.qt=JSON.stringify(nbaMenesQt({qt_dom:[20,30,25,25],qt_ext:[35,20,20,24]}));
+  const s=nbaSaison();
+  const mk=(id,sd,se,md,me,qd,qe)=>({id,date:'2026-10-21',heure:'',saison:2027,type:2,dom:'NY',ext:'LAL',dom_nom:'',ext_nom:'',score_dom:sd,score_ext:se,
+    qt_dom:qd||[25,25,25,25],qt_ext:qe||[25,25,25,25],prolong:0,statut:'final',spread:null,total:null,box:true,mene_dom:md,mene_ext:me});
+  nbaMatchs.push(mk('pr1',110,104,8,22),mk('pr2',110,104,8,15),mk('pr3',110,104,null,null,[20,30,25,35],[35,20,20,29]),mk('pr4',110,104,-1,-1,[25,25,25,35],[26,25,24,29]));
+  const pari=(mid,eq)=>({saison:s.id,marche:'vainqueur',match_id:mid,equipe:eq});
+  // LAL battue, mais a mené de 22 : gagné.
+  out.v1=nbaVerdict(pari('pr1','LAL')); out.v1p=JSON.stringify(nbaVerdictPari(pari('pr1','LAL')));
+  // Battue, n'a mené que de 15 : perdu.
+  out.v2=nbaVerdict(pari('pr2','LAL'));
+  // L'équipe qui gagne reste gagnante, sans protection.
+  out.v3=JSON.stringify(nbaVerdictPari(pari('pr1','NY')));
+  // Sans déroulé : un écart de 15 en fin de quart-temps — on ne sait pas, à régler à la main ;
+  out.v4=nbaVerdict(pari('pr3','LAL'));
+  // …mais jamais 10 d'avance : perdu.
+  out.v5=nbaVerdict(pari('pr4','LAL'));
+  // Dans un combiné aussi.
+  out.combi=JSON.stringify(nbaVerdictPari({saison:s.id,marche:'combine',mise:10,legs:[{marche:'vainqueur',match_id:'pr1',equipe:'LAL'},{marche:'vainqueur',match_id:'g1',equipe:'BOS'}]}));
+  // Sans la protection pour la saison : perdu.
+  s.protection=false; out.sans=nbaVerdict(pari('pr1','LAL')); s.protection=true;
+  // Régler l'écrit, et Performance le dit.
+  const id='prot-1';
+  await nbaPariSauver([{id,saison:s.id,date:'2026-10-21',match_id:'pr1',match:'LAL @ NY',marche:'vainqueur',equipe:'LAL',selection:'LAL',cote:2.5,mise:4,statut:'attente',created_at:td()}]);
+  await nbaRegler(); await new Promise(r=>setTimeout(r,80));
+  const b=nbaParis.find(x=>x.id===id);
+  out.regle=[b.statut,b.protege,nbaProfit(b)].join('|');
+  out.ligne=(T_ONGLETS.nba_paris.find(x=>x[0]===id)||[])[22];
+  out.toast=T_TOASTS.slice(-3).join(' | ');
+  nbaVueChoisir('perf'); await new Promise(r=>setTimeout(r,120));
+  out.perf=(document.querySelector('.nba-perf-faits')||{textContent:''}).textContent.replace(/\s+/g,' ');
+  nbaVueChoisir('defi'); await new Promise(r=>setTimeout(r,120));
+  out.badge=!!document.querySelector('.nba-prot');
+  // Le conseil en tient compte : une part des défaites devient gagnante.
+  out.taux=JSON.stringify(nbaTauxRemontee());
+  const g5=nbaMatchs.find(x=>x.id==='g5');
+  const av=nbaCotes.find(c=>c.id==='g5');
+  nbaCotes=nbaCotes.filter(c=>c.id!=='g5').concat([{id:'g5',date:g5.date,match:'LAL @ BOS',cotes:{ml:{dom:1.5,ext:2.6}}}]);
+  const o=nbaOptions(g5,s).find(x=>x.lib==='LAL gagne');
+  s.protection=false; const o2=nbaOptions(g5,s).find(x=>x.lib==='LAL gagne'); s.protection=true;
+  out.conseil=[Math.round(o.pMarche*1000),Math.round(o2.pMarche*1000),/protection \+20/.test(o.info)].join('|');
+  nbaCotes=nbaCotes.filter(c=>c.id!=='g5').concat(av?[av]:[]);
+  // La saison garde son réglage dans le classeur.
+  nbaSaisonOuvrir(s.id); out.coche=document.getElementById('nbaSaisonProt').checked;
+  document.getElementById('nbaSaisonProt').checked=false; await nbaSaisonEnregistrer(); await new Promise(r=>setTimeout(r,60));
+  out.ligneSaison=(T_ONGLETS.nba_saisons.find(x=>x[0]===s.id)||[])[8];
+  out.relue=nbaSaisonDe(T_ONGLETS.nba_saisons.find(x=>x[0]===s.id)).protection;
+  out.ancienne=nbaSaisonDe(['x','2025-26','200','','','','','','']).protection;
+  const s2=nbaSaison(); s2.protection=true; await nbaSaisonSauver(s2);
+  nbaMatchs=nbaMatchs.filter(m=>!/^pr\d$/.test(m.id));
+  return out;
+});
+chk('Le plus gros écart de chaque équipe, lu dans le déroulé du match',pr.menes==='{"dom":2,"ext":22}'&&pr.sansDeroule===null,pr.menes);
+chk('...et, à défaut, le minimum sûr aux fins de quart-temps',pr.qt==='{"dom":1,"ext":15}',pr.qt);
+chk('Protection : battue mais a mené de 20 — gagné',pr.v1==='gagne'&&pr.v1p==='{"v":"gagne","protege":true}',pr.v1p);
+chk('...a mené de 15 seulement : perdu',pr.v2==='perdu',pr.v2);
+chk('...l\'équipe qui gagne n\'a pas besoin de la protection',pr.v3==='{"v":"gagne"}',pr.v3);
+chk('...sans déroulé et 15 d\'avance à une fin de quart : à régler à la main',pr.v4===null,String(pr.v4));
+chk('...sans déroulé, jamais 10 d\'avance : perdu',pr.v5==='perdu',pr.v5);
+chk('...dans un combiné aussi',pr.combi==='{"v":"gagne","protege":true}',pr.combi);
+chk('...et rien sans la protection pour la saison',pr.sans==='perdu',pr.sans);
+chk('Régler l\'applique, l\'écrit, et le dit',pr.regle==='gagne|true|6'&&pr.ligne==='1'&&/grâce à la protection \+20/.test(pr.toast),JSON.stringify(pr));
+chk('Performance compte les paris sauvés',/Sauvés par la protection \+20 : 1 pari, \+10,00 €/.test(pr.perf),pr.perf);
+chk('Le pari sauvé porte un badge',pr.badge===true);
+chk('Le conseil compte la protection dans la probabilité d\'un vainqueur',pr.conseil.split('|')[0]>pr.conseil.split('|')[1]&&/\|true$/.test(pr.conseil),pr.conseil+' '+pr.taux);
+chk('Le réglage par saison : coché par défaut, écrit dans le classeur, relu',pr.coche===true&&pr.ligneSaison==='0'&&pr.relue===false&&pr.ancienne===true,JSON.stringify(pr));
 
 console.log('=== 9. ESPN NE RÉPOND PAS ===');
 const ko=await p.evaluate(async()=>{

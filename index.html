@@ -1379,6 +1379,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .nba-leg input[data-l="joueur"]{width:9.5rem;flex:none}
 .nba-qts td{font-family:var(--font-mono);font-size:0.7rem}
 .nba-perf td{font-size:0.72rem}
+.nba-coche{display:flex;gap:0.5rem;align-items:flex-start;font-size:0.76rem;margin-top:0.6rem;color:var(--text-mid)}
+.nba-prot{border-color:var(--green)!important;color:var(--green)!important}
 .nba-reps-perf{grid-template-columns:repeat(auto-fit,minmax(430px,1fr))}
 @media (max-width:640px){ .nba-reps-perf{grid-template-columns:1fr} }
 .nba-wrap .ca-aide{font-size:0.7rem}
@@ -2832,6 +2834,7 @@ body,body *{font-family:var(--font-body)}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem">
       <div class="field"><label>Début</label><input type="date" id="nbaSaisonDebut"></div>
       <div class="field"><label>Fin</label><input type="date" id="nbaSaisonFin"></div></div>
+    <label class="nba-coche"><input type="checkbox" id="nbaSaisonProt"> Protection NBA de Winamax : un pari « vainqueur » est gagné si l'équipe a mené de 20 points, même battue</label>
     <div class="ca-aide">Les dates bornent aussi les statistiques lues chez ESPN.</div>
     <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.8rem">
       <button class="btn-nav out" onclick="modalFerme('nbaSaisonModal')">Annuler</button>
@@ -16146,11 +16149,11 @@ function switchPage(name){
 // c'est trente mille lignes, trop pour être relues à chaque ouverture.
 const NBA_T={saisons:'nba_saisons',paris:'nba_paris',matchs:'nba_matchs',joueurs:'nba_joueurs',poker:'nba_poker',cotes:'nba_cotes'};
 const NBA_H={
-  saisons:['id','nom','mise_depart','debut','fin','notes','created_at','updated_at'],
+  saisons:['id','nom','mise_depart','debut','fin','notes','created_at','updated_at','protection'],
   paris:['id','saison','date','match_id','match','marche','selection','equipe','joueur','stat','sens','ligne','cote','mise',
-    'statut','retour','notes','created_at','updated_at','proba','valeur','legs'],
+    'statut','retour','notes','created_at','updated_at','proba','valeur','legs','protege'],
   matchs:['id','date','heure','saison','type','dom','ext','dom_nom','ext_nom','score_dom','score_ext','qt_dom','qt_ext',
-    'prolong','statut','spread','total','box','updated_at'],
+    'prolong','statut','spread','total','box','updated_at','mene_dom','mene_ext'],
   joueurs:['id','match','date','equipe','adv','dom','joueur_id','joueur','titulaire','min','pts','reb','ast','stl','blk',
     'tov','fgm','fga','tpm','tpa','ftm','fta','oreb','pf','pm'],
   // Les gains des parties de poker gratuites : ils vont sur le même compte
@@ -16215,19 +16218,21 @@ const nbaMoy=l=>l.length?l.reduce((s,x)=>s+x,0)/l.length:null;
 const nbaF1=n=>n==null?'—':(Math.round(n*10)/10).toFixed(1).replace('.',',');
 
 // ── Les lignes du classeur ──
-const nbaSaisonRow=s=>[s.id,s.nom||'',s.mise_depart==null?'':String(s.mise_depart),s.debut||'',s.fin||'',s.notes||'',s.created_at||'',s.updated_at||''];
+const nbaSaisonRow=s=>[s.id,s.nom||'',s.mise_depart==null?'':String(s.mise_depart),s.debut||'',s.fin||'',s.notes||'',s.created_at||'',s.updated_at||'',
+  s.protection===false?'0':'1'];
+// La protection NBA de Winamax : active par défaut, une saison ancienne aussi.
 const nbaSaisonDe=r=>{ const g=i=>String(r[i]==null?'':r[i]);
-  return {id:g(0),nom:g(1),mise_depart:nbaNum(g(2)),debut:g(3),fin:g(4),notes:g(5),created_at:g(6),updated_at:g(7)}; };
+  return {id:g(0),nom:g(1),mise_depart:nbaNum(g(2)),debut:g(3),fin:g(4),notes:g(5),created_at:g(6),updated_at:g(7),protection:g(8)!=='0'}; };
 const nbaPariRow=p=>[p.id,p.saison||'',p.date||'',p.match_id||'',p.match||'',p.marche||'',p.selection||'',p.equipe||'',p.joueur||'',
   p.stat||'',p.sens||'',p.ligne==null?'':String(p.ligne),p.cote==null?'':String(p.cote),p.mise==null?'':String(p.mise),
   p.statut||'attente',p.retour==null?'':String(p.retour),p.notes||'',p.created_at||'',p.updated_at||'',
-  p.proba==null?'':String(p.proba),p.ev==null?'':String(p.ev),p.legs&&p.legs.length?JSON.stringify(p.legs):''];
+  p.proba==null?'':String(p.proba),p.ev==null?'':String(p.ev),p.legs&&p.legs.length?JSON.stringify(p.legs):'',p.protege?'1':''];
 const nbaPariDe=r=>{ const g=i=>String(r[i]==null?'':r[i]);
   const st=g(14);
   return {id:g(0),saison:g(1),date:g(2),match_id:g(3),match:g(4),marche:NBA_MARCHES.some(m=>m[0]===g(5))?g(5):'autre',
     selection:g(6),equipe:g(7),joueur:g(8),stat:g(9),sens:g(10)==='moins'?'moins':g(10)==='plus'?'plus':'',
     ligne:nbaNum(g(11)),cote:nbaNum(g(12)),mise:nbaNum(g(13)),statut:NBA_STATUTS.some(s=>s[0]===st)?st:'attente',
-    retour:nbaNum(g(15)),notes:g(16),created_at:g(17),updated_at:g(18),proba:nbaNum(g(19)),ev:nbaNum(g(20)),legs:nbaLegsDe(g(21))}; };
+    retour:nbaNum(g(15)),notes:g(16),created_at:g(17),updated_at:g(18),proba:nbaNum(g(19)),ev:nbaNum(g(20)),legs:nbaLegsDe(g(21)),protege:g(22)==='1'}; };
 // Les sélections d'un combiné, rangées en JSON dans la colonne « legs ».
 function nbaLegsDe(t){
   if(!t)return [];
@@ -16241,12 +16246,12 @@ const nbaPokerDe=r=>{ const g=i=>String(r[i]==null?'':r[i]);
 const nbaMatchRow=m=>[m.id,m.date||'',m.heure||'',m.saison==null?'':String(m.saison),m.type==null?'':String(m.type),m.dom||'',m.ext||'',
   m.dom_nom||'',m.ext_nom||'',m.score_dom==null?'':String(m.score_dom),m.score_ext==null?'':String(m.score_ext),
   (m.qt_dom||[]).join(','),(m.qt_ext||[]).join(','),String(m.prolong||0),m.statut||'',m.spread==null?'':String(m.spread),
-  m.total==null?'':String(m.total),m.box?'1':'',m.updated_at||''];
+  m.total==null?'':String(m.total),m.box?'1':'',m.updated_at||'',m.mene_dom==null?'':String(m.mene_dom),m.mene_ext==null?'':String(m.mene_ext)];
 const nbaQt=s=>String(s||'').split(',').filter(x=>x!=='').map(Number).filter(Number.isFinite);
 const nbaMatchDeLigne=r=>{ const g=i=>String(r[i]==null?'':r[i]);
   return {id:g(0),date:g(1),heure:g(2),saison:nbaNum(g(3)),type:nbaNum(g(4)),dom:nbaAbbr(g(5)),ext:nbaAbbr(g(6)),dom_nom:g(7),ext_nom:g(8),
     score_dom:nbaNum(g(9)),score_ext:nbaNum(g(10)),qt_dom:nbaQt(g(11)),qt_ext:nbaQt(g(12)),prolong:nbaNum(g(13))||0,
-    statut:g(14),spread:nbaNum(g(15)),total:nbaNum(g(16)),box:g(17)==='1',updated_at:g(18)}; };
+    statut:g(14),spread:nbaNum(g(15)),total:nbaNum(g(16)),box:g(17)==='1',updated_at:g(18),mene_dom:nbaNum(g(19)),mene_ext:nbaNum(g(20))}; };
 const NBA_JCHIFFRES=['min','pts','reb','ast','stl','blk','tov','fgm','fga','tpm','tpa','ftm','fta','oreb','pf','pm'];
 const nbaJoueurRow=j=>[j.id,j.match,j.date,j.equipe,j.adv,j.dom?'1':'0',j.joueur_id,j.joueur,j.titulaire?'1':'0',
   ...NBA_JCHIFFRES.map(k=>String(j[k]==null?0:j[k]))];
@@ -16352,6 +16357,7 @@ function nbaSaisonOuvrir(id){
   document.getElementById('nbaSaisonMise').value=String(s&&s.mise_depart!=null?s.mise_depart:NBA_MISE_DEFAUT).replace('.',',');
   document.getElementById('nbaSaisonDebut').value=s?s.debut:d.debut;
   document.getElementById('nbaSaisonFin').value=s?s.fin:d.fin;
+  document.getElementById('nbaSaisonProt').checked=!s||s.protection!==false;
   modalOuvre('nbaSaisonModal');
 }
 async function nbaSaisonEnregistrer(){
@@ -16362,7 +16368,8 @@ async function nbaSaisonEnregistrer(){
   if(mise==null||mise<0){ toast('La mise de départ doit être un montant','err'); return; }
   const avant=id?nbaSaisons.find(x=>x.id===id):null;
   const s={...(avant||{id:nbaId('ns'),created_at:td(),notes:''}),nom,mise_depart:mise,
-    debut:document.getElementById('nbaSaisonDebut').value,fin:document.getElementById('nbaSaisonFin').value};
+    debut:document.getElementById('nbaSaisonDebut').value,fin:document.getElementById('nbaSaisonFin').value,
+    protection:document.getElementById('nbaSaisonProt').checked};
   modalFerme('nbaSaisonModal');
   const ok=await nbaSaisonSauver(s);
   if(!ok)toast('ÉCHEC de l\'enregistrement','err');
@@ -16763,6 +16770,15 @@ async function nbaCotesEnregistrer(mid,ajouter){
   }
   renderNba();
 }
+// La part des défaites où le perdant avait mené de 20 points : ce que vaut la
+// protection. Mesurée sur les matchs dont on connaît le déroulé (au moins 60),
+// sinon la valeur habituelle en NBA, autour de 2 %.
+function nbaTauxRemontee(){
+  const l=nbaJouesTout().filter(m=>m.mene_dom!=null&&m.mene_ext!=null&&m.mene_dom>=0);
+  if(l.length<60)return {q:0.02,n:l.length,mesure:false};
+  const k=l.filter(m=>m.score_dom>m.score_ext?m.mene_ext>=NBA_PROTECTION:m.mene_dom>=NBA_PROTECTION).length;
+  return {q:Math.min(0.06,k/l.length),n:l.length,mesure:true};
+}
 // Toutes les options d'un match, évaluées.
 function nbaOptions(m,s){
   const c=nbaCotesDu(m.id), md=nbaModele(m), compte=nbaCompte(s), out=[];
@@ -16771,8 +16787,13 @@ function nbaOptions(m,s){
   const w=md?md.poids:0;
   if(c.ml){
     const pDom=md?nbaPhi(md.ecart/md.sdE):null;
-    pousser({lib:`${m.dom} gagne`,marche:'vainqueur',equipe:m.dom},pDom,nbaSansMarge(c.ml.dom,c.ml.ext),w,c.ml.dom);
-    pousser({lib:`${m.ext} gagne`,marche:'vainqueur',equipe:m.ext},pDom==null?null:1-pDom,nbaSansMarge(c.ml.ext,c.ml.dom),w,c.ml.ext);
+    // La protection « +20 » s'ajoute : une part des défaites devient gagnante.
+    // Winamax ne la compte pas dans sa cote, d'où un peu de valeur en plus.
+    const q=s&&s.protection===false?0:nbaTauxRemontee().q;
+    const avec=x=>x==null?null:x+(1-x)*q;
+    const info=q?`protection +20 comprise (${Math.round(q*1000)/10} % des défaites)`:'';
+    pousser({lib:`${m.dom} gagne`,marche:'vainqueur',equipe:m.dom,info},avec(pDom),avec(nbaSansMarge(c.ml.dom,c.ml.ext)),w,c.ml.dom);
+    pousser({lib:`${m.ext} gagne`,marche:'vainqueur',equipe:m.ext,info},avec(pDom==null?null:1-pDom),avec(nbaSansMarge(c.ml.ext,c.ml.dom)),w,c.ml.ext);
   }
   if(c.hc&&c.hc.ligne!=null){
     const L=c.hc.ligne, pDom=md?nbaPhi((md.ecart+L)/md.sdE):null;
@@ -16988,7 +17009,10 @@ function nbaVerdict(p){
   if(!m||m.statut!=='final'||m.score_dom==null)return null;
   const cmp=(a,b)=>a>b?'gagne':a<b?'perdu':'rembourse';
   const de=x=>{ const t=nbaAbbr(x); return t===m.dom?[m.score_dom,m.score_ext]:t===m.ext?[m.score_ext,m.score_dom]:null; };
-  if(p.marche==='vainqueur'){ const s=de(p.equipe); return s?(s[0]>s[1]?'gagne':'perdu'):null; }
+  if(p.marche==='vainqueur'){ const s=de(p.equipe); if(!s)return null; if(s[0]>s[1])return 'gagne';
+    // La protection NBA : battue, mais elle a mené de 20 points — gagné.
+    const pr=nbaProtection(p,m);
+    return pr===true?'gagne':pr===null?null:'perdu'; }
   if(p.marche==='handicap'){ const s=de(p.equipe); return s&&p.ligne!=null?cmp(s[0]+p.ligne,s[1]):null; }
   if(p.marche==='total'){ if(p.ligne==null||!p.sens)return null; const t=m.score_dom+m.score_ext;
     return p.sens==='plus'?cmp(t,p.ligne):cmp(p.ligne,t); }
@@ -17006,23 +17030,47 @@ function nbaVerdict(p){
   }
   return null;
 }
+// La protection « +20 » pour un pari vainqueur perdu : true si l'équipe a
+// mené de 20 points ; false sinon ; null si on ne sait pas encore (pas de
+// déroulé du match, et un écart d'au moins 10 à une fin de quart-temps :
+// les 20 ont pu être atteints entre deux). Sans protection pour la saison : false.
+const NBA_PROTECTION=20;
+function nbaProtection(p,m){
+  const s=nbaSaisons.find(x=>x.id===p.saison)||nbaSaison();
+  if(s&&s.protection===false)return false;
+  const t=nbaAbbr(p.equipe), dom=t===m.dom;
+  const mene=dom?m.mene_dom:m.mene_ext;
+  if(mene!=null&&mene>=0)return mene>=NBA_PROTECTION;
+  const q=nbaMenesQt(m), mq=dom?q.dom:q.ext;
+  if(mq>=NBA_PROTECTION)return true;
+  return mq>=10?null:false;
+}
+// Un pari est-il gagné par la seule protection ?
+function nbaProtege(x,mid){
+  if(x.marche!=='vainqueur')return false;
+  const m=nbaMatchs.find(y=>y.id===(x.match_id||mid)); if(!m||m.statut!=='final'||m.score_dom==null)return false;
+  const t=nbaAbbr(x.equipe), gagne=t===m.dom?m.score_dom>m.score_ext:t===m.ext?m.score_ext>m.score_dom:true;
+  return !gagne&&nbaProtection(x,m)===true;
+}
 // Un pari, simple ou combiné : son statut, et pour un combiné dont une
 // sélection est annulée, ce qu'il rapporte sans elle.
 function nbaVerdictPari(p){
   if(nbaEstCombine(p)){
     if(!p.legs||p.legs.length<2)return null;
-    const vs=p.legs.map(l=>nbaVerdict({...l,match_id:l.match_id||p.match_id}));
+    const vs=p.legs.map(l=>nbaVerdict({...l,match_id:l.match_id||p.match_id,saison:p.saison}));
+    const protege=p.legs.some(l=>nbaProtege({...l,saison:p.saison},p.match_id));
     if(vs.includes('perdu'))return {v:'perdu'};
     if(vs.includes(null))return null;
     if(vs.every(v=>v==='rembourse'))return {v:'rembourse'};
-    if(vs.every(v=>v==='gagne'))return {v:'gagne'};
+    if(vs.every(v=>v==='gagne'))return protege?{v:'gagne',protege:true}:{v:'gagne'};
     // Une sélection annulée : dans un combiné, la cote se recalcule sans
     // elle — si l'on connaît la cote de chacune. Un MyMatch se règle à la main.
     if(p.marche==='combine'&&p.legs.every(l=>l.cote>1))
-      return {v:'gagne',retour:nbaR2((p.mise||0)*p.legs.reduce((t,l,i)=>vs[i]==='gagne'?t*l.cote:t,1))};
+      return {v:'gagne',retour:nbaR2((p.mise||0)*p.legs.reduce((t,l,i)=>vs[i]==='gagne'?t*l.cote:t,1)),...(protege?{protege:true}:{})};
     return null;
   }
-  const v=nbaVerdict(p); return v?{v}:null;
+  const v=nbaVerdict(p); if(!v)return null;
+  return v==='gagne'&&nbaProtege(p)?{v,protege:true}:{v};
 }
 function nbaAregler(s){ return nbaParisSaison(s).filter(p=>p.statut==='attente').map(p=>({p,v:nbaVerdictPari(p)})).filter(x=>x.v); }
 async function nbaRegler(){
@@ -17031,7 +17079,9 @@ async function nbaRegler(){
   const l=nbaAregler(s);
   if(!l.length){ toast('Aucun pari à régler : il faut le match fini, et le pari décrit champ par champ'); return; }
   const avant=l.map(x=>({...x.p}));
-  l.forEach(x=>{ x.p.statut=x.v.v; x.p.retour=x.v.retour==null?null:x.v.retour; });
+  l.forEach(x=>{ x.p.statut=x.v.v; x.p.retour=x.v.retour==null?null:x.v.retour; x.p.protege=!!x.v.protege; });
+  const sauves=l.filter(x=>x.v.protege).length;
+  if(sauves)toast(`${sauves} pari${sauves>1?'s':''} gagné${sauves>1?'s':''} grâce à la protection +20`);
   await nbaPariSauver(l.map(x=>x.p));
   renderNba();
   offerUndo(`${l.length} pari${l.length>1?'s':''} réglé${l.length>1?'s':''}`,async()=>{ await nbaPariSauver(avant); renderNba(); });
@@ -17103,6 +17153,21 @@ function nbaBoxDe(j,m){
   });
   return out.filter(x=>x.joueur_id&&x.equipe);
 }
+// Le plus gros écart en faveur de chaque équipe pendant le match, pour la
+// protection NBA (« +20 ») : lu dans le déroulé du match, action par action.
+// Sans déroulé, rien : les fins de quart-temps n'en donnent qu'un minimum.
+function nbaMenesDe(j){
+  const pl=(j&&j.plays)||[];
+  let d=0,e=0,vu=false;
+  pl.forEach(x=>{ const h=Number(x.homeScore), a=Number(x.awayScore); if(!Number.isFinite(h)||!Number.isFinite(a))return; vu=true; d=Math.max(d,h-a); e=Math.max(e,a-h); });
+  return vu?{dom:d,ext:e}:null;
+}
+// Le minimum sûr, d'après les fins de quart-temps.
+function nbaMenesQt(m){
+  let cd=0,ce=0,d=0,e=0;
+  for(let i=0;i<Math.min(m.qt_dom.length,m.qt_ext.length);i++){ cd+=m.qt_dom[i]; ce+=m.qt_ext[i]; d=Math.max(d,cd-ce); e=Math.max(e,ce-cd); }
+  return {dom:d,ext:e};
+}
 // Les matchs d'un jour : lus chez ESPN, rangés, écrits.
 async function nbaJour(date){
   const j=await nbaGet(`${NBA_ESPN}/scoreboard?dates=${nbaYmd(date)}`);
@@ -17110,7 +17175,7 @@ async function nbaJour(date){
   const neufs=[];
   l.forEach(m=>{
     const i=nbaMatchs.findIndex(x=>x.id===m.id);
-    if(i>=0){ const a=nbaMatchs[i]; m.box=a.box; if(m.spread==null)m.spread=a.spread; if(m.total==null)m.total=a.total;
+    if(i>=0){ const a=nbaMatchs[i]; m.box=a.box; m.mene_dom=a.mene_dom; m.mene_ext=a.mene_ext; if(m.spread==null)m.spread=a.spread; if(m.total==null)m.total=a.total;
       if(nbaMatchRow({...a,updated_at:''}).join('|')===nbaMatchRow({...m,updated_at:''}).join('|'))return; nbaMatchs[i]=m; }
     else nbaMatchs.push(m);
     m.updated_at=td(); neufs.push(m);
@@ -17154,24 +17219,33 @@ async function nbaMettreAJour(){
     // précédente (depuis mars) — la forme récente des joueurs, sans relire
     // mille deux cents matchs.
     const an=nbaAnneeEspn(s);
-    const aLire=nbaMatchs.filter(m=>m.statut==='final'&&!m.box&&m.type!==1&&
-      (an==null||nbaAnneeDe(m)===an||(nbaAnneeDe(m)===an-1&&m.date>=`${an-1}-03-01`)));
+    // Et, pour la saison en cours, les matchs déjà lus avant que l'appli ne
+    // retienne le plus gros écart (la protection « +20 ») : relus une fois.
+    const aLire=nbaMatchs.filter(m=>m.statut==='final'&&m.type!==1&&(!m.box?
+      (an==null||nbaAnneeDe(m)===an||(nbaAnneeDe(m)===an-1&&m.date>=`${an-1}-03-01`))
+      :m.mene_dom==null&&(an==null||nbaAnneeDe(m)===an)));
     nbaMaj={...nbaMaj,etape:'feuilles',fait:0,total:aLire.length}; nbaMajAfficher();
     let lot=[], lotM=[];
     const vider=async()=>{
-      if(!lot.length)return;
+      if(!lot.length&&!lotM.length)return;
       const r=lot, rm=lotM; lot=[]; lotM=[];
-      if(accessToken){ await nbaAjouterLignes(NBA_T.joueurs,r.map(nbaJoueurRow)); await sheetBatchUpsert(NBA_T.matchs,rm.map(nbaMatchRow)); }
+      if(accessToken){ if(r.length)await nbaAjouterLignes(NBA_T.joueurs,r.map(nbaJoueurRow)); await sheetBatchUpsert(NBA_T.matchs,rm.map(nbaMatchRow)); }
       await nbaIdb.set('joueurs',nbaJoueurs); await nbaIdb.set('matchs',nbaMatchs);
     };
     await nbaParLots(aLire,async m=>{
       try{
         const j=await nbaGet(`${NBA_ESPN}/summary?event=${encodeURIComponent(m.id)}`);
-        const l=nbaBoxDe(j,m);
-        if(l.length){
-          nbaJoueurs=nbaJoueurs.filter(x=>x.match!==m.id).concat(l);
-          m.box=true; m.updated_at=td(); lot.push(...l); lotM.push(m);
-          if(lotM.length>=20)await vider();
+        // Sans déroulé chez ESPN, on le note (−1) : inutile de le redemander.
+        const mn=nbaMenesDe(j);
+        m.mene_dom=mn?mn.dom:-1; m.mene_ext=mn?mn.ext:-1;
+        if(m.box){ m.updated_at=td(); lotM.push(m); if(lotM.length>=20)await vider(); }
+        else{
+          const l=nbaBoxDe(j,m);
+          if(l.length){
+            nbaJoueurs=nbaJoueurs.filter(x=>x.match!==m.id).concat(l);
+            m.box=true; m.updated_at=td(); lot.push(...l); lotM.push(m);
+            if(lotM.length>=20)await vider();
+          }
         }
       }catch(e){ nbaMaj.erreurs++; }
       nbaMaj.fait++; nbaMajAfficher();
@@ -17370,7 +17444,7 @@ function nbaDefiHtml(s){
         const pr=nbaProfit(p);
         return `<div class="nba-pari st-${p.statut}"><button class="nba-pari-c" onclick="nbaPariOuvrir('${MD_ATT(p.id)}')">
           <span class="nba-pari-m">${nbaLibHtml(p.match)} · ${tdEsc(nomM(p.marche))}</span>
-          <span class="nba-pari-s">${tdEsc(p.selection)}</span>
+          <span class="nba-pari-s">${tdEsc(p.selection)}${p.protege?' <span class="nba-bl nba-prot" title="Gagné grâce à la protection NBA : l\'équipe a mené de 20 points">🛡 +20</span>':''}</span>
           <span class="nba-pari-n">${nbaEur(p.mise)} à ${p.cote==null?'—':String(p.cote).replace('.',',')}</span></button>
           <button class="nba-st" onclick="nbaPariStatut('${MD_ATT(p.id)}')" title="Changer le statut">${tdEsc(NBA_STATUTS.find(x=>x[0]===p.statut)[1])}</button>
           <span class="nba-pari-p ${nbaCls(pr)}">${pr==null?'':nbaSigne(pr)}</span></div>`; }).join('')}</div>`).join('')
@@ -17440,7 +17514,9 @@ function nbaPerfHtml(s){
       ${meilleure?`<span>Plus belle cote gagnée : <b>${c2(meilleure.cote)}</b> — ${tdEsc(meilleure.selection)}</span>`:''}
       ${plusGros&&nbaProfit(plusGros)>0?`<span>Plus gros gain : <b class="ca-gain">${nbaSigne(nbaProfit(plusGros))}</b> — ${tdEsc(plusGros.selection)}</span>`:''}
       ${pire&&nbaProfit(pire)<0?`<span>Plus grosse perte : <b class="ca-perte">${nbaSigne(nbaProfit(pire))}</b> — ${tdEsc(pire.selection)}</span>`:''}
-      <span>Meilleure série : <b>${se.bestV}</b> gagnés de suite · pire : <b>${se.bestP}</b> perdus de suite</span></div>
+      <span>Meilleure série : <b>${se.bestV}</b> gagnés de suite · pire : <b>${se.bestP}</b> perdus de suite</span>
+      ${r.some(p=>p.protege)?`<span>Sauvés par la protection +20 : <b>${r.filter(p=>p.protege).length}</b> pari${r.filter(p=>p.protege).length>1?'s':''},
+        <b class="ca-gain">${nbaSigne(nbaR2(r.filter(p=>p.protege).reduce((t,p)=>t+nbaRetour(p),0)))}</b> encaissés au lieu de rien</span>`:''}</div>
     <div class="nba-reps nba-reps-perf">
       ${tab('Par type de pari',nbaRepartition(l,p=>nomM(p.marche)))}
       ${tab('Domicile ou extérieur',roles,tdEsc,'l\'équipe jouée (ou celle du joueur)')}
@@ -21944,7 +22020,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.96.0';
+const APP_VERSION='v1.97.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
