@@ -13,6 +13,7 @@ node tests/curseur.js
 node tests/lignesvides.js
 node tests/maj.js
 node tests/cartes.js
+node tests/nba.js
 ```
 
 ## Les suites
@@ -23,6 +24,7 @@ node tests/cartes.js
 | `curseur.js` | La position du curseur dans l'éditeur de notes, à travers les reconstructions de l'interface. |
 | `lignesvides.js` | Les lignes vides voulues, rendues à la lecture. |
 | `cartes.js` | La collection de cartes d'OMEGA : onglet du classeur, images archivées dans Drive et gardées sur l'appareil. |
+| `nba.js` | Le défi NBA : saisons, paris et leur règlement, statistiques d'équipes et de joueurs lues chez ESPN (simulé). |
 | `maj.js` | La mise à jour de l'application : les trois paliers, et le refus de boucler en silence. |
 
 Le navigateur est cherché dans `/opt/pw-browsers/chromium-1194/…` ; sur une
