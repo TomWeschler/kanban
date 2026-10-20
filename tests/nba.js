@@ -107,7 +107,7 @@ const sa=await p.evaluate(async()=>{
   out.bankroll=[...document.querySelectorAll('.jp-kpi')].find(k=>/Compte Winamax/.test(k.textContent)).querySelector('.jp-kpi-v').textContent;
   return out;
 });
-chk('Les cinq onglets naissent dans le classeur, avec leur en-tête',sa.onglets==='nba_joueurs,nba_matchs,nba_paris,nba_poker,nba_saisons'&&/^id,saison,date,match_id/.test(sa.entetes||''),JSON.stringify(sa));
+chk('Les six onglets naissent dans le classeur, avec leur en-tête',sa.onglets==='nba_cotes,nba_joueurs,nba_matchs,nba_paris,nba_poker,nba_saisons'&&/^id,saison,date,match_id/.test(sa.entetes||''),JSON.stringify(sa));
 chk('Sans saison, on invite à en créer une',sa.vide===true);
 chk('La mise de départ est de 200 € par défaut',sa.miseDefaut==='200',sa.miseDefaut);
 chk('...le nom proposé suit le calendrier NBA',/^20\d\d-\d\d$/.test(sa.nomDefaut),sa.nomDefaut);
@@ -338,11 +338,13 @@ const co=await p.evaluate(async()=>{
   out.sombres=Object.entries(NBA_EQUIPES).filter(([,x])=>lum(x[1])<0.06).map(([k])=>k).join(',');
   nbaVueChoisir('equipes'); await new Promise(r=>setTimeout(r,150));
   const tr=document.querySelector('.nba-eqs tr.nba-eq-l');
-  out.ligne=tr&&tr.style.getPropertyValue('--eq'); out.logoTab=!!(tr&&tr.querySelector('img.nba-logo'));
+  out.ligne=tr&&tr.style.getPropertyValue('--eq'); out.logoTab=!!(tr&&tr.querySelector('.nba-t b'));
   nbaVueChoisir('matchs'); nbaJourVu='2026-10-20'; nbaMatchVu=''; renderNba(); await new Promise(r=>setTimeout(r,150));
   const m=document.querySelector('.nba-match');
   out.match=m&&[m.style.getPropertyValue('--c1'),m.style.getPropertyValue('--c2')].join(',');
-  out.logosMatch=m?m.querySelectorAll('img.nba-logo').length:0;
+  // Les logos ne se chargent pas ici (pas de réseau) et s'effacent : on compte les équipes, et l'on vérifie la balise.
+  out.logosMatch=m?m.querySelectorAll('.nba-match-l .nba-eq .nba-t').length:0;
+  out.balise=/<img class="nba-logo" src="https:\/\/a\.espncdn\.com\/i\/teamlogos\/nba\/500\/bos\.png"/.test(nbaEqHtml('BOS'));
   nbaVueChoisir('defi'); await new Promise(r=>setTimeout(r,150));
   out.pari=[...document.querySelectorAll('.nba-pari-m .nba-t')].length>0;
   out.parEquipe=!!([...document.querySelectorAll('.nba-reps .ca-ind-b')].find(x=>/Par équipe/.test(x.textContent))||{querySelector:()=>null}).querySelector('.nba-t');
@@ -353,8 +355,113 @@ chk('...aucune trop sombre pour un fond sombre',co.sombres==='',co.sombres);
 chk('Les sigles de Winamax ou de NBA.com renvoient à ceux d\'ESPN',co.alias==='GS,NY,SA,UTAH,BOS',co.alias);
 chk('Le logo vient d\'ESPN',co.logo==='https://a.espncdn.com/i/teamlogos/nba/500/gs.png',co.logo);
 chk('Le tableau des équipes : logo et liseré à la couleur de l\'équipe',!!co.ligne&&co.logoTab,JSON.stringify(co));
-chk('Un match : les deux couleurs, les deux logos',co.match==='#F58426,#1E9E5A'&&co.logosMatch===2,co.match+' '+co.logosMatch);
+chk('Un match : les deux couleurs, les deux logos',co.match==='#F58426,#1E9E5A'&&co.logosMatch===2&&co.balise,co.match+' '+co.logosMatch);
 chk('...et les paris, et le détail par équipe, en couleurs',co.pari&&co.parEquipe,JSON.stringify(co));
+
+console.log('=== 7 quater. LE CONSEIL ===');
+const cs=await p.evaluate(async()=>{
+  const out={};
+  // Les blessures d'ESPN : une équipe par son sigle, l'autre par son seul nom.
+  const fetchAvant=window.fetch;
+  window.fetch=async u=>{ u=String(u);
+    if(/\/injuries$/.test(u)){ T_ESPN_APPELS.push(u); return {ok:true,status:200,json:async()=>({injuries:[
+      {team:{abbreviation:'BOS'},injuries:[{athlete:{id:'1',displayName:'Jayson Tatum'},status:'Out',detail:'Genou'}]},
+      {team:{displayName:'Los Angeles Lakers'},injuries:[{athlete:{id:'4',displayName:'LeBron James'},status:'Questionable',type:{description:'Cheville'}}]}]})}; }
+    return fetchAvant(u); };
+  const l=await nbaBlessures(true);
+  out.bl=l.map(b=>[b.equipe,b.joueur,b.statut].join(':')).join(' ');
+  out.fr=[nbaStatutFr('Out'),nbaStatutFr('Questionable'),nbaStatutFr('Day-To-Day')].join(',');
+  const m=nbaMatchs.find(x=>x.id==='g5');
+  const iD=nbaImpactAbsences('BOS',m.date), iE=nbaImpactAbsences('LAL',m.date);
+  out.impact=[iD.pts,iE.pts,iD.liste[0].regulier].join('|');
+  const md=nbaModele(m);
+  out.modele=[md.pd,md.pe,md.fatD,md.fatE,md.poids].map(x=>Math.round(x*100)/100).join('|');
+  // Les outils.
+  out.marge=Math.round(nbaSansMarge(1.8,2.0)*10000)/10000;
+  out.seule=Math.round(nbaSansMarge(2.0)*10000)/10000;
+  out.phi=[Math.round(nbaPhi(0)*1000)/1000,Math.round(nbaPhi(1)*1000)/1000,Math.round(nbaPhi(-1.96)*1000)/1000].join(',');
+  const e=nbaEvaluer(0.6,0.5,0.5,2.0,284);
+  out.eval=[e.p,Math.round(e.ev*1000)/1000,e.mise,e.valeur].join('|');
+  out.plafond=nbaEvaluer(0.95,0.6,0.5,3,284).mise;
+  out.negatif=nbaEvaluer(0.4,0.45,0.5,2,284).mise;
+  // L'avant-match : saisir les cotes, analyser.
+  nbaVueChoisir('matchs'); nbaJourVu='2026-10-22'; nbaMatchVu=''; renderNba(); await new Promise(r=>setTimeout(r,100));
+  nbaMatchChoisir('g5'); await new Promise(r=>setTimeout(r,200));
+  out.panneau=!!document.querySelector('.nba-conseil');
+  out.absences=[...document.querySelectorAll('.nba-abs .nba-bl')].map(x=>x.textContent.replace(/\s+/g,' ').trim()).join(' / ');
+  const set=(id,v)=>{ document.getElementById(id).value=v; };
+  set('nbaCMlExt','3,10'); set('nbaCMlDom','1,38'); set('nbaCHcLigne','-7'); set('nbaCHcExt','1,90'); set('nbaCHcDom','1,90');
+  set('nbaCTotLigne','230,5'); set('nbaCTotPlus','1,90'); set('nbaCTotMoins','1,90');
+  await nbaCotesEnregistrer('g5',true); await new Promise(r=>setTimeout(r,100));
+  out.lignesJ=document.querySelectorAll('.nba-cj').length;
+  const rows=document.querySelectorAll('.nba-cj');
+  const sj=(r,k,v)=>{ r.querySelector(`[data-c="${k}"]`).value=v; };
+  sj(rows[0],'joueur','Stephen Curry'); sj(rows[0],'ligne','5,5'); sj(rows[0],'plus','1,9'); sj(rows[0],'moins','1,9');
+  sj(rows[1],'joueur','Jayson Tatum'); sj(rows[1],'ligne','25,5'); sj(rows[1],'plus','1,9'); sj(rows[1],'moins','1,9');
+  rows[0].querySelector('[data-c="stat"]').value='tpm';
+  await nbaCotesEnregistrer('g5'); await new Promise(r=>setTimeout(r,150));
+  out.cotesClasseur=(T_ONGLETS.nba_cotes||[]).slice(1).map(x=>x[0]+':'+JSON.parse(x[3]).ml.dom+':'+JSON.parse(x[3]).joueurs.length).join(',');
+  const opts=nbaOptions(m,nbaSaison());
+  out.nOpts=opts.length;
+  out.tatumExclu=!opts.some(o=>/Tatum/.test(o.lib));
+  out.libs=opts.map(o=>o.lib).join(' | ');
+  out.trie=opts.every((o,i)=>!i||opts[i-1].ev>=o.ev);
+  out.tableau=document.querySelectorAll('.nba-opts tr').length-1;
+  out.verts=document.querySelectorAll('.nba-opts tr.nba-val').length;
+  out.valeurs=opts.filter(o=>o.valeur).map(o=>o.lib+'@'+Math.round(o.ev*100)).join(',');
+  // Les conseils du jour.
+  out.duJour=nbaConseilsDuJour('2026-10-22').length===opts.filter(o=>o.valeur).length;
+  out.encart=!!document.querySelector('.nba-cj-jour')===(opts.some(o=>o.valeur));
+  // Parier depuis le conseil : le formulaire est prérempli, la probabilité suit le pari.
+  const v=opts.find(o=>o.valeur);
+  out.aValeur=!!v;
+  if(v){
+    const btn=[...document.querySelectorAll('.nba-opts tr.nba-val button')][0]; btn.click(); await new Promise(r=>setTimeout(r,150));
+    out.form=[document.getElementById('nbaPMarche').value,document.getElementById('nbaPCote').value,document.getElementById('nbaPMise').value,document.getElementById('nbaPMatch').value].join('|');
+    out.info=document.getElementById('nbaPConseil').textContent;
+    document.getElementById('nbaPCote').value=String(opts.find(o=>o.valeur).cote+0.1).replace('.',',');
+    await nbaPariEnregistrer(); await new Promise(r=>setTimeout(r,100));
+    const pr=nbaParis[nbaParis.length-1];
+    out.pari=[pr.proba!=null,pr.ev!=null,Math.abs(pr.ev-(pr.proba*pr.cote-1))<0.002].join('|');
+    out.ligneP=(T_ONGLETS.nba_paris.find(x=>x[0]===pr.id)||[]).slice(19).join('|');
+    nbaVueChoisir('defi'); await new Promise(r=>setTimeout(r,120));
+    out.parValeur=!!([...document.querySelectorAll('.nba-reps .ca-ind-b')].find(x=>/Par valeur estimée/.test(x.textContent)));
+  }
+  window.fetch=fetchAvant;
+  return out;
+});
+chk('Les blessures d\'ESPN, équipe par sigle ou par nom',cs.bl==='BOS:Jayson Tatum:Out LAL:LeBron James:Questionable',cs.bl);
+chk('...en français',cs.fr==='Absent,Incertain,Au jour le jour',cs.fr);
+chk('Une absence coûte 30 % des points du joueur, pondérés par son statut',cs.impact==='8.1|4.2|true',cs.impact);
+chk('Le modèle : score attendu ajusté du repos et des absences, poids des stats selon le nombre de matchs',cs.modele==='94.9|99.8|1.5|1.5|0.1',cs.modele);
+chk('La marge retirée d\'un marché à deux issues',cs.marge===0.5263,String(cs.marge));
+chk('...et d\'une cote seule (marge habituelle de 5 %)',cs.seule===0.4762,String(cs.seule));
+chk('La loi normale',cs.phi==='0.5,0.841,0.025',cs.phi);
+chk('Valeur et mise : mélange des probabilités, quart de Kelly',cs.eval==='0.55|0.1|7|true',cs.eval);
+chk('...la mise plafonnée à 3 % du compte',cs.plafond===8.5,String(cs.plafond));
+chk('...et aucune mise sans valeur',cs.negatif===0,String(cs.negatif));
+chk('L\'avant-match propose la saisie des cotes, et montre les absences',cs.panneau&&/Jayson Tatum · Absent −8,1/.test(cs.absences)&&/LeBron James · Incertain/.test(cs.absences),cs.absences);
+chk('« + ligne joueur » ajoute une ligne sans perdre la saisie',cs.lignesJ===2,String(cs.lignesJ));
+chk('Les cotes sont écrites dans le classeur',cs.cotesClasseur==='g5:1.38:2',cs.cotesClasseur);
+chk('Toutes les issues sont évaluées, le joueur absent écarté',cs.nOpts===8&&cs.tatumExclu,cs.libs);
+chk('...de la meilleure valeur à la pire, et affichées',cs.trie&&cs.tableau===8,JSON.stringify([cs.trie,cs.tableau]));
+chk('...les paris de valeur en vert',cs.verts===cs.valeurs.split(',').filter(Boolean).length,cs.valeurs);
+chk('Les conseils du jour reprennent les paris de valeur',cs.duJour&&cs.encart,JSON.stringify(cs));
+chk('Au moins un pari de valeur dans ce scénario',cs.aValeur,cs.valeurs);
+chk('« Parier » préremplit le formulaire : marché, cote, mise, match',/^\w+\|\d+,?\d*\|\d+,?\d*\|g5$/.test(cs.form||''),cs.form);
+chk('...et dit la probabilité et la valeur estimées',/probabilité estimée \d+ %/.test(cs.info||''),cs.info);
+chk('Le pari garde sa probabilité ; la valeur suit la cote vraiment prise',cs.pari==='true|true|true',cs.pari);
+chk('...écrites dans le classeur',/^0\.\d+\|-?0\.\d+$/.test(cs.ligneP||''),cs.ligneP);
+chk('Les chiffres du défi par valeur estimée : la méthode se juge',cs.parValeur===true);
+
+console.log('=== 7 quinquies. UN ONGLET D\'UNE VERSION PRÉCÉDENTE ===');
+const mig=await p.evaluate(async()=>{
+  // Un onglet nba_paris écrit avant les colonnes « proba » et « valeur ».
+  T_ONGLETS.nba_paris[0]=NBA_H.paris.slice(0,19);
+  nbaCharge=false; await nbaCharger();
+  return {entete:T_ONGLETS.nba_paris[0].join(','),paris:nbaParis.length};
+});
+chk('L\'en-tête d\'un onglet ancien suit les nouvelles colonnes, les paris restent',/,proba,valeur$/.test(mig.entete)&&mig.paris>=7,JSON.stringify(mig));
 
 console.log('=== 8. RELIRE, SÛRETÉ, SAUVEGARDE ===');
 const re=await p.evaluate(async()=>{
