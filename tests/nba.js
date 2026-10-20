@@ -80,11 +80,12 @@ console.log('=== 1. LES MENUS ===');
 const menus=await p.evaluate(async()=>{
   switchPage('objectifs'); await new Promise(r=>setTimeout(r,100));
   const vis=sel=>{ const e=document.querySelector(sel); return !!e&&getComputedStyle(e).display!=='none'; };
-  return {adp:vis('.nav-tab[data-page="adp"]'),revue:vis('.nav-tab[data-page="review"]'),omega:vis('.nav-tab[data-page="omega"]'),
+  return {adp:vis('.nav-tab[data-page="adp"]'),revue:vis('.nav-tab[data-page="review"]'),omega:vis('.nav-tab[data-page="omega"]'),nba:vis('.nav-tab[data-page="nba"]'),
     sous:[...document.querySelectorAll('#subTabs .subtab')].map(b=>b.textContent)};
 });
 chk('ADP et Revue ne sont plus dans le menu',!menus.adp&&!menus.revue&&menus.omega,JSON.stringify(menus));
-chk('Dans OMEGA, plus de japonais, et un onglet NBA',!menus.sous.includes('日本語')&&menus.sous.includes('NBA'),menus.sous.join('|'));
+chk('Dans OMEGA, plus de japonais ni de NBA',!menus.sous.includes('日本語')&&!menus.sous.includes('NBA'),menus.sous.join('|'));
+chk('NBA a son onglet dans le menu principal',menus.nba===true,JSON.stringify(menus));
 
 console.log('=== 2. LA SAISON ===');
 const sa=await p.evaluate(async()=>{
@@ -222,7 +223,7 @@ const pa=await p.evaluate(async()=>{
   await remplir({pre:{date:'2026-10-20'},match:'g2',marche:'total',champs:{nbaPSens:'moins',nbaPLigne:'220,5',nbaPCote:'1,85',nbaPMise:'10'}});
   await remplir({pre:{date:'2026-10-21'},match:'g4',marche:'joueur',champs:{nbaPJoueur:'Stephen Curry',nbaPStat:'tpm',nbaPSens:'plus',nbaPLigne:'4,5',nbaPCote:'2,1',nbaPMise:'5'}});
   await remplir({pre:{date:'2026-10-20'},match:'g1',marche:'joueur',champs:{nbaPJoueur:'Remplaçant Absent',nbaPStat:'pts',nbaPSens:'plus',nbaPLigne:'5,5',nbaPCote:'1,5',nbaPMise:'4'}});
-  await remplir({pre:{date:'2026-10-21'},match:'__libre',marche:'combine',champs:{nbaPMatchLibre:'Combiné du soir',nbaPSelection:'NY + GSW',nbaPCote:'3,4',nbaPMise:'5',nbaPStatut:'perdu'}});
+  await remplir({pre:{date:'2026-10-21'},match:'__libre',marche:'autre',champs:{nbaPMatchLibre:'Combiné du soir',nbaPSelection:'NY + GSW',nbaPCote:'3,4',nbaPMise:'5',nbaPStatut:'perdu'}});
   out.n=nbaParis.length;
   out.selections=nbaParis.map(p=>p.selection).join(' / ');
   out.lignes=T_ONGLETS.nba_paris.length-1;
@@ -240,13 +241,22 @@ const pa=await p.evaluate(async()=>{
   out.bilan=[bl.regles,bl.gagnes,bl.perdus,bl.rembourses,bl.mise,bl.profit,Math.round(bl.roi)].join('|');
   out.kpis=[...document.querySelectorAll('.jp-kpi')].map(k=>k.textContent.replace(/\s+/g,' ').trim()).join(' / ');
   out.courbe=!!document.querySelector('.nba-courbe polyline');
-  out.parMarche=[...document.querySelectorAll('.ca-ind-b')].find(x=>/Par marché/.test(x.textContent)).textContent.replace(/\s+/g,' ');
+  out.lienPerf=!!document.querySelector('.nba-corps a, #nbaCorps a[onclick*="perf"]');
+  nbaVueChoisir('perf'); await new Promise(r=>setTimeout(r,120));
+  out.parMarche=([...document.querySelectorAll('.ca-ind-b')].find(x=>/Par type de pari/.test(x.textContent))||{textContent:''}).textContent.replace(/\s+/g,' ');
+  out.perfKpis=[...document.querySelectorAll('.jp-kpi .jp-kpi-l')].map(k=>k.textContent).join('|');
+  out.perfTitres=[...document.querySelectorAll('.nba-reps .ca-ind-t')].map(x=>x.childNodes[0].textContent.trim()).join('|');
+  out.domExt=([...document.querySelectorAll('.nba-reps .ca-ind-b')].find(x=>/Domicile ou extérieur/.test(x.textContent))||{textContent:''}).textContent.replace(/\s+/g,' ');
+  out.parEq=([...document.querySelectorAll('.nba-reps .ca-ind-b')].find(x=>/Par équipe/.test(x.textContent))||{textContent:''}).textContent.replace(/\s+/g,' ');
+  out.equipesPari=nbaParis.map(p=>nbaEquipesDuPari(p).map(x=>x.t+(x.role?':'+x.role:'')).join('+')).join(' / ');
+  out.series=JSON.stringify(nbaSeries(nbaParisSaison(nbaSaison())));
+  nbaVueChoisir('defi'); await new Promise(r=>setTimeout(r,100));
   // Un clic sur le statut le fait tourner, et s'annule.
   const id=nbaParis[0].id;
   await nbaPariStatut(id); out.tourne=nbaParis.find(p=>p.id===id).statut;
   await T_ANNUL[T_ANNUL.length-1].fn(); out.annule=nbaParis.find(p=>p.id===id).statut;
   // Le cash-out : ce qu'on a encaissé.
-  const co=nbaParis.find(p=>p.marche==='combine'); co.statut='cashout'; co.retour=8; out.cashout=nbaProfit(co); co.statut='perdu'; co.retour=null;
+  const co=nbaParis.find(p=>p.marche==='autre'); co.statut='cashout'; co.retour=8; out.cashout=nbaProfit(co); co.statut='perdu'; co.retour=null;
   // Supprimer.
   nbaPariOuvrir(nbaParis[nbaParis.length-1].id); await nbaPariSupprimer(); await new Promise(r=>setTimeout(r,80));
   out.apresSuppr=nbaParis.length;
@@ -265,7 +275,14 @@ chk('...vainqueur gagné ; handicap −10 remboursé (victoire de 10) ; moins de
 chk('Le bilan : 6 réglés, 3 gagnés, 1 perdu, 2 remboursés, 54 € misés, +21,00 €, ROI 39 %',pa.bilan==='6|3|1|2|54|21|39',pa.bilan);
 chk('Les indicateurs du défi : bankroll, profit, ROI, réussite',/Compte Winamax/.test(pa.kpis)&&/ROI/.test(pa.kpis)&&/Réussite/.test(pa.kpis),pa.kpis);
 chk('...la courbe de la bankroll',pa.courbe===true);
-chk('...le détail par marché',/Vainqueur/.test(pa.parMarche)&&/Combiné/.test(pa.parMarche),pa.parMarche);
+chk('Le Défi renvoie vers Performance',pa.lienPerf===true);
+chk('Performance : par type de pari, avec gagnés-perdus-remboursés et cote moyenne',/Vainqueur\s*1-0-0/.test(pa.parMarche)&&/Autre\s*0-1-0/.test(pa.parMarche)&&/Cote moy\./.test(pa.parMarche),pa.parMarche);
+chk('...ses indicateurs : réussite, cote moyenne, mise moyenne, série',/Réussite/.test(pa.perfKpis)&&/Cote moyenne/.test(pa.perfKpis)&&/Mise moyenne/.test(pa.perfKpis)&&/Série/.test(pa.perfKpis),pa.perfKpis);
+chk('...et ses découpages',['Par type de pari','Domicile ou extérieur','Par équipe','Par cote','Favori ou outsider','Plus ou moins','Paris joueurs, par statistique','Par jour de la semaine','Par mois'].every(t=>pa.perfTitres.includes(t)),pa.perfTitres);
+chk('Un pari compte pour son équipe (celle du joueur pour un pari joueur), un total pour les deux',pa.equipesPari.startsWith('BOS:dom / BOS:dom / LAL+GS / GS:dom / BOS:dom'),pa.equipesPari);
+chk('...domicile ou extérieur selon l\'équipe jouée',/Équipe à domicile\s*2-0-2/.test(pa.domExt),pa.domExt);
+chk('...par équipe',/BOS/.test(pa.parEq)&&/GS/.test(pa.parEq),pa.parEq);
+chk('Les séries de gains et de pertes',pa.series==='{"enCours":"D1","bestV":3,"bestP":1}',pa.series);
 chk('Un clic sur le statut le fait tourner, et s\'annule',pa.tourne==='perdu'&&pa.annule==='gagne',JSON.stringify([pa.tourne,pa.annule]));
 chk('Un cash-out compte ce qu\'on a encaissé',pa.cashout===3,String(pa.cashout));
 chk('Supprimer un pari, et l\'annuler',pa.apresSuppr===5&&pa.restaure===6,JSON.stringify([pa.apresSuppr,pa.restaure]));
@@ -348,6 +365,7 @@ const co=await p.evaluate(async()=>{
   out.balise=/<img class="nba-logo" src="https:\/\/a\.espncdn\.com\/i\/teamlogos\/nba\/500\/bos\.png"/.test(nbaEqHtml('BOS'));
   nbaVueChoisir('defi'); await new Promise(r=>setTimeout(r,150));
   out.pari=[...document.querySelectorAll('.nba-pari-m .nba-t')].length>0;
+  nbaVueChoisir('perf'); await new Promise(r=>setTimeout(r,150));
   out.parEquipe=!!([...document.querySelectorAll('.nba-reps .ca-ind-b')].find(x=>/Par équipe/.test(x.textContent))||{querySelector:()=>null}).querySelector('.nba-t');
   return out;
 });
@@ -424,8 +442,8 @@ const cs=await p.evaluate(async()=>{
     await nbaPariEnregistrer(); await new Promise(r=>setTimeout(r,100));
     const pr=nbaParis[nbaParis.length-1];
     out.pari=[pr.proba!=null,pr.ev!=null,Math.abs(pr.ev-(pr.proba*pr.cote-1))<0.002].join('|');
-    out.ligneP=(T_ONGLETS.nba_paris.find(x=>x[0]===pr.id)||[]).slice(19).join('|');
-    nbaVueChoisir('defi'); await new Promise(r=>setTimeout(r,120));
+    out.ligneP=(T_ONGLETS.nba_paris.find(x=>x[0]===pr.id)||[]).slice(19,21).join('|');
+    nbaVueChoisir('perf'); await new Promise(r=>setTimeout(r,120));
     out.parValeur=!!([...document.querySelectorAll('.nba-reps .ca-ind-b')].find(x=>/Par valeur estimée/.test(x.textContent)));
   }
   window.fetch=fetchAvant;
@@ -453,7 +471,7 @@ chk('« Parier » préremplit le formulaire : marché, cote, mise, match',/^\w+\
 chk('...et dit la probabilité et la valeur estimées',/probabilité estimée \d+ %/.test(cs.info||''),cs.info);
 chk('Le pari garde sa probabilité ; la valeur suit la cote vraiment prise',cs.pari==='true|true|true',cs.pari);
 chk('...écrites dans le classeur',/^0\.\d+\|-?0\.\d+$/.test(cs.ligneP||''),cs.ligneP);
-chk('Les chiffres du défi par valeur estimée : la méthode se juge',cs.parValeur===true);
+chk('Performance, par valeur estimée : la méthode se juge',cs.parValeur===true);
 
 console.log('=== 7 quinquies. UN ONGLET D\'UNE VERSION PRÉCÉDENTE ===');
 const mig=await p.evaluate(async()=>{
@@ -462,7 +480,7 @@ const mig=await p.evaluate(async()=>{
   nbaCharge=false; await nbaCharger();
   return {entete:T_ONGLETS.nba_paris[0].join(','),paris:nbaParis.length};
 });
-chk('L\'en-tête d\'un onglet ancien suit les nouvelles colonnes, les paris restent',/,proba,valeur$/.test(mig.entete)&&mig.paris>=7,JSON.stringify(mig));
+chk('L\'en-tête d\'un onglet ancien suit les nouvelles colonnes, les paris restent',/,proba,valeur,legs$/.test(mig.entete)&&mig.paris>=7,JSON.stringify(mig));
 
 console.log('=== 8. RELIRE, SÛRETÉ, SAUVEGARDE ===');
 const re=await p.evaluate(async()=>{
@@ -560,6 +578,128 @@ chk('Un petit écart : « Rien de franc », sous le seuil',/Rien de franc/.test(
 chk('Le verdict s\'affiche au-dessus du tableau',/À considérer/.test(sp.panneau),sp.panneau);
 chk('L\'avant-match montre aussi la saison passée',sp.lignesPrec===true);
 chk('...et ses meilleurs marqueurs, en attendant ceux de la saison',/Adebayo/.test(sp.marqueurs),sp.marqueurs);
+
+console.log('=== 8 ter. LES QUARTS-TEMPS ===');
+const qt=await p.evaluate(async()=>{
+  const out={};
+  // BOS : g1 à domicile, 1er QT 30-20 gagné ; g4 à GS, 1er QT 28-30 perdu.
+  const b=nbaBilanEquipe(nbaVuDe('BOS'));
+  out.bos=[nbaQtTxt(b.qv[0].all),nbaQtTxt(b.qv[0].dom),nbaQtTxt(b.qv[0].ext),nbaQtTxt(b.qv[4].all)].join(' ');
+  // NY : g1 à BOS 2e QT 30-25 gagné ; g3 à domicile 4e QT 24-26 perdu.
+  const n=nbaBilanEquipe(nbaVuDe('NY'));
+  out.ny=[nbaQtTxt(n.qv[1].all),nbaQtTxt(n.qv[3].dom)].join(' ');
+  out.pct=nbaQtPct({v:3,n:1,d:0});
+  nbaVueChoisir('equipes'); nbaEqVue='qt'; renderNba(); await new Promise(r=>setTimeout(r,150));
+  out.tableau=!!document.querySelector('.nba-qts');
+  out.entetes=[...document.querySelectorAll('.nba-qts th')].map(x=>x.textContent).join('|');
+  out.premiere=(document.querySelector('.nba-qts tr.nba-eq-l td b')||{}).textContent;
+  out.vert=document.querySelectorAll('.nba-qts td.nba-qt-fort').length>0;
+  nbaTriQt='q0ext'; renderNba(); await new Promise(r=>setTimeout(r,100));
+  out.triExt=(document.querySelector('.nba-qts tr.nba-eq-l td b')||{}).textContent;
+  nbaEqVue='bilan'; nbaEquipeVue='BOS'; renderNba(); await new Promise(r=>setTimeout(r,100));
+  out.detail=(document.querySelector('.nba-detail')||{textContent:''}).textContent.replace(/\s+/g,' ');
+  nbaEquipeVue='';
+  // Le pari « 1er quart-temps » se règle tout seul.
+  out.v1=nbaVerdict({marche:'qt1',match_id:'g1',equipe:'BOS'});
+  out.v2=nbaVerdict({marche:'qt1',match_id:'g1',equipe:'NY'});
+  out.sel=nbaSelectionAuto({marche:'qt1',equipe:'BOS'});
+  // Et le conseil le propose.
+  const m=nbaMatchs.find(x=>x.id==='g5');
+  const avant=nbaCotes.find(c=>c.id==='g5');
+  nbaCotes=nbaCotes.filter(c=>c.id!=='g5').concat([{id:'g5',date:m.date,match:'LAL @ BOS',cotes:{qt1:{ext:2.0,dom:1.75}}}]);
+  const o=nbaOptions(m,nbaSaison());
+  out.optQt=o.map(x=>x.lib+':'+(x.pStat==null?'-':Math.round(x.pStat*100))).join(',');
+  nbaCotes=nbaCotes.filter(c=>c.id!=='g5').concat(avant?[avant]:[]);
+  return out;
+});
+chk('Les quarts-temps gagnés d\'une équipe : en tout, à domicile, à l\'extérieur, 1re mi-temps',qt.bos==='1-0-1 1-0-0 0-0-1 1-0-1',qt.bos);
+chk('...chaque quart-temps compté',qt.ny==='1-0-1 0-0-1',qt.ny);
+chk('...la part des victoires compte les nuls',qt.pct===0.75,String(qt.pct));
+chk('Un tableau « Quarts-temps » dans Équipes, 1er QT à domicile en tête',qt.tableau&&/1er QT dom\.\|1er QT ext\./.test(qt.entetes)&&/1re mi-temps/.test(qt.entetes),qt.entetes);
+chk('...trié par la colonne choisie',!!qt.premiere&&!!qt.triExt,JSON.stringify([qt.premiere,qt.triExt]));
+chk('...les fortes valeurs en vert',qt.vert===true);
+chk('Le détail d\'une équipe donne ses quarts-temps gagnés, dedans et dehors',/Quarts-temps gagnés à domicile : 1ᵉʳ 100 %/.test(qt.detail)&&/à l'extérieur : 1ᵉʳ 0 %/.test(qt.detail),qt.detail.slice(0,500));
+chk('Le pari « 1er quart-temps » se règle seul',qt.v1==='gagne'&&qt.v2==='perdu'&&qt.sel==='BOS gagne le 1er QT',JSON.stringify(qt));
+chk('...et le conseil le propose, avec les stats de chacune dans son rôle',/BOS gagne le 1er QT:\d+/.test(qt.optQt)&&/LAL gagne le 1er QT:\d+/.test(qt.optQt),qt.optQt);
+
+console.log('=== 8 quater. LES COMBINÉS ET LES MYMATCH ===');
+const cb=await p.evaluate(async()=>{
+  const out={};
+  const s=nbaSaison();
+  // Saisir un combiné à la main : deux matchs du 20 octobre.
+  nbaPariOuvrir(null,{date:'2026-10-20'}); await new Promise(r=>setTimeout(r,100));
+  const mk=document.getElementById('nbaPMarche'); mk.value='combine'; mk.dispatchEvent(new Event('change')); await new Promise(r=>setTimeout(r,50));
+  out.editeur=document.querySelectorAll('#nbaPLegs .nba-leg').length;
+  out.matchCache=document.getElementById('nbaPMatchL').style.display==='none';
+  const rows=()=>[...document.querySelectorAll('#nbaPLegs .nba-leg')];
+  const set=(r,k,v)=>{ const e=r.querySelector(`[data-l="${k}"]`); e.value=v; e.dispatchEvent(new Event('change')); };
+  set(rows()[0],'match','g1'); await new Promise(r=>setTimeout(r,30)); set(rows()[0],'equipe','BOS'); set(rows()[0],'cote','1,6');
+  set(rows()[1],'match','g2'); await new Promise(r=>setTimeout(r,30)); set(rows()[1],'marche','joueur'); await new Promise(r=>setTimeout(r,30));
+  set(rows()[1],'joueur','Stephen Curry'); set(rows()[1],'stat','pts'); set(rows()[1],'sens','plus'); set(rows()[1],'ligne','29,5'); set(rows()[1],'cote','1,9');
+  out.equipesLeg=[...rows()[0].querySelectorAll('[data-l="equipe"] option')].map(o=>o.value).filter(Boolean).join(',');
+  document.getElementById('nbaPMise').value='10';
+  await nbaPariEnregistrer(); await new Promise(r=>setTimeout(r,80));
+  const c=nbaParis[nbaParis.length-1];
+  out.combi=[c.marche,c.legs.length,c.cote,c.match,c.selection].join(' | ');
+  out.ligne=JSON.parse((T_ONGLETS.nba_paris.find(x=>x[0]===c.id)||[])[21]||'[]').length;
+  // Il se règle : BOS a gagné, Curry a marqué 35 → gagné.
+  out.verdict=JSON.stringify(nbaVerdictPari(c));
+  // Une sélection perdue, et le combiné est perdu.
+  out.perdu=nbaVerdictPari({...c,legs:[c.legs[0],{...c.legs[1],sens:'moins'}]}).v;
+  // Une sélection annulée (joueur absent) : la cote se recalcule sans elle.
+  const annule={...c,legs:[c.legs[0],{match_id:'g1',marche:'joueur',joueur:'Remplaçant Absent',stat:'pts',sens:'plus',ligne:5.5,cote:1.5}]};
+  out.annule=JSON.stringify(nbaVerdictPari(annule));
+  out.myAnnule=nbaVerdictPari({...annule,marche:'mymatch'});
+  // Un match pas encore joué : rien à régler.
+  out.attente=nbaVerdictPari({...c,legs:[c.legs[0],{match_id:'g5',marche:'vainqueur',equipe:'BOS'}]});
+  // Le combiné en cours, composé depuis le conseil.
+  nbaPanierVider();
+  nbaPanierAjouter({match_id:'g5',match:'LAL @ BOS',date:'2026-10-22',marche:'vainqueur',equipe:'BOS',cote:1.4,p:0.7,lib:'BOS gagne'});
+  nbaPanierAjouter({match_id:'g5',match:'LAL @ BOS',date:'2026-10-22',marche:'joueur',joueur:'LeBron James',stat:'pts',sens:'plus',ligne:24.5,cote:1.9,p:0.55,lib:'LeBron plus de 24,5'});
+  nbaPanierAjouter({match_id:'g5',match:'LAL @ BOS',date:'2026-10-22',marche:'vainqueur',equipe:'BOS',cote:1.4,p:0.7,lib:'BOS gagne'});
+  out.panier=nbaPanier.length;
+  const k=nbaPanierCalcul(); out.calcul=[k.cote,Math.round(k.p*1000)/1000,k.meme].join('|');
+  nbaVueChoisir('matchs'); nbaJourVu='2026-10-22'; nbaMatchVu=''; renderNba(); await new Promise(r=>setTimeout(r,120));
+  out.encart=(document.querySelector('.nba-panier')||{textContent:''}).textContent.replace(/\s+/g,' ');
+  out.boutons=[...document.querySelectorAll('.nba-panier .nba-act button')].map(b=>b.textContent).join('|');
+  nbaPanierCote='2,4'; const k2=nbaPanierCalcul(); out.ev=Math.round(k2.ev*100);
+  nbaPanierParier('mymatch'); await new Promise(r=>setTimeout(r,120));
+  out.form=[document.getElementById('nbaPMarche').value,document.getElementById('nbaPMatch').value,document.getElementById('nbaPCote').value,
+    document.querySelectorAll('#nbaPLegs .nba-leg').length,!document.querySelector('#nbaPLegs [data-l="match"]')].join('|');
+  out.miseVide=document.getElementById('nbaPMise').value;
+  document.getElementById('nbaPMise').value='5';
+  await nbaPariEnregistrer(); await new Promise(r=>setTimeout(r,80));
+  const m2=nbaParis[nbaParis.length-1];
+  out.my=[m2.marche,m2.match_id,m2.legs.map(l=>l.match_id).join('+'),m2.proba,m2.cote].join('|');
+  out.vide=nbaPanier.length;
+  // Le bouton « + combiné » est dans le tableau du conseil.
+  nbaMatchChoisir('g5'); await new Promise(r=>setTimeout(r,150));
+  out.boutonConseil=document.querySelectorAll('.nba-opts button[title="Ajouter au combiné en cours"]').length;
+  // Rouvrir un combiné après un MyMatch : ses sélections gardent leurs matchs.
+  nbaPariOuvrir(nbaParis.find(x=>x.marche==='mymatch').id); await new Promise(r=>setTimeout(r,80)); modalFerme('nbaPariModal');
+  nbaPariOuvrir(nbaParis.find(x=>x.marche==='combine').id); await new Promise(r=>setTimeout(r,120));
+  out.rouvert=[...document.querySelectorAll('#nbaPLegs [data-l="match"]')].map(x=>x.value).join('+');
+  modalFerme('nbaPariModal');
+  return out;
+});
+chk('Un combiné s\'édite sélection par sélection, chacune sur son match',cb.editeur===2&&cb.matchCache&&cb.equipesLeg==='NY,BOS',JSON.stringify(cb));
+chk('...sa cote est le produit des cotes si on ne la donne pas, sa sélection s\'écrit seule',/^combine \| 2 \| 3\.04 \| 2 matchs \| NY @ BOS : BOS \+ GS @ LAL : Stephen Curry \+29,5 points$/.test(cb.combi),cb.combi);
+chk('...ses sélections sont écrites dans le classeur',cb.ligne===2,String(cb.ligne));
+chk('Le combiné se règle : toutes gagnées, gagné',cb.verdict==='{"v":"gagne"}',cb.verdict);
+chk('...une perdue, perdu',cb.perdu==='perdu',cb.perdu);
+chk('...une annulée : la cote se recalcule sans elle',cb.annule==='{"v":"gagne","retour":16}',cb.annule);
+chk('...un MyMatch avec une sélection annulée se règle à la main',cb.myAnnule===null,String(cb.myAnnule));
+chk('...un match pas encore joué : rien à régler',cb.attente===null,String(cb.attente));
+chk('Le combiné en cours se compose depuis le conseil, sans doublon',cb.panier===2,String(cb.panier));
+chk('...produit des cotes et des probabilités, MyMatch reconnu',cb.calcul==='2.66|0.385|true',cb.calcul);
+chk('...affiché dans la vue Matchs, avec ses deux façons de parier',/Combiné en cours — 2 sélections/.test(cb.encart)&&cb.boutons==='Parier en combiné|Parier en MyMatch',cb.boutons);
+chk('...la valeur se calcule sur la cote Winamax saisie',cb.ev===-8,String(cb.ev));
+chk('« Parier en MyMatch » préremplit : le match, la cote, les sélections',cb.form==='mymatch|g5|2,4|2|true',cb.form);
+chk('...le MyMatch garde son match, ses sélections, sa probabilité',cb.my==='mymatch|g5|g5+g5|0.385|2.4',cb.my);
+chk('...et le combiné en cours se vide une fois parié',cb.vide===0,String(cb.vide));
+chk('...sans mise proposée quand la valeur est négative',cb.miseVide==='',cb.miseVide);
+chk('Chaque issue du conseil a son bouton « + combiné »',cb.boutonConseil>0,String(cb.boutonConseil));
+chk('Rouvrir un combiné garde le match de chaque sélection',cb.rouvert==='g1+g2',cb.rouvert);
 
 console.log('=== 9. ESPN NE RÉPOND PAS ===');
 const ko=await p.evaluate(async()=>{
