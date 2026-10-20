@@ -263,7 +263,7 @@ const pa=await p.evaluate(async()=>{
   await T_ANNUL[T_ANNUL.length-1].fn(); out.restaure=nbaParis.length;
   return out;
 });
-chk('Le formulaire propose les matchs du jour choisi',/NY @ BOS/.test(pa.choix)&&/GS @ LAL/.test(pa.choix),pa.choix);
+chk('Le formulaire propose les matchs du jour choisi',/BOS – NY/.test(pa.choix)&&/LAL – GS/.test(pa.choix),pa.choix);
 chk('...et les deux équipes du match',['BOS,NY','BOS,GS,LAL,NY'].includes(pa.equipes.split(',').sort().join(',')),pa.equipes);
 chk('Six paris enregistrés, la sélection écrite d\'elle-même',pa.n===6&&/BOS -10/.test(pa.selections)&&/Moins de 220,5/.test(pa.selections)&&/Stephen Curry \+4,5 paniers à 3 pts/.test(pa.selections),pa.selections);
 chk('...dans le classeur',pa.lignes===6,String(pa.lignes));
@@ -374,7 +374,7 @@ chk('...aucune trop sombre pour un fond sombre',co.sombres==='',co.sombres);
 chk('Les sigles de Winamax ou de NBA.com renvoient à ceux d\'ESPN',co.alias==='GS,NY,SA,UTAH,BOS',co.alias);
 chk('Le logo vient d\'ESPN',co.logo==='https://a.espncdn.com/i/teamlogos/nba/500/gs.png',co.logo);
 chk('Le tableau des équipes : logo et liseré à la couleur de l\'équipe',!!co.ligne&&co.logoTab,JSON.stringify(co));
-chk('Un match : les deux couleurs, les deux logos',co.match==='#F58426,#1E9E5A'&&co.logosMatch===2&&co.balise,co.match+' '+co.logosMatch);
+chk('Un match : les deux couleurs, les deux logos',co.match==='#1E9E5A,#F58426'&&co.logosMatch===2&&co.balise,co.match+' '+co.logosMatch);
 chk('...et les paris, et le détail par équipe, en couleurs',co.pari&&co.parEquipe,JSON.stringify(co));
 
 console.log('=== 7 quater. LE CONSEIL ===');
@@ -577,7 +577,7 @@ chk('Statistiques d\'accord avec Winamax : « Rien à jouer »',/Rien à jouer/.
 chk('Un petit écart : « Rien de franc », sous le seuil',/Rien de franc/.test(sp.verdictFaible)&&/\+3 %/.test(sp.verdictFaible),sp.verdictFaible.replace(/<[^>]+>/g,''));
 chk('Le verdict s\'affiche au-dessus du tableau',/À considérer/.test(sp.panneau),sp.panneau);
 chk('L\'avant-match montre aussi la saison passée',sp.lignesPrec===true);
-chk('...et ses meilleurs marqueurs, en attendant ceux de la saison',/Adebayo/.test(sp.marqueurs),sp.marqueurs);
+chk('...et ses meilleurs marqueurs, en attendant ceux de la saison',/Embiid/.test(sp.marqueurs),sp.marqueurs);
 
 console.log('=== 8 ter. LES QUARTS-TEMPS ===');
 const qt=await p.evaluate(async()=>{
@@ -603,6 +603,13 @@ const qt=await p.evaluate(async()=>{
   out.v1=nbaVerdict({marche:'qt1',match_id:'g1',equipe:'BOS'});
   out.v2=nbaVerdict({marche:'qt1',match_id:'g1',equipe:'NY'});
   out.sel=nbaSelectionAuto({marche:'qt1',equipe:'BOS'});
+  // Les autres quarts-temps aussi : g1, 2e QT NY 30-25, 4e QT 25-25.
+  out.q2=nbaVerdict({marche:'qt2',match_id:'g1',equipe:'NY'}); out.q4=nbaVerdict({marche:'qt4',match_id:'g1',equipe:'BOS'});
+  out.sel3=nbaSelectionAuto({marche:'qt3',equipe:'GS'});
+  const m3=nbaMatchs.find(x=>x.id==='g5'), av3=nbaCotes.find(c=>c.id==='g5');
+  nbaCotes=nbaCotes.filter(c=>c.id!=='g5').concat([{id:'g5',date:m3.date,match:'LAL @ BOS',cotes:{qt3:{dom:1.9,ext:1.9},qt4:{dom:1.85}}}]);
+  out.opt34=nbaOptions(m3,nbaSaison()).map(x=>x.lib).sort().join(',');
+  nbaCotes=nbaCotes.filter(c=>c.id!=='g5').concat(av3?[av3]:[]);
   // Et le conseil le propose.
   const m=nbaMatchs.find(x=>x.id==='g5');
   const avant=nbaCotes.find(c=>c.id==='g5');
@@ -615,10 +622,12 @@ const qt=await p.evaluate(async()=>{
 chk('Les quarts-temps gagnés d\'une équipe : en tout, à domicile, à l\'extérieur, 1re mi-temps',qt.bos==='1-0-1 1-0-0 0-0-1 1-0-1',qt.bos);
 chk('...chaque quart-temps compté',qt.ny==='1-0-1 0-0-1',qt.ny);
 chk('...la part des victoires compte les nuls',qt.pct===0.75,String(qt.pct));
-chk('Un tableau « Quarts-temps » dans Équipes, 1er QT à domicile en tête',qt.tableau&&/1er QT dom\.\|1er QT ext\./.test(qt.entetes)&&/1re mi-temps/.test(qt.entetes),qt.entetes);
+chk('Un tableau « Quarts-temps » dans Équipes : les quatre, à domicile, à l\'extérieur, en tout',qt.tableau&&qt.entetes==='Équipe|QT1 dom.|QT1 ext.|QT1|QT2 dom.|QT2 ext.|QT2|QT3 dom.|QT3 ext.|QT3|QT4 dom.|QT4 ext.|QT4|1re MT dom.|1re MT ext.',qt.entetes);
 chk('...trié par la colonne choisie',!!qt.premiere&&!!qt.triExt,JSON.stringify([qt.premiere,qt.triExt]));
 chk('...les fortes valeurs en vert',qt.vert===true);
 chk('Le détail d\'une équipe donne ses quarts-temps gagnés, dedans et dehors',/Quarts-temps gagnés à domicile : 1ᵉʳ 100 %/.test(qt.detail)&&/à l'extérieur : 1ᵉʳ 0 %/.test(qt.detail),qt.detail.slice(0,500));
+chk('Les 2e, 3e et 4e quarts-temps se parient et se règlent aussi (égalité : perdu)',qt.q2==='gagne'&&qt.q4==='perdu'&&qt.sel3==='GS gagne le 3e QT',JSON.stringify([qt.q2,qt.q4,qt.sel3]));
+chk('...et le conseil les estime',qt.opt34==='BOS gagne le 3e QT,BOS gagne le 4e QT,LAL gagne le 3e QT',qt.opt34);
 chk('Le pari « 1er quart-temps » se règle seul',qt.v1==='gagne'&&qt.v2==='perdu'&&qt.sel==='BOS gagne le 1er QT',JSON.stringify(qt));
 chk('...et le conseil le propose, avec les stats de chacune dans son rôle',/BOS gagne le 1er QT:\d+/.test(qt.optQt)&&/LAL gagne le 1er QT:\d+/.test(qt.optQt),qt.optQt);
 
@@ -682,8 +691,8 @@ const cb=await p.evaluate(async()=>{
   modalFerme('nbaPariModal');
   return out;
 });
-chk('Un combiné s\'édite sélection par sélection, chacune sur son match',cb.editeur===2&&cb.matchCache&&cb.equipesLeg==='NY,BOS',JSON.stringify(cb));
-chk('...sa cote est le produit des cotes si on ne la donne pas, sa sélection s\'écrit seule',/^combine \| 2 \| 3\.04 \| 2 matchs \| NY @ BOS : BOS \+ GS @ LAL : Stephen Curry \+29,5 points$/.test(cb.combi),cb.combi);
+chk('Un combiné s\'édite sélection par sélection, chacune sur son match',cb.editeur===2&&cb.matchCache&&cb.equipesLeg==='BOS,NY',JSON.stringify(cb));
+chk('...sa cote est le produit des cotes si on ne la donne pas, sa sélection s\'écrit seule',/^combine \| 2 \| 3\.04 \| 2 matchs \| BOS – NY : BOS \+ LAL – GS : Stephen Curry \+29,5 points$/.test(cb.combi),cb.combi);
 chk('...ses sélections sont écrites dans le classeur',cb.ligne===2,String(cb.ligne));
 chk('Le combiné se règle : toutes gagnées, gagné',cb.verdict==='{"v":"gagne"}',cb.verdict);
 chk('...une perdue, perdu',cb.perdu==='perdu',cb.perdu);
@@ -785,16 +794,18 @@ const rj=await p.evaluate(async()=>{
   const val=(id,k)=>ligne(id).querySelector(`[data-r="${k}"]`).value;
   out.lignes=document.querySelectorAll('.nba-rap tr[data-m]').length;
   out.ouvert=document.querySelector('.nba-rapide').open;
-  out.pre=[val('r1','hcLigne'),val('r1','totLigne'),val('r2','hcLigne')].join('|');
+  out.entetes=[...document.querySelectorAll('.nba-rap th')].map(x=>((x.childNodes[0]||{}).textContent||'').trim()).join('|');
+  out.ordre=[...ligne('r1').querySelectorAll('input')].slice(0,2).map(x=>x.placeholder).join('|');
+  out.carte=[...document.querySelectorAll('.nba-match')][0].querySelectorAll('.nba-match-l .nba-eq .nba-t b')[0].textContent;
   out.goAvant=document.querySelectorAll('.nba-match .nba-go').length;
   const set=(id,k,v)=>{ ligne(id).querySelector(`[data-r="${k}"]`).value=v; };
-  set('r1','mlExt','2,2'); set('r1','mlDom','1,75');
+  set('r1','mlExt','2,2'); set('r1','mlDom','1,75'); set('r1','qt1Dom','1,8'); set('r1','qt3Ext','2,05');
   T_TOASTS.length=0;
   const btn=[...document.querySelectorAll('.nba-rapide button')].find(b=>/Analyser la journée/.test(b.textContent));
   out.bouton=!!btn;
   await nbaAnalyserJournee(); await new Promise(r=>setTimeout(r,120));
   const c=nbaCotes.find(x=>x.id==='r1');
-  out.cotes=c&&[c.cotes.ml.ext,c.cotes.ml.dom,c.cotes.hc.ligne,c.cotes.tot.ligne].join('|');
+  out.cotes=c&&[c.cotes.ml.dom,c.cotes.ml.ext,c.cotes.qt1.dom,c.cotes.qt3.ext,c.cotes.qt4.dom].join('|');
   out.vide=!nbaCotes.some(x=>x.id==='r2');
   out.classeur=(T_ONGLETS.nba_cotes||[]).some(x=>x[0]==='r1');
   out.go=!!nbaGo(nbaMatchs.find(x=>x.id==='r1'));
@@ -809,9 +820,10 @@ const rj=await p.evaluate(async()=>{
   return out;
 });
 chk('Un tableau des cotes du jour, une ligne par match à venir, ouvert',rj.lignes===2&&rj.ouvert===true,JSON.stringify(rj));
-chk('...les lignes d\'écart et de total pré-remplies avec celles d\'ESPN',rj.pre==='-4,5|221,5|',rj.pre);
+chk('...colonnes Match, QT1, QT2, QT3, QT4',rj.entetes==='Match|Match|QT1|QT2|QT3|QT4|',rj.entetes);
+chk('...domicile à gauche, extérieur à droite, dans le tableau comme sur la carte',rj.ordre==='PHI|MIA'&&rj.carte==='PHI',JSON.stringify([rj.ordre,rj.carte]));
 chk('...pas de GO avant l\'analyse',rj.goAvant===0,String(rj.goAvant));
-chk('« Analyser la journée » enregistre les cotes saisies, lignes comprises',rj.bouton&&rj.cotes==='2.2|1.75|-4.5|221.5'&&rj.classeur,JSON.stringify(rj));
+chk('« Analyser la journée » enregistre les cotes saisies, quarts-temps compris',rj.bouton&&rj.cotes==='1.75|2.2|1.8|2.05|'&&rj.classeur,JSON.stringify(rj));
 chk('...pas un match laissé vide',rj.vide===true);
 chk('...et marque GO le match où un pari a de la valeur, dans le tableau et sur la carte',rj.go&&rj.goTable&&rj.goCarte===1&&/GO ×1/.test(rj.resume),JSON.stringify(rj));
 chk('...le dit, et les conseils du jour le reprennent',/1 match à jouer : GO/.test(rj.toast)&&rj.conseils,rj.toast);
