@@ -125,7 +125,7 @@ const st=await p.evaluate(async()=>{
   // La saison a commencé le 20 ; « aujourd'hui », c'est le 22.
   const vrai=Date; const T=new vrai('2026-10-22T15:00:00').getTime();
   window.Date=class extends vrai{ constructor(...a){ if(!a.length)return new vrai(T); return new vrai(...a); } static now(){ return T; } };
-  nbaVueChoisir('equipes'); await new Promise(r=>setTimeout(r,100));
+  nbaEqVue='bilan'; nbaVueChoisir('equipes'); await new Promise(r=>setTimeout(r,100));
   await nbaMettreAJour(); await new Promise(r=>setTimeout(r,200));
   window.Date=vrai;
   out.jours=T_ESPN_APPELS.filter(u=>/scoreboard/.test(u)).map(u=>/dates=(\d+)/.exec(u)[1]).sort().join(',');
@@ -165,6 +165,60 @@ chk('...contre l\'écart et au-dessus du total, quand ESPN les donne',/\|1-0-1\|
 chk('...les deuxièmes soirs de suite',st.lalB2b==='1-0',st.lalB2b);
 chk('Le tableau des équipes les montre toutes',st.tableau.split(',').sort().join(',')==='BOS,GS,LAL,NY',st.tableau);
 chk('Relancer la mise à jour ne relit pas les feuilles déjà lues',st.relance===0,String(st.relance));
+
+console.log('=== 3 bis. CLASSEMENT, CROISEMENTS, BACK-TO-BACK ===');
+const cx=await p.evaluate(async()=>{
+  const out={};
+  out.confs=[nbaConf('BOS'),nbaConf('NY'),nbaConf('GS'),nbaConf('LAL'),nbaConf('GSW'),nbaConf('XXX')].join(',');
+  out.nbEst=NBA_EST.length; out.nbOuest=Object.keys(NBA_EQUIPES).filter(t=>nbaConf(t)==='Ouest').length;
+  const c=nbaClassement(nbaEquipesConnues().map(t=>({t,b:nbaBilanEquipe(nbaVuDe(t))})));
+  out.est=c.Est.map(x=>`${x.t}:${x.b.v}-${x.b.d}:${x.gb}:${nbaRec(x.conf)}`).join(' ');
+  out.ouest=c.Ouest.map(x=>`${x.t}:${x.b.v}-${x.b.d}:${x.gb}`).join(' ');
+  nbaEqVue='classement'; nbaEquipeVue=''; nbaVueChoisir('equipes'); await new Promise(r=>setTimeout(r,120));
+  out.titres=[...document.querySelectorAll('.nba-classements .ca-ind-t')].map(x=>x.textContent).join('|');
+  out.defaut=document.querySelector('.nba-act .sb-tag.active').textContent;
+  // Les croisements.
+  const lig=(f,t)=>nbaCroiseLignes({lieu:'',repos:'',adv:'',per:'',conf:'',q:'',...f}).find(x=>x.t===t);
+  const pc=r=>r&&r.v+r.n+r.d?Math.round(r.v/(r.v+r.n+r.d)*100):null;
+  out.tout=[lig({},'BOS').n,pc(lig({},'BOS').v),pc(lig({},'BOS').q1)].join('|');
+  out.dom=[lig({lieu:'dom'},'BOS').n,pc(lig({lieu:'dom'},'BOS').v)].join('|');
+  out.b2b1=[lig({repos:'b2b1'},'BOS').n,pc(lig({repos:'b2b1'},'BOS').v)].join('|');
+  out.b2b2=[lig({repos:'b2b2'},'BOS').n,pc(lig({repos:'b2b2'},'BOS').v),pc(lig({repos:'b2b2'},'LAL').v)].join('|');
+  out.est2=[lig({adv:'est'},'BOS').n,pc(lig({adv:'est'},'BOS').v)].join('|');
+  out.confEst=nbaCroiseLignes({lieu:'',repos:'',adv:'',per:'',conf:'Est',q:''}).map(x=>x.t).sort().join(',');
+  out.mt=[pc(lig({},'GS').mt1),pc(lig({},'GS').mt2)].join('|');
+  nbaVueChoisir('croise'); await new Promise(r=>setTimeout(r,150));
+  out.colonnes=[...document.querySelectorAll('#nbaXTable th')].map(x=>x.textContent.replace(/[↓↑]/g,'').trim()).join('|');
+  const rang=()=>[...document.querySelectorAll('#nbaXTable tr.nba-eq-l td:first-child b')].map(x=>x.textContent).join(',');
+  out.triV=rang();
+  const sel=k=>document.querySelector(`.nba-xfiltres select[data-x="${k}"]`);
+  sel('repos').value='b2b2'; sel('repos').dispatchEvent(new Event('change'));
+  out.filtreB2b=rang()+'/'+[...document.querySelectorAll('#nbaXTable tr.nba-eq-l')].map(r=>r.children[1].textContent).join(',');
+  sel('conf').value='Ouest'; sel('conf').dispatchEvent(new Event('change')); out.filtreConf=rang();
+  [...document.querySelectorAll('#nbaXTable th')].find(x=>/QT1/.test(x.textContent)).click(); out.triQ1=nbaX.tri;
+  [...document.querySelectorAll('.nba-xfiltres button')].find(b=>/Tout effacer/.test(b.textContent)).click(); await new Promise(r=>setTimeout(r,100));
+  out.efface=JSON.stringify([nbaX.repos,nbaX.conf]);
+  // Les back-to-back.
+  const b=nbaB2bLignes().find(x=>x.t==='BOS');
+  out.b2b=[b.n,b.v1,b.v2,b.dv,b.e1,b.e2,b.r1,b.r2,b.stars.join('+')].join('|');
+  const l=nbaB2bLignes().find(x=>x.t==='LAL'); out.b2bLal=[l.v1,l.v2].join('|');
+  out.b2bTitres=[...document.querySelectorAll('#nbaB2bTable th')].map(x=>x.textContent.replace(/[↓↑]/g,'').trim()).join('|');
+  nbaX={lieu:'',repos:'',adv:'',per:'',conf:'',q:'',tri:'v',sens:-1};
+  return out;
+});
+chk('Les conférences',cx.confs==='Est,Est,Ouest,Ouest,Ouest,'&&cx.nbEst===15&&cx.nbOuest===15,cx.confs);
+chk('Le classement : bilan, retard sur le premier, bilan dans la conférence',cx.est==='BOS:1-1:0:1-0 NY:0-2:1:0-1'&&cx.ouest==='GS:2-0:0 LAL:1-1:1',cx.est+' / '+cx.ouest);
+chk('...les deux conférences, et c\'est la vue par défaut des équipes',cx.titres==='Conférence Est|Conférence Ouest'&&cx.defaut==='Classement',JSON.stringify(cx));
+chk('Croisements : toute la saison',cx.tout==='2|50|50',cx.tout);
+chk('...à domicile seulement',cx.dom==='1|100',cx.dom);
+chk('...1er et 2e match d\'un back-to-back',cx.b2b1==='1|100'&&cx.b2b2==='1|0|100',JSON.stringify([cx.b2b1,cx.b2b2]));
+chk('...contre une conférence, et par conférence',cx.est2==='1|100'&&cx.confEst==='BOS,NY',JSON.stringify([cx.est2,cx.confEst]));
+chk('...les deux mi-temps',cx.mt==='100|50',cx.mt);
+chk('Le tableau : match, QT1 à QT4, mi-temps, ATS, over, points',cx.colonnes==='Équipe|MJ|Match|QT1|QT2|QT3|QT4|1re MT|2e MT|ATS|Over|Marqués|Encaissés|Écart|Pts QT1',cx.colonnes);
+chk('...trié par victoires, filtré, re-trié d\'un clic',cx.triV.startsWith('GS')&&/^.+\/1,1,1,1$/.test(cx.filtreB2b)&&cx.filtreConf.split(',').sort().join(',')==='GS,LAL'&&cx.triQ1==='q1',JSON.stringify(cx));
+chk('...et les filtres s\'effacent',cx.efface==='["",""]',cx.efface);
+chk('Back-to-back : 1er et 2e match comparés, et les stars au repos',cx.b2b==='1|1|0|-1|10|-2|0|0|Jayson Tatum'&&cx.b2bLal==='0|1',cx.b2b);
+chk('...en tableau triable',/B2B\|1er : V %\|2e : V %\|Écart V %/.test(cx.b2bTitres)&&/Stars au repos \(2e\)/.test(cx.b2bTitres),cx.b2bTitres);
 
 console.log('=== 4. LES JOUEURS ===');
 const jo=await p.evaluate(async()=>{
@@ -400,7 +454,7 @@ const co=await p.evaluate(async()=>{
   // Lisibles sur fond sombre : aucune trop foncée.
   const lum=h=>{ const n=parseInt(h.slice(1),16); const c=[n>>16,(n>>8)&255,n&255].map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }); return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]; };
   out.sombres=Object.entries(NBA_EQUIPES).filter(([,x])=>lum(x[1])<0.06).map(([k])=>k).join(',');
-  nbaVueChoisir('equipes'); await new Promise(r=>setTimeout(r,150));
+  nbaEqVue='bilan'; nbaVueChoisir('equipes'); await new Promise(r=>setTimeout(r,150));
   const tr=document.querySelector('.nba-eqs tr.nba-eq-l');
   out.ligne=tr&&tr.style.getPropertyValue('--eq'); out.logoTab=!!(tr&&tr.querySelector('.nba-t b'));
   nbaVueChoisir('matchs'); nbaJourVu='2026-10-20'; nbaMatchVu=''; renderNba(); await new Promise(r=>setTimeout(r,150));
