@@ -773,6 +773,50 @@ chk('Le pari sauvé porte un badge',pr.badge===true);
 chk('Le conseil compte la protection dans la probabilité d\'un vainqueur',pr.conseil.split('|')[0]>pr.conseil.split('|')[1]&&/\|true$/.test(pr.conseil),pr.conseil+' '+pr.taux);
 chk('Le réglage par saison : coché par défaut, écrit dans le classeur, relu',pr.coche===true&&pr.ligneSaison==='0'&&pr.relue===false&&pr.ancienne===true,JSON.stringify(pr));
 
+console.log('=== 8 sexies. LES COTES DU JOUR, D\'UN COUP ===');
+const rj=await p.evaluate(async()=>{
+  const out={};
+  const mk=(id,h,a,sp,to)=>({id,date:'2026-10-24',heure:'2026-10-24T23:30Z',saison:2027,type:2,dom:h,ext:a,dom_nom:'',ext_nom:'',score_dom:null,score_ext:null,
+    qt_dom:[],qt_ext:[],prolong:0,statut:'prevu',spread:sp,total:to,box:false});
+  nbaMatchs.push(mk('r1','PHI','MIA',-4.5,221.5),mk('r2','BOS','NY',null,null));
+  nbaCotes=nbaCotes.filter(c=>!/^r\d$/.test(c.id));
+  nbaVueChoisir('matchs'); nbaJourVu='2026-10-24'; nbaMatchVu=''; renderNba(); await new Promise(r=>setTimeout(r,150));
+  const ligne=id=>document.querySelector(`.nba-rap tr[data-m="${id}"]`);
+  const val=(id,k)=>ligne(id).querySelector(`[data-r="${k}"]`).value;
+  out.lignes=document.querySelectorAll('.nba-rap tr[data-m]').length;
+  out.ouvert=document.querySelector('.nba-rapide').open;
+  out.pre=[val('r1','hcLigne'),val('r1','totLigne'),val('r2','hcLigne')].join('|');
+  out.goAvant=document.querySelectorAll('.nba-match .nba-go').length;
+  const set=(id,k,v)=>{ ligne(id).querySelector(`[data-r="${k}"]`).value=v; };
+  set('r1','mlExt','2,2'); set('r1','mlDom','1,75');
+  T_TOASTS.length=0;
+  const btn=[...document.querySelectorAll('.nba-rapide button')].find(b=>/Analyser la journée/.test(b.textContent));
+  out.bouton=!!btn;
+  await nbaAnalyserJournee(); await new Promise(r=>setTimeout(r,120));
+  const c=nbaCotes.find(x=>x.id==='r1');
+  out.cotes=c&&[c.cotes.ml.ext,c.cotes.ml.dom,c.cotes.hc.ligne,c.cotes.tot.ligne].join('|');
+  out.vide=!nbaCotes.some(x=>x.id==='r2');
+  out.classeur=(T_ONGLETS.nba_cotes||[]).some(x=>x[0]==='r1');
+  out.go=!!nbaGo(nbaMatchs.find(x=>x.id==='r1'));
+  out.goCarte=[...document.querySelectorAll('.nba-match')].filter(x=>x.querySelector('.nba-go')).length;
+  out.goTable=!!ligne('r1').querySelector('.nba-go');
+  out.resume=(document.querySelector('.nba-rapide summary')||{textContent:''}).textContent.replace(/\s+/g,' ');
+  out.toast=T_TOASTS.join(' | ');
+  out.conseils=!!document.querySelector('.nba-cj-jour');
+  // Les cotes saisies reviennent, et se corrigent.
+  out.relu=val('r1','mlExt');
+  nbaMatchs=nbaMatchs.filter(m=>!/^r\d$/.test(m.id)); nbaCotes=nbaCotes.filter(c=>!/^r\d$/.test(c.id));
+  return out;
+});
+chk('Un tableau des cotes du jour, une ligne par match à venir, ouvert',rj.lignes===2&&rj.ouvert===true,JSON.stringify(rj));
+chk('...les lignes d\'écart et de total pré-remplies avec celles d\'ESPN',rj.pre==='-4,5|221,5|',rj.pre);
+chk('...pas de GO avant l\'analyse',rj.goAvant===0,String(rj.goAvant));
+chk('« Analyser la journée » enregistre les cotes saisies, lignes comprises',rj.bouton&&rj.cotes==='2.2|1.75|-4.5|221.5'&&rj.classeur,JSON.stringify(rj));
+chk('...pas un match laissé vide',rj.vide===true);
+chk('...et marque GO le match où un pari a de la valeur, dans le tableau et sur la carte',rj.go&&rj.goTable&&rj.goCarte===1&&/GO ×1/.test(rj.resume),JSON.stringify(rj));
+chk('...le dit, et les conseils du jour le reprennent',/1 match à jouer : GO/.test(rj.toast)&&rj.conseils,rj.toast);
+chk('Les cotes saisies reviennent',rj.relu==='2,2',rj.relu);
+
 console.log('=== 9. ESPN NE RÉPOND PAS ===');
 const ko=await p.evaluate(async()=>{
   window.fetch=async()=>{ throw new TypeError('Failed to fetch'); };

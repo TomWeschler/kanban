@@ -1379,6 +1379,14 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .nba-leg input[data-l="joueur"]{width:9.5rem;flex:none}
 .nba-qts td{font-family:var(--font-mono);font-size:0.7rem}
 .nba-perf td{font-size:0.72rem}
+.nba-go{display:inline-block;font-family:var(--font-mono);font-weight:800;font-size:0.66rem;letter-spacing:0.08em;padding:1px 7px;border-radius:5px;
+  background:var(--green);color:#09090e;box-shadow:0 0 0 2px color-mix(in srgb,var(--green) 35%,transparent)}
+.nba-go-l{display:block;margin-top:0.2rem;color:var(--green);font-family:inherit;font-size:0.74rem}
+.nba-rapide summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center}
+.nba-rap td{padding:0.18rem 0.2rem}
+.nba-rap .nba-ci{width:3.9rem!important}
+.nba-rap-m{white-space:nowrap;font-size:0.72rem}
+.nba-rap th small{font-weight:400;text-transform:none;letter-spacing:0}
 .nba-coche{display:flex;gap:0.5rem;align-items:flex-start;font-size:0.76rem;margin-top:0.6rem;color:var(--text-mid)}
 .nba-prot{border-color:var(--green)!important;color:var(--green)!important}
 .nba-reps-perf{grid-template-columns:repeat(auto-fit,minmax(430px,1fr))}
@@ -17557,6 +17565,72 @@ function nbaMatchChoisir(id){
   // Les blessures, pour l'avant-match : lues une fois, puis gardées une demi-heure.
   if(nbaMatchVu&&(!nbaBlesses.at||Date.now()-nbaBlesses.at>30*60e3))nbaBlessures().then(()=>{ if(nbaMatchVu===id)renderNba(); },()=>{});
 }
+// ── Les cotes du jour, d'un coup ──
+// Un tableau, une ligne par match à venir : on tape les cotes Winamax sans
+// rien déplier. Les lignes d'écart et de total sont pré-remplies avec
+// celles d'ESPN (à vérifier : Winamax peut proposer un demi-point de plus ou
+// de moins) ; les cotes déjà saisies reviennent. « Analyser la journée »
+// enregistre tout, lit les blessures, et marque « GO » les matchs où un pari
+// a de la valeur.
+const NBA_RAPIDE=[['mlExt','ml','ext'],['mlDom','ml','dom'],['hcLigne','hc','ligne'],['hcExt','hc','ext'],['hcDom','hc','dom'],
+  ['totLigne','tot','ligne'],['totPlus','tot','plus'],['totMoins','tot','moins'],['qtExt','qt1','ext'],['qtDom','qt1','dom']];
+let nbaRapideOuvert=(()=>{ try{ return localStorage.getItem('kanban_nba_rapide')!=='non'; }catch(e){ return true; } })();
+function nbaRapideBascule(d){ nbaRapideOuvert=d.open; try{ localStorage.setItem('kanban_nba_rapide',d.open?'oui':'non'); }catch(e){} }
+function nbaRapideHtml(l){
+  const a=l.filter(m=>m.statut!=='final'); if(!a.length)return '';
+  const v=x=>x==null?'':String(x).replace('.',',');
+  const inp=(m,k,val,ph)=>`<input type="text" inputmode="decimal" class="ca-q nba-ci" data-r="${k}" value="${MD_ATT(v(val))}" placeholder="${ph||'cote'}">`;
+  const nbGo=a.filter(m=>nbaGo(m)).length;
+  return `<details class="ca-ind-b nba-rapide"${nbaRapideOuvert?' open':''} ontoggle="nbaRapideBascule(this)">
+    <summary class="ca-ind-t">Cotes du jour — ${a.length} match${a.length>1?'s':''} à venir${nbGo?` · <span class="nba-go">GO</span> ×${nbGo}`:''}
+      <span class="ca-aide">lignes d'écart et de total pré-remplies avec celles d'ESPN : vérifie celles de Winamax</span></summary>
+    <div class="nba-scroll"><table class="nba-tab nba-rap"><tr><th>Match</th><th colspan="2">Vainqueur <small>ext. · dom.</small></th>
+        <th colspan="3">Handicap <small>ligne dom. · ext. · dom.</small></th><th colspan="3">Total <small>ligne · plus · moins</small></th>
+        <th colspan="2">1ᵉʳ QT <small>ext. · dom.</small></th><th></th></tr>
+      ${a.map(m=>{ const c=nbaCotesDu(m.id), ml=c.ml||{}, hc=c.hc||{}, tot=c.tot||{}, q=c.qt1||{}, g=nbaGo(m);
+        return `<tr data-m="${MD_ATT(m.id)}"><td class="nba-rap-m">${nbaLibHtml(nbaMatchLib(m))}</td>
+          <td>${inp(m,'mlExt',ml.ext,m.ext)}</td><td>${inp(m,'mlDom',ml.dom,m.dom)}</td>
+          <td>${inp(m,'hcLigne',hc.ligne!=null?hc.ligne:m.spread,'ligne')}</td><td>${inp(m,'hcExt',hc.ext)}</td><td>${inp(m,'hcDom',hc.dom)}</td>
+          <td>${inp(m,'totLigne',tot.ligne!=null?tot.ligne:m.total,'ligne')}</td><td>${inp(m,'totPlus',tot.plus)}</td><td>${inp(m,'totMoins',tot.moins)}</td>
+          <td>${inp(m,'qtExt',q.ext)}</td><td>${inp(m,'qtDom',q.dom)}</td>
+          <td>${g?`<span class="nba-go" title="${MD_ATT(g.lib)} à ${v(g.cote)} : valeur ${nbaEvTxt(g.ev)}">GO</span>`:''}</td></tr>`; }).join('')}</table></div>
+    <div class="nba-act"><button class="btn-nav" onclick="nbaAnalyserJournee()" ${nbaAnalyseEnCours?'disabled':''}>${nbaAnalyseEnCours?'Analyse…':'Analyser la journée'}</button>
+      <span class="ca-aide">enregistre les cotes, lit les blessures, et marque GO les matchs où un pari a de la valeur</span></div>
+  </details>`;
+}
+// Le meilleur pari de valeur d'un match, s'il y en a un.
+function nbaGo(m){
+  if(m.statut==='final'||!nbaCotes.some(c=>c.id===m.id))return null;
+  return nbaOptions(m,nbaSaison()).find(o=>o.valeur)||null;
+}
+let nbaAnalyseEnCours=false;
+async function nbaAnalyserJournee(){
+  if(nbaAnalyseEnCours)return;
+  nbaAnalyseEnCours=true;
+  const rows=[...document.querySelectorAll('.nba-rap tr[data-m]')], lignes=[];
+  rows.forEach(r=>{
+    const m=nbaMatchs.find(x=>x.id===r.dataset.m); if(!m)return;
+    const avant=nbaCotesDu(m.id), c={...avant,ml:{},hc:{},tot:{},qt1:{}};
+    NBA_RAPIDE.forEach(([k,mk,ch])=>{ const e=r.querySelector(`[data-r="${k}"]`); c[mk][ch]=e?nbaNum(e.value):null; });
+    c.joueurs=avant.joueurs||[];
+    // Une ligne sans aucune cote n'apprend rien : on ne l'écrit pas.
+    const vide=!['ml','hc','tot','qt1'].some(k=>Object.entries(c[k]).some(([ch,x])=>ch!=='ligne'&&x!=null))&&!c.joueurs.length;
+    if(vide)return;
+    const x={id:m.id,date:m.date,match:nbaMatchLib(m),cotes:c,updated_at:td()};
+    const i=nbaCotes.findIndex(y=>y.id===m.id); if(i>=0)nbaCotes[i]=x; else nbaCotes.push(x);
+    lignes.push(x);
+  });
+  cacheSet('nba_cotes',nbaCotes);
+  renderNba();
+  try{
+    if(lignes.length&&accessToken)await sheetBatchUpsert(NBA_T.cotes,lignes.map(nbaCotesRow));
+    try{ await nbaBlessures(); }catch(e){ toast('Blessures non lues : ESPN ne répond pas','err'); }
+    await nbaChargerJoueurs();
+  }finally{ nbaAnalyseEnCours=false; }
+  const go=nbaMatchs.filter(m=>m.date===nbaJourVu).map(m=>nbaGo(m)).filter(Boolean);
+  toast(lignes.length?(go.length?`${go.length} match${go.length>1?'s':''} à jouer : GO`:'Analyse faite : rien à jouer ce soir'):'Aucune cote saisie');
+  renderNba();
+}
 function nbaMatchsHtml(){
   const l=nbaMatchs.filter(m=>m.date===nbaJourVu).sort((a,b)=>String(a.heure).localeCompare(String(b.heure)));
   const heure=m=>{ try{ return m.heure?new Date(m.heure).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''; }catch(e){ return ''; } };
@@ -17565,6 +17639,7 @@ function nbaMatchsHtml(){
       <button class="btn-nav out" onclick="nbaJourChanger(1)">→</button>
       <button class="btn-nav out" onclick="nbaJourAller(td())">Aujourd'hui</button>
       <span class="ca-aide">date américaine · heures de Paris</span></div>
+    ${nbaRapideHtml(l)}
     ${nbaPanierHtml()}
     ${(()=>{ const cj=nbaConseilsDuJour(nbaJourVu); return cj.length?`<div class="ca-ind-b nba-cj-jour"><div class="ca-ind-t">Les conseils du jour</div>${cj.map(({m,o})=>
       `<button class="ca-ind-l" onclick="nbaMatchChoisir('${MD_ATT(m.id)}')"><span class="ca-ind-n">${nbaLibHtml(nbaMatchLib(m))} · <b>${tdEsc(o.lib)}</b> à ${String(o.cote).replace('.',',')}</span>
@@ -17574,7 +17649,7 @@ function nbaMatchsHtml(){
         <span class="nba-eq">${nbaEqHtml(m.ext,{grand:true})}<small>${tdEsc(m.ext_nom)}</small></span>
         <span class="nba-sc">${m.score_ext==null?heure(m):`${m.score_ext} – ${m.score_dom}`}${m.statut==='live'?' <em>en cours</em>':m.prolong?` <em>${m.prolong>1?m.prolong+' ':''}prol.</em>`:''}</span>
         <span class="nba-eq dom">${nbaEqHtml(m.dom,{grand:true})}<small>${tdEsc(m.dom_nom)}</small></span>
-        <span class="nba-cote">${m.spread!=null?`${nbaEqHtml(m.dom)} ${m.spread>0?'+':''}${String(m.spread).replace('.',',')}`:''}${m.total!=null?` · O/U ${String(m.total).replace('.',',')}`:''}</span></button>
+        <span class="nba-cote">${m.spread!=null?`${nbaEqHtml(m.dom)} ${m.spread>0?'+':''}${String(m.spread).replace('.',',')}`:''}${m.total!=null?` · O/U ${String(m.total).replace('.',',')}`:''}${(g=>g?`<span class="nba-go-l"><span class="nba-go">GO</span> ${tdEsc(g.lib)} à ${String(g.cote).replace('.',',')} · valeur ${nbaEvTxt(g.ev)}</span>`:'')(nbaGo(m))}</span></button>
       ${nbaMatchVu===m.id?nbaAvantMatchHtml(m):''}</div>`).join('')
       :'<div class="ca-vide">Aucun match ce jour-là — ou pas encore lu : « ↻ Mettre à jour les stats », ou change de jour.</div>'}`;
 }
@@ -22020,7 +22095,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.97.0';
+const APP_VERSION='v1.98.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
