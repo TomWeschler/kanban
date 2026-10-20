@@ -55,7 +55,8 @@ await p.evaluate(async()=>{
                 ev('g4','2026-10-21','GSW','BOS',120,118,[30,30,30,24],[28,30,30,22,8].slice(0,4),null)],
     '20261022':[ev('g5','2026-10-22','BOS','LAL',0,0,[],[],{details:'BOS -7',overUnder:230.5},'pre')]};
   window.T_ESPN_APPELS=[];
-  const ath=(id,nom,st)=>({athlete:{id,displayName:nom},starter:true,didNotPlay:!st,stats:st||[]});
+  const POS={'1':'SF','3':'PG','4':'F','5':'PG'};
+  const ath=(id,nom,st)=>({athlete:{id,displayName:nom,...(POS[id]?{position:{abbreviation:POS[id]}}:{})},starter:true,didNotPlay:!st,stats:st||[]});
   // MIN FG 3PT FT OREB DREB REB AST STL BLK TO PF +/- PTS
   const ligne=(min,pts,reb,ast,tpm)=>[String(min),'8-15',`${tpm}-6`,'4-4','1','4',String(reb),String(ast),'1','0','2','2','+5',String(pts)];
   const box=(h,a,jh,ja)=>({boxscore:{players:[
@@ -70,6 +71,8 @@ await p.evaluate(async()=>{
     u=String(u); T_ESPN_APPELS.push(u);
     let m=/scoreboard\?dates=(\d{8})/.exec(u);
     if(m)return {ok:true,status:200,json:async()=>({events:T_JOURS[m[1]]||[]})};
+    // L'effectif d'une équipe : le poste du remplaçant n'est que là.
+    if(/\/teams\/[a-z]+\/roster$/.test(u))return {ok:true,status:200,json:async()=>({athletes:/\/bos\/roster$/.test(u)?[{id:'2',displayName:'Remplaçant Absent',position:{abbreviation:'C'}}]:[]})};
     m=/summary\?event=([^&]+)/.exec(u);
     if(m)return T_BOX[m[1]]?{ok:true,status:200,json:async()=>T_BOX[m[1]]}:{ok:false,status:404,json:async()=>null};
     return {ok:false,status:404,json:async()=>null};
@@ -180,6 +183,49 @@ chk('Combien de fois il a passé une ligne',jo.passe.ok===1&&jo.passe.n===2,JSON
 chk('...une ligne combinée (pts + reb + pas)',jo.pra.ok===1,JSON.stringify(jo.pra));
 chk('La fiche du joueur donne la ligne : saison, domicile, extérieur',/Saison : 1\/2/.test(jo.fiche)&&/Domicile : 1\/1/.test(jo.fiche)&&/Extérieur : 0\/1/.test(jo.fiche),jo.fiche.slice(0,400));
 chk('...et contre son prochain adversaire',/Contre LAL : 0\/0/.test(jo.fiche),jo.fiche.slice(0,600));
+
+console.log('=== 4 bis. LES JOUEURS : POSTES, TRIS, FILTRES ===');
+const jt=await p.evaluate(async()=>{
+  const out={};
+  const l=nbaJoueursListe();
+  out.postes=l.map(x=>x.nom+':'+x.poste).sort().join(',');
+  out.effectif=nbaPostesEffectif['2'];
+  out.ligneSheet=(T_ONGLETS.nba_joueurs.find(x=>x[0]==='g1:1')||[])[25];
+  out.entete=T_ONGLETS.nba_joueurs[0].slice(-1)[0];
+  nbaJoueurVu=''; nbaJQ=''; nbaJEq=''; nbaJPoste=''; nbaJTri='pts'; nbaJSens=-1;
+  nbaVueChoisir('joueurs'); await new Promise(r=>setTimeout(r,120));
+  const noms=()=>[...document.querySelectorAll('.nba-joueurs tr.nba-eq-l td:first-child b')].map(x=>x.textContent).join(',');
+  out.colonnes=[...document.querySelectorAll('.nba-joueurs th')].map(x=>x.textContent.replace(/[↓↑]/g,'').trim()).join('|');
+  out.defaut=noms();
+  const clic=t=>[...document.querySelectorAll('.nba-joueurs th')].find(x=>x.textContent.replace(/[↓↑]/g,'').trim()===t).click();
+  clic('Joueur'); out.nomAsc=noms(); clic('Joueur'); out.nomDesc=noms();
+  clic('Reb'); out.reb=noms();
+  clic('Poste'); out.poste=noms();
+  nbaJTri='pts'; nbaJSens=-1;
+  const eq=document.getElementById('nbaJEq'); eq.value='BOS'; eq.dispatchEvent(new Event('change')); out.bos=noms(); eq.value=''; eq.dispatchEvent(new Event('change'));
+  [...document.querySelectorAll('.nba-jpostes .sb-tag')].find(b=>b.textContent==='Arrières').click(); out.arrieres=noms();
+  out.actif=(document.querySelector('.nba-jpostes .sb-tag.active')||{}).textContent;
+  [...document.querySelectorAll('.nba-jpostes .sb-tag')].find(b=>b.textContent==='Ailiers').click(); out.ailiers=noms();
+  [...document.querySelectorAll('.nba-jpostes .sb-tag')].find(b=>b.textContent==='Tous les postes').click();
+  const q=document.getElementById('nbaJQ'); q.focus(); q.value='leb'; q.dispatchEvent(new Event('input')); out.recherche=noms(); out.focus=document.activeElement===q;
+  q.value=''; q.dispatchEvent(new Event('input'));
+  nbaJoueurVoir('5'); await new Promise(r=>setTimeout(r,100));
+  out.fiche=(document.querySelector('.nba-detail .ca-ind-t')||{textContent:''}).textContent.replace(/\s+/g,' ');
+  nbaJoueurVu='';
+  return out;
+});
+chk('Le poste de chaque joueur, lu dans les feuilles de match',jt.postes==='Jalen Brunson:PG,Jayson Tatum:SF,LeBron James:F,Stephen Curry:PG',jt.postes);
+chk('...à défaut, dans l\'effectif de l\'équipe',jt.effectif==='C',String(jt.effectif));
+chk('...écrit dans le classeur, colonne « poste »',jt.ligneSheet==='SF'&&jt.entete==='poste',JSON.stringify([jt.ligneSheet,jt.entete]));
+chk('Le tableau des joueurs : poste, interceptions, contres, balles perdues, adresse',/Joueur\|Éq\.\|Poste\|MJ\|Min\|Pts\|Reb\|Pas\|3 pts\|Int\|Ctr\|BP\|% tir\|% 3 pts\|PRA\|5 der\. pts/.test(jt.colonnes),jt.colonnes);
+chk('...trié par points par défaut',jt.defaut==='Stephen Curry,LeBron James,Jayson Tatum,Jalen Brunson',jt.defaut);
+chk('...un clic trie sur la colonne, un second renverse',jt.nomAsc==='Jalen Brunson,Jayson Tatum,LeBron James,Stephen Curry'&&jt.nomDesc==='Stephen Curry,LeBron James,Jayson Tatum,Jalen Brunson',JSON.stringify([jt.nomAsc,jt.nomDesc]));
+chk('...sur les rebonds',jt.reb==='Jayson Tatum,LeBron James,Stephen Curry,Jalen Brunson',jt.reb);
+chk('...sur le poste',jt.poste.split(',')[0]==='LeBron James',jt.poste);
+chk('Filtre par équipe',jt.bos==='Jayson Tatum',jt.bos);
+chk('Filtre par poste : arrières, ailiers',jt.arrieres==='Stephen Curry,Jalen Brunson'&&jt.actif==='Arrières'&&jt.ailiers==='LeBron James,Jayson Tatum',JSON.stringify([jt.arrieres,jt.ailiers]));
+chk('Recherche par nom, sans perdre le champ',jt.recherche==='LeBron James'&&jt.focus,JSON.stringify([jt.recherche,jt.focus]));
+chk('La fiche du joueur dit son poste',/Stephen Curry GS PG · Meneur/.test(jt.fiche),jt.fiche);
 
 console.log('=== 5. L\'AVANT-MATCH ===');
 const am=await p.evaluate(async()=>{
