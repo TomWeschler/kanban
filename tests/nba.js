@@ -899,13 +899,16 @@ const rj=await p.evaluate(async()=>{
   out.carte=[...document.querySelectorAll('.nba-match')][0].querySelectorAll('.nba-match-l .nba-eq .nba-t b')[0].textContent;
   out.goAvant=document.querySelectorAll('.nba-match .nba-go').length;
   const set=(id,k,v)=>{ ligne(id).querySelector(`[data-r="${k}"]`).value=v; };
-  set('r1','mlExt','2,2'); set('r1','mlDom','1,75'); set('r1','qt1Dom','1,8'); set('r1','qt3Ext','2,05');
+  out.qtSaisie=!!ligne('r1').querySelector('[data-r^="qt"]');
+  // Des cotes saisies dans le détail du match : l'analyse de la journée ne les efface pas.
+  nbaCotes.push({id:'r1',date:'2026-10-24',match:'MIA @ PHI',cotes:{qt1:{dom:1.8,ext:2},hc:{ligne:-4.5,dom:1.9,ext:1.9}}});
+  set('r1','mlExt','2,2'); set('r1','mlDom','1,75');
   T_TOASTS.length=0;
   const btn=[...document.querySelectorAll('.nba-rapide button')].find(b=>/Analyser la journée/.test(b.textContent));
   out.bouton=!!btn;
   await nbaAnalyserJournee(); await new Promise(r=>setTimeout(r,120));
   const c=nbaCotes.find(x=>x.id==='r1');
-  out.cotes=c&&[c.cotes.ml.dom,c.cotes.ml.ext,c.cotes.qt1.dom,c.cotes.qt3.ext,c.cotes.qt4.dom].join('|');
+  out.cotes=c&&[c.cotes.ml.dom,c.cotes.ml.ext,c.cotes.qt1.dom,c.cotes.hc.ligne].join('|');
   out.vide=!nbaCotes.some(x=>x.id==='r2');
   out.classeur=(T_ONGLETS.nba_cotes||[]).some(x=>x[0]==='r1');
   out.go=!!nbaGo(nbaMatchs.find(x=>x.id==='r1'));
@@ -920,10 +923,10 @@ const rj=await p.evaluate(async()=>{
   return out;
 });
 chk('Un tableau des cotes du jour, une ligne par match à venir, ouvert',rj.lignes===2&&rj.ouvert===true,JSON.stringify(rj));
-chk('...colonnes Match, QT1, QT2, QT3, QT4',rj.entetes==='Match|Match|QT1|QT2|QT3|QT4|',rj.entetes);
+chk('...le vainqueur seulement : pas de quarts-temps, Winamax ne les propose pas avant le match',rj.entetes==='Match|Vainqueur|'&&rj.qtSaisie===false,rj.entetes);
 chk('...domicile à gauche, extérieur à droite, dans le tableau comme sur la carte',rj.ordre==='PHI|MIA'&&rj.carte==='PHI',JSON.stringify([rj.ordre,rj.carte]));
 chk('...pas de GO avant l\'analyse',rj.goAvant===0,String(rj.goAvant));
-chk('« Analyser la journée » enregistre les cotes saisies, quarts-temps compris',rj.bouton&&rj.cotes==='1.75|2.2|1.8|2.05|'&&rj.classeur,JSON.stringify(rj));
+chk('« Analyser la journée » enregistre les cotes saisies, sans effacer celles du détail du match',rj.bouton&&rj.cotes==='1.75|2.2|1.8|-4.5'&&rj.classeur,JSON.stringify(rj));
 chk('...pas un match laissé vide',rj.vide===true);
 chk('...et marque GO le match où un pari a de la valeur, dans le tableau et sur la carte',rj.go&&rj.goTable&&rj.goCarte===1&&/GO ×1/.test(rj.resume),JSON.stringify(rj));
 chk('...le dit, et les conseils du jour le reprennent',/1 match à jouer : GO/.test(rj.toast)&&rj.conseils,rj.toast);

@@ -17697,7 +17697,9 @@ function nbaMatchChoisir(id){
 // de moins) ; les cotes déjà saisies reviennent. « Analyser la journée »
 // enregistre tout, lit les blessures, et marque « GO » les matchs où un pari
 // a de la valeur.
-const NBA_RAPIDE=[['mlDom','ml','dom'],['mlExt','ml','ext'],...NBA_QT.flatMap((k,i)=>[[`qt${i+1}Dom`,k,'dom'],[`qt${i+1}Ext`,k,'ext']])];
+// Le vainqueur seulement : Winamax ne propose pas les quarts-temps avant le
+// début du match. Les autres marchés se saisissent dans le détail du match.
+const NBA_RAPIDE=[['mlDom','ml','dom'],['mlExt','ml','ext']];
 let nbaRapideOuvert=(()=>{ try{ return localStorage.getItem('kanban_nba_rapide')!=='non'; }catch(e){ return true; } })();
 function nbaRapideBascule(d){ nbaRapideOuvert=d.open; try{ localStorage.setItem('kanban_nba_rapide',d.open?'oui':'non'); }catch(e){} }
 function nbaRapideHtml(l){
@@ -17707,13 +17709,11 @@ function nbaRapideHtml(l){
   const nbGo=a.filter(m=>nbaGo(m)).length;
   return `<details class="ca-ind-b nba-rapide"${nbaRapideOuvert?' open':''} ontoggle="nbaRapideBascule(this)">
     <summary class="ca-ind-t">Cotes du jour — ${a.length} match${a.length>1?'s':''} à venir${nbGo?` · <span class="nba-go">GO</span> ×${nbGo}`:''}
-      <span class="ca-aide">domicile à gauche · handicap, total et joueurs dans le détail du match</span></summary>
-    <div class="nba-scroll"><table class="nba-tab nba-rap"><tr><th>Match <small>dom. – ext.</small></th><th colspan="2">Match <small>dom. · ext.</small></th>
-        ${NBA_QT.map((k,i)=>`<th colspan="2">QT${i+1} <small>dom. · ext.</small></th>`).join('')}<th></th></tr>
+      <span class="ca-aide">domicile à gauche · handicap, total, quarts-temps et joueurs dans le détail du match</span></summary>
+    <div class="nba-scroll"><table class="nba-tab nba-rap"><tr><th>Match <small>dom. – ext.</small></th><th colspan="2">Vainqueur <small>dom. · ext.</small></th><th></th></tr>
       ${a.map(m=>{ const c=nbaCotesDu(m.id), ml=c.ml||{}, g=nbaGo(m);
         return `<tr data-m="${MD_ATT(m.id)}"><td class="nba-rap-m">${nbaLibHtml(nbaMatchLib(m))}</td>
           <td>${inp(m,'mlDom',ml.dom,m.dom)}</td><td>${inp(m,'mlExt',ml.ext,m.ext)}</td>
-          ${NBA_QT.map((k,i)=>{ const q=c[k]||{}; return `<td>${inp(m,`qt${i+1}Dom`,q.dom,m.dom)}</td><td>${inp(m,`qt${i+1}Ext`,q.ext,m.ext)}</td>`; }).join('')}
           <td>${g?`<span class="nba-go" title="${MD_ATT(g.lib)} à ${v(g.cote)} : valeur ${nbaEvTxt(g.ev)}">GO</span>`:''}</td></tr>`; }).join('')}</table></div>
     <div class="nba-act"><button class="btn-nav" onclick="nbaAnalyserJournee()" ${nbaAnalyseEnCours?'disabled':''}>${nbaAnalyseEnCours?'Analyse…':'Analyser la journée'}</button>
       <span class="ca-aide">enregistre les cotes, lit les blessures, et marque GO les matchs où un pari a de la valeur</span></div>
@@ -17731,7 +17731,10 @@ async function nbaAnalyserJournee(){
   const rows=[...document.querySelectorAll('.nba-rap tr[data-m]')], lignes=[];
   rows.forEach(r=>{
     const m=nbaMatchs.find(x=>x.id===r.dataset.m); if(!m)return;
-    const avant=nbaCotesDu(m.id), c={...avant,ml:{}}; NBA_QT.forEach(k=>{ c[k]={}; });
+    // Seul ce que le tableau montre est remplacé : les cotes saisies dans le
+    // détail du match (handicap, total, quarts-temps, joueurs) restent.
+    const avant=nbaCotesDu(m.id), c={...avant};
+    [...new Set(NBA_RAPIDE.map(x=>x[1]))].forEach(k=>{ c[k]={...(avant[k]||{})}; });
     NBA_RAPIDE.forEach(([k,mk,ch])=>{ const e=r.querySelector(`[data-r="${k}"]`); c[mk][ch]=e?nbaNum(e.value):null; });
     c.joueurs=avant.joueurs||[];
     // Une ligne sans aucune cote n'apprend rien : on ne l'écrit pas.
@@ -22496,7 +22499,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.102.0';
+const APP_VERSION='v1.102.1';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
