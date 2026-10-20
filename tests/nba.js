@@ -148,7 +148,8 @@ const st=await p.evaluate(async()=>{
   out.relance=T_ESPN_APPELS.filter(u=>/summary/.test(u)).length-avant;
   return out;
 });
-chk('Chaque jour de la saison est lu, jusqu\'à aujourd\'hui',st.jours==='20261020,20261021,20261022',st.jours);
+chk('Chaque jour de la saison est lu, jusqu\'à aujourd\'hui',st.jours.endsWith('20260630,20261020,20261021,20261022'),st.jours.slice(-60));
+chk('...et la saison passée aussi, une fois pour toutes',st.jours.startsWith('20251020,')&&st.jours.split(',').length===254+3,String(st.jours.split(',').length));
 chk('...et la feuille de chaque match fini, pas des autres',st.feuilles===4&&st.matchs===5&&st.finis===4,JSON.stringify(st));
 chk('Un match garde score, quart-temps, écart et total des bookmakers',st.g1==='BOS|NY|110|100|30+25+30+25|-5.5|220.5|true',st.g1);
 chk('...l\'écart est vu du côté de l\'équipe à domicile',st.g2spread===2,String(st.g2spread));
@@ -485,6 +486,80 @@ chk('Tout se relit depuis le classeur',re.relu&&re.saison,JSON.stringify(re));
 chk('...les feuilles de joueurs aussi, depuis l\'appareil',re.joueurs===9,String(re.joueurs));
 chk('Un texte piégé ne s\'exécute pas',re.pwn===false&&re.inj===false,JSON.stringify(re));
 chk('Saisons et paris font partie de la sauvegarde',re.sauvegarde===true);
+
+console.log('=== 8 bis. LA SAISON PASSÉE POUR DÉMARRER ===');
+const sp=await p.evaluate(async()=>{
+  const out={};
+  // La saison passée : douze soirs de mars 2026, quatre affiches.
+  const ev=(id,date,h,a,sh,sa)=>({id,date:date+'T23:30Z',season:{year:2026,type:2},status:{type:{completed:true,state:'post'}},
+    competitions:[{competitors:[{homeAway:'home',score:String(sh),team:{abbreviation:h}},{homeAway:'away',score:String(sa),team:{abbreviation:a}}]}]});
+  const ath=(id,nom,pts)=>({athlete:{id,displayName:nom},starter:true,stats:['34','8-15','2-6','4-4','1','4','6','5','1','0','2','2','+5',String(pts)]});
+  const box=(h,a,jh,ja)=>({boxscore:{players:[{team:{abbreviation:h},statistics:[{names:['MIN','FG','3PT','FT','OREB','DREB','REB','AST','STL','BLK','TO','PF','+/-','PTS'],athletes:jh}]},
+    {team:{abbreviation:a},statistics:[{names:['MIN','FG','3PT','FT','OREB','DREB','REB','AST','STL','BLK','TO','PF','+/-','PTS'],athletes:ja}]}]}});
+  const jours=[];
+  for(let i=0;i<12;i++){
+    const d=`2026-03-${String(i+2).padStart(2,'0')}`, k=d.replace(/-/g,''); jours.push(k);
+    // PHI reçoit et gagne de 10 ; MIA perd. Une saison passée bien nette.
+    const a=i%2?['MIA','PHI',100,112]:['PHI','MIA',115,103];
+    T_JOURS[k]=[ev('p'+i,d,a[0],a[1],a[2],a[3])];
+    T_BOX['p'+i]=box(a[0],a[1],[ath(a[0]==='PHI'?'9':'8',a[0]==='PHI'?'Joel Embiid':'Bam Adebayo',a[0]==='PHI'?30:18)],[ath(a[1]==='PHI'?'9':'8',a[1]==='PHI'?'Joel Embiid':'Bam Adebayo',a[1]==='PHI'?28:16)]);
+  }
+  // Le premier match de la nouvelle saison pour ces deux-là.
+  T_JOURS['20261023']=[{id:'g6',date:'2026-10-23T23:30Z',season:{year:2027,type:2},status:{type:{completed:false,state:'pre'}},
+    competitions:[{competitors:[{homeAway:'home',score:'0',team:{abbreviation:'PHI'}},{homeAway:'away',score:'0',team:{abbreviation:'MIA'}}],odds:[]}]}];
+  let lus={}; try{ lus=JSON.parse(localStorage.getItem('kanban_nba_jours')||'{}'); }catch(e){}
+  jours.forEach(k=>delete lus[`${k.slice(0,4)}-${k.slice(4,6)}-${k.slice(6)}`]); localStorage.setItem('kanban_nba_jours',JSON.stringify(lus));
+  const vrai=Date; const T=new vrai('2026-10-23T15:00:00').getTime();
+  window.Date=class extends vrai{ constructor(...a){ if(!a.length)return new vrai(T); return new vrai(...a); } static now(){ return T; } };
+  await nbaMettreAJour();
+  window.Date=vrai;
+  out.prec=nbaJouesPrec().length; out.cur=nbaJoues().length;
+  out.tableau=nbaEquipesConnues().join(',');
+  out.feuillesPrec=nbaJoueurs.filter(j=>/^p\d+$/.test(j.match)).length;
+  const g6=nbaMatchs.find(m=>m.id==='g6');
+  const a=nbaAvantMatch(g6);
+  out.attendu=a.attendu&&[Math.round(a.attendu.dom*10)/10,Math.round(a.attendu.ext*10)/10,a.attendu.partPrec].join('|');
+  out.bilanCur=nbaRec(a.d); out.bilanPrec=nbaRec(a.prec.d);
+  const md=nbaModele(g6);
+  out.poids=md&&md.poids;
+  // Un match où la saison a déjà deux matchs : un peu de chaque.
+  const g5=nbaMatchs.find(m=>m.id==='g5');
+  out.g5part=nbaAvantMatch(g5).attendu.partPrec;
+  // Le joueur : la saison passée en attendant.
+  const mj=nbaModeleJoueur('Joel Embiid','pts',27.5,'2026-10-23');
+  out.joueur=mj&&[mj.nCur,mj.nPrec,Math.round(mj.moy),mj.okP,mj.poids].join('|');
+  // Le verdict.
+  const s=nbaSaison();
+  nbaCotes=nbaCotes.filter(c=>c.id!=='g6').concat([{id:'g6',date:g6.date,match:'MIA @ PHI',cotes:{ml:{dom:1.9,ext:1.95}}}]);
+  const o6=nbaOptions(g6,s);
+  out.verdictBon=nbaVerdictHtml(o6,md);
+  const o0=[{lib:'X gagne',cote:1.54,pStat:null,pMarche:0.61,p:0.61,ev:-0.054,valeur:false}];
+  out.verdictSans=nbaVerdictHtml(o0,null);
+  const oNeg=[{lib:'Y gagne',cote:1.9,pStat:0.5,pMarche:0.51,p:0.505,ev:-0.04,valeur:false}];
+  out.verdictNeg=nbaVerdictHtml(oNeg,{poids:0.5});
+  const oFaible=[{lib:'Z +3',cote:2,pStat:0.55,pMarche:0.5,p:0.52,ev:0.03,valeur:false}];
+  out.verdictFaible=nbaVerdictHtml(oFaible,{poids:0.5});
+  nbaVueChoisir('matchs'); nbaJourVu='2026-10-23'; nbaMatchVu=''; renderNba(); await new Promise(r=>setTimeout(r,100));
+  nbaMatchChoisir('g6'); await new Promise(r=>setTimeout(r,200));
+  out.panneau=(document.querySelector('.nba-verdict')||{textContent:''}).textContent.replace(/\s+/g,' ');
+  out.lignesPrec=!!document.querySelector('.nba-avant tr.nba-prec');
+  out.marqueurs=(document.querySelector('.nba-avant .nba-eq-b')||{textContent:''}).textContent.replace(/\s+/g,' ');
+  // Les joueurs : la saison passée tant que la nouvelle n'a rien… ici elle a déjà des feuilles.
+  return out;
+});
+chk('La saison passée est lue, sans se mêler aux tableaux de la saison',sp.prec===12&&sp.cur===4&&sp.tableau==='BOS,GS,LAL,NY',JSON.stringify(sp));
+chk('...ses feuilles de match aussi, depuis mars',sp.feuillesPrec===24,String(sp.feuillesPrec));
+chk('Premier match de la saison : le score attendu vient de la saison passée',sp.attendu==='115|103|1'&&sp.bilanCur==='0-0'&&sp.bilanPrec==='12-0',JSON.stringify(sp));
+chk('...et les statistiques pèsent un quart',sp.poids===0.25,String(sp.poids));
+chk('Des équipes sans saison passée lue : la saison en cours seule',sp.g5part===0,String(sp.g5part));
+chk('Un joueur : la saison passée en attendant ses premiers matchs',sp.joueur==='0|12|29|12|0.3',sp.joueur);
+chk('Le verdict d\'un pari de valeur : « À considérer », avec les deux probabilités et la mise',/À considérer/.test(sp.verdictBon)&&/PHI gagne/.test(sp.verdictBon)&&/mise conseillée/.test(sp.verdictBon)&&/saison passée/.test(sp.verdictBon),sp.verdictBon.replace(/<[^>]+>/g,''));
+chk('Sans statistiques : « Rien à jouer », chaque pari coûte la marge',/Rien à jouer/.test(sp.verdictSans)&&/marge \(-5 %\)/.test(sp.verdictSans),sp.verdictSans.replace(/<[^>]+>/g,''));
+chk('Statistiques d\'accord avec Winamax : « Rien à jouer »',/Rien à jouer/.test(sp.verdictNeg)&&/rejoignent Winamax/.test(sp.verdictNeg),sp.verdictNeg.replace(/<[^>]+>/g,''));
+chk('Un petit écart : « Rien de franc », sous le seuil',/Rien de franc/.test(sp.verdictFaible)&&/\+3 %/.test(sp.verdictFaible),sp.verdictFaible.replace(/<[^>]+>/g,''));
+chk('Le verdict s\'affiche au-dessus du tableau',/À considérer/.test(sp.panneau),sp.panneau);
+chk('L\'avant-match montre aussi la saison passée',sp.lignesPrec===true);
+chk('...et ses meilleurs marqueurs, en attendant ceux de la saison',/Adebayo/.test(sp.marqueurs),sp.marqueurs);
 
 console.log('=== 9. ESPN NE RÉPOND PAS ===');
 const ko=await p.evaluate(async()=>{

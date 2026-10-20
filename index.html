@@ -1331,6 +1331,9 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .nba-opts tr.nba-neg td{opacity:0.55}
 .nba-opts td small{color:var(--text-dim)}
 .nba-cj-jour{border-top:3px solid var(--green)}
+.nba-verdict{font-size:0.84rem;line-height:1.45;padding:0.55rem 0.7rem;border-radius:8px;border:1px solid var(--border2);background:var(--surface2)}
+.nba-verdict.bon{border-color:var(--green);background:color-mix(in srgb,var(--green) 10%,var(--surface2))}
+.nba-tab tr.nba-prec td{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);padding-top:0.6rem}
 .nba-cc{display:inline-flex;align-items:center;gap:0.3rem;white-space:nowrap}
 .nba-conseil .ca-aide{font-size:0.7rem}
 @media (max-width:640px){ .nba-cl>span:first-child{width:100%} .nba-cn{width:100%!important;flex:1!important} }
@@ -16477,7 +16480,7 @@ const nbaMarge=(a,b)=>a>1&&b>1?(1/a+1/b-1):null;
 // La dispersion des écarts et des totaux de la saison ; faute de matchs, les
 // valeurs habituelles de la NBA (12,5 et 19 points).
 function nbaDispersion(){
-  const l=nbaJoues(); const sd=v=>{ const m=nbaMoy(v); return Math.sqrt(nbaMoy(v.map(x=>(x-m)*(x-m)))); };
+  const l=nbaJouesTout(); const sd=v=>{ const m=nbaMoy(v); return Math.sqrt(nbaMoy(v.map(x=>(x-m)*(x-m)))); };
   if(l.length<40)return {ecart:12.5,total:19,n:l.length};
   return {ecart:Math.max(9,sd(l.map(m=>m.score_dom-m.score_ext))),total:Math.max(14,sd(l.map(m=>m.score_dom+m.score_ext))),n:l.length};
 }
@@ -16521,7 +16524,7 @@ async function nbaBlessuresActualiser(){
 // encore récemment : un absent depuis des semaines pèse déjà dans les
 // résultats de l'équipe.
 function nbaImpactAbsences(t,date){
-  const recents=nbaVuDe(t).filter(x=>x.m.date<date).slice(-10).map(x=>x.m.id);
+  const recents=nbaVuDe(t,nbaJouesTout()).filter(x=>x.m.date<date).slice(-10).map(x=>x.m.id);
   const out=[];
   nbaBlesses.l.filter(b=>b.equipe===t).forEach(b=>{
     const l=nbaJoueurs.filter(j=>(b.joueur_id?j.joueur_id===b.joueur_id:tabSansAccent(j.joueur)===tabSansAccent(b.joueur))&&j.min>0&&j.date<date);
@@ -16541,8 +16544,11 @@ function nbaModele(m){
   const fatD=a.reposDom===0?1.5:0, fatE=a.reposExt===0?1.5:0;
   const pd=a.attendu.dom-absD.pts-fatD, pe=a.attendu.ext-absE.pts-fatE;
   const disp=nbaDispersion(), n=Math.min(a.d.j,a.e.j);
-  return {a,pd,pe,ecart:pd-pe,total:pd+pe,absD,absE,fatD,fatE,sdE:disp.ecart,sdT:disp.total,n,
-    poids:Math.min(0.5,n/20)};
+  // Le poids des statistiques : avec la saison passée, un quart d'emblée (les
+  // effectifs ont pu changer), puis la moitié au fil des matchs.
+  const avecPrec=a.attendu.partPrec>0;
+  return {a,pd,pe,ecart:pd-pe,total:pd+pe,absD,absE,fatD,fatE,sdE:disp.ecart,sdT:disp.total,n,avecPrec,
+    poids:avecPrec?Math.min(0.5,0.25+n/40):Math.min(0.5,n/20)};
 }
 // Un joueur : sa moyenne (moitié saison, moitié dix derniers), sa régularité,
 // et la fréquence où il a passé la ligne.
@@ -16550,12 +16556,22 @@ function nbaModeleJoueur(nom,stat,ligne,date){
   const n=tabSansAccent(nom).toLowerCase();
   const l=nbaJoueurs.filter(j=>tabSansAccent(j.joueur).toLowerCase()===n&&j.min>0&&(!date||j.date<date)).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   if(!l.length)return null;
-  const v=l.map(j=>nbaVal(j,stat)), m10=nbaMoy(v.slice(-10)), ms=nbaMoy(v);
-  const moy=v.length>=10?(ms+m10)/2:ms;
-  const sd=Math.max(stat==='pts'||stat==='pra'||stat==='pr'||stat==='pa'?3:1.2,Math.sqrt(nbaMoy(v.map(x=>(x-ms)*(x-ms)))));
-  const ok=v.filter(x=>x>ligne).length;
-  const pNorm=1-nbaPhi((ligne-moy)/sd), pFreq=(ok+1)/(v.length+2);
-  return {n:v.length,moy,sd,ok,pPlus:(pNorm+pFreq)/2,equipe:l[l.length-1].equipe,poids:Math.min(0.5,v.length/20)};
+  // Cette saison d'abord ; la saison passée comble, le temps qu'elle compte
+  // assez de matchs (à 10 matchs, moitié-moitié).
+  const an=nbaAnneeCourante(), annee=new Map(nbaMatchs.map(m=>[m.id,nbaAnneeDe(m)]));
+  const cur=l.filter(j=>an==null||annee.get(j.match)===an), prec=l.filter(j=>an!=null&&annee.get(j.match)===an-1);
+  const vc=cur.map(j=>nbaVal(j,stat)), vp=prec.map(j=>nbaVal(j,stat)), v=vc.concat(vp);
+  const mc=vc.length>=10?(nbaMoy(vc)+nbaMoy(vc.slice(-10)))/2:nbaMoy(vc);
+  const wc=!vp.length?1:vc.length/(vc.length+10);
+  const moy=vc.length?wc*mc+(1-wc)*(vp.length?nbaMoy(vp):0):nbaMoy(vp);
+  if(moy==null)return null;
+  const mv=nbaMoy(v);
+  const sd=Math.max(stat==='pts'||stat==='pra'||stat==='pr'||stat==='pa'?3:1.2,Math.sqrt(nbaMoy(v.map(x=>(x-mv)*(x-mv)))));
+  const okC=vc.filter(x=>x>ligne).length, okP=vp.filter(x=>x>ligne).length;
+  const pFreq=vc.length>=10||!vp.length?(okC+1)/(vc.length+2):(okC+okP+1)/(v.length+2);
+  const pNorm=1-nbaPhi((ligne-moy)/sd);
+  const poids=Math.min(vc.length<5?0.3:0.5,(vc.length+0.5*vp.length)/20);
+  return {n:v.length,nCur:vc.length,nPrec:vp.length,okC,okP,moy,sd,ok:okC+okP,pPlus:(pNorm+pFreq)/2,equipe:l[l.length-1].equipe,poids};
 }
 // Ce qu'on retient, et ce que ça vaut.
 function nbaEvaluer(pStat,pMarche,poids,cote,compte){
@@ -16627,7 +16643,8 @@ function nbaOptions(m,s){
     if(b&&nbaPoidsStatut(b.statut)>=1)return;               // absent : le pari serait annulé
     const mj=nbaModeleJoueur(j.joueur,j.stat,j.ligne,m.date);
     const st=((NBA_STATS.find(x=>x[0]===j.stat)||[])[1]||j.stat).toLowerCase();
-    const base={marche:'joueur',joueur:j.joueur,stat:j.stat,ligne:j.ligne,info:mj?`${nbaF1(mj.moy)} en moyenne · ${mj.ok}/${mj.n} au-dessus`:'pas de feuille de match',
+    const base={marche:'joueur',joueur:j.joueur,stat:j.stat,ligne:j.ligne,
+      info:mj?`${nbaF1(mj.moy)} attendus · cette saison ${mj.okC}/${mj.nCur} au-dessus${mj.nPrec?` · saison passée ${mj.okP}/${mj.nPrec}`:''}`:'pas de feuille de match',
       blesse:b?nbaStatutFr(b.statut):''};
     pousser({...base,lib:`${j.joueur} : plus de ${lg(j.ligne)} ${st}`,sens:'plus'},mj?mj.pPlus:null,nbaSansMarge(j.plus,j.moins),mj?mj.poids:0,j.plus);
     pousser({...base,lib:`${j.joueur} : moins de ${lg(j.ligne)} ${st}`,sens:'moins'},mj?1-mj.pPlus:null,nbaSansMarge(j.moins,j.plus),mj?mj.poids:0,j.moins);
@@ -16635,6 +16652,26 @@ function nbaOptions(m,s){
   return out.sort((a,b)=>b.ev-a.ev);
 }
 const nbaPc=p=>p==null?'—':Math.round(p*100)+' %';
+// Le verdict, en une phrase : ce qu'il faut retenir du tableau.
+function nbaVerdictHtml(opts,md){
+  if(!opts.length)return '';
+  const lg=v=>String(v).replace('.',',');
+  const vals=opts.filter(o=>o.valeur), best=opts[0];
+  const sansStats=opts.every(o=>o.pStat==null);
+  let t, cls='';
+  if(vals.length){
+    cls=' bon';
+    t=`<b>À considérer</b> : `+vals.slice(0,3).map(o=>`<b>${tdEsc(o.lib)}</b> à ${lg(o.cote)} — les statistiques lui donnent ${nbaPc(o.pStat)}, Winamax ${nbaPc(o.pMarche)} : valeur ${nbaEvTxt(o.ev)}, mise conseillée ${nbaEur(o.mise)}`).join(' ; ')+'.';
+    if(md&&md.poids<0.35)t+=` <span class="ca-aide">Prudence : ${md.avecPrec&&md.n<5?'le modèle s\'appuie surtout sur la saison passée, et les effectifs ont pu changer':'encore peu de matchs cette saison'}.</span>`;
+  }else if(sansStats){
+    t=`<b>Rien à jouer</b> : sans statistiques, l'appli n'en sait pas plus que Winamax, et chaque pari coûte sa marge (${nbaEvTxt(best.ev)}). <span class="ca-aide">Lance « ↻ Mettre à jour les stats » : la saison passée suffit pour démarrer.</span>`;
+  }else if(best.ev>0){
+    t=`<b>Rien de franc</b> : le meilleur, <b>${tdEsc(best.lib)}</b> à ${lg(best.cote)}, n'a qu'une valeur de ${nbaEvTxt(best.ev)} — sous le seuil de ${Math.round(NBA_SEUIL_VALEUR*100)} %, l'écart peut n'être que du bruit.`;
+  }else{
+    t=`<b>Rien à jouer</b> : les statistiques rejoignent Winamax, aucune cote n'est trop généreuse. Le moins mauvais : <b>${tdEsc(best.lib)}</b> (${nbaEvTxt(best.ev)}).`;
+  }
+  return `<div class="nba-verdict${cls}">${t}</div>`;
+}
 const nbaEvTxt=ev=>`${ev>0?'+':''}${Math.round(ev*100)} %`;
 // Le panneau du conseil, dans l'avant-match.
 function nbaConseilHtml(m){
@@ -16669,11 +16706,12 @@ function nbaConseilHtml(m){
     </div>
     ${md?`<div class="nba-modele">
       <div>Score attendu, ajusté : <b>${nbaEqHtml(m.ext)} ${nbaF1(md.pe)} – ${nbaF1(md.pd)} ${nbaEqHtml(m.dom)}</b> · total ${nbaF1(md.total)}
-        <span class="ca-aide">— écart-type de la saison : ${nbaF1(md.sdE)} sur l'écart, ${nbaF1(md.sdT)} sur le total${md.n<10?` · <b>seulement ${md.n} match${md.n>1?'s':''} : prudence</b>`:''}</span></div>
+        <span class="ca-aide">— écart-type : ${nbaF1(md.sdE)} sur l'écart, ${nbaF1(md.sdT)} sur le total${md.avecPrec?` · saison passée pour ${Math.round(md.a.attendu.partPrec*100)} %`:''}${md.n<10?` · <b>${md.n} match${md.n>1?'s':''} cette saison : prudence</b>`:''} · poids des stats ${Math.round(md.poids*100)} %</span></div>
       ${md.fatD||md.fatE?`<div>Fatigue : ${md.fatE?`${nbaEqHtml(m.ext)} −1,5 (2ᵉ soir de suite) `:''}${md.fatD?`${nbaEqHtml(m.dom)} −1,5 (2ᵉ soir de suite)`:''}</div>`:''}
       <div class="nba-abs">${nbaEqHtml(m.ext)} ${abs(m.ext,md.absE)}</div>
       <div class="nba-abs">${nbaEqHtml(m.dom)} ${abs(m.dom,md.absD)}</div></div>`
-      :'<div class="ca-aide">Pas assez de matchs pour un modèle : le conseil s\'en tient aux cotes.</div>'}
+      :'<div class="ca-aide">Pas assez de matchs pour un modèle, ni cette saison ni la précédente : le conseil s\'en tient aux cotes.</div>'}
+    ${nbaVerdictHtml(opts,md)}
     ${opts.length?`<div class="nba-scroll"><table class="nba-tab nba-opts"><tr><th>Pari</th><th>Cote</th><th title="La probabilité selon Winamax, sa marge retirée">Winamax</th>
         <th title="La probabilité selon les statistiques">Stats</th><th title="Le mélange des deux, retenu pour le calcul">Retenue</th><th title="Probabilité retenue × cote − 1">Valeur</th><th>Mise</th><th></th></tr>
       ${opts.map(o=>`<tr class="${o.valeur?'nba-val':o.ev<0?'nba-neg':''}"><td><b>${tdEsc(o.lib)}</b>${o.info?`<br><small>${tdEsc(o.info)}</small>`:''}${o.blesse?` <span class="nba-bl w2">${tdEsc(o.blesse)}</span>`:''}</td>
@@ -16870,18 +16908,29 @@ async function nbaMettreAJour(){
     let lus={}; try{ lus=JSON.parse(localStorage.getItem(LS_NBA_JOURS)||'{}'); }catch(e){}
     const auj=td(), fin=s.fin&&s.fin<auj?s.fin:auj;
     const jours=[];
-    for(let d=new Date(s.debut+'T12:00:00');ymd(d)<=fin;d.setDate(d.getDate()+1)){
+    const ajouter=(de,a)=>{ for(let d=new Date(de+'T12:00:00');ymd(d)<=a;d.setDate(d.getDate()+1)){
       const k=ymd(d);
       const pasFini=nbaMatchs.some(m=>m.date===k&&m.statut!=='final');
       if(!lus[k]||pasFini||k>=ymd(new Date(Date.now()-2*864e5)))jours.push(k);
-    }
+    } };
+    // La saison passée aussi, une fois pour toutes : de quoi démarrer le
+    // modèle avant que la nouvelle compte assez de matchs.
+    const recul=x=>x?`${Number(x.slice(0,4))-1}${x.slice(4)}`:'';
+    const pDeb=recul(s.debut), pFin=recul(s.fin);
+    if(pDeb&&pFin)ajouter(pDeb,pFin<s.debut?pFin:s.debut);
+    ajouter(s.debut,fin);
     nbaMaj.total=jours.length;
     await nbaParLots(jours,async k=>{
       try{ const l=await nbaJour(k); if(l.every(m=>m.statut==='final'))lus[k]=1; }catch(e){ nbaMaj.erreurs++; }
       nbaMaj.fait++; nbaMajAfficher();
     });
     try{ localStorage.setItem(LS_NBA_JOURS,JSON.stringify(lus)); }catch(e){}
-    const aLire=nbaMatchs.filter(m=>m.statut==='final'&&!m.box&&m.type!==1);
+    // Les feuilles de match : toute la saison en cours, et la fin de la
+    // précédente (depuis mars) — la forme récente des joueurs, sans relire
+    // mille deux cents matchs.
+    const an=nbaAnneeEspn(s);
+    const aLire=nbaMatchs.filter(m=>m.statut==='final'&&!m.box&&m.type!==1&&
+      (an==null||nbaAnneeDe(m)===an||(nbaAnneeDe(m)===an-1&&m.date>=`${an-1}-03-01`)));
     nbaMaj={...nbaMaj,etape:'feuilles',fait:0,total:aLire.length}; nbaMajAfficher();
     let lot=[], lotM=[];
     const vider=async()=>{
@@ -16919,7 +16968,22 @@ function nbaMajAfficher(){
 // ── Les statistiques ──
 // Seuls comptent les matchs de saison régulière et de phase finale (le
 // tournoi qualificatif aussi) : la présaison ne dit rien.
-const nbaJoues=()=>nbaMatchs.filter(m=>m.statut==='final'&&m.score_dom!=null&&m.type!==1);
+// La saison d'un match, en année ESPN (celle où la saison finit) ; à défaut,
+// d'après sa date : un match d'octobre 2026 est de la saison 2027.
+const nbaAnneeDe=m=>m.saison!=null?m.saison:(d=>d.getMonth()>=7?d.getFullYear()+1:d.getFullYear())(new Date(m.date+'T12:00:00'));
+const nbaAnneeCourante=()=>nbaAnneeEspn(nbaSaison());
+const nbaFini=m=>m.statut==='final'&&m.score_dom!=null&&m.type!==1;
+// Les tableaux et les bilans ne montrent QUE la saison en cours ; la saison
+// passée ne sert qu'à démarrer le modèle, le temps que la nouvelle parle.
+const nbaJoues=(an=nbaAnneeCourante())=>nbaMatchs.filter(m=>nbaFini(m)&&(an==null||nbaAnneeDe(m)===an));
+const nbaJouesPrec=()=>{ const an=nbaAnneeCourante(); return an==null?[]:nbaJoues(an-1); };
+const nbaJouesTout=()=>nbaMatchs.filter(nbaFini);
+// Les feuilles de joueurs d'une saison.
+function nbaJoueursDe(an){
+  if(an==null)return nbaJoueurs;
+  const ids=new Set(nbaMatchs.filter(m=>nbaAnneeDe(m)===an).map(m=>m.id));
+  return nbaJoueurs.filter(j=>ids.has(j.match));
+}
 const nbaEquipesConnues=()=>[...new Set(nbaJoues().flatMap(m=>[m.dom,m.ext]))].sort();
 const nbaNomEquipe=t=>{ const m=nbaMatchs.find(x=>x.dom===t||x.ext===t); return m?(m.dom===t?m.dom_nom:m.ext_nom)||t:t; };
 // Les matchs d'une équipe, vus de son côté : ses points, ceux de l'adversaire.
@@ -16956,8 +17020,8 @@ function nbaBilanEquipe(l){
 }
 const nbaRec=r=>`${r.v}-${r.d}`;
 // Un joueur : ses matchs joués, du plus ancien au plus récent.
-function nbaMatchsJoueur(id){
-  return nbaJoueurs.filter(j=>j.joueur_id===id&&j.min>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+function nbaMatchsJoueur(id,an=nbaAnneeCourante()){
+  return nbaJoueursDe(an).filter(j=>j.joueur_id===id&&j.min>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
 }
 function nbaMoyJoueur(l){
   const o={j:l.length};
@@ -16971,9 +17035,9 @@ function nbaPassages(l,stat,ligne,sens='plus'){
   const ok=l.filter(j=>sens==='plus'?nbaVal(j,stat)>ligne:nbaVal(j,stat)<ligne).length;
   return {ok,n:l.length,pct:l.length?ok/l.length*100:null};
 }
-function nbaJoueursListe(){
+function nbaJoueursListe(an=nbaAnneeCourante()){
   const m=new Map();
-  nbaJoueurs.forEach(j=>{ if(!j.min)return; const x=m.get(j.joueur_id)||{id:j.joueur_id,nom:j.joueur,equipe:j.equipe,l:[],der:''};
+  nbaJoueursDe(an).forEach(j=>{ if(!j.min)return; const x=m.get(j.joueur_id)||{id:j.joueur_id,nom:j.joueur,equipe:j.equipe,l:[],der:''};
     x.l.push(j); if(j.date>=x.der){ x.der=j.date; x.equipe=j.equipe; x.nom=j.joueur; } m.set(j.joueur_id,x); });
   return [...m.values()].map(x=>({...x,moy:nbaMoyJoueur(x.l)}));
 }
@@ -16988,7 +17052,17 @@ function nbaAvantMatch(m){
   const pd=bd.pourDom!=null&&be.contreExt!=null?(bd.pourDom+be.contreExt)/2:null;
   const pe=be.pourExt!=null&&bd.contreDom!=null?(be.pourExt+bd.contreDom)/2:null;
   const h2h=d.filter(x=>x.adv===m.ext);
-  return {d:bd,e:be,reposDom:rd,reposExt:re,attendu:pd!=null&&pe!=null?{dom:pd,ext:pe,total:pd+pe,ecart:pd-pe}:null,h2h};
+  const cur=pd!=null&&pe!=null?{dom:pd,ext:pe}:null;
+  // La saison passée, pour démarrer : elle pèse d'autant moins que la
+  // nouvelle a de matchs (à 8 matchs, moitié-moitié).
+  const prec=nbaJouesPrec(), dp=nbaBilanEquipe(nbaVuDe(m.dom,prec)), ep=nbaBilanEquipe(nbaVuDe(m.ext,prec));
+  const pdp=dp.pourDom!=null&&ep.contreExt!=null?(dp.pourDom+ep.contreExt)/2:null;
+  const pep=ep.pourExt!=null&&dp.contreDom!=null?(ep.pourExt+dp.contreDom)/2:null;
+  const avant=pdp!=null&&pep!=null&&dp.j>=10&&ep.j>=10?{dom:pdp,ext:pep}:null;
+  const n=Math.min(bd.j,be.j), wc=!avant?1:!cur?0:n/(n+8);
+  const att=cur||avant?{dom:wc*(cur?cur.dom:0)+(1-wc)*(avant?avant.dom:0),ext:wc*(cur?cur.ext:0)+(1-wc)*(avant?avant.ext:0)}:null;
+  if(att){ att.total=att.dom+att.ext; att.ecart=att.dom-att.ext; att.partPrec=1-wc; }
+  return {d:bd,e:be,reposDom:rd,reposExt:re,attendu:att,h2h,prec:{d:dp,e:ep}};
 }
 
 // ── L'affichage ──
@@ -17121,8 +17195,10 @@ function nbaAvantMatchHtml(m){
   const a=nbaAvantMatch(m);
   const lig=(l,d,e,f=x=>x)=>`<tr><td>${l}</td><td>${f(e)}</td><td>${f(d)}</td></tr>`;
   const r=x=>x==null?'—':x===0?'2ᵉ soir de suite':`${x} j`;
-  const joueurs=t=>nbaJoueursListe().filter(x=>x.equipe===t).sort((p,q)=>(q.moy.pts||0)-(p.moy.pts||0)).slice(0,5);
-  const forme=x=>{ const l=nbaMatchsJoueur(x.id).filter(j=>j.date<m.date).slice(-5); return l.length?nbaF1(nbaMoy(l.map(j=>j.pts))):'—'; };
+  // En tout début de saison, les marqueurs de la saison passée, en attendant.
+  const joueurs=t=>{ let l=nbaJoueursListe().filter(x=>x.equipe===t); if(!l.length)l=nbaJoueursListe(null).filter(x=>x.equipe===t);
+    return l.sort((p,q)=>(q.moy.pts||0)-(p.moy.pts||0)).slice(0,5); };
+  const forme=x=>{ const l=nbaMatchsJoueur(x.id,null).filter(j=>j.date<m.date).slice(-5); return l.length?nbaF1(nbaMoy(l.map(j=>j.pts))):'—'; };
   return `<div class="nba-avant">
     <table class="nba-tab"><tr><th></th><th>${nbaEqHtml(m.ext)} <small>ext.</small></th><th>${nbaEqHtml(m.dom)} <small>dom.</small></th></tr>
       ${lig('Bilan',a.d,a.e,x=>`${nbaRec(x)}`)}
@@ -17136,11 +17212,17 @@ function nbaAvantMatchHtml(m){
       ${lig('2ᵉ soir de suite',a.d.b2b,a.e.b2b,x=>x.v+x.d?nbaRec(x):'—')}
       ${lig('Contre l\'écart (ATS)',a.d.ats,a.e.ats,x=>x.n?`${x.c}-${x.p}`:'—')}
       ${lig('Au-dessus du total',a.d.ou,a.e.ou,x=>x.n?`${x.o}-${x.u}`:'—')}
-      ${lig('1ʳᵉ mi-temps marquée',a.d.mi1,a.e.mi1,nbaF1)}</table>
+      ${lig('1ʳᵉ mi-temps marquée',a.d.mi1,a.e.mi1,nbaF1)}
+      ${a.prec.d.j||a.prec.e.j?`<tr class="nba-prec"><td colspan="3">Saison passée</td></tr>
+        ${lig('Bilan',a.prec.d,a.prec.e,x=>x.j?nbaRec(x):'—')}
+        ${lig('À domicile / à l\'extérieur',a.prec.d.dom,a.prec.e.ext,x=>x.v+x.d?nbaRec(x):'—')}
+        ${lig('Points marqués (dans ce rôle)',a.prec.d.pourDom,a.prec.e.pourExt,nbaF1)}
+        ${lig('Points encaissés (dans ce rôle)',a.prec.d.contreDom,a.prec.e.contreExt,nbaF1)}
+        ${lig('Écart moyen',a.prec.d.ecart,a.prec.e.ecart,x=>x==null?'—':(x>0?'+':'')+nbaF1(x))}`:''}</table>
     ${a.attendu?`<div class="nba-attendu">Score attendu : <b>${nbaEqHtml(m.ext)} ${nbaF1(a.attendu.ext)} – ${nbaF1(a.attendu.dom)} ${nbaEqHtml(m.dom)}</b>
       · total ${nbaF1(a.attendu.total)}${m.total!=null?` <small>(ligne ${String(m.total).replace('.',',')})</small>`:''}
       · écart ${a.attendu.ecart>0?nbaEqHtml(m.dom)+' +':nbaEqHtml(m.ext)+' +'}${nbaF1(Math.abs(a.attendu.ecart))}
-      <span class="ca-aide">— ce que chacune marque dans son rôle, moyenné avec ce que l'autre encaisse dans le sien</span></div>`:''}
+      <span class="ca-aide">— ce que chacune marque dans son rôle, moyenné avec ce que l'autre encaisse dans le sien${a.attendu.partPrec>0?` · saison passée pour ${Math.round(a.attendu.partPrec*100)} %`:''}</span></div>`:''}
     ${a.h2h.length?`<div class="nba-h2h">Cette saison : ${a.h2h.map(x=>`${x.dom?'':'@ '}${nbaEqHtml(x.adv)} ${x.pour}-${x.contre} ${x.v?'✓':'✗'}`).join(' · ')}</div>`:''}
     <div class="ca-ind-g">${[m.ext,m.dom].map(t=>`<div class="ca-ind-b nba-eq-b"${nbaEqStyle(t)}><div class="ca-ind-t">${nbaEqHtml(t)} — meilleurs marqueurs</div>${joueurs(t).map(x=>
       `<button class="ca-ind-l" onclick="nbaJoueurVoir('${MD_ATT(x.id)}')"><span class="ca-ind-n">${tdEsc(x.nom)}</span>
@@ -17186,21 +17268,24 @@ function nbaEquipeDetail(t,b){
 // Les joueurs : la liste, et la fiche d'un joueur avec l'outil « ligne ».
 let nbaJQ='', nbaJoueurVu='', nbaLigneStat='pts', nbaLigneVal='', nbaLigneSens='plus';
 function nbaJoueurVoir(id){ nbaJoueurVu=id; nbaVueChoisir('joueurs'); }
+// En tout début de saison, la liste montre la saison passée, et le dit.
+const nbaJoueursVus=()=>{ const l=nbaJoueursListe(); if(l.length)return {l,prec:false};
+  const an=nbaAnneeCourante(); return {l:an==null?[]:nbaJoueursListe(an-1),prec:true}; };
 function nbaJoueursHtml(){
-  const tous=nbaJoueursListe();
+  const {l:tous,prec}=nbaJoueursVus();
   if(!tous.length)return '<div class="ca-vide">Pas encore de feuilles de match : « ↻ Mettre à jour les stats ».</div>';
   const q=tabSansAccent(nbaJQ.trim()).toLowerCase();
   const l=tous.filter(x=>!q||tabSansAccent(x.nom+' '+x.equipe).toLowerCase().includes(q))
     .sort((a,b)=>(b.moy.pts||0)-(a.moy.pts||0)).slice(0,q?100:40);
   const vu=nbaJoueurVu?tous.find(x=>x.id===nbaJoueurVu):null;
-  return `${vu?nbaJoueurDetail(vu):''}
+  return `${vu?nbaJoueurDetail(vu):''}${prec?'<div class="ca-aide">La saison n\'a pas encore de feuilles de match : voici la saison passée.</div>':''}
     <input type="search" class="ca-q" id="nbaJQ" placeholder="Chercher un joueur ou une équipe…" value="${MD_ATT(nbaJQ)}"
       oninput="nbaJQ=this.value;nbaJoueursRedessiner()">
     <div id="nbaJListe">${nbaJoueursTable(l)}</div>`;
 }
 function nbaJoueursRedessiner(){
   const q=tabSansAccent(nbaJQ.trim()).toLowerCase();
-  const l=nbaJoueursListe().filter(x=>!q||tabSansAccent(x.nom+' '+x.equipe).toLowerCase().includes(q)).sort((a,b)=>(b.moy.pts||0)-(a.moy.pts||0)).slice(0,q?100:40);
+  const l=nbaJoueursVus().l.filter(x=>!q||tabSansAccent(x.nom+' '+x.equipe).toLowerCase().includes(q)).sort((a,b)=>(b.moy.pts||0)-(a.moy.pts||0)).slice(0,q?100:40);
   const el=document.getElementById('nbaJListe'); if(el)el.innerHTML=nbaJoueursTable(l);
 }
 function nbaJoueursTable(l){
@@ -17211,9 +17296,11 @@ function nbaJoueursTable(l){
       <td>${nbaF1(x.moy.pra)}</td><td>${nbaF1(nbaMoy(der.map(j=>j.pts)))}</td></tr>`; }).join('')||'<tr><td colspan="10">Aucun joueur ne correspond.</td></tr>'}</table></div>`;
 }
 function nbaJoueurDetail(x){
-  const l=nbaMatchsJoueur(x.id);
-  const t=nbaMoyJoueur(l), l5=nbaMoyJoueur(l.slice(-5)), l10=nbaMoyJoueur(l.slice(-10)), d=nbaMoyJoueur(l.filter(j=>j.dom)), e=nbaMoyJoueur(l.filter(j=>!j.dom));
-  const lig=(lib,k,f=nbaF1)=>`<tr><td>${lib}</td>${[t,l10,l5,d,e].map(o=>`<td>${f(o[k])}</td>`).join('')}</tr>`;
+  const an=nbaAnneeCourante(), lp=an==null?[]:nbaMatchsJoueur(x.id,an-1);
+  let l=nbaMatchsJoueur(x.id); if(!l.length)l=lp;
+  const t=nbaMoyJoueur(l), l5=nbaMoyJoueur(l.slice(-5)), l10=nbaMoyJoueur(l.slice(-10)), d=nbaMoyJoueur(l.filter(j=>j.dom)), e=nbaMoyJoueur(l.filter(j=>!j.dom)), p=nbaMoyJoueur(lp);
+  const cols=lp.length&&l!==lp?[t,l10,l5,d,e,p]:[t,l10,l5,d,e];
+  const lig=(lib,k,f=nbaF1)=>`<tr><td>${lib}</td>${cols.map(o=>`<td>${o.j?f(o[k]):'—'}</td>`).join('')}</tr>`;
   const pc=v=>v==null?'—':Math.round(v)+' %';
   const ligne=nbaNum(nbaLigneVal);
   const passe=(ll,lib)=>{ const r=nbaPassages(ll,nbaLigneStat,ligne,nbaLigneSens); return `<span>${lib} : <b>${r.ok}/${r.n}</b>${r.n?` (${Math.round(r.pct)} %)`:''}</span>`; };
@@ -17222,7 +17309,7 @@ function nbaJoueurDetail(x){
   const adv=proch?(proch.dom===x.equipe?proch.ext:proch.dom):'';
   return `<div class="ca-ind-b nba-detail nba-eq-b"${nbaEqStyle(x.equipe)}><div class="ca-ind-t"><span>${tdEsc(x.nom)} ${nbaEqHtml(x.equipe)}</span>
       <button class="btn-nav out" onclick="nbaJoueurVu='';renderNba()">✕</button></div>
-    <div class="nba-scroll"><table class="nba-tab"><tr><th></th><th>Saison</th><th>10 der.</th><th>5 der.</th><th>Dom.</th><th>Ext.</th></tr>
+    <div class="nba-scroll"><table class="nba-tab"><tr><th></th><th>${l===lp?'Saison passée':'Saison'}</th><th>10 der.</th><th>5 der.</th><th>Dom.</th><th>Ext.</th>${cols.length>5?'<th>Saison passée</th>':''}</tr>
       ${lig('Matchs','j',v=>v)}${lig('Minutes','min')}${lig('Points','pts')}${lig('Rebonds','reb')}${lig('Passes','ast')}${lig('Paniers à 3 pts','tpm')}
       ${lig('Pts + reb + pas','pra')}${lig('Balles perdues','tov')}${lig('Adresse','fg',pc)}${lig('À 3 pts','tp',pc)}</table></div>
     <div class="nba-ligne">
@@ -21503,7 +21590,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.93.0';
+const APP_VERSION='v1.94.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
