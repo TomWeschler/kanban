@@ -104,10 +104,10 @@ const sa=await p.evaluate(async()=>{
   nbaSaisonOuvrir(nbaSaison().id); document.getElementById('nbaSaisonMise').value='250,5'; await nbaSaisonEnregistrer();
   await new Promise(r=>setTimeout(r,100));
   out.mise=nbaSaison().mise_depart; out.une=nbaSaisons.length;
-  out.bankroll=[...document.querySelectorAll('.jp-kpi')].find(k=>/Bankroll/.test(k.textContent)).querySelector('.jp-kpi-v').textContent;
+  out.bankroll=[...document.querySelectorAll('.jp-kpi')].find(k=>/Compte Winamax/.test(k.textContent)).querySelector('.jp-kpi-v').textContent;
   return out;
 });
-chk('Les quatre onglets naissent dans le classeur, avec leur en-tête',sa.onglets==='nba_joueurs,nba_matchs,nba_paris,nba_saisons'&&/^id,saison,date,match_id/.test(sa.entetes||''),JSON.stringify(sa));
+chk('Les cinq onglets naissent dans le classeur, avec leur en-tête',sa.onglets==='nba_joueurs,nba_matchs,nba_paris,nba_poker,nba_saisons'&&/^id,saison,date,match_id/.test(sa.entetes||''),JSON.stringify(sa));
 chk('Sans saison, on invite à en créer une',sa.vide===true);
 chk('La mise de départ est de 200 € par défaut',sa.miseDefaut==='200',sa.miseDefaut);
 chk('...le nom proposé suit le calendrier NBA',/^20\d\d-\d\d$/.test(sa.nomDefaut),sa.nomDefaut);
@@ -154,11 +154,11 @@ chk('Un match garde score, quart-temps, écart et total des bookmakers',st.g1===
 chk('...l\'écart est vu du côté de l\'équipe à domicile',st.g2spread===2,String(st.g2spread));
 chk('Tout est écrit dans le classeur',st.lignesMatchs>=5&&st.lignesJoueurs===9,JSON.stringify([st.lignesMatchs,st.lignesJoueurs]));
 chk('Un joueur qui n\'a pas joué compte zéro minute',st.absent&&st.absent.min===0,JSON.stringify(st.absent));
-chk('La feuille d\'un joueur : domicile, adversaire, points, rebonds, 3 pts, adresse',st.tatum.join(' ')==='g1:true:NY:30:8:3:8:15 g4:false:GSW:24:10:2:8:15',st.tatum.join(' '));
+chk('La feuille d\'un joueur : domicile, adversaire, points, rebonds, 3 pts, adresse',st.tatum.join(' ')==='g1:true:NY:30:8:3:8:15 g4:false:GS:24:10:2:8:15',st.tatum.join(' '));
 chk('Le bilan d\'une équipe : V-D, domicile, extérieur, moyennes, série',st.bos.startsWith('1|1|1-0|0-1|114|110|D1'),st.bos);
 chk('...contre l\'écart et au-dessus du total, quand ESPN les donne',/\|1-0-1\|0-1\|29$/.test(st.bos),st.bos);
 chk('...les deuxièmes soirs de suite',st.lalB2b==='1-0',st.lalB2b);
-chk('Le tableau des équipes les montre toutes',st.tableau.split(',').sort().join(',')==='BOS,GSW,LAL,NY',st.tableau);
+chk('Le tableau des équipes les montre toutes',st.tableau.split(',').sort().join(',')==='BOS,GS,LAL,NY',st.tableau);
 chk('Relancer la mise à jour ne relit pas les feuilles déjà lues',st.relance===0,String(st.relance));
 
 console.log('=== 4. LES JOUEURS ===');
@@ -252,8 +252,8 @@ const pa=await p.evaluate(async()=>{
   await T_ANNUL[T_ANNUL.length-1].fn(); out.restaure=nbaParis.length;
   return out;
 });
-chk('Le formulaire propose les matchs du jour choisi',/NY @ BOS/.test(pa.choix)&&/GSW @ LAL/.test(pa.choix),pa.choix);
-chk('...et les deux équipes du match',pa.equipes.split(',').sort().join(',')==='BOS,GSW,LAL,NY'||pa.equipes.split(',').sort().join(',')==='BOS,NY',pa.equipes);
+chk('Le formulaire propose les matchs du jour choisi',/NY @ BOS/.test(pa.choix)&&/GS @ LAL/.test(pa.choix),pa.choix);
+chk('...et les deux équipes du match',['BOS,NY','BOS,GS,LAL,NY'].includes(pa.equipes.split(',').sort().join(',')),pa.equipes);
 chk('Six paris enregistrés, la sélection écrite d\'elle-même',pa.n===6&&/BOS -10/.test(pa.selections)&&/Moins de 220,5/.test(pa.selections)&&/Stephen Curry \+4,5 paniers à 3 pts/.test(pa.selections),pa.selections);
 chk('...dans le classeur',pa.lignes===6,String(pa.lignes));
 chk('...avec le match en clair',pa.matchLib==='NY @ BOS',pa.matchLib);
@@ -262,7 +262,7 @@ chk('Cinq paris se règlent avec les résultats',pa.aRegler===5&&pa.bouton,JSON.
 chk('...vainqueur gagné ; handicap −10 remboursé (victoire de 10) ; moins de 220,5 gagné (217) ; Curry +4,5 à 3 pts gagné (5) ; joueur absent remboursé',
     pa.statuts==='gagne,rembourse,gagne,gagne,rembourse,perdu',pa.statuts);
 chk('Le bilan : 6 réglés, 3 gagnés, 1 perdu, 2 remboursés, 54 € misés, +21,00 €, ROI 39 %',pa.bilan==='6|3|1|2|54|21|39',pa.bilan);
-chk('Les indicateurs du défi : bankroll, profit, ROI, réussite',/Bankroll/.test(pa.kpis)&&/ROI/.test(pa.kpis)&&/Réussite/.test(pa.kpis),pa.kpis);
+chk('Les indicateurs du défi : bankroll, profit, ROI, réussite',/Compte Winamax/.test(pa.kpis)&&/ROI/.test(pa.kpis)&&/Réussite/.test(pa.kpis),pa.kpis);
 chk('...la courbe de la bankroll',pa.courbe===true);
 chk('...le détail par marché',/Vainqueur/.test(pa.parMarche)&&/Combiné/.test(pa.parMarche),pa.parMarche);
 chk('Un clic sur le statut le fait tourner, et s\'annule',pa.tourne==='perdu'&&pa.annule==='gagne',JSON.stringify([pa.tourne,pa.annule]));
@@ -283,6 +283,79 @@ chk('Le total de 217 points sous la ligne de 220,5 : le « moins » est gagné',
 chk('La courbe part de la mise de départ',ch.courbe.startsWith('250.5,'),ch.courbe);
 chk('Les tranches de cote',ch.tranche==='< 1,50|1,50 – 1,99|2,00 – 2,99|≥ 3,00',ch.tranche);
 
+console.log('=== 7 bis. LE POKER ===');
+const pk=await p.evaluate(async()=>{
+  const out={};
+  const s=nbaSaison();
+  const compte=()=>([...document.querySelectorAll('.jp-kpi')].find(k=>/Compte Winamax/.test(k.textContent))||{textContent:''}).textContent.replace(/\s+/g,' ');
+  nbaVueChoisir('defi'); await new Promise(r=>setTimeout(r,100));
+  out.avant=compte();
+  out.bouton=!!document.querySelector('.nba-act button[onclick="nbaPokerOuvrir(null)"]');
+  const bilanAvant=JSON.stringify(nbaBilan(nbaParisSaison(s)));
+  nbaPokerOuvrir(null); await new Promise(r=>setTimeout(r,50));
+  out.dateDefaut=document.getElementById('nbaPkDate').value===td();
+  document.getElementById('nbaPkDate').value='2026-10-21';
+  document.getElementById('nbaPkMontant').value='12,5'; document.getElementById('nbaPkNotes').value='Expresso';
+  await nbaPokerEnregistrer(); await new Promise(r=>setTimeout(r,100));
+  out.apres=compte();
+  out.kpiPoker=([...document.querySelectorAll('.jp-kpi')].find(k=>/Gains poker/.test(k.textContent))||{textContent:''}).textContent.replace(/\s+/g,' ');
+  out.ligne=(T_ONGLETS.nba_poker||[]).slice(1).map(x=>x.slice(1,5).join('|'));
+  out.liste=!!document.querySelector('.nba-pari.st-poker');
+  out.bilanInchange=JSON.stringify(nbaBilan(nbaParisSaison(s)))===bilanAvant;
+  out.courbe=nbaCourbe(s).map(x=>x.b).pop();
+  // Un montant vide est refusé.
+  T_TOASTS.length=0; nbaPokerOuvrir(null); document.getElementById('nbaPkMontant').value=''; await nbaPokerEnregistrer();
+  out.refus=T_TOASTS.join('|'); modalFerme('nbaPokerModal');
+  // Modifier, supprimer, annuler.
+  const id=nbaPoker[0].id; nbaPokerOuvrir(id); document.getElementById('nbaPkMontant').value='20'; await nbaPokerEnregistrer();
+  out.modifie=nbaPokerTotal(s);
+  nbaPokerOuvrir(id); await nbaPokerSupprimer(); out.supprime=nbaPokerTotal(s);
+  await T_ANNUL[T_ANNUL.length-1].fn(); out.restaure=nbaPokerTotal(s);
+  // Relu depuis le classeur.
+  nbaPoker=[]; await nbaCharger(); out.relu=nbaPokerTotal(s);
+  out.sauvegarde=BK_TABLES.some(t=>t[0]==='nbaPoker');
+  return out;
+});
+chk('Un bouton « + Gain poker » à côté de « + Pari »',pk.bouton===true);
+chk('Le gain poker s\'ajoute au compte Winamax',/271,50/.test(pk.avant)&&/284,00/.test(pk.apres),JSON.stringify([pk.avant,pk.apres]));
+chk('...il a son propre total',/\+12,50/.test(pk.kpiPoker),pk.kpiPoker);
+chk('...il est écrit dans son onglet du classeur',/2026-10-21\|12\.5\|Expresso$/.test(pk.ligne[0]||''),JSON.stringify(pk.ligne));
+chk('...il paraît dans l\'historique du jour, et dans la courbe',pk.liste&&pk.courbe===284,JSON.stringify([pk.liste,pk.courbe]));
+chk('...sans toucher aux chiffres des paris (ROI, réussite)',pk.bilanInchange===true);
+chk('Un gain sans montant est refusé',/montant/i.test(pk.refus),pk.refus);
+chk('Modifier, supprimer, annuler',pk.modifie===20&&pk.supprime===0&&pk.restaure===20,JSON.stringify(pk));
+chk('Relu depuis le classeur, et dans la sauvegarde',pk.relu===20&&pk.sauvegarde===true,JSON.stringify(pk));
+
+console.log('=== 7 ter. LES COULEURS DES ÉQUIPES ===');
+const co=await p.evaluate(async()=>{
+  const out={};
+  out.trente=Object.keys(NBA_EQUIPES).length;
+  out.alias=[nbaAbbr('GSW'),nbaAbbr('nyk'),nbaAbbr('SAS'),nbaAbbr('UTA'),nbaAbbr('BOS')].join(',');
+  out.logo=nbaLogo('GSW');
+  out.couleurs=new Set(Object.values(NBA_EQUIPES).map(x=>x[1])).size;
+  // Lisibles sur fond sombre : aucune trop foncée.
+  const lum=h=>{ const n=parseInt(h.slice(1),16); const c=[n>>16,(n>>8)&255,n&255].map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }); return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]; };
+  out.sombres=Object.entries(NBA_EQUIPES).filter(([,x])=>lum(x[1])<0.06).map(([k])=>k).join(',');
+  nbaVueChoisir('equipes'); await new Promise(r=>setTimeout(r,150));
+  const tr=document.querySelector('.nba-eqs tr.nba-eq-l');
+  out.ligne=tr&&tr.style.getPropertyValue('--eq'); out.logoTab=!!(tr&&tr.querySelector('img.nba-logo'));
+  nbaVueChoisir('matchs'); nbaJourVu='2026-10-20'; nbaMatchVu=''; renderNba(); await new Promise(r=>setTimeout(r,150));
+  const m=document.querySelector('.nba-match');
+  out.match=m&&[m.style.getPropertyValue('--c1'),m.style.getPropertyValue('--c2')].join(',');
+  out.logosMatch=m?m.querySelectorAll('img.nba-logo').length:0;
+  nbaVueChoisir('defi'); await new Promise(r=>setTimeout(r,150));
+  out.pari=[...document.querySelectorAll('.nba-pari-m .nba-t')].length>0;
+  out.parEquipe=!!([...document.querySelectorAll('.nba-reps .ca-ind-b')].find(x=>/Par équipe/.test(x.textContent))||{querySelector:()=>null}).querySelector('.nba-t');
+  return out;
+});
+chk('Les trente équipes ont leur couleur',co.trente===30&&co.couleurs>=24,JSON.stringify(co));
+chk('...aucune trop sombre pour un fond sombre',co.sombres==='',co.sombres);
+chk('Les sigles de Winamax ou de NBA.com renvoient à ceux d\'ESPN',co.alias==='GS,NY,SA,UTAH,BOS',co.alias);
+chk('Le logo vient d\'ESPN',co.logo==='https://a.espncdn.com/i/teamlogos/nba/500/gs.png',co.logo);
+chk('Le tableau des équipes : logo et liseré à la couleur de l\'équipe',!!co.ligne&&co.logoTab,JSON.stringify(co));
+chk('Un match : les deux couleurs, les deux logos',co.match==='#F58426,#1E9E5A'&&co.logosMatch===2,co.match+' '+co.logosMatch);
+chk('...et les paris, et le détail par équipe, en couleurs',co.pari&&co.parEquipe,JSON.stringify(co));
+
 console.log('=== 8. RELIRE, SÛRETÉ, SAUVEGARDE ===');
 const re=await p.evaluate(async()=>{
   const out={};
@@ -297,7 +370,7 @@ const re=await p.evaluate(async()=>{
   await nbaPariSauver([{id:'piege',saison:s.id,date:'2026-10-21',match:'<img src=x onerror="window.PWN=1">',marche:'autre',
     selection:'<b>gras</b>',cote:2,mise:1,statut:'attente',created_at:td()}]);
   nbaVueChoisir('defi'); await new Promise(r=>setTimeout(r,150));
-  out.pwn=!!window.PWN; out.inj=!!document.querySelector('.nba-pari b, .nba-pari img');
+  out.pwn=!!window.PWN; out.inj=[...document.querySelectorAll('.nba-pari b')].some(x=>x.textContent==='gras')||!!document.querySelector('.nba-pari img[src="x"]');
   out.sauvegarde=BK_TABLES.some(t=>t[0]==='nbaParis')&&BK_TABLES.some(t=>t[0]==='nbaSaisons');
   return out;
 });
