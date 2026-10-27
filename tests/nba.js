@@ -927,6 +927,11 @@ const rj=await p.evaluate(async()=>{
   out.resume=(document.querySelector('.nba-rapide summary')||{textContent:''}).textContent.replace(/\s+/g,' ');
   out.toast=T_TOASTS.join(' | ');
   out.conseils=!!document.querySelector('.nba-cj-jour');
+  // Sur la carte, sans la déplier : la comparaison des cotes.
+  const carte=[...document.querySelectorAll('.nba-match')].find(x=>/PHI/.test(x.querySelector('.nba-match-l').textContent));
+  out.compa=carte&&[...carte.querySelectorAll('.nba-compa tr')].slice(1).map(r=>r.children[0].textContent.trim()).join(',');
+  out.compaCols=carte&&[...carte.querySelectorAll('.nba-compa th')].map(x=>x.textContent).join('|');
+  out.compaFermee=!carte.querySelector('.nba-avant');
   // Les cotes saisies reviennent, et se corrigent.
   out.relu=val('r1','mlExt');
   nbaMatchs=nbaMatchs.filter(m=>!/^r\d$/.test(m.id)); nbaCotes=nbaCotes.filter(c=>!/^r\d$/.test(c.id));
@@ -941,6 +946,18 @@ chk('...pas un match laissé vide',rj.vide===true);
 chk('...et marque GO le match où un pari a de la valeur, dans le tableau et sur la carte',rj.go&&rj.goTable&&rj.goCarte===1&&/GO ×1/.test(rj.resume),JSON.stringify(rj));
 chk('...le dit, et les conseils du jour le reprennent',/1 match à jouer : GO/.test(rj.toast)&&rj.conseils,rj.toast);
 chk('Les cotes saisies reviennent',rj.relu==='2,2',rj.relu);
+chk('La comparaison des cotes se lit sur la carte, sans la déplier',rj.compaFermee&&/PHI gagne/.test(rj.compa)&&/MIA gagne/.test(rj.compa)&&/GO/.test(rj.compa)&&rj.compaCols==='Pari|Cote|Winamax|Stats|Retenue|Valeur|Mise',JSON.stringify(rj));
+
+console.log('=== 8 sexies bis. LES SITUATIONS SUR LA CARTE ===');
+const sc=await p.evaluate(async()=>{
+  nbaVueChoisir('matchs'); nbaJourVu='2026-10-22'; nbaMatchVu=''; renderNba(); await new Promise(r=>setTimeout(r,150));
+  const c=[...document.querySelectorAll('.nba-match')].find(x=>/BOS/.test(x.querySelector('.nba-match-l').textContent));
+  const eq=[...c.querySelectorAll('.nba-match-l .nba-eq')];
+  return {dom:[...eq[0].querySelectorAll('.nba-sit-c .nba-bl')].map(x=>x.textContent).join(','),ext:[...eq[1].querySelectorAll('.nba-sit-c .nba-bl')].map(x=>x.textContent).join(','),
+    titre:(eq[0].querySelector('.nba-sit-c .nba-bl')||{}).title,fermee:!c.querySelector('.nba-avant')};
+});
+chk('Les situations de chaque équipe sur la carte du match, sans la déplier',sc.fermee&&/B2B 2e soir/.test(sc.dom)&&/3 en 4 soirs/.test(sc.dom)&&/B2B 2e soir/.test(sc.ext),JSON.stringify(sc));
+chk('...le détail au survol',/2e soir d'un back-to-back/.test(sc.titre||''),sc.titre);
 
 console.log('=== 8 septies. NOTES D\'ÉQUIPE, SITUATIONS, TEST DU MODÈLE, CALIBRATION ===');
 const nt=await p.evaluate(async()=>{

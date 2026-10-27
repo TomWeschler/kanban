@@ -1404,9 +1404,16 @@ td.nba-peu{opacity:0.5}
 .nba-poste{color:var(--text-dim);font-size:0.7rem}
 .nba-go{display:inline-block;font-family:var(--font-mono);font-weight:800;font-size:0.66rem;letter-spacing:0.08em;padding:1px 7px;border-radius:5px;
   background:var(--green);color:#09090e;box-shadow:0 0 0 2px color-mix(in srgb,var(--green) 35%,transparent)}
+.nba-sit-c{display:flex;flex-wrap:wrap;gap:0.2rem;margin-top:0.2rem}
+.nba-eq.ext .nba-sit-c{justify-content:flex-end}
+.nba-sit-c .nba-bl{font-size:0.58rem;font-weight:400;padding:0 6px}
+.nba-compa{padding:0 0.8rem 0.5rem;cursor:pointer}
+.nba-compa .nba-tab td,.nba-compa .nba-tab th{padding:0.16rem 0.3rem;font-size:0.7rem}
 .nba-go-l{display:block;margin-top:0.2rem;color:var(--green);font-family:inherit;font-size:0.74rem}
 .nba-rapide summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center}
 .nba-rap td{padding:0.18rem 0.2rem}
+.nba-rap{width:auto}
+.nba-rap td,.nba-rap th{padding-right:1rem}
 .nba-rap .nba-ci{width:3.9rem!important}
 .nba-rap-m{white-space:nowrap;font-size:0.72rem}
 .nba-rap th small{font-weight:400;text-transform:none;letter-spacing:0}
@@ -17732,6 +17739,27 @@ function nbaRapideHtml(l){
   </details>`;
 }
 // Le meilleur pari de valeur d'un match, s'il y en a un.
+// Sur la carte d'un match, sans la déplier : les situations de chaque équipe
+// (en étiquettes courtes, le détail au survol) et la comparaison des cotes.
+const NBA_SIT_COURT={b2b2:'B2B 2e soir',b2b1:'B2B 1er soir',t3en4:'3 en 4 soirs',roadlong:'Série dehors',retour:'Retour dom.',voyage:'Long voyage',altitude:'Altitude',apresProl:'Après prol.'};
+function nbaSitCarte(t,m){
+  if(m.statut==='final')return '';
+  const x=nbaSituationsAvant(t,m);
+  const l=NBA_SITUATIONS.filter(([k])=>x&&x[k]);
+  return l.length?`<span class="nba-sit-c">${l.map(([k,lib])=>`<span class="nba-bl w2" title="${MD_ATT(lib+(k==='roadlong'?` (${x.serieExt}e de suite)`:''))}">${tdEsc(NBA_SIT_COURT[k]||lib)}${k==='roadlong'?' '+x.serieExt:''}</span>`).join('')}</span>`:'';
+}
+function nbaCompaCarte(m){
+  if(m.statut==='final'||!nbaCotes.some(c=>c.id===m.id))return '';
+  const o=nbaOptions(m,nbaSaison()); if(!o.length)return '';
+  // Le vainqueur des deux côtés, puis les meilleures valeurs des autres marchés.
+  const ml=o.filter(x=>x.marche==='vainqueur'), autres=o.filter(x=>x.marche!=='vainqueur').slice(0,3);
+  const l=ml.concat(autres), v=x=>String(x).replace('.',',');
+  return `<div class="nba-compa" onclick="nbaMatchChoisir('${MD_ATT(m.id)}')"><table class="nba-tab nba-opts"><tr><th>Pari</th><th>Cote</th><th title="La probabilité selon Winamax, sa marge retirée">Winamax</th>
+      <th title="La probabilité selon les statistiques">Stats</th><th title="Le mélange des deux, retenu pour le calcul">Retenue</th><th title="Probabilité retenue × cote − 1">Valeur</th><th>Mise</th></tr>
+    ${l.map(x=>`<tr class="${x.valeur?'nba-val':x.ev<0?'nba-neg':''}"><td>${x.valeur?'<span class="nba-go">GO</span> ':''}<b>${tdEsc(x.lib)}</b></td><td>${v(x.cote)}</td><td>${nbaPc(x.pMarche)}</td><td>${nbaPc(x.pStat)}</td><td>${nbaPc(x.p)}</td>
+      <td class="${nbaCls(x.ev)}">${nbaEvTxt(x.ev)}</td><td>${x.mise?nbaEur(x.mise):'—'}</td></tr>`).join('')}</table>
+    ${o.length>l.length?`<div class="ca-aide">${o.length-l.length} autre${o.length-l.length>1?'s':''} issue${o.length-l.length>1?'s':''} dans le détail du match</div>`:''}</div>`;
+}
 function nbaGo(m){
   if(m.statut==='final'||!nbaCotes.some(c=>c.id===m.id))return null;
   return nbaOptions(m,nbaSaison()).find(o=>o.valeur)||null;
@@ -17782,11 +17810,11 @@ function nbaMatchsHtml(){
         <span class="ca-ind-v ca-gain">${nbaEvTxt(o.ev)} <small>mise ${nbaEur(o.mise)}</small></span></button>`).join('')}</div>`:''; })()}
     ${l.length?l.map(m=>`<div class="nba-match${nbaMatchVu===m.id?' ouvert':''}" style="--c1:${nbaCouleur(m.dom)||'transparent'};--c2:${nbaCouleur(m.ext)||'transparent'}">
       <button class="nba-match-l" onclick="nbaMatchChoisir('${MD_ATT(m.id)}')">
-        <span class="nba-eq">${nbaEqHtml(m.dom,{grand:true})}<small>${tdEsc(m.dom_nom)} · domicile</small></span>
+        <span class="nba-eq">${nbaEqHtml(m.dom,{grand:true})}<small>${tdEsc(m.dom_nom)} · domicile</small>${nbaSitCarte(m.dom,m)}</span>
         <span class="nba-sc">${m.score_dom==null?heure(m):`${m.score_dom} – ${m.score_ext}`}${m.statut==='live'?' <em>en cours</em>':m.prolong?` <em>${m.prolong>1?m.prolong+' ':''}prol.</em>`:''}</span>
-        <span class="nba-eq ext">${nbaEqHtml(m.ext,{grand:true})}<small>extérieur · ${tdEsc(m.ext_nom)}</small></span>
+        <span class="nba-eq ext">${nbaEqHtml(m.ext,{grand:true})}<small>extérieur · ${tdEsc(m.ext_nom)}</small>${nbaSitCarte(m.ext,m)}</span>
         <span class="nba-cote">${m.spread!=null?`${nbaEqHtml(m.dom)} ${m.spread>0?'+':''}${String(m.spread).replace('.',',')}`:''}${m.total!=null?` · O/U ${String(m.total).replace('.',',')}`:''}${(g=>g?`<span class="nba-go-l"><span class="nba-go">GO</span> ${tdEsc(g.lib)} à ${String(g.cote).replace('.',',')} · valeur ${nbaEvTxt(g.ev)}</span>`:'')(nbaGo(m))}</span></button>
-      ${nbaMatchVu===m.id?nbaAvantMatchHtml(m):''}</div>`).join('')
+      ${nbaMatchVu===m.id?nbaAvantMatchHtml(m):nbaCompaCarte(m)}</div>`).join('')
       :'<div class="ca-vide">Aucun match ce jour-là — ou pas encore lu : « ↻ Mettre à jour les stats », ou change de jour.</div>'}`;
 }
 // L'avant-match, en trois colonnes : les deux équipes face à face ; le score
@@ -22527,7 +22555,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.103.0';
+const APP_VERSION='v1.104.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
