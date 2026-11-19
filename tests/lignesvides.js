@@ -11,7 +11,7 @@
 // Playwright n'est pas une dépendance du projet : il s'installe à la demande
 // (voir tests/LISEZMOI.md). Le navigateur est celui de l'environnement.
 const {chromium}=require('playwright');
-const NAVIGATEUR=process.env.PW_CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const NAVIGATEUR=process.env.PW_CHROME||['/opt/pw-browsers/chromium','/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find(x=>require('fs').existsSync(x));
 const R=[];const chk=(n,ok,d='')=>R.push([n,ok,d]);
 
 (async()=>{

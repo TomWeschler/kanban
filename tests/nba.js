@@ -3,7 +3,7 @@
 // pas. Les réponses d'ESPN suivent le format documenté de son API publique
 // (scoreboard, summary) ; ce qu'on éprouve, c'est ce qu'on en tire.
 const {chromium}=require('playwright');
-const NAVIGATEUR=process.env.PW_CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const NAVIGATEUR=process.env.PW_CHROME||['/opt/pw-browsers/chromium','/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find(x=>require('fs').existsSync(x));
 const R=[];const chk=(n,ok,d='')=>R.push([n,ok,d]);
 
 (async()=>{
