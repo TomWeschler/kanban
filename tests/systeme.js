@@ -194,6 +194,67 @@ chk('Le rang F à partir du niveau 5',rl.rangF.split('|')[1]==='F'&&Number(rl.ra
 chk('Le Système fait partie de la sauvegarde',rl.sauvegarde===true);
 chk('Un titre piégé ne s\'exécute pas',rl.pwn===false&&rl.inj===false,JSON.stringify(rl));
 
+console.log('=== 7. LES PALIERS ===');
+const pal=await p.evaluate(async()=>{
+  const out={};
+  habits[0].title='Pompes';
+  sportPlans=[];
+  const m=sysMaxJour(); out.max=[Math.round(m.xp),Math.round(m.eur*100)/100].join('|');
+  // Deux séances par semaine programmées : 8 sur 4 semaines.
+  for(let i=1;i<=28;i+=3.5){ const d=new Date(td()+'T12:00:00'); d.setDate(d.getDate()+Math.floor(i)); sportPlans.push({date:ymd(d),type:'Force',title:'x'}); }
+  sportPlans.push({date:ymd(new Date()),type:'Repos'});
+  out.sport=Math.round(sysMaxJour().xp*10)/10;
+  sysPaliersOuvrir(); await new Promise(r=>setTimeout(r,50));
+  out.ouvert=document.getElementById('sysPalModal').classList.contains('open');
+  out.rythme=document.getElementById('sysPalRythme').textContent.replace(/\s+/g,' ');
+  out.lignes=[...document.querySelectorAll('#sysPalTable tr')].slice(1).map(r=>[...r.children].slice(0,3).map(x=>x.textContent.trim().replace(/[\u00a0\u202f]/g,' ')).join(':')).join(' ');
+  out.s=[...document.querySelectorAll('#sysPalTable tr')].pop().textContent.replace(/[\u00a0\u202f]/g,' ').replace(/\s+/g,' ');
+  modalFerme('sysPalModal');
+  out.duree=[sysDuree(0.5),sysDuree(17),sysDuree(400),sysDuree(1200)].join(' / ');
+  return out;
+});
+chk('« Si tu fais tout » : chaque habitude active, la quête et sa prime',pal.max==='130|1.6',pal.max);
+chk('...et les séances de sport programmées',pal.sport===138.6,String(pal.sport));
+chk('Les paliers : chaque rang, son niveau, l\'XP cumulée',pal.ouvert&&pal.lignes==='G:1:0 F:5:1 000 E:10:4 500 D:20:19 000 C:30:43 500 B:45:99 000 A:60:177 000 S:80:316 000',pal.lignes);
+chk('...le temps, la date et l\'or pour y arriver',/S\s*80\s*316 000/.test(pal.s)&&/ans/.test(pal.s)&&/€/.test(pal.s),pal.s);
+chk('...au rythme annoncé',/Si tu fais tout : 139 XP et 1\.60€ d'or par jour/.test(pal.rythme),pal.rythme);
+chk('Les durées se lisent : jours, mois, années',pal.duree==="aujourd'hui / 17 jours / 13 mois / 3,3 ans",pal.duree);
+
+console.log('=== 8. REPARTIR DE ZÉRO ===');
+const rz=await p.evaluate(async()=>{
+  const out={};
+  let ecrit=0; window.rewriteHabitsLog=async()=>{ ecrit++; return true; };
+  let annul=null; window.offerUndo=(m,f)=>{ annul=f; out.message=m; };
+  window.confirm=()=>false; await sysRepartir(); out.refuse=habitsLog.length>0;
+  const avant={xp:sysEtat().xp,log:habitsLog.length,or:cagnotte()};
+  out.avant=avant;
+  window.confirm=()=>true;
+  sysQueteOuvrir(); await new Promise(r=>setTimeout(r,30));
+  out.bouton=!![...document.querySelectorAll('#sysQueteModal button')].find(b=>/Repartir de zéro/.test(b.textContent));
+  await sysRepartir(); await new Promise(r=>setTimeout(r,80));
+  const e=sysEtat();
+  out.apres=[habitsLog.length,e.xp,e.niveau,e.rang,cagnotte(),e.points,JSON.stringify(sysStats.alloc)].join('|');
+  out.habitudes=habits.length; out.quete=sysQueteActuelle().join(',');
+  out.ecrit=ecrit;
+  out.ligne=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='reset')||[])[1]||'{}');
+  out.copie=!!JSON.parse(localStorage.getItem('kanban_sys_sauvegarde')||'null');
+  // Le sport d'avant ne compte plus ; le sport d'après, si.
+  sportLogs.push({date:td(),status:'done'});
+  out.apresSport=sysEtat().xp;
+  sportLogs.pop();
+  // Annuler remet tout.
+  await annul(); out.annule=[habitsLog.length,sysEtat().xp].join('|');
+  await sysRepartir();
+  return out;
+});
+chk('Repartir de zéro demande confirmation',rz.refuse===true,JSON.stringify(rz));
+chk('...le bouton est dans la fenêtre de la quête',rz.bouton===true);
+chk('...l\'historique des habitudes est effacé, l\'or et l\'XP à zéro, niveau 1, rang G',rz.apres==='0|0|1|G|0|0|{}',rz.apres);
+chk('...les habitudes et la quête restent',rz.habitudes===6&&rz.quete==='1,2,4',JSON.stringify([rz.habitudes,rz.quete]));
+chk('...écrit dans le classeur, une copie gardée sur l\'appareil',rz.ecrit>=1&&rz.ligne.depuis===rz.ligne.depuis&&Array.isArray(rz.ligne.objectifs)&&rz.ligne.objectifs.includes('g1')&&rz.copie,JSON.stringify(rz.ligne));
+chk('...le sport d\'après compte',rz.apresSport===30,String(rz.apresSport));
+chk('...et l\'on peut annuler',rz.annule===rz.avant.log+'|'+rz.avant.xp,JSON.stringify([rz.annule,rz.avant]));
+
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
 const ko=R.filter(x=>!x[1]);

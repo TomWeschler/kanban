@@ -1283,6 +1283,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sys-ql-t{font-size:0.82rem}.sys-ql-t small{display:block;color:var(--text-dim);font-size:0.66rem}
 .sys-ql-min{min-width:0!important;padding:0.3rem 0.45rem!important;font-size:0.76rem!important}
 .sys-qc{font-size:0.74rem;color:var(--text-mid)}.sys-qc.ko{color:var(--danger)}
+.sys-pal-r{font-size:0.84rem;margin:0.4rem 0 0.6rem}
+.sys-pal td{font-family:var(--font-mono);font-size:0.74rem}
+.sys-pal tr.sys-pal-fait td{opacity:0.45}
+.sys-pal tr.sys-pal-ici td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.sys-rang-mini{display:inline-block;width:1.5rem;text-align:center;font-weight:800;border:1px solid currentColor;border-radius:4px}
 /* ── Menus masqués ── */
 .nav-tab.nav-masque{display:none}
 /* ── NBA ── */
@@ -2915,6 +2920,15 @@ body,body *{font-family:var(--font-body)}
     <div style="display:flex;justify-content:flex-end;margin-top:0.8rem"><button class="btn-nav" onclick="modalFerme('sysAnnModal')">Accepter</button></div>
   </div>
 </div>
+<div class="modal-bg" id="sysPalModal">
+  <div class="modal" style="width:min(720px,94vw)">
+    <div class="modal-hdr">LES PALIERS</div>
+    <button class="modal-close" onclick="modalFerme('sysPalModal')">✕</button>
+    <div id="sysPalRythme" class="sys-pal-r"></div>
+    <div class="nba-scroll"><table class="nba-tab sys-pal" id="sysPalTable"></table></div>
+    <div class="ca-aide">Le niveau N demande 50 × N × (N − 1) points d'expérience cumulés. Les objectifs atteints (+100 XP) n'entrent pas dans la projection.</div>
+  </div>
+</div>
 <div class="modal-bg" id="sysQueteModal">
   <div class="modal" style="width:min(560px,94vw)">
     <div class="modal-hdr">QUÊTE QUOTIDIENNE</div>
@@ -2924,6 +2938,7 @@ body,body *{font-family:var(--font-body)}
     <div id="sysQListe" class="sys-qliste"></div>
     <div id="sysQCompte" class="sys-qc"></div>
     <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.6rem">
+      <button class="btn-nav out" onclick="sysRepartir()" style="margin-right:auto;color:var(--danger)" title="Effacer l'historique des habitudes, remettre l'or et l'expérience à zéro">Repartir de zéro…</button>
       <button class="btn-nav out" onclick="modalFerme('sysQueteModal')">Annuler</button>
       <button class="btn-nav" onclick="sysQueteEnregistrer()">Enregistrer</button></div>
   </div>
@@ -4896,9 +4911,12 @@ const SYS_RANGS=[['G',1],['F',5],['E',10],['D',20],['C',30],['B',45],['A',60],['
 const SYS_STATS=[['force','Force','les séances de sport'],['vitalite','Vitalité','les habitudes Santé'],['agilite','Agilité','les habitudes Productivité'],
   ['intelligence','Intelligence','les habitudes Esprit'],['perception','Perception','les habitudes Finance et Autre']];
 const SYS_CAT_STAT={'Santé':'vitalite','Productivité':'agilite','Esprit':'intelligence','Finance':'perception','Autre':'perception'};
-let sysQuete={versions:[],minimum:{}}, sysStats={alloc:{}}, sysCharge=false;
-try{ const c=JSON.parse(localStorage.getItem('kanban_systeme')||'null'); if(c){ sysQuete=c.quete||sysQuete; sysStats=c.stats||sysStats; } }catch(e){}
-function sysCache(){ try{ localStorage.setItem('kanban_systeme',JSON.stringify({quete:sysQuete,stats:sysStats})); }catch(e){} }
+// Le point de départ : après « Repartir de zéro », le sport d'avant et les
+// objectifs déjà atteints ne comptent plus, ni en expérience ni en or.
+let sysQuete={versions:[],minimum:{}}, sysStats={alloc:{}}, sysReset={depuis:'',objectifs:[]}, sysCharge=false;
+try{ const c=JSON.parse(localStorage.getItem('kanban_systeme')||'null'); if(c){ sysQuete=c.quete||sysQuete; sysStats=c.stats||sysStats; sysReset=c.reset||sysReset; } }catch(e){}
+function sysCache(){ try{ localStorage.setItem('kanban_systeme',JSON.stringify({quete:sysQuete,stats:sysStats,reset:sysReset})); }catch(e){} }
+const sysObjectifAvant=g=>(sysReset.objectifs||[]).includes(String(g.id));
 
 // ── Le classeur ──
 async function sysOnglet(){
@@ -4914,7 +4932,8 @@ async function sysCharger(){
     await sysOnglet();
     const [rows]=await sheetBatchGet([`${SYS_SHEET}!A:C`]);
     rows.slice(1).forEach(r=>{ let v=null; try{ v=JSON.parse(r[1]||'null'); }catch(e){}
-      if(!v)return; if(r[0]==='quete')sysQuete={versions:Array.isArray(v.versions)?v.versions:[],minimum:v.minimum||{}}; if(r[0]==='stats')sysStats={alloc:v.alloc||{}}; });
+      if(!v)return; if(r[0]==='quete')sysQuete={versions:Array.isArray(v.versions)?v.versions:[],minimum:v.minimum||{}}; if(r[0]==='stats')sysStats={alloc:v.alloc||{}};
+      if(r[0]==='reset')sysReset={depuis:String(v.depuis||''),objectifs:Array.isArray(v.objectifs)?v.objectifs.map(String):[]}; });
     sysCharge=true; sysCache();
   }catch(e){}
 }
@@ -4922,7 +4941,7 @@ async function sysSauver(cle){
   sysCache();
   if(!accessToken)return true;
   await sysOnglet();
-  return sheetBatchUpsert(SYS_SHEET,[[cle,JSON.stringify(cle==='quete'?sysQuete:sysStats),td()]]);
+  return sheetBatchUpsert(SYS_SHEET,[[cle,JSON.stringify(cle==='quete'?sysQuete:cle==='reset'?sysReset:sysStats),td()]]);
 }
 
 // ── La quête quotidienne ──
@@ -4964,8 +4983,8 @@ function sysEtat(){
   const quetes=jours.filter(d=>sysQueteFaite(d)).length;
   xp+=quetes*SYS_XP.queteComplete;
   // Le sport, l'objectif atteint.
-  (sportLogs||[]).forEach(s=>{ const g=s.status==='done'?SYS_XP.sport:s.status==='partial'?SYS_XP.sportPartiel:0; xp+=g; stat.force+=g; });
-  (goals||[]).filter(g=>g.status!=='deleted'&&goalReached(g)).forEach(g=>{ xp+=SYS_XP.objectif; stat[SYS_CAT_STAT[g.category]||'perception']+=SYS_XP.objectif; });
+  (sportLogs||[]).filter(s=>!sysReset.depuis||String(s.date)>=sysReset.depuis).forEach(s=>{ const g=s.status==='done'?SYS_XP.sport:s.status==='partial'?SYS_XP.sportPartiel:0; xp+=g; stat.force+=g; });
+  (goals||[]).filter(g=>g.status!=='deleted'&&goalReached(g)&&!sysObjectifAvant(g)).forEach(g=>{ xp+=SYS_XP.objectif; stat[SYS_CAT_STAT[g.category]||'perception']+=SYS_XP.objectif; });
   const niveau=sysNiveauDe(xp);
   const alloc=sysStats.alloc||{}, places=Object.values(alloc).reduce((t,x)=>t+(Number(x)||0),0);
   return {xp,niveau,rang:sysRangDe(niveau),base:sysSeuil(niveau),suivant:sysSeuil(niveau+1),quetes,statXp:stat,
@@ -4977,6 +4996,56 @@ async function sysAttribuer(k){
   sysStats.alloc={...(sysStats.alloc||{}),[k]:(Number((sysStats.alloc||{})[k])||0)+1};
   renderSysteme();
   await sysSauver('stats');
+}
+
+// ── Repartir de zéro ──
+// L'historique des habitudes est effacé (les habitudes restent), l'or et
+// l'expérience repartent de zéro, les points de stats aussi. Une copie est
+// gardée sur l'appareil, et l'on peut annuler dans la foulée.
+async function sysRepartir(){
+  if(!confirm('Repartir de zéro ?\n\nL\'historique des habitudes est effacé, l\'or et l\'expérience reviennent à zéro.\nLes habitudes, la quête et les objectifs restent.'))return;
+  const avant={log:habitsLog.slice(),stats:sysStats,reset:sysReset};
+  try{ localStorage.setItem('kanban_sys_sauvegarde',JSON.stringify({le:new Date().toISOString(),...avant})); }catch(e){}
+  habitsLog=[]; cacheSet('habitsLog',habitsLog);
+  sysReset={depuis:td(),objectifs:goals.filter(goalReached).map(g=>String(g.id))};
+  sysStats={alloc:{}};
+  try{ localStorage.setItem('kanban_sys_vu',JSON.stringify({niveau:1,quete:''})); }catch(e){}
+  modalFerme('sysQueteModal');
+  renderHabitsPage(); if(curPage==='today')renderTodayPage(); updateHStats();
+  await rewriteHabitsLog(); await sysSauver('reset'); await sysSauver('stats');
+  offerUndo('Le Système repart de zéro',async()=>{
+    habitsLog=avant.log; sysStats=avant.stats; sysReset=avant.reset; cacheSet('habitsLog',habitsLog);
+    renderHabitsPage(); if(curPage==='today')renderTodayPage(); updateHStats();
+    await rewriteHabitsLog(); await sysSauver('reset'); await sysSauver('stats');
+  },20000);
+}
+// ── Les paliers : ce qu'il faut d'expérience, et en combien de temps ──
+// « Si tu fais tout » : chaque habitude active à sa fréquence, la prime de
+// la quête les jours où elle a lieu, les séances de sport programmées sur
+// les quatre prochaines semaines. Les objectifs, imprévisibles, n'y sont pas.
+const sysParJour=f=>f==='daily'?1:String(f).startsWith('weekly:')?String(f).slice(7).split(',').filter(Boolean).length/7:String(f).startsWith('monthly:')?12/365:0;
+function sysMaxJour(){
+  const q=new Set(sysQueteActuelle()); let xp=0, eur=0, qj=0;
+  habits.filter(h=>h.active).forEach(h=>{ const f=sysParJour(h.frequency); xp+=f*(q.has(String(h.id))?SYS_XP.quete:SYS_XP.habitude); eur+=f*(h.reward_eur||0);
+    if(q.has(String(h.id)))qj=Math.max(qj,f); });
+  xp+=qj*SYS_XP.queteComplete;
+  const a=new Date(td()+'T12:00:00'), z=new Date(a); z.setDate(z.getDate()+28);
+  const seances=(sportPlans||[]).filter(p=>p.date>=ymd(a)&&p.date<ymd(z)&&!/repos/i.test(p.type||'')).length;
+  xp+=seances/28*SYS_XP.sport;
+  return {xp,eur,seances};
+}
+const sysDuree=j=>!isFinite(j)?'—':j<1?'aujourd\'hui':j<60?`${Math.ceil(j)} jours`:j<730?`${Math.round(j/30.4)} mois`:`${(j/365).toFixed(1).replace('.',',')} ans`;
+function sysPaliersOuvrir(){
+  const e=sysEtat(), m=sysMaxJour(), auj=new Date(td()+'T12:00:00');
+  const date=j=>{ if(!isFinite(j))return '—'; const d=new Date(auj); d.setDate(d.getDate()+Math.ceil(j)); return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}); };
+  document.getElementById('sysPalRythme').innerHTML=m.xp?`Si tu fais tout : <b>${Math.round(m.xp)} XP</b> et <b>${eur(m.eur)}</b> d'or par jour
+    <span class="ca-aide">— ${habits.filter(h=>h.active).length} habitudes actives, la quête et sa prime, ${m.seances} séance${m.seances>1?'s':''} de sport sur 4 semaines</span>`
+    :'Aucune habitude active : rien à projeter.';
+  document.getElementById('sysPalTable').innerHTML=`<tr><th>Rang</th><th>Niveau</th><th>XP cumulée</th><th>Reste</th><th>En faisant tout</th><th>Vers le</th><th>Or gagné d'ici là</th></tr>`+
+    SYS_RANGS.map(([r,n])=>{ const seuil=sysSeuil(n), reste=Math.max(0,seuil-e.xp), j=m.xp?reste/m.xp:Infinity, fait=e.xp>=seuil;
+      return `<tr class="${fait?'sys-pal-fait':''}${e.rang===r?' sys-pal-ici':''}"><td><span class="sys-rang-mini r-${r}">${r}</span></td><td>${n}</td><td>${seuil.toLocaleString('fr-FR')}</td>
+        <td>${fait?'atteint':reste.toLocaleString('fr-FR')}</td><td>${fait?'—':sysDuree(j)}</td><td>${fait?'—':date(j)}</td><td>${fait||!isFinite(j)?'—':eur(m.eur*j)}</td></tr>`; }).join('');
+  modalOuvre('sysPalModal');
 }
 
 // ── La fenêtre du Système ──
@@ -4995,7 +5064,7 @@ function renderSysteme(){
   const choisie=sysQueteActuelle().length>0;
   el.innerHTML=`<div class="sys-fen">
     <div class="sys-statut">
-      <div class="sys-t">Statut</div>
+      <div class="sys-t">Statut <button class="sys-reg" onclick="sysPaliersOuvrir()" title="Les paliers : l'expérience de chaque rang, et le temps pour y arriver">Paliers</button></div>
       <div class="sys-id"><div class="sys-rang r-${e.rang}" title="Rang ${e.rang}">${e.rang}</div>
         <div><div class="sys-niv">Niveau <b>${e.niveau}</b></div>
           <div class="sys-xp"><div class="sys-xp-b"><span style="width:${pct}%"></span></div><small>${e.xp-e.base} / ${e.suivant-e.base} XP · ${e.xp} au total</small></div>
@@ -8657,8 +8726,8 @@ const BK_TABLES=[
   ['nbaPoker',     'NBA, poker',   ()=>nbaPoker,     v=>{nbaPoker=v;}],
   ['nbaCotes',     'NBA, cotes',   ()=>nbaCotes,     v=>{nbaCotes=v;}],
   // Le Système : la quête choisie et les points de stats répartis.
-  ['systeme',      'Système',      ()=>[{id:'quete',v:sysQuete},{id:'stats',v:sysStats}],
-    v=>{ (v||[]).forEach(x=>{ if(x&&x.id==='quete'&&x.v)sysQuete=x.v; if(x&&x.id==='stats'&&x.v)sysStats=x.v; }); sysCache(); }]];
+  ['systeme',      'Système',      ()=>[{id:'quete',v:sysQuete},{id:'stats',v:sysStats},{id:'reset',v:sysReset}],
+    v=>{ (v||[]).forEach(x=>{ if(x&&x.id==='quete'&&x.v)sysQuete=x.v; if(x&&x.id==='stats'&&x.v)sysStats=x.v; if(x&&x.id==='reset'&&x.v)sysReset=x.v; }); sysCache(); }]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -8765,7 +8834,7 @@ async function applyBackup(){
       if(jpCheck.length)    ok=await sheetBatchUpsert('jp_check',jpCheck.map(jpChkRow))&&ok;
       if(cartes.length){ await ensureCartesSheet(); ok=await sheetBatchUpsert(CA_SHEET,cartes.map(caRow))&&ok; }
       if(sysQuete.versions.length||Object.keys(sysStats.alloc||{}).length){ await sysOnglet();
-        ok=await sheetBatchUpsert(SYS_SHEET,[['quete',JSON.stringify(sysQuete),td()],['stats',JSON.stringify(sysStats),td()]])&&ok; }
+        ok=await sheetBatchUpsert(SYS_SHEET,[['quete',JSON.stringify(sysQuete),td()],['stats',JSON.stringify(sysStats),td()],['reset',JSON.stringify(sysReset),td()]])&&ok; }
       if(nbaSaisons.length||nbaParis.length||nbaPoker.length){ await nbaOnglets();
         if(nbaPoker.length)ok=await sheetBatchUpsert(NBA_T.poker,nbaPoker.map(nbaPokerRow))&&ok;
         if(nbaCotes.length)ok=await sheetBatchUpsert(NBA_T.cotes,nbaCotes.map(nbaCotesRow))&&ok;
@@ -15959,7 +16028,8 @@ async function renderGoalsPage(){
 // qui restent gérées à la main.
 const goalReached=g=>g.status==='done'||goalProgress(g)>=100;
 function habitsEarned(){ return habitsLog.reduce((s,l)=>s+(l.reward_eur||0),0); }
-function goalsBalance(){ return goals.filter(goalReached).reduce((s,g)=>s+(g.reward_eur||0),0); }
+// Les objectifs atteints avant « Repartir de zéro » ne comptent plus dans l'or.
+function goalsBalance(){ return goals.filter(g=>goalReached(g)&&!sysObjectifAvant(g)).reduce((s,g)=>s+(g.reward_eur||0),0); }
 function cagnotte(){ return habitsEarned()+goalsBalance(); }
 const eur=n=>`${n<0?'−':''}${Math.abs(n).toFixed(2)}€`;
 
@@ -22837,7 +22907,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.105.0';
+const APP_VERSION='v1.106.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
