@@ -281,6 +281,102 @@ chk('...écrit dans le classeur',cal.ligne.k>0&&cal.ligne.le&&cal.ligne.xpJour==
 chk('...les paliers le disent : le rang S dans 2 ans, puis SS et SSS',/2,0 ans/.test(cal.s)&&cal.ss&&/Calibré pour le rang S en 2 ans/.test(cal.texte),cal.s+' / '+cal.texte);
 chk('...le premier calibrage se fait seul',cal.auto===true);
 
+console.log('=== 10. PHASE 2 : RETOUR, PÉNALITÉ, DONJONS, URGENCES, TITRES ===');
+const p2=await p.evaluate(async()=>{
+  const out={}, L=(h,d)=>({id:'x'+Math.random(),habit_id:h,date:d,reward_eur:0,category:'Santé'});
+  sysReset={depuis:'',objectifs:[]}; sysCalib={k:50,xpJour:null,le:'banc'}; sysDonjons={}; sysUrgences={}; sysTitres={actif:''};
+  sysQuete={versions:[{depuis:J(40),habits:['1','2','4']}],minimum:{}};
+  goals=[];
+  // Le retour : rien depuis 10 jours, deux habitudes sur trois suffisent.
+  habitsLog=[L(1,J(10)),L(2,J(10)),L(4,J(10)),L(1,td()),L(2,td())];
+  out.retour=[sysRetour(td()),sysQueteRequis(td(),3),sysQueteFaite(td())].join('|');
+  out.retourJ2=sysRetour(J(-2))&&!sysRetour(J(-3));
+  // Sans pause, il faut tout.
+  habitsLog=[L(1,J(1)),L(2,J(1)),L(4,J(1)),L(1,td()),L(2,td())];
+  out.normal=[sysRetour(td()),sysQueteFaite(td())].join('|');
+  // La pénalité : hier ratée (1 sur 3), aujourd'hui accomplie → prime doublée.
+  sysQuete={versions:[{depuis:J(3),habits:['1','2','4']}],minimum:{}};
+  habitsLog=[L(1,J(3)),L(2,J(3)),L(4,J(3)),L(1,J(2)),L(2,J(2)),L(4,J(2)),L(1,J(1)),L(1,td()),L(2,td())];
+  out.penalAvant=sysRachat(td());
+  const x0=sysEtat().xp; habitsLog.push(L(4,td())); const e=sysEtat();
+  out.penal=[e.rachats,e.quetes,e.xp-x0].join('|');
+  renderSysteme(); await new Promise(r=>setTimeout(r,30));
+  out.bandeau=!!document.querySelector('#sysBox .sys-penal');
+  out.okTexte=(document.querySelector('#sysBox .sys-ok')||{}).textContent||'';
+  // Les donjons.
+  const cp=(n,f)=>JSON.stringify(Array.from({length:n},(_,i)=>({t:'É'+i,d:i<f})));
+  goals=[{id:'g3',title:'Semi-marathon',category:'Santé',status:'active',progress:0,checkpoints:cp(4,2),reward_eur:0},
+    {id:'g4',title:'Lire 10 livres',category:'Esprit',status:'active',progress:0,reward_eur:15,reward:'Une liseuse'},
+    {id:'g5',title:'Libre',category:'Finance',status:'active',progress:20,reward_eur:0,target_date:J(-3)}];
+  const xa=sysEtat().xp;
+  sysDonjons={g3:{rang:'C',habits:[],cible:0,debut:J(20)},g4:{rang:'D',habits:['5'],cible:10,debut:J(20)}};
+  habitsLog.push(L(5,J(12)),L(5,J(11)),L(5,J(10)),L(5,J(8)),L(5,J(6)));
+  const xb=sysEtat().xp;
+  out.etapes=xb-xa-5*10;
+  out.cible=goalProgress(goals[1]);
+  out.rangSug=[sysRangSuggere({id:'z',target_date:J(-10)}),sysRangSuggere({id:'z',target_date:J(-300)})].join(',');
+  // Une quête urgente : le donjon g4 n'est plus entraîné depuis 6 jours.
+  const u=sysUrgenceDuJour(); out.urg=u&&[u.type,u.habit,u.goal].join('|');
+  renderSysteme(); await new Promise(r=>setTimeout(r,30));
+  out.carteUrg=!!document.querySelector('#sysBox .sys-urg');
+  out.portes=document.querySelectorAll('#sysBox .sys-porte').length;
+  await sysUrgenceStatut('acceptee');
+  out.ligneUrg=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='urgences')||[])[1]||'{}')[td()].statut;
+  const xu=sysEtat().xp;
+  habitsLog.push(L(5,td())); renderSysteme(); await new Promise(r=>setTimeout(r,80));
+  out.urgFaite=[sysUrgences[td()].statut,sysEtat().xp-xu].join('|');
+  // Le boss : toutes les étapes de g3 faites → donjon nettoyé, annonce.
+  modalFerme('sysAnnModal');
+  goals[0].checkpoints=cp(4,4);
+  const e2=sysEtat(); out.nettoye=e2.donjonsFaits.join(',');
+  renderSysteme(); await new Promise(r=>setTimeout(r,30));
+  out.annonce=document.getElementById('sysAnnModal').classList.contains('open')&&/Donjon nettoyé/i.test(document.getElementById('sysAnnT').textContent);
+  modalFerme('sysAnnModal');
+  // Un objectif hors donjon compte toujours 100 XP.
+  const xh=sysEtat().xp; goals[2].status='done'; out.horsDonjon=sysEtat().xp-xh; goals[2].status='active';
+  // Ouvrir une porte par la fenêtre.
+  sysDonjonOuvrir(null); await new Promise(r=>setTimeout(r,20));
+  const sel=document.getElementById('sysDjGoal'); out.choix=[...sel.options].map(o=>o.value).join(',');
+  sel.value='g5'; sysDonjonRang(null);
+  document.querySelector('#sysDjHabits input[value="3"]').checked=true;
+  document.getElementById('sysDjCible').value='30';
+  await sysDonjonEnregistrer();
+  out.g5=JSON.stringify(sysDonjons.g5&&[sysDonjons.g5.rang,sysDonjons.g5.habits,sysDonjons.g5.cible,sysDonjons.g5.debut===td()]);
+  out.ligneDj=Object.keys(JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='donjons')||[])[1]||'{}')).sort().join(',');
+  // Fermer la porte.
+  sysDonjonOuvrir('g5'); await sysDonjonFermer(); out.ferme=!sysDonjons.g5;
+  // Les titres.
+  const g=sysTitresGagnes(sysEtat()); out.titres=g.join(',');
+  sysTitresOuvrir(); await new Promise(r=>setTimeout(r,20));
+  out.boutons=[document.querySelectorAll('#sysTitresListe .sys-titre:not(.verrou)').length,document.querySelectorAll('#sysTitresListe .sys-titre.verrou').length].join('|');
+  await sysTitrePorter('pourfendeur');
+  out.porte=(document.querySelector('#sysBox .sys-titre-p')||{}).textContent;
+  out.ligneTitre=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='titres')||[])[1]||'{}').actif;
+  // La sauvegarde emporte les nouvelles clés.
+  const t=BK_TABLES.find(x=>x[0]==='systeme'); out.bk=t[2]().map(x=>x.id).join(',');
+  return out;
+});
+chk('Mode retour : après 10 jours sans rien, 2 habitudes sur 3 suffisent pour la prime',p2.retour==='true|2|true',p2.retour);
+chk('...pendant trois jours seulement',p2.retourJ2===true);
+chk('...sans pause, il faut toute la quête',p2.normal==='false|false',p2.normal);
+chk('Zone de pénalité : la quête ratée hier, la prime du jour double (+20 de coche, +100)',p2.penalAvant===true&&p2.penal==='1|3|120',JSON.stringify([p2.penalAvant,p2.penal]));
+chk('...le bandeau rouge, la prime doublée affichée',p2.bandeau&&/\+100 XP/.test(p2.okTexte),p2.okTexte);
+chk('Donjons : chaque étape faite rapporte selon le rang (C : 2 × 50)',p2.etapes===100,String(p2.etapes));
+chk('...un donjon sans étapes avance par ses habitudes d\'entraînement (5 / 10)',p2.cible===50,String(p2.cible));
+chk('...le rang proposé suit l\'échéance (10 j → E, 300 j → B)',p2.rangSug==='E,B',p2.rangSug);
+chk('Quête urgente : le donjon à l\'arrêt depuis 6 jours',p2.urg==='habit|5|g4'&&p2.carteUrg,String(p2.urg));
+chk('...les portes affichées',p2.portes===2,String(p2.portes));
+chk('...acceptée, écrite dans le classeur',p2.ligneUrg==='acceptee',p2.ligneUrg);
+chk('...accomplie en cochant l\'habitude : +40 XP (et la coche)',p2.urgFaite==='faite|50',p2.urgFaite);
+chk('Le boss vaincu : donjon nettoyé et annoncé',p2.nettoye==='C'&&p2.annonce===true,JSON.stringify([p2.nettoye,p2.annonce]));
+chk('...un objectif hors donjon vaut toujours 100 XP',p2.horsDonjon===100,String(p2.horsDonjon));
+chk('Ouvrir une porte : seuls les objectifs libres en cours, rang proposé, habitudes et cible',p2.choix==='g5'&&p2.g5==='["E",["3"],30,true]',JSON.stringify([p2.choix,p2.g5]));
+chk('...écrit dans le classeur, et l\'on peut fermer la porte',p2.ligneDj==='g3,g4,g5'&&p2.ferme===true,p2.ligneDj);
+chk('Titres : gagnés par l\'historique',/eveil/.test(p2.titres)&&/rachat/.test(p2.titres)&&/chasseurPortes/.test(p2.titres)&&/pourfendeur/.test(p2.titres)&&!/monarque/.test(p2.titres),p2.titres);
+chk('...la fenêtre montre gagnés et verrouillés',p2.boutons===p2.titres.split(',').length+'|'+(12-p2.titres.split(',').length),p2.boutons);
+chk('...le titre porté s\'affiche sous le niveau, écrit dans le classeur',/Pourfendeur/.test(p2.porte)&&p2.ligneTitre==='pourfendeur',JSON.stringify([p2.porte,p2.ligneTitre]));
+chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres',p2.bk);
+
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
 const ko=R.filter(x=>!x[1]);

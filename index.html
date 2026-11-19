@@ -1289,6 +1289,32 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sys-ql-min{min-width:0!important;padding:0.3rem 0.45rem!important;font-size:0.76rem!important}
 .sys-qc{font-size:0.74rem;color:var(--text-mid)}.sys-qc.ko{color:var(--danger)}
 .sys-pal-r{font-size:0.84rem;margin:0.4rem 0 0.6rem}
+.sys-fen>.sys-portes{grid-column:1/-1}
+.sys-portes-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.45rem}
+.sys-porte{display:flex;gap:0.6rem;align-items:center;text-align:left;background:rgba(79,163,255,.06);border:1px solid rgba(124,192,255,.3);border-radius:5px;
+  padding:0.45rem 0.55rem;color:#dbe9ff;font:inherit;cursor:pointer}
+.sys-porte:hover{border-color:#4fa3ff;box-shadow:0 0 10px rgba(79,163,255,.35)}
+.sys-porte.faite{opacity:0.6}
+.sys-porte-r{width:2.2rem;height:2.2rem;flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:800;font-size:1.1rem;
+  border:2px solid currentColor;border-radius:50%;box-shadow:0 0 10px currentColor}
+.sys-porte-c{flex:1;min-width:0;display:flex;flex-direction:column;gap:0.2rem}
+.sys-porte-c b{font-size:0.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sys-porte-c small{font-size:0.62rem;color:#9cb8de}
+.sys-porte .sys-xp-b{width:100%}
+.sys-titre-p{background:none;border:0;padding:0;color:#ffd76a;font-size:0.72rem;font-style:italic;cursor:pointer;text-align:left}
+.sys-titres{display:flex;flex-direction:column;gap:0.3rem;margin-top:0.5rem}
+.sys-titre{display:flex;flex-direction:column;align-items:flex-start;gap:0.1rem;padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;cursor:pointer;text-align:left}
+.sys-titre small{color:var(--text-dim);font-size:0.68rem}
+.sys-titre.actif{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.sys-titre.verrou{opacity:0.45;cursor:default}
+.sys-penal{font-size:0.72rem;color:#ff8a8a;border:1px solid rgba(255,107,107,.6);background:rgba(255,107,107,.08);border-radius:4px;padding:0.35rem 0.5rem;margin-bottom:0.4rem;text-shadow:0 0 6px rgba(255,107,107,.5)}
+.sys-retour{font-size:0.72rem;color:#9fd4ff;border:1px solid rgba(124,192,255,.5);border-radius:4px;padding:0.35rem 0.5rem;margin-bottom:0.4rem}
+.sys-urg{margin-top:0.6rem;border:1px solid rgba(255,181,71,.7);background:rgba(255,181,71,.08);border-radius:4px;padding:0.45rem 0.55rem}
+.sys-urg.faite{opacity:0.65}
+.sys-urg-t{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:#ffb547}
+.sys-urg-l{font-size:0.82rem;margin:0.3rem 0}
+.sys-djhs{display:flex;flex-wrap:wrap;gap:0.3rem 0.8rem}
+.sys-djh{font-size:0.8rem;display:flex;gap:0.3rem;align-items:center}
 .sys-pal td{font-family:var(--font-mono);font-size:0.74rem}
 .sys-pal tr.sys-pal-fait td{opacity:0.45}
 .sys-pal tr.sys-pal-ici td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
@@ -2923,6 +2949,29 @@ body,body *{font-family:var(--font-body)}
     <div class="sys-ann-titre" id="sysAnnTitre"></div>
     <div class="sys-ann-txt" id="sysAnnTxt"></div>
     <div style="display:flex;justify-content:flex-end;margin-top:0.8rem"><button class="btn-nav" onclick="modalFerme('sysAnnModal')">Accepter</button></div>
+  </div>
+</div>
+<div class="modal-bg" id="sysTitresModal">
+  <div class="modal" style="width:min(520px,94vw)">
+    <div class="modal-hdr">LES TITRES</div>
+    <button class="modal-close" onclick="modalFerme('sysTitresModal')">✕</button>
+    <div class="ca-aide">Gagnés par tes actes, jamais perdus. Un clic sur un titre gagné le porte (un second l'enlève).</div>
+    <div id="sysTitresListe" class="sys-titres"></div>
+  </div>
+</div>
+<div class="modal-bg" id="sysDonjonModal">
+  <div class="modal" style="width:min(560px,94vw)">
+    <div class="modal-hdr" id="sysDjTitre">OUVRIR UNE PORTE</div>
+    <button class="modal-close" onclick="modalFerme('sysDonjonModal')">✕</button>
+    <div class="field"><label>Objectif</label><select id="sysDjGoal" class="ca-tri" onchange="sysDonjonRang(null)"></select></div>
+    <div class="field"><label>Rang de la porte</label><select id="sysDjRang" class="ca-tri"></select></div>
+    <div class="field"><label>Habitudes d'entraînement <span class="ca-aide">— elles font avancer le donjon</span></label><div id="sysDjHabits" class="sys-djhs"></div></div>
+    <div class="field"><label>Cible d'entraînement <span class="ca-aide">— nombre de coches pour vaincre le boss, si l'objectif n'a pas d'étapes</span></label>
+      <input type="text" inputmode="numeric" id="sysDjCible" placeholder="ex : 60"></div>
+    <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.6rem">
+      <button class="btn-nav out" id="sysDjFermer" onclick="sysDonjonFermer()" style="margin-right:auto;color:var(--danger)">Fermer la porte</button>
+      <button class="btn-nav out" onclick="modalFerme('sysDonjonModal')">Annuler</button>
+      <button class="btn-nav" onclick="sysDonjonEnregistrer()">Enregistrer</button></div>
   </div>
 </div>
 <div class="modal-bg" id="sysPalModal">
@@ -4908,7 +4957,12 @@ async function toggleHabit(habitId, dateStr) {
 // répartis) vit dans l'onglet « systeme » du classeur, une ligne par clé.
 const SYS_SHEET='systeme', SYS_HEADER=['id','valeur','updated_at'];
 // Ce que rapporte chaque geste.
-const SYS_XP={habitude:10,quete:20,queteComplete:50,sport:30,sportPartiel:15,objectif:100};
+const SYS_XP={habitude:10,quete:20,queteComplete:50,sport:30,sportPartiel:15,objectif:100,urgence:40};
+// Un objectif devient un DONJON : un rang de E à S, des étapes (ses
+// checkpoints), un boss final (l'objectif atteint). Ce que rapportent le boss
+// et chaque étape, selon le rang de la porte.
+const SYS_DONJON_XP={E:[100,20],D:[200,30],C:[400,50],B:[800,80],A:[1500,120],S:[3000,200]};
+const SYS_PORTES=['E','D','C','B','A','S'];
 const SYS_POINTS_NIVEAU=3, SYS_QUETE_MIN=3, SYS_QUETE_MAX=5;
 // Les rangs, du plus bas au plus haut : G et F sous les rangs de chasseur.
 // Au-delà du S, les rangs de légende : SS et SSS.
@@ -4928,8 +4982,14 @@ const SYS_CAT_STAT={'Santé':'vitalite','Productivité':'agilite','Esprit':'inte
 // Le point de départ : après « Repartir de zéro », le sport d'avant et les
 // objectifs déjà atteints ne comptent plus, ni en expérience ni en or.
 let sysQuete={versions:[],minimum:{}}, sysStats={alloc:{}}, sysReset={depuis:'',objectifs:[]}, sysCharge=false;
-try{ const c=JSON.parse(localStorage.getItem('kanban_systeme')||'null'); if(c){ sysQuete=c.quete||sysQuete; sysStats=c.stats||sysStats; sysReset=c.reset||sysReset; } }catch(e){}
-function sysCache(){ try{ localStorage.setItem('kanban_systeme',JSON.stringify({quete:sysQuete,stats:sysStats,reset:sysReset,calib:sysCalib})); }catch(e){} }
+// Les donjons ({id d'objectif : {rang, habits liées, cible de coches, début}}),
+// les quêtes urgentes ({date : {type, lib, statut, xp}}) et le titre porté.
+let sysDonjons={}, sysUrgences={}, sysTitres={actif:''};
+try{ const c=JSON.parse(localStorage.getItem('kanban_systeme')||'null'); if(c){ sysQuete=c.quete||sysQuete; sysStats=c.stats||sysStats; sysReset=c.reset||sysReset;
+  sysDonjons=c.donjons||sysDonjons; sysUrgences=c.urgences||sysUrgences; sysTitres=c.titres||sysTitres; } }catch(e){}
+function sysCache(){ try{ localStorage.setItem('kanban_systeme',JSON.stringify({quete:sysQuete,stats:sysStats,reset:sysReset,calib:sysCalib,
+  donjons:sysDonjons,urgences:sysUrgences,titres:sysTitres})); }catch(e){} }
+const SYS_CLES={quete:()=>sysQuete,stats:()=>sysStats,reset:()=>sysReset,calibrage:()=>sysCalib,donjons:()=>sysDonjons,urgences:()=>sysUrgences,titres:()=>sysTitres};
 const sysObjectifAvant=g=>(sysReset.objectifs||[]).includes(String(g.id));
 
 // ── Le classeur ──
@@ -4948,7 +5008,8 @@ async function sysCharger(){
     rows.slice(1).forEach(r=>{ let v=null; try{ v=JSON.parse(r[1]||'null'); }catch(e){}
       if(!v)return; if(r[0]==='quete')sysQuete={versions:Array.isArray(v.versions)?v.versions:[],minimum:v.minimum||{}}; if(r[0]==='stats')sysStats={alloc:v.alloc||{}};
       if(r[0]==='calibrage'&&Number(v.k)>0)sysCalib={k:Number(v.k),xpJour:v.xpJour==null?null:Number(v.xpJour),le:String(v.le||'')};
-      if(r[0]==='reset')sysReset={depuis:String(v.depuis||''),objectifs:Array.isArray(v.objectifs)?v.objectifs.map(String):[]}; });
+      if(r[0]==='reset')sysReset={depuis:String(v.depuis||''),objectifs:Array.isArray(v.objectifs)?v.objectifs.map(String):[]};
+      if(r[0]==='donjons'&&typeof v==='object')sysDonjons=v; if(r[0]==='urgences'&&typeof v==='object')sysUrgences=v; if(r[0]==='titres'&&typeof v==='object')sysTitres={actif:String(v.actif||'')}; });
     sysCharge=true; sysCache();
   }catch(e){}
 }
@@ -4956,7 +5017,7 @@ async function sysSauver(cle){
   sysCache();
   if(!accessToken)return true;
   await sysOnglet();
-  return sheetBatchUpsert(SYS_SHEET,[[cle,JSON.stringify(cle==='quete'?sysQuete:cle==='reset'?sysReset:cle==='calibrage'?sysCalib:sysStats),td()]]);
+  return sheetBatchUpsert(SYS_SHEET,[[cle,JSON.stringify((SYS_CLES[cle]||SYS_CLES.stats)()),td()]]);
 }
 
 // ── La quête quotidienne ──
@@ -4972,7 +5033,51 @@ function sysQueteJour(date){
 function sysQueteFaite(date,log){
   const q=sysQueteJour(date); if(!q.length)return false;
   const faits=new Set((log||habitsLog).filter(l=>l.date===date).map(l=>String(l.habit_id)));
-  return q.every(h=>faits.has(String(h.id)));
+  return q.filter(h=>faits.has(String(h.id))).length>=sysQueteRequis(date,q.length);
+}
+// Le MODE RETOUR : après une pause (3 jours sans rien ou plus), pendant trois
+// jours, la moitié de la quête suffit pour la prime. On revient sans honte.
+const sysJourMs=d=>new Date(d+'T12:00:00').getTime();
+const sysEcart=(a,b)=>Math.round((sysJourMs(b)-sysJourMs(a))/864e5);
+const sysDecale=(d,n)=>{ const x=new Date(d+'T12:00:00'); x.setDate(x.getDate()+n); return ymd(x); };
+let sysJoursMemo={a:null,k:'',l:[]};
+function sysJoursActifs(){ const k=habitsLog.length+'|'+(habitsLog[0]||{}).date+'|'+(habitsLog[habitsLog.length-1]||{}).date;
+  if(sysJoursMemo.a!==habitsLog||sysJoursMemo.k!==k)sysJoursMemo={a:habitsLog,k,l:[...new Set(habitsLog.map(l=>l.date))].sort()}; return sysJoursMemo.l; }
+// Le jour s marque un retour : le dernier jour actif avant lui remonte à 4 jours ou plus.
+function sysDebutRetour(s){
+  const l=sysJoursActifs(); let prec=null;
+  for(const d of l){ if(d<s)prec=d; else break; }
+  return !!prec&&sysEcart(prec,s)>=4&&(s===td()||l.includes(s));
+}
+const sysRetour=d=>[0,1,2].some(i=>sysDebutRetour(sysDecale(d,-i)));
+const sysQueteRequis=(date,n)=>sysRetour(date)?Math.ceil(n/2):n;
+// La ZONE DE PÉNALITÉ : la quête ratée la veille, la prime du jour double si
+// on l'accomplit. On ne perd jamais rien.
+const sysDebutQuete=()=>sysQuete.versions.length?sysQuete.versions.map(v=>v.depuis).sort()[0]:'';
+function sysRachat(d){
+  const y=sysDecale(d,-1), debut=sysDebutQuete();
+  if(!debut||y<debut||(sysReset.depuis&&y<sysReset.depuis))return false;
+  return sysQueteJour(y).length>0&&!sysQueteFaite(y);
+}
+
+// ── Les donjons ──
+const sysDonjonDe=g=>g?sysDonjons[String(g.id)]||null:null;
+// L'entraînement d'un donjon : les coches de ses habitudes liées, depuis son ouverture.
+function sysEntrainement(g){
+  const dj=sysDonjonDe(g); if(!dj||!(dj.habits||[]).length)return 0;
+  const ids=new Set(dj.habits.map(String)), vus=new Set();
+  habitsLog.forEach(l=>{ if(ids.has(String(l.habit_id))&&(!dj.debut||l.date>=dj.debut))vus.add(l.habit_id+'|'+l.date); });
+  return vus.size;
+}
+// Le rang proposé pour une porte : selon le temps jusqu'à l'échéance, le
+// nombre d'étapes, et s'il porte d'autres objectifs.
+function sysRangSuggere(g){
+  let i=0;
+  const mois=g.target_date?sysEcart(td(),g.target_date)/30.4:3;
+  i=mois<1?0:mois<3?1:mois<6?2:mois<12?3:4;
+  const cps=goalCheckpoints(g).length; if(cps>=8)i++;
+  if(goals.some(x=>x.parent_id===g.id))i++;
+  return SYS_PORTES[Math.max(0,Math.min(5,i))];
 }
 
 // ── L'expérience, le niveau, le rang, les stats ──
@@ -5000,16 +5105,29 @@ function sysEtat(){
     const g=sysQueteDu(l.date).includes(String(l.habit_id))?SYS_XP.quete:SYS_XP.habitude;
     xp+=g; stat[SYS_CAT_STAT[cat]||'perception']+=g;
   });
-  // Les quêtes complètes.
-  const jours=[...new Set(habitsLog.map(l=>l.date))];
-  const quetes=jours.filter(d=>sysQueteFaite(d)).length;
-  xp+=quetes*SYS_XP.queteComplete;
+  // Les quêtes complètes — et leur rachat, qui double la prime.
+  const jours=sysJoursActifs();
+  const faites=jours.filter(d=>sysQueteFaite(d)), quetes=faites.length, rachats=faites.filter(sysRachat).length;
+  xp+=(quetes+rachats)*SYS_XP.queteComplete;
+  let serie=0, serieMax=0, prec=null;
+  faites.forEach(d=>{ serie=prec&&sysEcart(prec,d)===1?serie+1:1; serieMax=Math.max(serieMax,serie); prec=d; });
+  // Les quêtes urgentes accomplies.
+  const urgences=Object.values(sysUrgences).filter(u=>u&&u.statut==='faite');
+  urgences.forEach(u=>{ xp+=Number(u.xp)||SYS_XP.urgence; });
   // Le sport, l'objectif atteint.
   (sportLogs||[]).filter(s=>!sysReset.depuis||String(s.date)>=sysReset.depuis).forEach(s=>{ const g=s.status==='done'?SYS_XP.sport:s.status==='partial'?SYS_XP.sportPartiel:0; xp+=g; stat.force+=g; });
-  (goals||[]).filter(g=>g.status!=='deleted'&&goalReached(g)&&!sysObjectifAvant(g)).forEach(g=>{ xp+=SYS_XP.objectif; stat[SYS_CAT_STAT[g.category]||'perception']+=SYS_XP.objectif; });
+  // Les objectifs : un donjon rapporte selon son rang, à chaque étape et au
+  // boss ; un objectif hors donjon, 100 XP une fois atteint.
+  const donjonsFaits=[];
+  (goals||[]).filter(g=>g.status!=='deleted'&&g.status!==GOAL_DELETED&&!sysObjectifAvant(g)).forEach(g=>{
+    const dj=sysDonjonDe(g), st=SYS_CAT_STAT[g.category]||'perception';
+    if(dj){ const [boss,etape]=SYS_DONJON_XP[dj.rang]||SYS_DONJON_XP.E, n=goalCheckpoints(g).filter(c=>c.d).length;
+      let gx=n*etape; if(goalReached(g)){ gx+=boss; donjonsFaits.push(dj.rang); } xp+=gx; stat[st]+=gx; }
+    else if(goalReached(g)){ xp+=SYS_XP.objectif; stat[st]+=SYS_XP.objectif; }
+  });
   const niveau=sysNiveauDe(xp);
   const alloc=sysStats.alloc||{}, places=Object.values(alloc).reduce((t,x)=>t+(Number(x)||0),0);
-  return {xp,niveau,rang:sysRangDe(niveau),base:sysSeuil(niveau),suivant:sysSeuil(niveau+1),quetes,statXp:stat,
+  return {xp,niveau,rang:sysRangDe(niveau),base:sysSeuil(niveau),suivant:sysSeuil(niveau+1),quetes,rachats,serieMax,urgences:urgences.length,donjonsFaits,statXp:stat,
     stats:Object.fromEntries(SYS_STATS.map(([k])=>[k,10+Math.floor(stat[k]/100)+(Number(alloc[k])||0)])),
     points:Math.max(0,(niveau-1)*SYS_POINTS_NIVEAU-places),or:cagnotte()};
 }
@@ -5072,6 +5190,119 @@ function sysPaliersOuvrir(){
   modalOuvre('sysPalModal');
 }
 
+// ── Les titres ──
+// Gagnés par les actes, jamais perdus. On en porte un, affiché sous le niveau.
+const SYS_TITRES=[
+  ['eveil','L\'Éveillé','Accomplir une première quête quotidienne',e=>e.quetes>=1],
+  ['regulier','Celui qui ne plie pas','7 quêtes quotidiennes de suite',e=>e.serieMax>=7],
+  ['acharne','L\'Acharné','30 quêtes quotidiennes accomplies',e=>e.quetes>=30],
+  ['rachat','Revenu de la zone de pénalité','Racheter une quête ratée',e=>e.rachats>=1],
+  ['pret','Toujours prêt','5 quêtes urgentes accomplies',e=>e.urgences>=5],
+  ['chasseurPortes','Chasseur de portes','Nettoyer un premier donjon',e=>e.donjonsFaits.length>=1],
+  ['pourfendeur','Pourfendeur','Nettoyer un donjon de rang C ou plus',e=>e.donjonsFaits.some(r=>SYS_PORTES.indexOf(r)>=2)],
+  ['monarque','Monarque des ombres','Nettoyer un donjon de rang S',e=>e.donjonsFaits.includes('S')],
+  ['colosse','Colosse','Force à 30',e=>e.stats.force>=30],
+  ['erudit','Érudit','Intelligence à 30',e=>e.stats.intelligence>=30],
+  ['chasseur','Chasseur','Atteindre le rang E',e=>e.niveau>=10],
+  ['elite','Élite','Atteindre le rang A',e=>e.niveau>=60]];
+const sysTitresGagnes=e=>SYS_TITRES.filter(t=>t[3](e)).map(t=>t[0]);
+function sysTitresOuvrir(){
+  const e=sysEtat(), g=new Set(sysTitresGagnes(e));
+  document.getElementById('sysTitresListe').innerHTML=SYS_TITRES.map(([k,lib,cond])=>`<button class="sys-titre${g.has(k)?'':' verrou'}${sysTitres.actif===k?' actif':''}"
+    ${g.has(k)?`onclick="sysTitrePorter('${k}')"`:'disabled'}><b>${g.has(k)?'« '+tdEsc(lib)+' »':'??? '}</b><small>${tdEsc(cond)}</small></button>`).join('');
+  modalOuvre('sysTitresModal');
+}
+async function sysTitrePorter(k){ sysTitres={actif:sysTitres.actif===k?'':k}; modalFerme('sysTitresModal'); renderSysteme(); await sysSauver('titres'); }
+
+// ── Les quêtes urgentes ──
+// Tirées de tes données, pas inventées : un donjon à l'arrêt, une échéance
+// qui approche, une habitude laissée de côté. Une par jour au plus ; on
+// l'accepte ou on la refuse, sans pénalité. Accomplie : +40 XP.
+function sysUrgenceCalculee(){
+  const aujd=td(), quete=new Set(sysQueteActuelle());
+  const derniere=ids=>{ const l=habitsLog.filter(x=>ids.includes(String(x.habit_id))).map(x=>x.date).sort(); return l[l.length-1]||''; };
+  // 1. Un donjon dont l'entraînement s'est arrêté depuis 5 jours.
+  for(const g of goals.filter(x=>sysDonjonDe(x)&&!goalReached(x))){
+    const dj=sysDonjonDe(g), hs=(dj.habits||[]).map(String).filter(id=>habits.some(h=>String(h.id)===id&&h.active));
+    if(!hs.length)continue;
+    const d=derniere(hs)||dj.debut||aujd;
+    if(sysEcart(d,aujd)>=5){ const h=habits.find(x=>String(x.id)===hs[0]);
+      return {type:'habit',habit:hs[0],goal:String(g.id),lib:`Entraînement : « ${h.title} » pour la porte « ${g.title} »`,xp:SYS_XP.urgence}; }
+  }
+  // 2. Une échéance dans moins d'une semaine, objectif pas atteint.
+  const ech=goals.filter(g=>!goalReached(g)&&g.status!==GOAL_DELETED&&g.target_date&&sysEcart(aujd,g.target_date)>=0&&sysEcart(aujd,g.target_date)<=7)
+    .sort((a,b)=>String(a.target_date).localeCompare(String(b.target_date)))[0];
+  if(ech){ const n=sysEcart(aujd,ech.target_date);
+    return {type:'objectif',goal:String(ech.id),lib:`L'échéance de « ${ech.title} » arrive (${n?'J-'+n:'aujourd\'hui'}) : avance d'une étape`,xp:SYS_XP.urgence}; }
+  // 3. Une habitude laissée de côté depuis 10 jours, prévue aujourd'hui.
+  const auj=new Date(aujd+'T12:00:00');
+  for(const h of habits.filter(x=>x.active&&!quete.has(String(x.id))&&isHabitDueOnDate(x.frequency,auj))){
+    const d=derniere([String(h.id)]);
+    if(d&&sysEcart(d,aujd)>=10)return {type:'habit',habit:String(h.id),lib:`Reprends « ${h.title} » aujourd'hui`,xp:SYS_XP.urgence};
+  }
+  return null;
+}
+const sysUrgenceDuJour=()=>sysUrgences[td()]||sysUrgenceCalculee();
+async function sysUrgenceStatut(st){
+  const u=sysUrgenceDuJour(); if(!u)return;
+  sysUrgences={...sysUrgences,[td()]:{...u,statut:st}};
+  if(st==='faite')toast(`[ Quête urgente accomplie ] +${u.xp||SYS_XP.urgence} XP`);
+  renderSysteme(); await sysSauver('urgences');
+}
+
+// ── Ouvrir une porte : un objectif devient un donjon ──
+let sysDjEd=null;
+function sysDonjonOuvrir(id){
+  sysDjEd=id?String(id):null;
+  const dj=id?sysDonjons[String(id)]:null;
+  const libres=goals.filter(g=>g.status!==GOAL_DELETED&&!goalReached(g)&&(!sysDonjons[String(g.id)]||String(g.id)===sysDjEd));
+  const sel=document.getElementById('sysDjGoal');
+  sel.innerHTML=libres.map(g=>`<option value="${MD_ATT(String(g.id))}"${String(g.id)===sysDjEd?' selected':''}>${tdEsc(g.title)}</option>`).join('')||'<option value="">Aucun objectif en cours</option>';
+  sel.disabled=!!sysDjEd;
+  document.getElementById('sysDjTitre').textContent=dj?'LA PORTE':'OUVRIR UNE PORTE';
+  document.getElementById('sysDjFermer').style.display=dj?'':'none';
+  document.getElementById('sysDjCible').value=dj&&dj.cible?String(dj.cible):'';
+  const lie=new Set(((dj&&dj.habits)||[]).map(String));
+  document.getElementById('sysDjHabits').innerHTML=habits.filter(h=>h.active).map(h=>`<label class="sys-djh"><input type="checkbox" value="${MD_ATT(String(h.id))}"${lie.has(String(h.id))?' checked':''}> ${tdEsc(h.title)}</label>`).join('')
+    ||'<span class="ca-aide">Aucune habitude active.</span>';
+  sysDonjonRang(dj?dj.rang:null);
+  modalOuvre('sysDonjonModal');
+}
+function sysDonjonRang(r){
+  const g=goals.find(x=>String(x.id)===document.getElementById('sysDjGoal').value);
+  const sug=g?sysRangSuggere(g):'E';
+  document.getElementById('sysDjRang').innerHTML=SYS_PORTES.map(x=>`<option value="${x}"${(r||sug)===x?' selected':''}>${x}${x===sug?' (proposé)':''} — boss +${SYS_DONJON_XP[x][0]} XP, étape +${SYS_DONJON_XP[x][1]}</option>`).join('');
+}
+async function sysDonjonEnregistrer(){
+  const id=document.getElementById('sysDjGoal').value; if(!id){ toast('Choisis un objectif','err'); return; }
+  const cible=parseInt(document.getElementById('sysDjCible').value,10);
+  const habitsLies=[...document.querySelectorAll('#sysDjHabits input:checked')].map(x=>x.value);
+  const avant=sysDonjons[id];
+  sysDonjons={...sysDonjons,[id]:{rang:document.getElementById('sysDjRang').value,habits:habitsLies,cible:cible>0?cible:0,debut:(avant&&avant.debut)||td()}};
+  modalFerme('sysDonjonModal'); renderSysteme();
+  await sysSauver('donjons');
+}
+async function sysDonjonFermer(){
+  if(!sysDjEd)return; const id=sysDjEd, avant=sysDonjons[id];
+  const n={...sysDonjons}; delete n[id]; sysDonjons=n;
+  modalFerme('sysDonjonModal'); renderSysteme(); await sysSauver('donjons');
+  offerUndo('Porte fermée',async()=>{ sysDonjons={...sysDonjons,[id]:avant}; renderSysteme(); await sysSauver('donjons'); });
+}
+function sysPortesHtml(){
+  const l=goals.filter(g=>sysDonjonDe(g)&&g.status!==GOAL_DELETED);
+  const carte=g=>{ const dj=sysDonjonDe(g), cps=goalCheckpoints(g), fait=goalReached(g), pc=goalProgress(g), ent=sysEntrainement(g);
+    const hs=(dj.habits||[]).map(id=>(habits.find(h=>String(h.id)===String(id))||{}).title).filter(Boolean);
+    return `<button class="sys-porte${fait?' faite':''}" onclick="sysDonjonOuvrir('${MD_ATT(String(g.id))}')">
+      <span class="sys-porte-r r-${dj.rang}">${dj.rang}</span>
+      <span class="sys-porte-c"><b>${tdEsc(g.title)}</b>
+        <span class="sys-xp-b"><span style="width:${pc}%"></span></span>
+        <small>${fait?'DONJON NETTOYÉ':`${pc} %`}${cps.length?` · étapes ${cps.filter(c=>c.d).length}/${cps.length}`:''}${hs.length?` · entraînement ${ent}${dj.cible?'/'+dj.cible:''} (${tdEsc(hs.join(', '))})`:''}
+          · boss ${fait?'vaincu':`+${SYS_DONJON_XP[dj.rang][0]} XP`}${g.target_date&&!fait?` · échéance ${tdEsc(g.target_date)}`:''}</small></span></button>`; };
+  return `<div class="sys-portes"><div class="sys-t">Portes <button class="sys-reg" onclick="sysDonjonOuvrir(null)" title="Faire d'un objectif un donjon">+ Ouvrir une porte</button></div>
+    ${l.length?`<div class="sys-portes-g">${l.sort((a,b)=>Number(goalReached(a))-Number(goalReached(b))).map(carte).join('')}</div>`
+      :'<div class="sys-vide">Aucune porte ouverte. Fais d\'un objectif un donjon : un rang, ses étapes, un boss — et des habitudes pour t\'entraîner.</div>'}</div>`;
+}
+
 // ── La fenêtre du Système ──
 let sysTimer=null;
 function sysRestant(){
@@ -5085,7 +5316,12 @@ function renderSysteme(){
   if(!sysCalib.le&&sysCharge&&habits.some(h=>h.active))sysCalibrer();
   const e=sysEtat(), aujd=td(), q=sysQueteJour(aujd);
   const faits=new Set(habitsLog.filter(l=>l.date===aujd).map(l=>String(l.habit_id)));
-  const nOk=q.filter(h=>faits.has(String(h.id))).length, complete=q.length&&nOk===q.length;
+  const nOk=q.filter(h=>faits.has(String(h.id))).length, requis=sysQueteRequis(aujd,q.length), complete=q.length&&nOk>=requis;
+  const rachat=q.length&&sysRachat(aujd), retour=sysRetour(aujd), prime=SYS_XP.queteComplete*(rachat?2:1);
+  // L'urgence acceptée d'une habitude s'accomplit d'elle-même, en la cochant.
+  const urg=sysUrgenceDuJour();
+  if(urg&&urg.statut==='acceptee'&&urg.type==='habit'&&faits.has(String(urg.habit))){ setTimeout(()=>sysUrgenceStatut('faite'),0); }
+  const titre=SYS_TITRES.find(t=>t[0]===sysTitres.actif&&t[3](e));
   const pct=Math.min(100,Math.round((e.xp-e.base)/((e.suivant-e.base)||1)*100));
   const choisie=sysQueteActuelle().length>0;
   el.innerHTML=`<div class="sys-fen">
@@ -5093,6 +5329,7 @@ function renderSysteme(){
       <div class="sys-t">Statut <button class="sys-reg" onclick="sysPaliersOuvrir()" title="Les paliers : l'expérience de chaque rang, et le temps pour y arriver">Paliers</button></div>
       <div class="sys-id"><div class="sys-rang r-${e.rang}" title="Rang ${e.rang}">${e.rang}</div>
         <div><div class="sys-niv">Niveau <b>${e.niveau}</b></div>
+          <button class="sys-titre-p" onclick="sysTitresOuvrir()" title="Les titres">${titre?`« ${tdEsc(titre[1])} »`:`${sysTitresGagnes(e).length} titre${sysTitresGagnes(e).length>1?'s':''} · choisir`}</button>
           <div class="sys-xp"><div class="sys-xp-b"><span style="width:${pct}%"></span></div><small>${e.xp-e.base} / ${e.suivant-e.base} XP · ${e.xp} au total</small></div>
           <div class="sys-or" title="L'or : ta cagnotte, à dépenser en récompenses">🪙 ${eur(e.or)}</div></div></div>
       <div class="sys-stats">${SYS_STATS.map(([k,lib,src])=>`<div class="sys-st" title="Nourrie par ${MD_ATT(src)}"><span>${lib}</span><b>${e.stats[k]}</b>
@@ -5104,13 +5341,21 @@ function renderSysteme(){
       ${!choisie?`<div class="sys-vide">Le Système attend ta quête : 3 à 5 habitudes, pas plus.<br><button class="btn-nav" onclick="sysQueteOuvrir()">Choisir ma quête quotidienne</button></div>`
       :!q.length?`<div class="sys-vide">Aucune habitude de la quête n'est prévue aujourd'hui. Repos.</div>`
       :`<div class="sys-sous">Préparation pour devenir plus fort</div>
+      ${rachat?`<div class="sys-penal">⚠ ZONE DE PÉNALITÉ — hier, la quête n'a pas été accomplie. Accomplis-la aujourd'hui : prime doublée, +${prime} XP.</div>`:''}
+      ${retour?`<div class="sys-retour">Mode retour : ${requis} sur ${q.length} suffi${requis>1?'sent':'t'} pour la prime, le temps de reprendre.</div>`:''}
       ${q.map(h=>{ const ok=faits.has(String(h.id)), mini=(sysQuete.minimum||{})[h.id];
         return `<button class="sys-ligne${ok?' ok':''}" onclick="toggleHabit(${JSON.stringify(h.id).replace(/"/g,'&quot;')})">
           <span class="sys-case">${ok?'✓':''}</span><span class="sys-lib">${tdEsc(h.title)}${mini?`<small>minimum : ${tdEsc(mini)}</small>`:''}</span>
           <span class="sys-gain">+${SYS_XP.quete} XP</span></button>`; }).join('')}
-      <div class="sys-pied">${complete?`<span class="sys-ok">QUÊTE ACCOMPLIE · +${SYS_XP.queteComplete} XP</span>`
-        :`<span>${nOk}/${q.length} · prime +${SYS_XP.queteComplete} XP</span><span class="sys-temps" id="sysTemps" title="Temps restant avant minuit">⏳ ${sysRestant()}</span>`}</div>`}
-    </div></div>`;
+      <div class="sys-pied">${complete?`<span class="sys-ok">QUÊTE ACCOMPLIE · +${prime} XP</span>`
+        :`<span>${nOk}/${requis<q.length?requis+' (sur '+q.length+')':q.length} · prime +${prime} XP</span><span class="sys-temps" id="sysTemps" title="Temps restant avant minuit">⏳ ${sysRestant()}</span>`}</div>`}
+      ${urg&&urg.statut!=='refusee'?`<div class="sys-urg${urg.statut==='faite'?' faite':''}"><div class="sys-urg-t">⚠ Quête urgente <span>+${urg.xp||SYS_XP.urgence} XP</span></div>
+        <div class="sys-urg-l">${tdEsc(urg.lib)}</div>
+        ${urg.statut==='faite'?'<div class="sys-ok">ACCOMPLIE</div>'
+          :urg.statut==='acceptee'?(urg.type==='objectif'?`<button class="btn-nav" onclick="sysUrgenceStatut('faite')">C'est fait</button>`:'<div class="ca-aide">Acceptée : coche l\'habitude pour l\'accomplir.</div>')
+          :`<div class="nba-act"><button class="btn-nav" onclick="sysUrgenceStatut('acceptee')">Accepter</button><button class="btn-nav out" onclick="sysUrgenceStatut('refusee')">Refuser</button></div>`}</div>`:''}
+    </div>
+    ${sysPortesHtml()}</div>`;
   clearInterval(sysTimer);
   if(!complete&&q.length)sysTimer=setInterval(()=>{ const t=document.getElementById('sysTemps'); if(t)t.textContent='⏳ '+sysRestant(); else clearInterval(sysTimer); },1000);
   sysAnnonces(e,complete);
@@ -5126,8 +5371,18 @@ function sysAnnonces(e,complete){
   else if(e.niveau>vu.niveau){ const r=sysRangDe(vu.niveau);
     sysFenetre('LEVEL UP !',`Niveau ${e.niveau}`,`+${(e.niveau-vu.niveau)*SYS_POINTS_NIVEAU} points de stat à attribuer.${e.rang!==r?`<br><b>Nouveau rang : ${e.rang}</b>`:''}`); }
   // La quête accomplie s'annonce aussi quand elle fait passer un niveau.
-  if(vu&&complete&&vu.quete!==aujd)toast(`[ Quête accomplie ] +${SYS_XP.queteComplete} XP`);
-  try{ localStorage.setItem('kanban_sys_vu',JSON.stringify({niveau:e.niveau,quete:complete?aujd:(vu&&vu.quete)||''})); }catch(e2){}
+  if(vu&&complete&&vu.quete!==aujd)toast(`[ Quête accomplie ] +${SYS_XP.queteComplete*(sysRachat(aujd)?2:1)} XP`);
+  // Les titres et les donjons nouveaux ; la première fois, on prend note sans fanfare.
+  const titres=sysTitresGagnes(e), faits=goals.filter(g=>sysDonjonDe(g)&&goalReached(g)).map(g=>String(g.id));
+  if(vu&&vu.titres)titres.filter(t=>!vu.titres.includes(t)).forEach(t=>toast(`[ Titre obtenu ] « ${SYS_TITRES.find(x=>x[0]===t)[1]} »`));
+  if(vu&&vu.donjons){ const n=faits.filter(id=>!vu.donjons.includes(id));
+    if(n.length){ const g=goals.find(x=>String(x.id)===n[0]), dj=sysDonjonDe(g);
+      sysFenetre('[ Donjon nettoyé ]',g.title,`Porte de rang ${dj.rang} — boss vaincu : +${SYS_DONJON_XP[dj.rang][0]} XP${g.reward_eur?`<br>Butin : ${eur(g.reward_eur)}`:''}${g.reward?`<br>${tdEsc(g.reward)}`:''}`); } }
+  // Le retour après une pause.
+  if(vu&&sysDebutRetour(aujd)&&vu.retour!==aujd&&!(document.getElementById('sysAnnModal')||{classList:{contains:()=>false}}).classList.contains('open'))
+    sysFenetre('[ Système ]','Le Joueur est de retour',`Mode retour pendant trois jours : la moitié de la quête suffit pour la prime.<br>Reprends en douceur.`);
+  try{ localStorage.setItem('kanban_sys_vu',JSON.stringify({niveau:e.niveau,quete:complete?aujd:(vu&&vu.quete)||'',titres,donjons:faits,
+    retour:sysDebutRetour(aujd)?aujd:(vu&&vu.retour)||''})); }catch(e2){}
 }
 function sysFenetre(t,titre,txt){
   document.getElementById('sysAnnT').textContent=t;
@@ -8752,9 +9007,9 @@ const BK_TABLES=[
   ['nbaPoker',     'NBA, poker',   ()=>nbaPoker,     v=>{nbaPoker=v;}],
   ['nbaCotes',     'NBA, cotes',   ()=>nbaCotes,     v=>{nbaCotes=v;}],
   // Le Système : la quête choisie et les points de stats répartis.
-  ['systeme',      'Système',      ()=>[{id:'quete',v:sysQuete},{id:'stats',v:sysStats},{id:'reset',v:sysReset},{id:'calibrage',v:sysCalib}],
-    v=>{ (v||[]).forEach(x=>{ if(x&&x.id==='quete'&&x.v)sysQuete=x.v; if(x&&x.id==='stats'&&x.v)sysStats=x.v; if(x&&x.id==='reset'&&x.v)sysReset=x.v;
-      if(x&&x.id==='calibrage'&&x.v&&x.v.k>0)sysCalib=x.v; }); sysCache(); }]];
+  ['systeme',      'Système',      ()=>Object.keys(SYS_CLES).map(id=>({id,v:SYS_CLES[id]()})),
+    v=>{ (v||[]).forEach(x=>{ if(!x||!x.v)return; if(x.id==='quete')sysQuete=x.v; if(x.id==='stats')sysStats=x.v; if(x.id==='reset')sysReset=x.v;
+      if(x.id==='calibrage'&&x.v.k>0)sysCalib=x.v; if(x.id==='donjons')sysDonjons=x.v; if(x.id==='urgences')sysUrgences=x.v; if(x.id==='titres')sysTitres=x.v; }); sysCache(); }]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -8860,8 +9115,8 @@ async function applyBackup(){
       if(jpMesures.length)  ok=await sheetBatchUpsert('jp_mesures',jpMesures.map(jpMesRow))&&ok;
       if(jpCheck.length)    ok=await sheetBatchUpsert('jp_check',jpCheck.map(jpChkRow))&&ok;
       if(cartes.length){ await ensureCartesSheet(); ok=await sheetBatchUpsert(CA_SHEET,cartes.map(caRow))&&ok; }
-      if(sysQuete.versions.length||Object.keys(sysStats.alloc||{}).length){ await sysOnglet();
-        ok=await sheetBatchUpsert(SYS_SHEET,[['quete',JSON.stringify(sysQuete),td()],['stats',JSON.stringify(sysStats),td()],['reset',JSON.stringify(sysReset),td()],['calibrage',JSON.stringify(sysCalib),td()]])&&ok; }
+      if(sysQuete.versions.length||Object.keys(sysStats.alloc||{}).length||Object.keys(sysDonjons).length){ await sysOnglet();
+        ok=await sheetBatchUpsert(SYS_SHEET,Object.keys(SYS_CLES).map(k=>[k,JSON.stringify(SYS_CLES[k]()),td()]))&&ok; }
       if(nbaSaisons.length||nbaParis.length||nbaPoker.length){ await nbaOnglets();
         if(nbaPoker.length)ok=await sheetBatchUpsert(NBA_T.poker,nbaPoker.map(nbaPokerRow))&&ok;
         if(nbaCotes.length)ok=await sheetBatchUpsert(NBA_T.cotes,nbaCotes.map(nbaCotesRow))&&ok;
@@ -15888,6 +16143,9 @@ function goalCheckpoints(g){
 function goalProgress(g){
   const cps=goalCheckpoints(g);
   if(cps.length)return Math.round(cps.filter(c=>c.d).length/cps.length*100);
+  // Un donjon sans étapes, avec une cible d'entraînement : ses habitudes liées le font avancer.
+  const dj=typeof sysDonjonDe==='function'?sysDonjonDe(g):null;
+  if(dj&&Number(dj.cible)>0)return Math.min(100,Math.round(sysEntrainement(g)/Number(dj.cible)*100));
   return Math.max(0,Math.min(100,parseInt(g.progress)||0));
 }
 
@@ -22934,7 +23192,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.107.0';
+const APP_VERSION='v1.108.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
