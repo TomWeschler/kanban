@@ -20,6 +20,8 @@ await p.evaluate(async()=>{
   window.S_TOASTS=[]; window.toast=m=>S_TOASTS.push(m); window.offerUndo=()=>{};
   ['kanban_systeme','kanban_sys_vu'].forEach(k=>localStorage.removeItem(k));
   sysQuete={versions:[],minimum:{}}; sysStats={alloc:{}}; sysCharge=false;
+  // Une pente fixe pour les épreuves (k = 50) : le calibrage s'éprouve à part.
+  sysCalib={k:50,xpJour:null,le:'banc'};
   accessToken='T'; cfg.spreadsheetId='S';
   window.S_ONGLETS={}; window.S_CREES=[];
   window.sheetTitres=async()=>Object.keys(S_ONGLETS);
@@ -65,13 +67,13 @@ const nv=await p.evaluate(()=>{
   const e=sysEtat();
   return {xp:e.xp,niveau:e.niveau,rang:e.rang,base:e.base,suivant:e.suivant,stats:JSON.stringify(e.stats),points:e.points,or:e.or,
     seuils:[sysSeuil(1),sysSeuil(2),sysSeuil(3),sysSeuil(5),sysSeuil(10)].join(','),
-    rangs:[1,4,5,9,10,19,20,30,45,60,79,80,120].map(sysRangDe).join(''),
+    rangs:[1,4,5,9,10,19,20,30,45,60,79,80,99,100,119,120,200].map(sysRangDe).join(','),
     niveaux:[0,99,100,299,300,999,1000].map(sysNiveauDe).join(',')};
 });
 chk('L\'expérience se calcule sur tout l\'historique : coches (une par jour), sport, objectifs',nv.xp===195,String(nv.xp));
 chk('...niveau 2, rang G',nv.niveau===2&&nv.rang==='G'&&nv.base===100&&nv.suivant===300,JSON.stringify(nv));
 chk('Les seuils de niveau : 50 × N × (N − 1)',nv.seuils==='0,100,300,1000,4500'&&nv.niveaux==='1,1,2,2,3,4,5',JSON.stringify([nv.seuils,nv.niveaux]));
-chk('Les rangs, de G à S : G et F sous les rangs de chasseur',nv.rangs==='GGFFEEDCBAASS',nv.rangs);
+chk('Les rangs, de G à SSS : G et F sous les rangs de chasseur, SS et SSS au-delà du S',nv.rangs==='G,G,F,F,E,E,D,C,B,A,A,S,S,SS,SS,SSS,SSS',nv.rangs);
 chk('Les stats, nourries par le sport et les catégories',nv.stats==='{"force":10,"vitalite":10,"agilite":10,"intelligence":10,"perception":11}',nv.stats);
 chk('...3 points à répartir par niveau gagné',nv.points===3,String(nv.points));
 chk('L\'or, c\'est la cagnotte',Math.abs(nv.or-(-17.3))<0.001,String(nv.or));
@@ -208,14 +210,14 @@ const pal=await p.evaluate(async()=>{
   out.ouvert=document.getElementById('sysPalModal').classList.contains('open');
   out.rythme=document.getElementById('sysPalRythme').textContent.replace(/\s+/g,' ');
   out.lignes=[...document.querySelectorAll('#sysPalTable tr')].slice(1).map(r=>[...r.children].slice(0,3).map(x=>x.textContent.trim().replace(/[\u00a0\u202f]/g,' ')).join(':')).join(' ');
-  out.s=[...document.querySelectorAll('#sysPalTable tr')].pop().textContent.replace(/[\u00a0\u202f]/g,' ').replace(/\s+/g,' ');
+  out.s=[...document.querySelectorAll('#sysPalTable tr')].find(r=>r.children[0].textContent.trim()==='S').textContent.replace(/[\u00a0\u202f]/g,' ').replace(/\s+/g,' ');
   modalFerme('sysPalModal');
   out.duree=[sysDuree(0.5),sysDuree(17),sysDuree(400),sysDuree(1200)].join(' / ');
   return out;
 });
 chk('« Si tu fais tout » : chaque habitude active, la quête et sa prime',pal.max==='130|1.6',pal.max);
 chk('...et les séances de sport programmées',pal.sport===138.6,String(pal.sport));
-chk('Les paliers : chaque rang, son niveau, l\'XP cumulée',pal.ouvert&&pal.lignes==='G:1:0 F:5:1 000 E:10:4 500 D:20:19 000 C:30:43 500 B:45:99 000 A:60:177 000 S:80:316 000',pal.lignes);
+chk('Les paliers : chaque rang, son niveau, l\'XP cumulée',pal.ouvert&&pal.lignes==='G:1:0 F:5:1 000 E:10:4 500 D:20:19 000 C:30:43 500 B:45:99 000 A:60:177 000 S:80:316 000 SS:100:495 000 SSS:120:714 000',pal.lignes);
 chk('...le temps, la date et l\'or pour y arriver',/S\s*80\s*316 000/.test(pal.s)&&/ans/.test(pal.s)&&/€/.test(pal.s),pal.s);
 chk('...au rythme annoncé',/Si tu fais tout : 139 XP et 1\.60€ d'or par jour/.test(pal.rythme),pal.rythme);
 chk('Les durées se lisent : jours, mois, années',pal.duree==="aujourd'hui / 17 jours / 13 mois / 3,3 ans",pal.duree);
@@ -254,6 +256,30 @@ chk('...les habitudes et la quête restent',rz.habitudes===6&&rz.quete==='1,2,4'
 chk('...écrit dans le classeur, une copie gardée sur l\'appareil',rz.ecrit>=1&&rz.ligne.depuis===rz.ligne.depuis&&Array.isArray(rz.ligne.objectifs)&&rz.ligne.objectifs.includes('g1')&&rz.copie,JSON.stringify(rz.ligne));
 chk('...le sport d\'après compte',rz.apresSport===30,String(rz.apresSport));
 chk('...et l\'on peut annuler',rz.annule===rz.avant.log+'|'+rz.avant.xp,JSON.stringify([rz.annule,rz.avant]));
+
+console.log('=== 9. LE CALIBRAGE : LE RANG S EN DEUX ANS ===');
+const cal=await p.evaluate(async()=>{
+  const out={};
+  const m=sysMaxJour(); out.xpJour=Math.round(m.xp*10)/10;
+  await sysCalibrer();
+  out.k=Math.round(sysCalib.k*1000)/1000;
+  out.jours=Math.round(sysSeuil(80)/m.xp);
+  out.ligne=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='calibrage')||[])[1]||'{}');
+  sysPaliersOuvrir(); await new Promise(r=>setTimeout(r,50));
+  const ligneDe=r=>[...document.querySelectorAll('#sysPalTable tr')].find(x=>x.children[0].textContent.trim()===r);
+  out.s=ligneDe('S').textContent.replace(/[\u00a0\u202f]/g,' ').replace(/\s+/g,' ');
+  out.ss=!!ligneDe('SS')&&!!ligneDe('SSS');
+  out.texte=document.getElementById('sysPalCalib').textContent.replace(/\s+/g,' ');
+  modalFerme('sysPalModal');
+  // Sans calibrage encore fait, le premier se fait seul.
+  sysCalib={k:30,xpJour:null,le:''}; sysCharge=true; renderSysteme(); await new Promise(r=>setTimeout(r,50));
+  out.auto=sysCalib.le===td();
+  return out;
+});
+chk('Le calibrage : la pente pour le niveau 80 en 730 jours au rythme « si je fais tout »',cal.jours===730&&Math.abs(cal.k-730*cal.xpJour/6320)<0.01,JSON.stringify(cal));
+chk('...écrit dans le classeur',cal.ligne.k>0&&cal.ligne.le&&cal.ligne.xpJour===cal.xpJour,JSON.stringify(cal.ligne));
+chk('...les paliers le disent : le rang S dans 2 ans, puis SS et SSS',/2,0 ans/.test(cal.s)&&cal.ss&&/Calibré pour le rang S en 2 ans/.test(cal.texte),cal.s+' / '+cal.texte);
+chk('...le premier calibrage se fait seul',cal.auto===true);
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();

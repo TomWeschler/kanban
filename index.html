@@ -1249,6 +1249,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sys-id{display:flex;gap:0.8rem;align-items:center}
 .sys-rang{width:3.2rem;height:3.2rem;flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:1.7rem;font-weight:800;
   border:2px solid currentColor;border-radius:6px;box-shadow:0 0 14px currentColor;text-shadow:0 0 10px currentColor}
+.r-SS{color:#ff9cf0}.r-SSS{color:#fff3b0}
+.sys-rang.r-SS{font-size:1.25rem}.sys-rang.r-SSS{font-size:1rem}
+.sys-rang.r-SSS{background:linear-gradient(135deg,rgba(255,224,102,.25),rgba(255,156,240,.2))}
+.sys-rang-mini.r-SS,.sys-rang-mini.r-SSS{width:auto;padding:0 3px}
+.sys-pal-c{display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;color:var(--text-mid)}
 .r-G{color:#8a93a6}.r-F{color:#9fb3c8}.r-E{color:#7cd992}.r-D{color:#5fb8ff}.r-C{color:#b07cf0}.r-B{color:#ffb547}.r-A{color:#ff6b6b}.r-S{color:#ffe066}
 .sys-niv{font-size:0.86rem}.sys-niv b{font-size:1.4rem;color:#fff;text-shadow:0 0 10px rgba(124,192,255,.8)}
 .sys-xp{margin-top:0.2rem}.sys-xp small{font-family:var(--font-mono);font-size:0.6rem;color:#9cb8de}
@@ -2924,9 +2929,10 @@ body,body *{font-family:var(--font-body)}
   <div class="modal" style="width:min(720px,94vw)">
     <div class="modal-hdr">LES PALIERS</div>
     <button class="modal-close" onclick="modalFerme('sysPalModal')">✕</button>
+    <div id="sysPalCalib" class="sys-pal-r sys-pal-c"></div>
     <div id="sysPalRythme" class="sys-pal-r"></div>
     <div class="nba-scroll"><table class="nba-tab sys-pal" id="sysPalTable"></table></div>
-    <div class="ca-aide">Le niveau N demande 50 × N × (N − 1) points d'expérience cumulés. Les objectifs atteints (+100 XP) n'entrent pas dans la projection.</div>
+    <div class="ca-aide">Le niveau N demande k × N × (N − 1) points d'expérience cumulés, k réglé pour le rang S en deux ans. Les objectifs atteints (+100 XP) n'entrent pas dans la projection.</div>
   </div>
 </div>
 <div class="modal-bg" id="sysQueteModal">
@@ -4905,7 +4911,15 @@ const SYS_SHEET='systeme', SYS_HEADER=['id','valeur','updated_at'];
 const SYS_XP={habitude:10,quete:20,queteComplete:50,sport:30,sportPartiel:15,objectif:100};
 const SYS_POINTS_NIVEAU=3, SYS_QUETE_MIN=3, SYS_QUETE_MAX=5;
 // Les rangs, du plus bas au plus haut : G et F sous les rangs de chasseur.
-const SYS_RANGS=[['G',1],['F',5],['E',10],['D',20],['C',30],['B',45],['A',60],['S',80]];
+// Au-delà du S, les rangs de légende : SS et SSS.
+const SYS_RANGS=[['G',1],['F',5],['E',10],['D',20],['C',30],['B',45],['A',60],['S',80],['SS',100],['SSS',120]];
+// Le calibrage : le rang S (niveau 80) en DEUX ANS si l'on fait tout. La
+// pente de la courbe se mesure sur le rythme « si je fais tout » du moment et
+// se garde (clé « calibrage » de l'onglet systeme) : elle ne bouge plus que si
+// l'on recalibre — quand les habitudes ont changé.
+const SYS_S_JOURS=730, SYS_K_DEFAUT=30;
+let sysCalib={k:SYS_K_DEFAUT,xpJour:null,le:''};
+try{ const c=JSON.parse(localStorage.getItem('kanban_systeme')||'null'); if(c&&c.calib&&c.calib.k>0)sysCalib=c.calib; }catch(e){}
 // Les stats du chasseur, et ce qui les nourrit : le sport fait la force, les
 // catégories d'habitudes font le reste.
 const SYS_STATS=[['force','Force','les séances de sport'],['vitalite','Vitalité','les habitudes Santé'],['agilite','Agilité','les habitudes Productivité'],
@@ -4915,7 +4929,7 @@ const SYS_CAT_STAT={'Santé':'vitalite','Productivité':'agilite','Esprit':'inte
 // objectifs déjà atteints ne comptent plus, ni en expérience ni en or.
 let sysQuete={versions:[],minimum:{}}, sysStats={alloc:{}}, sysReset={depuis:'',objectifs:[]}, sysCharge=false;
 try{ const c=JSON.parse(localStorage.getItem('kanban_systeme')||'null'); if(c){ sysQuete=c.quete||sysQuete; sysStats=c.stats||sysStats; sysReset=c.reset||sysReset; } }catch(e){}
-function sysCache(){ try{ localStorage.setItem('kanban_systeme',JSON.stringify({quete:sysQuete,stats:sysStats,reset:sysReset})); }catch(e){} }
+function sysCache(){ try{ localStorage.setItem('kanban_systeme',JSON.stringify({quete:sysQuete,stats:sysStats,reset:sysReset,calib:sysCalib})); }catch(e){} }
 const sysObjectifAvant=g=>(sysReset.objectifs||[]).includes(String(g.id));
 
 // ── Le classeur ──
@@ -4933,6 +4947,7 @@ async function sysCharger(){
     const [rows]=await sheetBatchGet([`${SYS_SHEET}!A:C`]);
     rows.slice(1).forEach(r=>{ let v=null; try{ v=JSON.parse(r[1]||'null'); }catch(e){}
       if(!v)return; if(r[0]==='quete')sysQuete={versions:Array.isArray(v.versions)?v.versions:[],minimum:v.minimum||{}}; if(r[0]==='stats')sysStats={alloc:v.alloc||{}};
+      if(r[0]==='calibrage'&&Number(v.k)>0)sysCalib={k:Number(v.k),xpJour:v.xpJour==null?null:Number(v.xpJour),le:String(v.le||'')};
       if(r[0]==='reset')sysReset={depuis:String(v.depuis||''),objectifs:Array.isArray(v.objectifs)?v.objectifs.map(String):[]}; });
     sysCharge=true; sysCache();
   }catch(e){}
@@ -4941,7 +4956,7 @@ async function sysSauver(cle){
   sysCache();
   if(!accessToken)return true;
   await sysOnglet();
-  return sheetBatchUpsert(SYS_SHEET,[[cle,JSON.stringify(cle==='quete'?sysQuete:cle==='reset'?sysReset:sysStats),td()]]);
+  return sheetBatchUpsert(SYS_SHEET,[[cle,JSON.stringify(cle==='quete'?sysQuete:cle==='reset'?sysReset:cle==='calibrage'?sysCalib:sysStats),td()]]);
 }
 
 // ── La quête quotidienne ──
@@ -4961,9 +4976,16 @@ function sysQueteFaite(date,log){
 }
 
 // ── L'expérience, le niveau, le rang, les stats ──
-// Le seuil du niveau N : 50 × N × (N − 1) points — 100 pour le niveau 2, 300
-// pour le 3, 1 000 pour le 5, 4 500 pour le 10.
-const sysSeuil=n=>50*n*(n-1);
+// Le seuil du niveau N : k × N × (N − 1) points d'expérience cumulés, où k
+// est la pente du calibrage (le niveau 80 en deux ans).
+const sysSeuil=n=>Math.round(sysCalib.k*n*(n-1));
+async function sysCalibrer(){
+  const m=sysMaxJour(); if(!m.xp){ toast('Aucune habitude active : rien à calibrer','err'); return false; }
+  sysCalib={k:SYS_S_JOURS*m.xp/(80*79),xpJour:Math.round(m.xp*10)/10,le:td()};
+  if(document.getElementById('sysPalModal').classList.contains('open'))sysPaliersOuvrir();
+  renderSysteme();
+  return sysSauver('calibrage');
+}
 const sysNiveauDe=xp=>{ let n=1; while(sysSeuil(n+1)<=xp)n++; return n; };
 const sysRangDe=n=>SYS_RANGS.filter(([,min])=>n>=min).pop()[0];
 function sysEtat(){
@@ -5034,10 +5056,12 @@ function sysMaxJour(){
   xp+=seances/28*SYS_XP.sport;
   return {xp,eur,seances};
 }
-const sysDuree=j=>!isFinite(j)?'—':j<1?'aujourd\'hui':j<60?`${Math.ceil(j)} jours`:j<730?`${Math.round(j/30.4)} mois`:`${(j/365).toFixed(1).replace('.',',')} ans`;
+const sysDuree=j=>!isFinite(j)?'—':j<1?'aujourd\'hui':j<60?`${Math.ceil(j)} jours`:j<700?`${Math.round(j/30.4)} mois`:`${(j/365).toFixed(1).replace('.',',')} ans`;
 function sysPaliersOuvrir(){
   const e=sysEtat(), m=sysMaxJour(), auj=new Date(td()+'T12:00:00');
   const date=j=>{ if(!isFinite(j))return '—'; const d=new Date(auj); d.setDate(d.getDate()+Math.ceil(j)); return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}); };
+  document.getElementById('sysPalCalib').innerHTML=`Calibré pour le rang S en 2 ans${sysCalib.xpJour?` à ${sysCalib.xpJour} XP par jour (le ${sysCalib.le})`:' (réglage par défaut, pas encore mesuré)'}
+    <button class="btn-nav out nba-mini" onclick="sysCalibrer()" title="Mesurer le rythme « si je fais tout » de tes habitudes actuelles, et régler la courbe pour le rang S en 2 ans">Recalibrer sur mes habitudes</button>`;
   document.getElementById('sysPalRythme').innerHTML=m.xp?`Si tu fais tout : <b>${Math.round(m.xp)} XP</b> et <b>${eur(m.eur)}</b> d'or par jour
     <span class="ca-aide">— ${habits.filter(h=>h.active).length} habitudes actives, la quête et sa prime, ${m.seances} séance${m.seances>1?'s':''} de sport sur 4 semaines</span>`
     :'Aucune habitude active : rien à projeter.';
@@ -5057,6 +5081,8 @@ function sysRestant(){
 }
 function renderSysteme(){
   const el=document.getElementById('sysBox'); if(!el)return;
+  // Le premier calibrage se fait seul, dès qu'il y a des habitudes à mesurer.
+  if(!sysCalib.le&&sysCharge&&habits.some(h=>h.active))sysCalibrer();
   const e=sysEtat(), aujd=td(), q=sysQueteJour(aujd);
   const faits=new Set(habitsLog.filter(l=>l.date===aujd).map(l=>String(l.habit_id)));
   const nOk=q.filter(h=>faits.has(String(h.id))).length, complete=q.length&&nOk===q.length;
@@ -8726,8 +8752,9 @@ const BK_TABLES=[
   ['nbaPoker',     'NBA, poker',   ()=>nbaPoker,     v=>{nbaPoker=v;}],
   ['nbaCotes',     'NBA, cotes',   ()=>nbaCotes,     v=>{nbaCotes=v;}],
   // Le Système : la quête choisie et les points de stats répartis.
-  ['systeme',      'Système',      ()=>[{id:'quete',v:sysQuete},{id:'stats',v:sysStats},{id:'reset',v:sysReset}],
-    v=>{ (v||[]).forEach(x=>{ if(x&&x.id==='quete'&&x.v)sysQuete=x.v; if(x&&x.id==='stats'&&x.v)sysStats=x.v; if(x&&x.id==='reset'&&x.v)sysReset=x.v; }); sysCache(); }]];
+  ['systeme',      'Système',      ()=>[{id:'quete',v:sysQuete},{id:'stats',v:sysStats},{id:'reset',v:sysReset},{id:'calibrage',v:sysCalib}],
+    v=>{ (v||[]).forEach(x=>{ if(x&&x.id==='quete'&&x.v)sysQuete=x.v; if(x&&x.id==='stats'&&x.v)sysStats=x.v; if(x&&x.id==='reset'&&x.v)sysReset=x.v;
+      if(x&&x.id==='calibrage'&&x.v&&x.v.k>0)sysCalib=x.v; }); sysCache(); }]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -8834,7 +8861,7 @@ async function applyBackup(){
       if(jpCheck.length)    ok=await sheetBatchUpsert('jp_check',jpCheck.map(jpChkRow))&&ok;
       if(cartes.length){ await ensureCartesSheet(); ok=await sheetBatchUpsert(CA_SHEET,cartes.map(caRow))&&ok; }
       if(sysQuete.versions.length||Object.keys(sysStats.alloc||{}).length){ await sysOnglet();
-        ok=await sheetBatchUpsert(SYS_SHEET,[['quete',JSON.stringify(sysQuete),td()],['stats',JSON.stringify(sysStats),td()],['reset',JSON.stringify(sysReset),td()]])&&ok; }
+        ok=await sheetBatchUpsert(SYS_SHEET,[['quete',JSON.stringify(sysQuete),td()],['stats',JSON.stringify(sysStats),td()],['reset',JSON.stringify(sysReset),td()],['calibrage',JSON.stringify(sysCalib),td()]])&&ok; }
       if(nbaSaisons.length||nbaParis.length||nbaPoker.length){ await nbaOnglets();
         if(nbaPoker.length)ok=await sheetBatchUpsert(NBA_T.poker,nbaPoker.map(nbaPokerRow))&&ok;
         if(nbaCotes.length)ok=await sheetBatchUpsert(NBA_T.cotes,nbaCotes.map(nbaCotesRow))&&ok;
@@ -22907,7 +22934,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.106.0';
+const APP_VERSION='v1.107.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
