@@ -85,7 +85,7 @@ const fe=await p.evaluate(async()=>{
   const f=document.querySelector('#sysBox .sys-fen');
   out.fenetre=!!f;
   out.statut=(f&&f.querySelector('.sys-statut').textContent.replace(/\s+/g,' '))||'';
-  out.rang=(document.querySelector('.sys-rang')||{}).textContent;
+  out.rang=((document.querySelector('.sys-rang')||{}).textContent||'').trim();
   out.accueil=document.getElementById('sysAnnModal').classList.contains('open');
   out.accueilTxt=document.getElementById('sysAnnTitre').textContent;
   modalFerme('sysAnnModal');
@@ -319,7 +319,7 @@ const p2=await p.evaluate(async()=>{
   const u=sysUrgenceDuJour(); out.urg=u&&[u.type,u.habit,u.goal].join('|');
   renderSysteme(); await new Promise(r=>setTimeout(r,30));
   out.carteUrg=!!document.querySelector('#sysBox .sys-urg');
-  out.portes=document.querySelectorAll('#sysBox .sys-porte').length;
+  sysVue('portes'); out.portes=document.querySelectorAll('#sysBox .sys-porte').length; sysVue('quete');
   await sysUrgenceStatut('acceptee');
   out.ligneUrg=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='urgences')||[])[1]||'{}')[td()].statut;
   const xu=sysEtat().xp;
@@ -330,7 +330,8 @@ const p2=await p.evaluate(async()=>{
   goals[0].checkpoints=cp(4,4);
   const e2=sysEtat(); out.nettoye=e2.donjonsFaits.join(',');
   renderSysteme(); await new Promise(r=>setTimeout(r,30));
-  out.annonce=document.getElementById('sysAnnModal').classList.contains('open')&&/Donjon nettoyé/i.test(document.getElementById('sysAnnT').textContent);
+  out.annonce=document.getElementById('sysAnnModal').classList.contains('open')&&(/Donjon nettoyé/i.test(document.getElementById('sysAnnT').textContent)||sysFile.some(x=>/Donjon nettoyé/i.test(x[0])));
+  sysFile=[];
   modalFerme('sysAnnModal');
   // Un objectif hors donjon compte toujours 100 XP.
   const xh=sysEtat().xp; goals[2].status='done'; out.horsDonjon=sysEtat().xp-xh; goals[2].status='active';
@@ -348,6 +349,7 @@ const p2=await p.evaluate(async()=>{
   // Les titres.
   const g=sysTitresGagnes(sysEtat()); out.titres=g.join(',');
   sysTitresOuvrir(); await new Promise(r=>setTimeout(r,20));
+  out.nTitres=SYS_TITRES.length;
   out.boutons=[document.querySelectorAll('#sysTitresListe .sys-titre:not(.verrou)').length,document.querySelectorAll('#sysTitresListe .sys-titre.verrou').length].join('|');
   await sysTitrePorter('pourfendeur');
   out.porte=(document.querySelector('#sysBox .sys-titre-p')||{}).textContent;
@@ -373,9 +375,129 @@ chk('...un objectif hors donjon vaut toujours 100 XP',p2.horsDonjon===100,String
 chk('Ouvrir une porte : seuls les objectifs libres en cours, rang proposé, habitudes et cible',p2.choix==='g5'&&p2.g5==='["E",["3"],30,true]',JSON.stringify([p2.choix,p2.g5]));
 chk('...écrit dans le classeur, et l\'on peut fermer la porte',p2.ligneDj==='g3,g4,g5'&&p2.ferme===true,p2.ligneDj);
 chk('Titres : gagnés par l\'historique',/eveil/.test(p2.titres)&&/rachat/.test(p2.titres)&&/chasseurPortes/.test(p2.titres)&&/pourfendeur/.test(p2.titres)&&!/monarque/.test(p2.titres),p2.titres);
-chk('...la fenêtre montre gagnés et verrouillés',p2.boutons===p2.titres.split(',').length+'|'+(12-p2.titres.split(',').length),p2.boutons);
+chk('...la fenêtre montre gagnés et verrouillés',p2.boutons===p2.titres.split(',').length+'|'+(p2.nTitres-p2.titres.split(',').length),p2.boutons);
 chk('...le titre porté s\'affiche sous le niveau, écrit dans le classeur',/Pourfendeur/.test(p2.porte)&&p2.ligneTitre==='pourfendeur',JSON.stringify([p2.porte,p2.ligneTitre]));
-chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres',p2.bk);
+chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres,chasses,inventaire,boutique',p2.bk);
+
+console.log('=== 11. PHASE 3 : ACCUEIL, THÈME, CHASSE, COFFRES, ÉQUIPEMENT, BOUTIQUE ===');
+// Une page neuve : l'accueil est le board, le thème Éveil s'applique.
+const pn=await ctx.newPage(); pn.on('pageerror',e=>errs.push(String(e).split('\n')[0]));
+await pn.goto('http://127.0.0.1:8899/index.html',{waitUntil:'domcontentloaded'}); await pn.waitForFunction(()=>typeof renderSysteme==='function');
+const acc=await pn.evaluate(()=>({page:curPage,actif:document.querySelector('.page.active').id,onglet:document.querySelector('.nav-tab').dataset.page,
+  ongletActif:document.querySelector('.nav-tab.active').dataset.page,theme:document.documentElement.getAttribute('data-theme'),
+  menu:!!document.querySelector('#omThemes [data-theme-id="eveil"]')}));
+await pn.close();
+chk('L\'accueil est le board : premier onglet, page ouverte au chargement',acc.page==='board'&&acc.actif==='pageboard'&&acc.onglet==='board'&&acc.ongletActif==='board',JSON.stringify(acc));
+chk('Le thème Éveil (néon bleu et violet) s\'applique, et figure au menu',acc.theme==='eveil'&&acc.menu,JSON.stringify(acc));
+const p3=await p.evaluate(async()=>{
+  const out={}, L=(h,d)=>({id:'y'+Math.random(),habit_id:h,date:d,reward_eur:0.5,category:'Santé'}), aujd=td(), lundi=sysLundi(aujd);
+  sysReset={depuis:'',objectifs:[]}; sysCalib={k:50,xpJour:null,le:'banc'}; sysDonjons={}; sysUrgences={}; sysTitres={actif:''}; sysFile=[];
+  sysChasses={}; sysInv=sysInvNorm({}); sysBoutique=sysBoutNorm({}); goals=[]; sportLogs=[]; sysStats={alloc:{}};
+  sysQuete={versions:[{depuis:J(40),habits:['1','2','4']}],minimum:{}};
+  habitsLog=[L(1,aujd),L(3,aujd)];
+  localStorage.setItem('kanban_sys_vu',JSON.stringify({niveau:sysEtat().niveau,quete:'',titres:sysTitresGagnes(sysEtat()),donjons:[],coffres:[]}));
+  // Le monstre : fixé par sa semaine, de ton rang ; l'élite une semaine sur quatre.
+  const e0=sysEtat(), m1=sysMonstreNouveau(lundi,e0), m2=sysMonstreNouveau(lundi,e0);
+  out.fixe=JSON.stringify(m1)===JSON.stringify(m2)&&m1.rang===e0.rang&&m1.pv>=100&&m1.pv%10===0;
+  out.elites=[0,1,2,3,4,5,6,7].map(i=>sysElite(sysDecale(lundi,7*i))).filter(Boolean).length;
+  // La rencontre s'écrit dans le classeur.
+  renderSysteme(); await new Promise(r=>setTimeout(r,30));
+  out.rencontre=!!sysChasses[lundi]&&!sysChasses[lundi].vaincu&&!!(S_ONGLETS.systeme.find(x=>x[0]==='chasses'));
+  out.mini=!!document.querySelector('#sysBox .sys-mini-m');
+  // Les coups : chaque coche frappe, renforcée par sa stat ; l'arme ajoute ses dégâts.
+  const c1=sysCombat(lundi,sysChasses[lundi],sysEtat());
+  out.coups=c1.coups.length+'|'+c1.coups.map(c=>c.lib).sort().join(',');
+  const st=sysEtat().stats, att=Math.round(20*(1+(st.vitalite-10)/100)), att3=Math.round(10*(1+(st.perception-10)/100));
+  out.calcul=c1.coups.every(c=>c.deg===(c.lib==='Pompes'?att:att3)*(c.crit?2:1));
+  sysInv={...sysInv,objets:[{id:'oT',src:'t',slot:'arme',nom:'Lame d\'essai',rarete:2,niv:1,bonus:{deg:50,crit:0,stats:{}},amel:0,le:aujd}],equipe:{arme:'oT'}};
+  const c2=sysCombat(lundi,sysChasses[lundi],sysEtat());
+  out.arme=c2.degats>c1.degats*1.4&&c2.deg===50;
+  sysInv=sysInvNorm({});
+  // L'onglet Chasse.
+  sysVue('chasse'); await new Promise(r=>setTimeout(r,20));
+  out.vue=localStorage.getItem('kanban_sys_vue')+'|'+!!document.querySelector('#sysBox .sys-chasse .sys-monstre')+'|'+document.querySelectorAll('#sysBox .sys-coup').length;
+  // Le coup porté s'envole du monstre.
+  const xAvant=sysEtat().xp;
+  habitsLog.push(L(2,aujd)); renderSysteme(); out.degat=!!document.querySelector('#sysBox .sys-degat');
+  // La victoire : PV à portée → annoncée, XP, coffre, et acquise même si l'on décoche.
+  sysChasses={...sysChasses,[lundi]:{...sysChasses[lundi],pv:10}};
+  modalFerme('sysAnnModal'); renderSysteme(); await new Promise(r=>setTimeout(r,30));
+  const r=sysChasses[lundi];
+  out.vaincu=r.vaincu===true&&(/Monstre vaincu/.test(document.getElementById('sysAnnT').textContent)||sysFile.some(x=>/Monstre vaincu/.test(x[0])));
+  out.xpVictoire=sysEtat().xp-xAvant-20;
+  out.xpAttendu=r.elite?150:100;
+  out.ligne=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='chasses')||[])[1]||'{}')[lundi].vaincu;
+  habitsLog=habitsLog.filter(l=>l.date!==aujd); renderSysteme(); out.acquise=sysChasses[lundi].vaincu===true;
+  modalFerme('sysAnnModal'); sysFile=[];
+  // Une semaine passée se ferme et se garde.
+  const avant=sysDecale(lundi,-7); sysChasses={...sysChasses,[avant]:{...sysMonstreNouveau(avant,sysEtat()),vaincu:false}};
+  renderSysteme(); out.fermee=sysChasses[avant].fin===true&&typeof sysChasses[avant].degats==='number';
+  sysVue('chasse'); out.histo=!!document.querySelector('#sysBox .sys-ch-h');
+  // Les coffres : le monstre vaincu en donne un ; même graine, même objet.
+  const cf=sysCoffresFermes(sysEtat()); out.coffre=cf.map(c=>c.id).includes('chasse:'+lundi);
+  out.graine=JSON.stringify(sysObjetTire(cf[0],12))===JSON.stringify(sysObjetTire(cf[0],12));
+  const fr0=sysInv.fragments;
+  await sysCoffreOuvrir(); await new Promise(r=>setTimeout(r,1250));
+  out.ouvert=[sysInv.objets.length,sysInv.ouverts.includes(cf[0].id),sysInv.fragments>fr0,!!document.querySelector('#sysCoffreObj .sys-obj-carte'),
+    document.getElementById('sysCoffreModal').classList.contains('open')].join('|');
+  out.ligneInv=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='inventaire')||[])[1]||'{}').objets.length;
+  modalFerme('sysCoffreModal');
+  // Les raretés : le coffre de niveau 5 ne donne jamais de commun.
+  const moy=t=>{ let n=0, c=0; for(let i=0;i<1500;i++){ const o=sysObjetTire({id:'x'+t+'|'+i,t},10); n+=o.rarete; if(o.rarete===0)c++; } return [n/1500,c]; };
+  const t0=moy(0), t5=moy(5); out.raretes=t5[0]>t0[0]+1.5&&t5[1]===0&&t0[1]>700;
+  // Équiper, améliorer, démanteler.
+  const o=sysInv.objets[0];
+  await sysEquiper(o.id); out.equipe=(sysInv.equipe||{})[o.slot]===o.id;
+  sysVue('equipement'); await new Promise(r=>setTimeout(r,20));
+  out.vueEq=document.querySelectorAll('#sysBox .sys-slot').length+'|'+document.querySelectorAll('#sysBox .sys-objet').length+'|'+!!document.querySelector('#sysBox .sys-joueur');
+  sysInv={...sysInv,fragments:1000}; const cout=sysCoutAmel(o);
+  await sysAmeliorer(o.id); out.amel=[sysInv.objets[0].amel,1000-sysInv.fragments===cout].join('|');
+  const b1=sysObjetBonus(sysInv.objets[0]), b0=sysObjetBonus({...sysInv.objets[0],amel:0});
+  out.amelBonus=Object.values(b1.stats).reduce((t,v)=>t+v,0)+b1.deg+b1.crit>=Object.values(b0.stats).reduce((t,v)=>t+v,0)+b0.deg+b0.crit;
+  window.confirm=()=>true; const f1=sysInv.fragments;
+  await sysDemanteler(o.id); out.demonte=[sysInv.objets.length,!(sysInv.equipe||{})[o.slot],sysInv.fragments-f1===SYS_FRAG_DEMONTER[o.rarete]+3].join('|');
+  modalFerme('sysObjetModal');
+  // La boutique : une récompense, un achat qui se retranche de l'or.
+  sysVue('boutique'); await new Promise(r=>setTimeout(r,20));
+  document.getElementById('sysBtLib').value='Resto'; document.getElementById('sysBtPrix').value='0,5';
+  await sysBtAjouter();
+  out.article=(sysBoutique.articles[0]||{}).lib+'|'+(sysBoutique.articles[0]||{}).prix;
+  habitsLog.push(L(1,aujd),L(2,aujd));
+  const or0=cagnotte(); await sysBtAcheter(sysBoutique.articles[0].id);
+  out.achat=Math.round((or0-cagnotte())*100)/100+'|'+JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='boutique')||[])[1]||'{}').achats.length+'|'+(/Boutique/.test(document.getElementById('sysAnnT').textContent));
+  modalFerme('sysAnnModal'); sysFile=[];
+  sysBoutique={...sysBoutique,articles:[...sysBoutique.articles,{id:'cher',lib:'Voyage',prix:99999}]};
+  window.S_TOASTS=[]; await sysBtAcheter('cher'); out.tropCher=sysBoutique.achats.length===1&&S_TOASTS.some(t=>/Pas assez/.test(t));
+  // Les titres de chasse ; le renommage.
+  const tg=sysTitresGagnes(sysEtat()); out.titres=tg.includes('premierSang')&&SYS_TITRES.find(t=>t[0]==='monarque')[1]==='Souverain des portes';
+  // Repartir de zéro : le monstre de la semaine aussi.
+  await sysRepartir(); out.reset=!sysChasses[lundi]||!sysChasses[lundi].vaincu;
+  sysVue('quete');
+  return out;
+});
+chk('Le monstre de la semaine : fixé par sa semaine, de ton rang, des PV ronds',p3.fixe===true);
+chk('...un monstre d\'élite une semaine sur quatre',p3.elites===2,String(p3.elites));
+chk('...la rencontre s\'écrit dans le classeur, le monstre s\'affiche sous le statut',p3.rencontre&&p3.mini,JSON.stringify([p3.rencontre,p3.mini]));
+chk('Les coups : chaque coche de la semaine frappe',p3.coups==='2|Budget,Pompes',p3.coups);
+chk('...renforcée par la stat de sa catégorie (et doublée si critique)',p3.calcul===true);
+chk('...l\'arme ajoute ses dégâts',p3.arme===true);
+chk('L\'onglet Chasse : le monstre, le journal des coups, l\'onglet retenu',p3.vue==='chasse|true|2',p3.vue);
+chk('...le coup porté s\'envole du monstre',p3.degat===true);
+chk('La victoire : annoncée, écrite dans le classeur',p3.vaincu&&p3.ligne===true,JSON.stringify([p3.vaincu,p3.ligne]));
+chk('...elle rapporte de l\'XP (100, 150 pour l\'élite)',p3.xpVictoire===p3.xpAttendu,JSON.stringify([p3.xpVictoire,p3.xpAttendu]));
+chk('...et reste acquise même si l\'on décoche',p3.acquise===true);
+chk('Une semaine passée se ferme et se garde dans l\'historique',p3.fermee&&p3.histo,JSON.stringify([p3.fermee,p3.histo]));
+chk('Les coffres : le monstre vaincu en donne un, même graine même objet',p3.coffre&&p3.graine,JSON.stringify([p3.coffre,p3.graine]));
+chk('...l\'ouverture : l\'objet révélé, des fragments, écrit dans le classeur',p3.ouvert==='1|true|true|true|true'&&p3.ligneInv===1,p3.ouvert+' '+p3.ligneInv);
+chk('...les raretés suivent le niveau du coffre (pas de commun au niveau 5)',p3.raretes===true);
+chk('Équiper : l\'emplacement, la silhouette, l\'inventaire',p3.equipe&&p3.vueEq==='4|1|true',p3.vueEq);
+chk('...améliorer coûte des fragments et renforce les bonus',p3.amel==='1|true'&&p3.amelBonus,p3.amel);
+chk('...démanteler rend des fragments et libère l\'emplacement',p3.demonte==='0|true|true',p3.demonte);
+chk('La boutique : une récompense et son prix',p3.article==='Resto|0.5',p3.article);
+chk('...l\'achat se retranche de l\'or, s\'écrit et s\'annonce',p3.achat==='0.5|1|true',p3.achat);
+chk('...pas d\'achat sans assez d\'or',p3.tropCher===true);
+chk('Les titres de chasse ; « Souverain des portes »',p3.titres===true);
+chk('Repartir de zéro remet aussi le monstre de la semaine',p3.reset===true);
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();

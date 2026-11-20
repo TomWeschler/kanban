@@ -1319,6 +1319,118 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sys-pal tr.sys-pal-fait td{opacity:0.45}
 .sys-pal tr.sys-pal-ici td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .sys-rang-mini{display:inline-block;width:1.5rem;text-align:center;font-weight:800;border:1px solid currentColor;border-radius:4px}
+/* La fenêtre, phase 3 : l'emblème, les onglets, la chasse, l'équipement, la boutique. */
+.sys-fen{background:radial-gradient(520px 260px at 100% 0%,rgba(124,77,255,.18),transparent 65%),linear-gradient(160deg,rgba(14,28,62,.93),rgba(7,10,28,.96))!important;
+  box-shadow:0 0 0 1px rgba(79,163,255,.25),0 0 22px rgba(79,163,255,.3),0 0 40px rgba(124,77,255,.12),inset 0 0 30px rgba(79,163,255,.07)!important}
+.sys-rang{width:4rem;height:4rem;border:0!important;box-shadow:none!important;background:none!important;font-size:0!important}
+.sys-embleme{display:block;overflow:visible}
+.sys-tourne{transform-box:view-box;transform-origin:50% 50%;animation:sysTourne 22s linear infinite}
+@keyframes sysTourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.sys-tourne{animation:none}}
+.sys-st b i.sys-eqb{font-style:normal;font-size:0.62rem;color:#c9a6ff;margin-left:2px}
+.sys-puis{margin-top:0.55rem;font-family:var(--font-mono);font-size:0.72rem;color:#9cb8de}.sys-puis b{color:#fff;text-shadow:0 0 8px rgba(164,99,255,.8)}
+.sys-mini-m{position:relative;display:flex;gap:0.5rem;align-items:center;width:100%;margin-top:0.6rem;padding:0.35rem 0.5rem;text-align:left;font:inherit;color:#dbe9ff;cursor:pointer;
+  background:rgba(124,77,255,.07);border:1px solid rgba(164,99,255,.35);border-radius:5px}
+.sys-mini-m:hover{border-color:#a463ff;box-shadow:0 0 12px rgba(164,99,255,.35)}
+.sys-mini-m.vaincu{opacity:0.7}
+.sys-mini-svg{flex:none;display:flex}
+.sys-mini-c{flex:1;min-width:0;display:flex;flex-direction:column;gap:0.2rem}
+.sys-mini-c b{font-size:0.76rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sys-mini-c small{font-family:var(--font-mono);font-size:0.6rem;color:#c9a6ff}
+.sys-elite{font-style:normal;font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.15em;color:#ff4d6d;border:1px solid #ff4d6d;border-radius:3px;padding:0 3px;text-shadow:0 0 6px rgba(255,77,109,.7)}
+.sys-pv{display:block;height:6px;border-radius:3px;background:rgba(255,77,109,.14);overflow:hidden}
+.sys-pv>span{display:block;height:100%;background:linear-gradient(90deg,#ff4d6d,#ff9a6b);box-shadow:0 0 8px rgba(255,77,109,.8);transition:width .6s ease}
+.sys-pv.gros{height:10px;margin:0.4rem 0 0.2rem}
+.sys-coffres{display:block;width:100%;margin-top:0.55rem;padding:0.45rem;font:inherit;font-size:0.8rem;font-weight:700;color:#fff;cursor:pointer;border-radius:5px;
+  border:1px solid #ffb547;background:linear-gradient(90deg,rgba(255,181,71,.16),rgba(164,99,255,.16));animation:sysPulse 1.8s ease-in-out infinite}
+@keyframes sysPulse{50%{box-shadow:0 0 16px rgba(255,181,71,.55)}}
+.sys-droite{min-width:0;display:flex;flex-direction:column}
+.sys-vues{display:flex;gap:0.2rem;flex-wrap:wrap;margin-bottom:0.6rem}
+.sys-vue{background:none;border:1px solid rgba(124,192,255,.25);color:#9cb8de;font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;
+  padding:0.3rem 0.55rem;border-radius:3px;cursor:pointer;display:flex;gap:0.3rem;align-items:center}
+.sys-vue:hover{color:#fff;border-color:#4fa3ff}
+.sys-vue.on{color:#fff;border-color:#7c9dff;background:linear-gradient(90deg,rgba(61,123,255,.35),rgba(124,77,255,.3));box-shadow:0 0 10px rgba(100,110,255,.4)}
+.sys-vue span{font-size:0.56rem;letter-spacing:0;color:#ffd76a}
+.sys-t-d{font-size:0.58rem;letter-spacing:0.08em;text-transform:none;color:#9cb8de;text-shadow:none}
+.sys-portes .sys-t{border:0}
+.sys-porte-r{border:0!important;box-shadow:none!important;width:2.75rem!important;height:2.75rem!important}
+/* La chasse */
+.sys-ch-haut{display:flex;gap:0.9rem;align-items:center}
+.sys-ch-scene{position:relative;flex:none;display:flex;filter:drop-shadow(0 0 14px rgba(124,77,255,.35))}
+.sys-ch-scene .sys-monstre{animation:sysFlotte 4s ease-in-out infinite}
+@keyframes sysFlotte{50%{transform:translateY(-4px)}}
+.sys-ch-scene.vaincu .sys-monstre{animation:none;opacity:0.25;filter:grayscale(1) blur(1px)}
+.sys-ch-info{flex:1;min-width:0}
+.sys-ch-nom{font-family:var(--font-mono);font-size:1.05rem;font-weight:800;color:#fff;text-shadow:0 0 10px rgba(164,99,255,.8)}
+.sys-ch-rang{font-size:0.72rem;color:#9cb8de;margin-top:0.15rem}
+.sys-ch-pv{font-family:var(--font-mono);font-size:0.7rem;color:#ffb3c0}
+.sys-ch-regle{font-size:0.64rem;color:#7f99c2;margin-top:0.35rem;line-height:1.4}
+.sys-ch-log{margin-top:0.6rem;display:flex;flex-direction:column;gap:0.15rem;max-height:11rem;overflow-y:auto}
+.sys-coup{display:grid;grid-template-columns:2.6rem 1fr auto;gap:0.4rem;font-size:0.72rem;padding:0.12rem 0.3rem;border-bottom:1px solid rgba(124,192,255,.08)}
+.sys-coup span:first-child{color:#7f99c2;font-family:var(--font-mono);font-size:0.62rem}
+.sys-coup b{font-family:var(--font-mono);color:#ff8a9c}
+.sys-coup.crit b{color:#ffd76a;text-shadow:0 0 6px rgba(255,215,106,.7)}
+.sys-ch-hist{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.5rem}
+.sys-ch-h{font-size:0.62rem;padding:0.1rem 0.4rem;border-radius:3px;border:1px solid rgba(255,107,107,.35);color:#c99}
+.sys-ch-h.ok{border-color:rgba(124,217,146,.45);color:#a9e8b8}
+.sys-degat{position:absolute;left:50%;top:10%;transform:translateX(-50%);font-family:var(--font-mono);font-weight:800;font-size:1.1rem;color:#ffd76a;
+  text-shadow:0 0 8px #ff4d6d,0 0 2px #000;pointer-events:none;animation:sysDegat 1.15s ease-out forwards;z-index:2}
+@keyframes sysDegat{0%{opacity:0;transform:translate(-50%,6px) scale(.7)}15%{opacity:1;transform:translate(-50%,0) scale(1.2)}100%{opacity:0;transform:translate(-50%,-34px) scale(1)}}
+.touche .sys-monstre{animation:sysSecoue .35s ease}
+@keyframes sysSecoue{20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+/* L'équipement */
+.sys-eq-perso{display:grid;grid-template-columns:1fr auto 1fr;gap:0.5rem;align-items:center}
+.sys-eq-col{display:flex;flex-direction:column;gap:0.4rem;min-width:0}
+.sys-eq-fig{display:flex;justify-content:center}
+.sys-slot{display:flex;gap:0.4rem;align-items:center;padding:0.3rem 0.4rem;border-radius:4px;border:1px solid rgba(124,192,255,.25);background:rgba(10,16,36,.7);
+  color:#dbe9ff;font:inherit;font-size:0.68rem;text-align:left;cursor:pointer;min-width:0}
+.sys-slot span{min-width:0;overflow:hidden;text-overflow:ellipsis;display:flex;flex-direction:column}
+.sys-slot small{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.14em;text-transform:uppercase;color:#7f99c2}
+.sys-slot.vide{border-style:dashed;color:#56688f;cursor:default}
+.sys-slot svg,.sys-objet svg{flex:none}
+.ra0{border-color:rgba(166,176,192,.5)!important}.ra1{border-color:rgba(79,163,255,.7)!important}
+.ra2{border-color:rgba(164,99,255,.8)!important;box-shadow:0 0 8px rgba(164,99,255,.3)}
+.ra3{border-color:rgba(255,181,71,.85)!important;box-shadow:0 0 10px rgba(255,181,71,.35)}
+.ra4{border-color:rgba(255,77,109,.9)!important;box-shadow:0 0 12px rgba(255,77,109,.45)}
+.sys-eq-res{font-family:var(--font-mono);font-size:0.64rem;color:#c9a6ff;margin:0.5rem 0}
+.sys-inv{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:0.35rem}
+.sys-objet{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid;background:rgba(10,16,36,.75);cursor:pointer;padding:0}
+.sys-objet:hover{transform:translateY(-1px)}
+.sys-objet.porte::after{content:'E';position:absolute;top:1px;left:3px;font-family:var(--font-mono);font-size:0.5rem;color:#7cd992}
+.sys-objet i{position:absolute;bottom:1px;right:3px;font-style:normal;font-family:var(--font-mono);font-size:0.52rem;color:#ffd76a}
+.sys-obj-carte{display:flex;flex-direction:column;align-items:center;gap:0.25rem;padding:0.7rem;border:1px solid;border-radius:6px;background:rgba(5,8,20,.6);margin:0.4rem 0}
+.sys-obj-nom{font-family:var(--font-mono);font-weight:800;font-size:1rem;text-shadow:0 0 10px currentColor}
+.sys-obj-meta{font-size:0.66rem;color:#9cb8de}
+.sys-obj-bonus{display:flex;flex-wrap:wrap;gap:0.3rem;justify-content:center;margin-top:0.2rem}
+.sys-obj-bonus span{font-family:var(--font-mono);font-size:0.68rem;color:#bfe0ff;border:1px solid rgba(124,192,255,.3);border-radius:3px;padding:0 0.35rem}
+.sys-obj-act{display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:center;margin:0.5rem 0 0.3rem}
+.sys-obj-frag{font-family:var(--font-mono);font-size:0.72rem;color:#9fd4ff}
+/* Le coffre */
+.sys-coffre-scene{display:flex;justify-content:center;margin-top:0.4rem;animation:sysTremble .45s ease-in-out}
+@keyframes sysTremble{20%{transform:rotate(-4deg)}40%{transform:rotate(4deg)}60%{transform:rotate(-3deg)}80%{transform:rotate(2deg)}}
+.sys-coffre{overflow:visible}
+.sys-coffre-couvercle{transform-box:fill-box;transform-origin:0% 100%;transition:transform .45s cubic-bezier(.3,1.6,.6,1)}
+.sys-coffre-rayons{opacity:0;transform-box:view-box;transform-origin:50% 49%;transition:opacity .4s}
+.sys-coffre-scene.ouvert .sys-coffre-couvercle{transform:translate(-4px,-14px) rotate(-24deg)}
+.sys-coffre-scene.ouvert .sys-coffre-rayons{opacity:1;animation:sysTourne 9s linear infinite}
+.sys-coffre-src{font-size:0.72rem;color:#9cb8de;margin-top:0.2rem}
+.sys-coffre-obj{opacity:0;transform:scale(.85);transition:opacity .35s,transform .35s}
+.sys-coffre-obj.vu{opacity:1;transform:none}
+.sys-ann-img{display:flex;justify-content:center;margin-bottom:0.4rem}
+.sys-fen .ca-aide,.sys-ann .ca-aide{font-size:0.66rem;color:#7f99c2;line-height:1.4}
+/* La boutique */
+.sys-art{display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0.4rem;border:1px solid rgba(124,192,255,.2);border-radius:4px;margin-bottom:0.3rem;background:rgba(79,163,255,.04)}
+.sys-art-l{flex:1;font-size:0.82rem;min-width:0}
+.sys-art b{font-family:var(--font-mono);font-size:0.76rem;color:#ffd76a}
+.sys-art .btn-nav[disabled]{opacity:0.4;cursor:not-allowed}
+.sys-art-n{display:flex;gap:0.35rem;margin:0.5rem 0;flex-wrap:wrap}
+.sys-art-n input{flex:1;min-width:6rem}
+.sys-art-n input#sysBtPrix{flex:0 0 5.5rem}
+.sys-achat{display:grid;grid-template-columns:5.5rem 1fr auto;gap:0.4rem;font-size:0.7rem;color:#9cb8de;padding:0.1rem 0}
+.sys-achat b{font-family:var(--font-mono);color:#ffb3c0}
+@media (max-width:520px){ .sys-ch-haut{flex-direction:column;align-items:stretch}.sys-ch-scene{justify-content:center}
+  .sys-eq-perso{grid-template-columns:1fr 1fr}.sys-eq-fig{display:none} }
+
 /* ── Menus masqués ── */
 .nav-tab.nav-masque{display:none}
 /* ── NBA ── */
@@ -2276,6 +2388,37 @@ html[data-theme="brutalist"] header{background:#000}
 html[data-theme="brutalist"] .nav-tab.active{color:#fff;border-bottom-color:#fff}
 
 /* ═══════════════════════════════
+   THEME — ⚡ ÉVEIL (néon bleu et violet)
+   Nuit profonde, halos bleu et violet, fines lignes lumineuses : l'ambiance
+   des fenêtres du Système étendue à toute l'application.
+═══════════════════════════════ */
+html[data-theme="eveil"]{
+  --bg:#05060f;--surface:#0a1022;--surface2:#0f1730;--surface3:#16203f;
+  --border:#1c2a52;--border2:#2c3f78;
+  --accent:#5b8cff;--accent-dim:rgba(91,140,255,0.15);
+  --text:#e2eaff;--text-dim:#6d7ca6;--text-mid:#a8b6dc;
+  --green:#5ee0a0;--warn:#ffc35a;--danger:#ff5d7a;--perso:#a463ff;
+  --font-body:'Inter',var(--sys-sans);
+  --font-mono:'JetBrains Mono',var(--sys-mono);
+}
+html[data-theme="eveil"] body{background:
+  radial-gradient(1100px 650px at 88% -12%,rgba(124,77,255,.20),transparent 60%),
+  radial-gradient(900px 600px at -12% 112%,rgba(61,139,255,.18),transparent 60%),var(--bg)}
+html[data-theme="eveil"] header{background:rgba(5,6,15,.82);border-bottom:1px solid;border-image:linear-gradient(90deg,#3d8bff,#a463ff 55%,transparent) 1}
+html[data-theme="eveil"] .logo{color:#a9c6ff;text-shadow:0 0 10px rgba(91,140,255,.75)}
+html[data-theme="eveil"] .nav-tab.active{color:#fff;text-shadow:0 0 10px rgba(124,160,255,.9)}
+html[data-theme="eveil"] .btn-nav:not(.out){background:linear-gradient(90deg,#3d7bff,#7c4dff);box-shadow:0 0 12px rgba(100,110,255,.4)}
+html[data-theme="eveil"] .btn-nav:not(.out):hover{filter:brightness(1.15)}
+html[data-theme="eveil"] .card{border-color:rgba(91,140,255,.2);box-shadow:inset 0 1px 0 rgba(160,190,255,.04)}
+html[data-theme="eveil"] .card:hover{border-color:rgba(164,99,255,.6);box-shadow:0 0 14px rgba(124,77,255,.28)}
+html[data-theme="eveil"] .modal{border-color:rgba(91,140,255,.45);box-shadow:0 0 34px rgba(91,140,255,.22),0 0 0 1px rgba(164,99,255,.15)}
+/* Pas de photo derrière les pages : une trame de lumière, discrète. */
+html[data-theme="eveil"] .pg-bg{background-image:
+  linear-gradient(rgba(91,140,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(91,140,255,.05) 1px,transparent 1px)!important;
+  background-size:42px 42px!important;opacity:1;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 30%,transparent 75%);mask-image:radial-gradient(ellipse at 50% 0%,#000 30%,transparent 75%)}
+
+/* ═══════════════════════════════
    THEME — ② TOKYO NIGHT
 ═══════════════════════════════ */
 html[data-theme="tokyo"]{
@@ -2661,8 +2804,8 @@ body,body *{font-family:var(--font-body)}
   <div class="logo">◆ KANBAN</div>
   <div class="nav-sep"></div>
   <nav class="nav-tabs">
-    <button class="nav-tab active" data-page="today" onclick="switchPage('today')">AUJOURD'HUI</button>
-    <button class="nav-tab" data-page="board" onclick="switchPage('board')">BOARD</button>
+    <button class="nav-tab active" data-page="board" onclick="switchPage('board')">BOARD</button>
+    <button class="nav-tab" data-page="today" onclick="switchPage('today')">AUJOURD'HUI</button>
     <button class="nav-tab" data-page="brain" onclick="switchPage('brain')">NOTES</button>
     <button class="nav-tab nav-masque" data-page="adp" onclick="switchPage('adp')">ADP</button>
     <button class="nav-tab" data-page="omega" onclick="switchPage('omega')">OMEGA</button>
@@ -2681,6 +2824,7 @@ body,body *{font-family:var(--font-body)}
       <div class="more-menu" id="moreMenu">
         <div class="om-t">Thème</div>
         <div class="om-themes" id="omThemes">
+          <button class="om-i" onclick="setTheme('eveil');renderMoreMenu()"><span class="om-d" data-theme-id="eveil"></span>⚡ Éveil — néon bleu et violet</button>
           <button class="om-i" onclick="setTheme('default');renderMoreMenu()"><span class="om-d" data-theme-id="default"></span>Cyber Default</button>
           <button class="om-i" onclick="setTheme('brutalist');renderMoreMenu()"><span class="om-d" data-theme-id="brutalist"></span>① Brutalist</button>
           <button class="om-i" onclick="setTheme('tokyo');renderMoreMenu()"><span class="om-d" data-theme-id="tokyo"></span>② Tokyo Night</button>
@@ -2707,7 +2851,7 @@ body,body *{font-family:var(--font-body)}
 <!-- BOARD PAGE -->
 <div class="subtabs" id="subTabs"></div>
 
-<div class="page active" id="pagetoday">
+<div class="page" id="pagetoday">
   <div class="pg-bg" id="todayBg"></div>
   <div class="td-wrap">
     <div class="td-hdr" id="tdDate"></div>
@@ -2814,7 +2958,7 @@ body,body *{font-family:var(--font-body)}
   </div>
 </div>
 
-<div class="page" id="pageboard">
+<div class="page active" id="pageboard">
   <div class="pg-bg" id="boardBg"></div>
   <div class="board-filters" id="boardFilters">
     <span id="bfTags"></span>
@@ -2945,10 +3089,24 @@ body,body *{font-family:var(--font-body)}
 <div class="modal-bg" id="sysAnnModal">
   <div class="modal sys-ann" style="width:min(420px,92vw)">
     <div class="modal-hdr" id="sysAnnT">[ Système ]</div>
-    <button class="modal-close" onclick="modalFerme('sysAnnModal')">✕</button>
+    <button class="modal-close" onclick="sysAnnFermer()">✕</button>
     <div class="sys-ann-titre" id="sysAnnTitre"></div>
     <div class="sys-ann-txt" id="sysAnnTxt"></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:0.8rem"><button class="btn-nav" onclick="modalFerme('sysAnnModal')">Accepter</button></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:0.8rem"><button class="btn-nav" onclick="sysAnnFermer()">Accepter</button></div>
+  </div>
+</div>
+<div class="modal-bg" id="sysCoffreModal">
+  <div class="modal sys-ann" style="width:min(440px,94vw)">
+    <div class="modal-hdr">[ Coffre ]</div>
+    <button class="modal-close" onclick="modalFerme('sysCoffreModal')">✕</button>
+    <div id="sysCoffreCorps"></div>
+  </div>
+</div>
+<div class="modal-bg" id="sysObjetModal">
+  <div class="modal sys-ann" style="width:min(440px,94vw)">
+    <div class="modal-hdr">[ Objet ]</div>
+    <button class="modal-close" onclick="modalFerme('sysObjetModal')">✕</button>
+    <div id="sysObjCorps"></div>
   </div>
 </div>
 <div class="modal-bg" id="sysTitresModal">
@@ -3851,7 +4009,9 @@ let accessToken = null;
 let allTasks = [], tasks = [];
 let habits = [], habitsLog = [];
 let selImp = 3, selCat = 'Finance';
-let dragSrcId = null, charts = {}, curPage = 'today';
+// L'accueil, c'est le board : ce qu'on montre en ouvrant le site devant
+// quelqu'un. Le Système et la journée restent un onglet plus loin.
+let dragSrcId = null, charts = {}, curPage = 'board';
 let gisLoaded = false, tokenClient = null, silentAuthFailed = false;
 // ── Renouvellement du jeton ───────────────────────────────────────────────
 // Un jeton GIS expire au bout d'environ une heure. Sans renouvellement, toutes
@@ -4270,7 +4430,10 @@ document.addEventListener('click',e=>{
 // ════════════════════════════════════════════════════
 const LS_THEME = 'kanban_theme';
 function applySavedTheme() {
-  const saved = localStorage.getItem(LS_THEME) || 'tokyo';
+  let saved = localStorage.getItem(LS_THEME) || 'eveil';
+  // L'Éveil (bleu et violet néon) s'applique une fois, à sa sortie ; ensuite
+  // le choix du thème reste libre.
+  try{ if(!localStorage.getItem('kanban_theme_eveil')){ localStorage.setItem('kanban_theme_eveil','1'); saved='eveil'; } }catch(e){}
   setTheme(saved, true);
 }
 function setTheme(name, silent) {
@@ -4957,7 +5120,7 @@ async function toggleHabit(habitId, dateStr) {
 // répartis) vit dans l'onglet « systeme » du classeur, une ligne par clé.
 const SYS_SHEET='systeme', SYS_HEADER=['id','valeur','updated_at'];
 // Ce que rapporte chaque geste.
-const SYS_XP={habitude:10,quete:20,queteComplete:50,sport:30,sportPartiel:15,objectif:100,urgence:40};
+const SYS_XP={habitude:10,quete:20,queteComplete:50,sport:30,sportPartiel:15,objectif:100,urgence:40,monstre:100,elite:150};
 // Un objectif devient un DONJON : un rang de E à S, des étapes (ses
 // checkpoints), un boss final (l'objectif atteint). Ce que rapportent le boss
 // et chaque étape, selon le rang de la porte.
@@ -4985,11 +5148,20 @@ let sysQuete={versions:[],minimum:{}}, sysStats={alloc:{}}, sysReset={depuis:'',
 // Les donjons ({id d'objectif : {rang, habits liées, cible de coches, début}}),
 // les quêtes urgentes ({date : {type, lib, statut, xp}}) et le titre porté.
 let sysDonjons={}, sysUrgences={}, sysTitres={actif:''};
+// La chasse ({lundi : le monstre de la semaine et son issue}), l'inventaire
+// (objets, équipement, fragments, coffres ouverts) et la boutique (récompenses
+// en vente, achats).
+const sysInvNorm=v=>({objets:Array.isArray(v&&v.objets)?v.objets:[],equipe:v&&v.equipe&&typeof v.equipe==='object'?v.equipe:{},
+  fragments:Number(v&&v.fragments)||0,ouverts:Array.isArray(v&&v.ouverts)?v.ouverts.map(String):[]});
+const sysBoutNorm=v=>({articles:Array.isArray(v&&v.articles)?v.articles:[],achats:Array.isArray(v&&v.achats)?v.achats:[]});
+let sysChasses={}, sysInv=sysInvNorm({}), sysBoutique=sysBoutNorm({});
 try{ const c=JSON.parse(localStorage.getItem('kanban_systeme')||'null'); if(c){ sysQuete=c.quete||sysQuete; sysStats=c.stats||sysStats; sysReset=c.reset||sysReset;
-  sysDonjons=c.donjons||sysDonjons; sysUrgences=c.urgences||sysUrgences; sysTitres=c.titres||sysTitres; } }catch(e){}
+  sysDonjons=c.donjons||sysDonjons; sysUrgences=c.urgences||sysUrgences; sysTitres=c.titres||sysTitres;
+  sysChasses=c.chasses||sysChasses; sysInv=sysInvNorm(c.inventaire); sysBoutique=sysBoutNorm(c.boutique); } }catch(e){}
 function sysCache(){ try{ localStorage.setItem('kanban_systeme',JSON.stringify({quete:sysQuete,stats:sysStats,reset:sysReset,calib:sysCalib,
-  donjons:sysDonjons,urgences:sysUrgences,titres:sysTitres})); }catch(e){} }
-const SYS_CLES={quete:()=>sysQuete,stats:()=>sysStats,reset:()=>sysReset,calibrage:()=>sysCalib,donjons:()=>sysDonjons,urgences:()=>sysUrgences,titres:()=>sysTitres};
+  donjons:sysDonjons,urgences:sysUrgences,titres:sysTitres,chasses:sysChasses,inventaire:sysInv,boutique:sysBoutique})); }catch(e){} }
+const SYS_CLES={quete:()=>sysQuete,stats:()=>sysStats,reset:()=>sysReset,calibrage:()=>sysCalib,donjons:()=>sysDonjons,urgences:()=>sysUrgences,titres:()=>sysTitres,
+  chasses:()=>sysChasses,inventaire:()=>sysInv,boutique:()=>sysBoutique};
 const sysObjectifAvant=g=>(sysReset.objectifs||[]).includes(String(g.id));
 
 // ── Le classeur ──
@@ -5009,7 +5181,8 @@ async function sysCharger(){
       if(!v)return; if(r[0]==='quete')sysQuete={versions:Array.isArray(v.versions)?v.versions:[],minimum:v.minimum||{}}; if(r[0]==='stats')sysStats={alloc:v.alloc||{}};
       if(r[0]==='calibrage'&&Number(v.k)>0)sysCalib={k:Number(v.k),xpJour:v.xpJour==null?null:Number(v.xpJour),le:String(v.le||'')};
       if(r[0]==='reset')sysReset={depuis:String(v.depuis||''),objectifs:Array.isArray(v.objectifs)?v.objectifs.map(String):[]};
-      if(r[0]==='donjons'&&typeof v==='object')sysDonjons=v; if(r[0]==='urgences'&&typeof v==='object')sysUrgences=v; if(r[0]==='titres'&&typeof v==='object')sysTitres={actif:String(v.actif||'')}; });
+      if(r[0]==='donjons'&&typeof v==='object')sysDonjons=v; if(r[0]==='urgences'&&typeof v==='object')sysUrgences=v; if(r[0]==='titres'&&typeof v==='object')sysTitres={actif:String(v.actif||'')};
+      if(r[0]==='chasses'&&typeof v==='object')sysChasses=v; if(r[0]==='inventaire')sysInv=sysInvNorm(v); if(r[0]==='boutique')sysBoutique=sysBoutNorm(v); });
     sysCharge=true; sysCache();
   }catch(e){}
 }
@@ -5114,6 +5287,10 @@ function sysEtat(){
   // Les quêtes urgentes accomplies.
   const urgences=Object.values(sysUrgences).filter(u=>u&&u.statut==='faite');
   urgences.forEach(u=>{ xp+=Number(u.xp)||SYS_XP.urgence; });
+  // Les monstres vaincus (depuis le départ).
+  const debutChasse=sysReset.depuis?sysLundi(sysReset.depuis):'';
+  const vaincus=Object.entries(sysChasses||{}).filter(([l,r])=>r&&r.vaincu&&l>=debutChasse).map(([,r])=>r);
+  vaincus.forEach(r=>{ xp+=r.elite?SYS_XP.elite:SYS_XP.monstre; });
   // Le sport, l'objectif atteint.
   (sportLogs||[]).filter(s=>!sysReset.depuis||String(s.date)>=sysReset.depuis).forEach(s=>{ const g=s.status==='done'?SYS_XP.sport:s.status==='partial'?SYS_XP.sportPartiel:0; xp+=g; stat.force+=g; });
   // Les objectifs : un donjon rapporte selon son rang, à chaque étape et au
@@ -5127,7 +5304,8 @@ function sysEtat(){
   });
   const niveau=sysNiveauDe(xp);
   const alloc=sysStats.alloc||{}, places=Object.values(alloc).reduce((t,x)=>t+(Number(x)||0),0);
-  return {xp,niveau,rang:sysRangDe(niveau),base:sysSeuil(niveau),suivant:sysSeuil(niveau+1),quetes,rachats,serieMax,urgences:urgences.length,donjonsFaits,statXp:stat,
+  return {xp,niveau,rang:sysRangDe(niveau),base:sysSeuil(niveau),suivant:sysSeuil(niveau+1),quetes,rachats,serieMax,urgences:urgences.length,donjonsFaits,
+    victoires:vaincus.length,elites:vaincus.filter(r=>r.elite).length,statXp:stat,
     stats:Object.fromEntries(SYS_STATS.map(([k])=>[k,10+Math.floor(stat[k]/100)+(Number(alloc[k])||0)])),
     points:Math.max(0,(niveau-1)*SYS_POINTS_NIVEAU-places),or:cagnotte()};
 }
@@ -5144,17 +5322,19 @@ async function sysAttribuer(k){
 // gardée sur l'appareil, et l'on peut annuler dans la foulée.
 async function sysRepartir(){
   if(!confirm('Repartir de zéro ?\n\nL\'historique des habitudes est effacé, l\'or et l\'expérience reviennent à zéro.\nLes habitudes, la quête et les objectifs restent.'))return;
-  const avant={log:habitsLog.slice(),stats:sysStats,reset:sysReset};
+  const avant={log:habitsLog.slice(),stats:sysStats,reset:sysReset,chasses:sysChasses};
   try{ localStorage.setItem('kanban_sys_sauvegarde',JSON.stringify({le:new Date().toISOString(),...avant})); }catch(e){}
   habitsLog=[]; cacheSet('habitsLog',habitsLog);
   sysReset={depuis:td(),objectifs:goals.filter(goalReached).map(g=>String(g.id))};
   sysStats={alloc:{}};
+  // Le monstre de la semaine repart aussi de zéro : une victoire d'avant ne compte plus.
+  const chasses={...sysChasses}; delete chasses[sysLundi(td())]; sysChasses=chasses;
   try{ localStorage.setItem('kanban_sys_vu',JSON.stringify({niveau:1,quete:''})); }catch(e){}
   modalFerme('sysQueteModal');
   renderHabitsPage(); if(curPage==='today')renderTodayPage(); updateHStats();
-  await rewriteHabitsLog(); await sysSauver('reset'); await sysSauver('stats');
+  await rewriteHabitsLog(); await sysSauver('reset'); await sysSauver('stats'); await sysSauver('chasses');
   offerUndo('Le Système repart de zéro',async()=>{
-    habitsLog=avant.log; sysStats=avant.stats; sysReset=avant.reset; cacheSet('habitsLog',habitsLog);
+    habitsLog=avant.log; sysStats=avant.stats; sysReset=avant.reset; sysChasses=avant.chasses; cacheSet('habitsLog',habitsLog); sysSauver('chasses');
     renderHabitsPage(); if(curPage==='today')renderTodayPage(); updateHStats();
     await rewriteHabitsLog(); await sysSauver('reset'); await sysSauver('stats');
   },20000);
@@ -5200,7 +5380,12 @@ const SYS_TITRES=[
   ['pret','Toujours prêt','5 quêtes urgentes accomplies',e=>e.urgences>=5],
   ['chasseurPortes','Chasseur de portes','Nettoyer un premier donjon',e=>e.donjonsFaits.length>=1],
   ['pourfendeur','Pourfendeur','Nettoyer un donjon de rang C ou plus',e=>e.donjonsFaits.some(r=>SYS_PORTES.indexOf(r)>=2)],
-  ['monarque','Monarque des ombres','Nettoyer un donjon de rang S',e=>e.donjonsFaits.includes('S')],
+  ['monarque','Souverain des portes','Nettoyer un donjon de rang S',e=>e.donjonsFaits.includes('S')],
+  ['premierSang','Premier sang','Vaincre un premier monstre',e=>e.victoires>=1],
+  ['traqueur','Traqueur','Vaincre 10 monstres',e=>e.victoires>=10],
+  ['tueurElite','Tueur d\'élite','Vaincre un monstre d\'élite',e=>e.elites>=1],
+  ['pare','Paré au combat','Remplir les quatre emplacements d\'équipement',()=>SYS_SLOTS.every(([k])=>sysInv.objets.some(o=>o.id===(sysInv.equipe||{})[k]))],
+  ['legende','Porteur de légende','Obtenir un objet légendaire',()=>sysInv.objets.some(o=>o.rarete>=3)],
   ['colosse','Colosse','Force à 30',e=>e.stats.force>=30],
   ['erudit','Érudit','Intelligence à 30',e=>e.stats.intelligence>=30],
   ['chasseur','Chasseur','Atteindre le rang E',e=>e.niveau>=10],
@@ -5293,7 +5478,7 @@ function sysPortesHtml(){
   const carte=g=>{ const dj=sysDonjonDe(g), cps=goalCheckpoints(g), fait=goalReached(g), pc=goalProgress(g), ent=sysEntrainement(g);
     const hs=(dj.habits||[]).map(id=>(habits.find(h=>String(h.id)===String(id))||{}).title).filter(Boolean);
     return `<button class="sys-porte${fait?' faite':''}" onclick="sysDonjonOuvrir('${MD_ATT(String(g.id))}')">
-      <span class="sys-porte-r r-${dj.rang}">${dj.rang}</span>
+      <span class="sys-porte-r r-${dj.rang}">${sysPortailSvg(dj.rang,44)}</span>
       <span class="sys-porte-c"><b>${tdEsc(g.title)}</b>
         <span class="sys-xp-b"><span style="width:${pc}%"></span></span>
         <small>${fait?'DONJON NETTOYÉ':`${pc} %`}${cps.length?` · étapes ${cps.filter(c=>c.d).length}/${cps.length}`:''}${hs.length?` · entraînement ${ent}${dj.cible?'/'+dj.cible:''} (${tdEsc(hs.join(', '))})`:''}
@@ -5301,6 +5486,371 @@ function sysPortesHtml(){
   return `<div class="sys-portes"><div class="sys-t">Portes <button class="sys-reg" onclick="sysDonjonOuvrir(null)" title="Faire d'un objectif un donjon">+ Ouvrir une porte</button></div>
     ${l.length?`<div class="sys-portes-g">${l.sort((a,b)=>Number(goalReached(a))-Number(goalReached(b))).map(carte).join('')}</div>`
       :'<div class="sys-vide">Aucune porte ouverte. Fais d\'un objectif un donjon : un rang, ses étapes, un boss — et des habitudes pour t\'entraîner.</div>'}</div>`;
+}
+
+// ════ La chasse, le butin, l'équipement, la boutique ════
+// Les images sont dessinées ici, en SVG : un emblème de rang, des monstres
+// d'ombre aux yeux luisants (chaque famille a sa silhouette, la fumée est
+// tirée d'une graine), une porte, un coffre, des icônes d'objets, le Joueur.
+const SYS_RANG_COUL={G:'#8a93a6',F:'#9fb3c8',E:'#7cd992',D:'#5fb8ff',C:'#b07cf0',B:'#ffb547',A:'#ff6b6b',S:'#ffe066',SS:'#ff9cf0',SSS:'#fff3b0'};
+// Le hasard est tiré d'une graine : un coffre donne toujours le même objet,
+// un monstre a toujours le même nom, d'un appareil à l'autre.
+const sysHash=s=>{ s=String(s); let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; };
+function sysAlea(graine){ let a=sysHash(graine); return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const sysPioche=(r,l)=>l[Math.floor(r()*l.length)];
+let sysSvgN=0;
+function sysEmblemeSvg(rang,taille){
+  const n=++sysSvgN, c=SYS_RANG_COUL[rang]||'#7cc0ff', fs=rang.length>2?22:rang.length>1?30:42;
+  return `<svg class="sys-embleme" viewBox="0 0 100 100" width="${taille}" height="${taille}" aria-hidden="true"><defs>
+    <linearGradient id="eg${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="#a463ff"/></linearGradient>
+    <filter id="ef${n}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g class="sys-tourne"><circle cx="50" cy="50" r="47" fill="none" stroke="url(#eg${n})" stroke-width="1.2" stroke-dasharray="2 5 10 5" opacity=".75"/></g>
+    <polygon points="50,7 87,28.5 87,71.5 50,93 13,71.5 13,28.5" fill="rgba(6,10,24,.88)" stroke="url(#eg${n})" stroke-width="3" filter="url(#ef${n})"/>
+    <polygon points="50,16 79,33 79,67 50,84 21,67 21,33" fill="none" stroke="${c}" stroke-opacity=".35"/>
+    <text x="50" y="52" text-anchor="middle" dominant-baseline="central" font-family="JetBrains Mono,Space Mono,monospace" font-weight="800" font-size="${fs}" fill="${c}" filter="url(#ef${n})">${rang}</text></svg>`;
+}
+// Les familles de monstres : une silhouette, et où brillent les yeux.
+const SYS_FORMES={
+  loup:{d:'M50 90 L37 72 L27 54 L20 14 L39 35 L50 31 L61 35 L80 14 L73 54 L63 72 Z',y:[[40,52,4.2,2],[60,52,4.2,2]]},
+  golem:{d:'M14 96 L17 58 L28 46 L36 46 L36 24 L64 24 L64 46 L72 46 L83 58 L86 96 Z M22 66 L30 62 M78 66 L70 62',y:[[44,35,3.6,2.2],[56,35,3.6,2.2]]},
+  spectre:{d:'M50 10 C30 10 23 31 25 50 C26 66 19 78 14 93 L29 84 L38 94 L50 84 L62 94 L71 84 L86 93 C81 78 74 66 75 50 C77 31 70 10 50 10 Z',y:[[42,40,3.4,4.6],[58,40,3.4,4.6]]},
+  araignee:{d:'M50 28 C63 28 69 39 69 50 C69 64 61 76 50 76 C39 76 31 64 31 50 C31 39 37 28 50 28 Z',
+    x:'<path d="M34 45 L14 28 L5 44 M32 54 L9 53 L3 71 M36 63 L18 75 L14 92 M66 45 L86 28 L95 44 M68 54 L91 53 L97 71 M64 63 L82 75 L86 92" fill="none" stroke="#05050c" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 45 L14 28 L5 44 M32 54 L9 53 L3 71 M36 63 L18 75 L14 92 M66 45 L86 28 L95 44 M68 54 L91 53 L97 71 M64 63 L82 75 L86 92" fill="none" stroke="§" stroke-opacity=".45" stroke-width="1" stroke-linecap="round"/>',
+    y:[[45,41,2.6,2.6],[55,41,2.6,2.6],[40.5,48,1.8,1.8],[59.5,48,1.8,1.8]]},
+  chevalier:{d:'M50 6 L67 17 L72 50 L64 80 L50 93 L36 80 L28 50 L33 17 Z M50 6 L50 93',y:[[41,44,6.5,1.5],[59,44,6.5,1.5]]},
+  serpent:{d:'M50 12 C69 12 81 33 77 56 C74 70 60 74 56 84 L56 96 L44 96 L44 84 C40 74 26 70 23 56 C19 33 31 12 50 12 Z',y:[[43,40,3.2,2.2],[57,40,3.2,2.2]]},
+  gargouille:{d:'M50 26 L42 12 L44 28 L20 15 L5 46 L22 42 L17 65 L34 54 L40 86 L50 75 L60 86 L66 54 L83 65 L78 42 L95 46 L80 15 L56 28 L58 12 Z',y:[[45.5,42,2.8,2],[54.5,42,2.8,2]]},
+  ogre:{d:'M25 92 L21 54 C21 36 34 27 50 27 C66 27 79 36 79 54 L75 92 Z M31 35 L14 10 L40 29 Z M69 35 L86 10 L60 29 Z',y:[[41,52,4.2,2.6],[59,52,4.2,2.6]]}};
+function sysMonstreSvg(m,taille){
+  const n=++sysSvgN, c=SYS_RANG_COUL[m.rang]||'#7cc0ff', f=SYS_FORMES[m.famille]||SYS_FORMES.spectre, oeil=m.elite?'#ff4d6d':c;
+  return `<svg class="sys-monstre${m.elite?' elite':''}" viewBox="0 0 100 100" width="${taille}" height="${taille}" aria-hidden="true"><defs>
+    <radialGradient id="ma${n}"><stop offset="0" stop-color="${m.elite?'#ff4d6d':c}" stop-opacity=".5"/><stop offset=".6" stop-color="#7c4dff" stop-opacity=".18"/><stop offset="1" stop-color="#7c4dff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="mc${n}" cx="50%" cy="38%" r="72%"><stop offset="0" stop-color="#0d0d1d"/><stop offset=".72" stop-color="#05050c"/><stop offset="1" stop-color="${c}" stop-opacity=".55"/></radialGradient>
+    <filter id="mf${n}" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="2" seed="${sysHash(m.nom||'')%97}"/><feDisplacementMap in="SourceGraphic" scale="6"/></filter>
+    <filter id="mg${n}" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="1.8"/></filter></defs>
+    <circle cx="50" cy="55" r="47" fill="url(#ma${n})"/>
+    <g filter="url(#mf${n})"><path d="${f.d}" fill="url(#mc${n})" stroke="${c}" stroke-width="1.3" stroke-opacity=".85" stroke-linejoin="round"/>${(f.x||'').replace(/§/g,c)}</g>
+    <g fill="${oeil}">${f.y.map(([x,y,rx,ry])=>`<ellipse cx="${x}" cy="${y}" rx="${rx*1.6}" ry="${ry*1.6}" filter="url(#mg${n})"/><ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}"/><ellipse cx="${x}" cy="${y}" rx="${rx*0.45}" ry="${ry*0.45}" fill="#fff"/>`).join('')}</g></svg>`;
+}
+function sysJoueurSvg(rang,taille){
+  const n=++sysSvgN, c=SYS_RANG_COUL[rang]||'#7cc0ff';
+  return `<svg class="sys-joueur" viewBox="0 0 100 110" width="${taille}" height="${Math.round(taille*1.1)}" aria-hidden="true"><defs>
+    <radialGradient id="ja${n}" cx="50%" cy="58%"><stop offset="0" stop-color="${c}" stop-opacity=".42"/><stop offset=".7" stop-color="#3d8bff" stop-opacity=".12"/><stop offset="1" stop-color="#3d8bff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="jc${n}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#121c3d"/><stop offset="1" stop-color="#05060f"/></linearGradient>
+    <filter id="jg${n}" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="1.5"/></filter></defs>
+    <ellipse cx="50" cy="60" rx="48" ry="52" fill="url(#ja${n})"/>
+    <path d="M50 7 C38 7 31 17 31 30 C31 38 34 44 38 48 C25 52 17 63 15 79 L12 106 L88 106 L85 79 C83 63 75 52 62 48 C66 44 69 38 69 30 C69 17 62 7 50 7 Z" fill="url(#jc${n})" stroke="#7cc0ff" stroke-width="1.1" stroke-opacity=".75"/>
+    <path d="M50 49 L45 106 M50 49 L55 106 M38 48 Q50 56 62 48" fill="none" stroke="#7cc0ff" stroke-opacity=".28"/>
+    <ellipse cx="50" cy="32" rx="12" ry="13" fill="#02030a" opacity=".9"/>
+    <g fill="#9fd4ff"><ellipse cx="44.5" cy="32" rx="3.4" ry="1.8" filter="url(#jg${n})"/><ellipse cx="55.5" cy="32" rx="3.4" ry="1.8" filter="url(#jg${n})"/>
+    <ellipse cx="44.5" cy="32" rx="1.7" ry=".9" fill="#fff"/><ellipse cx="55.5" cy="32" rx="1.7" ry=".9" fill="#fff"/></g></svg>`;
+}
+function sysPortailSvg(rang,taille){
+  const n=++sysSvgN, c=SYS_RANG_COUL[rang]||'#5fb8ff';
+  return `<svg class="sys-portail" viewBox="0 0 100 100" width="${taille}" height="${taille}" aria-hidden="true"><defs>
+    <radialGradient id="pg${n}"><stop offset="0" stop-color="#03030a"/><stop offset=".5" stop-color="#170a36"/><stop offset=".8" stop-color="${c}" stop-opacity=".85"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient>
+    <filter id="pf${n}" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="turbulence" baseFrequency="0.08" numOctaves="2" seed="${sysHash(rang)%50}"/><feDisplacementMap in="SourceGraphic" scale="10"/></filter></defs>
+    <g filter="url(#pf${n})"><ellipse cx="50" cy="50" rx="40" ry="46" fill="url(#pg${n})"/></g>
+    <g class="sys-tourne"><ellipse cx="50" cy="50" rx="35" ry="35" fill="none" stroke="${c}" stroke-width="1.6" stroke-dasharray="9 5 2 5" opacity=".9"/>
+      <ellipse cx="50" cy="50" rx="26" ry="26" fill="none" stroke="#a463ff" stroke-width="1" stroke-dasharray="4 7" opacity=".75"/></g>
+    <text x="50" y="52" text-anchor="middle" dominant-baseline="central" font-family="JetBrains Mono,Space Mono,monospace" font-weight="800" font-size="${rang.length>1?24:34}" fill="#fff">${rang}</text></svg>`;
+}
+const SYS_COFFRE_COUL=['#7cc0ff','#4fa3ff','#a463ff','#ffb547','#ff4d6d','#ff4d6d'];
+function sysCoffreSvg(t,taille){
+  const n=++sysSvgN, c=SYS_COFFRE_COUL[t]||SYS_COFFRE_COUL[0];
+  return `<svg class="sys-coffre" viewBox="0 0 100 90" width="${taille}" height="${Math.round(taille*0.9)}" aria-hidden="true"><defs>
+    <linearGradient id="cb${n}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d2645"/><stop offset="1" stop-color="#090d1c"/></linearGradient>
+    <radialGradient id="cr${n}" cx="50%" cy="70%"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".3" stop-color="${c}" stop-opacity=".7"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs>
+    <g class="sys-coffre-rayons"><circle cx="50" cy="44" r="44" fill="url(#cr${n})"/>
+      ${[0,30,60,90,120,150].map(a=>`<rect x="48.5" y="-6" width="3" height="100" fill="${c}" opacity=".35" transform="rotate(${a} 50 44)"/>`).join('')}</g>
+    <rect x="16" y="44" width="68" height="38" rx="3" fill="url(#cb${n})" stroke="${c}" stroke-width="2"/>
+    <line x1="16" y1="58" x2="84" y2="58" stroke="${c}" stroke-opacity=".45"/><path d="M30 44 L30 82 M70 44 L70 82" stroke="${c}" stroke-opacity=".5"/>
+    <g class="sys-coffre-couvercle"><path d="M16 44 L16 32 Q50 14 84 32 L84 44 Z" fill="url(#cb${n})" stroke="${c}" stroke-width="2"/><path d="M30 25 L30 44 M70 25 L70 44" stroke="${c}" stroke-opacity=".5"/></g>
+    <rect x="45" y="40" width="10" height="14" rx="1.5" fill="${c}" style="filter:drop-shadow(0 0 4px ${c})"/></svg>`;
+}
+// Les icônes d'objets, au trait néon, de la couleur de leur rareté.
+const SYS_ICONES={
+  arme:'<path d="M80 9 L91 9 L91 20 L45 66 L34 55 Z"/><path d="M27 51 L49 73"/><path d="M38 62 L19 81"/><circle cx="16" cy="84" r="4.5"/>',
+  armure:'<path d="M31 16 L42 11 Q50 20 58 11 L69 16 L85 30 L77 45 L70 40 L70 88 L30 88 L30 40 L23 45 L15 30 Z"/><path d="M50 23 L50 88 M30 62 L70 62"/>',
+  bottes:'<path d="M33 10 L57 10 L57 60 L85 70 Q89 72 89 78 L89 88 L33 88 Z"/><path d="M33 48 L57 48 M57 74 L57 88"/>',
+  accessoire:'<circle cx="50" cy="60" r="22"/><path d="M50 26 L60 36 L50 46 L40 36 Z"/><path d="M29 15 Q50 32 71 15"/>'};
+function sysIconeSvg(slot,ra,taille){
+  const c=ra<0?'#4a5a80':SYS_RARETES[ra][2];
+  return `<svg class="sys-icone" viewBox="0 0 100 100" width="${taille}" height="${taille}" aria-hidden="true"><g fill="${c}" fill-opacity="${ra<0?0:.14}" stroke="${c}" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round" style="${ra>=2?`filter:drop-shadow(0 0 3px ${c})`:''}">${SYS_ICONES[slot]||''}</g></svg>`;
+}
+
+// ── La chasse de la semaine ──
+// Chaque semaine (du lundi au dimanche), un monstre de ton rang. Chaque geste
+// de la semaine le frappe : une coche (renforcée par la stat de sa catégorie),
+// la quête accomplie, le sport, la quête urgente. L'équipement ajoute des
+// dégâts et des coups critiques. Abattu : de l'XP et un coffre. Sinon, il
+// s'enfuit le dimanche soir — on ne perd rien.
+// Le monstre est fixé à la rencontre (rang, niveau, PV) ; une victoire reste
+// acquise ; une semaine passée se ferme et se garde (clé « chasses »).
+const SYS_FAMILLES=[['loup','Loup'],['golem','Golem'],['spectre','Spectre'],['araignee','Araignée'],['chevalier','Chevalier'],['serpent','Serpent'],['gargouille','Gargouille'],['ogre','Ogre']];
+const SYS_EPITHETES=[' des cendres',' de givre',' du néant',' des abysses',' de la tempête',' d\'obsidienne',' sans visage',' des ruines',' de la brume',' du crépuscule',' aux mille yeux',' de rouille'];
+// La part des gestes « si je fais tout » qu'il faut pour l'abattre, sans équipement.
+const SYS_CHASSE_PART=0.55;
+const SYS_TIER=r=>({G:0,F:0,E:1,D:1,C:2,B:2,A:3,S:4,SS:4,SSS:5}[r]||0);
+const sysLundi=d=>{ const x=new Date(d+'T12:00:00'); x.setDate(x.getDate()-(x.getDay()+6)%7); return ymd(x); };
+// Une semaine sur quatre, le monstre est d'élite : plus robuste, meilleur butin.
+const sysElite=lundi=>Math.round(sysJourMs(lundi)/(7*864e5))%4===0;
+function sysMonstreNouveau(lundi,e){
+  const r=sysAlea('monstre|'+lundi), f=sysPioche(r,SYS_FAMILLES), ep=sysPioche(r,SYS_EPITHETES), elite=sysElite(lundi);
+  const xpj=Math.max(60,sysMaxJour().xp||0);
+  const pv=Math.max(100,Math.round(SYS_CHASSE_PART*7*xpj*(1+0.015*(e.niveau-1))*(elite?1.3:1)/10)*10);
+  return {famille:f[0],nom:f[1]+ep,niveau:e.niveau,rang:e.rang,elite,pv,vaincu:false};
+}
+function sysEquipes(){ const eq=sysInv.equipe||{}; return SYS_SLOTS.map(([k])=>sysInv.objets.find(o=>o.id===eq[k])).filter(Boolean); }
+// Les bonus d'un objet, avec son amélioration (+10 % par niveau).
+function sysObjetBonus(o){
+  const m=1+0.1*(o.amel||0), st={};
+  Object.entries((o.bonus||{}).stats||{}).forEach(([k,v])=>{ st[k]=Math.round(v*m); });
+  return {deg:Math.round(((o.bonus||{}).deg||0)*m),crit:Math.round(((o.bonus||{}).crit||0)*m),stats:st};
+}
+function sysBonus(){
+  const b={deg:0,crit:0,stats:{}};
+  sysEquipes().forEach(o=>{ const x=sysObjetBonus(o); b.deg+=x.deg; b.crit+=x.crit; Object.entries(x.stats).forEach(([k,v])=>{ b.stats[k]=(b.stats[k]||0)+v; }); });
+  b.crit=Math.min(45,b.crit); return b;
+}
+function sysCombat(lundi,rec,e){
+  const b=sysBonus(), S={}; SYS_STATS.forEach(([k])=>{ S[k]=e.stats[k]+(b.stats[k]||0); });
+  const moy=SYS_STATS.reduce((t,[k])=>t+S[k],0)/SYS_STATS.length, crit=5+b.crit;
+  const fin=sysDecale(lundi,6), dans=d=>d>=lundi&&d<=fin, coups=[];
+  const frappe=(date,lib,base,stat,cle)=>{ let deg=Math.round(base*(1+(stat-10)/100)*(1+b.deg/100));
+    const c=sysHash('crit|'+cle)%100<crit; if(c)deg*=2; coups.push({date,lib,deg,crit:c}); };
+  const habit=new Map(habits.map(h=>[String(h.id),h])), vus=new Set();
+  habitsLog.forEach(l=>{ if(!dans(l.date))return; const k=l.habit_id+'|'+l.date; if(vus.has(k))return; vus.add(k);
+    const h=habit.get(String(l.habit_id)), cat=(h&&h.category)||l.category||'Autre';
+    frappe(l.date,h?h.title:'Habitude',sysQueteDu(l.date).includes(String(l.habit_id))?SYS_XP.quete:SYS_XP.habitude,S[SYS_CAT_STAT[cat]||'perception'],k); });
+  sysJoursActifs().filter(dans).filter(d=>sysQueteFaite(d)).forEach(d=>frappe(d,'Quête quotidienne accomplie',SYS_XP.queteComplete*(sysRachat(d)?2:1),moy,'q|'+d));
+  (sportLogs||[]).filter(s=>dans(String(s.date))&&(s.status==='done'||s.status==='partial'))
+    .forEach(s=>frappe(String(s.date),'Séance de sport',s.status==='done'?SYS_XP.sport:SYS_XP.sportPartiel,S.force,'s|'+s.date));
+  Object.entries(sysUrgences).forEach(([d,u])=>{ if(u&&u.statut==='faite'&&dans(d))frappe(d,'Quête urgente',Number(u.xp)||SYS_XP.urgence,moy,'u|'+d); });
+  coups.sort((a,c)=>a.date.localeCompare(c.date));
+  const degats=coups.reduce((t,c)=>t+c.deg,0);
+  return {coups,degats,reste:Math.max(0,rec.pv-degats),vaincu:degats>=rec.pv,crit,deg:b.deg};
+}
+let sysVictoireAnnonce=null;
+// La rencontre de la semaine, la fermeture des semaines passées, la victoire.
+// Rien ne s'écrit avant d'avoir relu le classeur (sinon on écraserait).
+function sysChasseMaj(e){
+  if(accessToken&&!sysCharge)return null;
+  if(!habits.some(h=>h.active))return null;
+  const lundi=sysLundi(td()); let change=false;
+  Object.keys(sysChasses).forEach(l=>{ const r=sysChasses[l];
+    if(l<lundi&&r&&!r.fin){ const c=sysCombat(l,r,e); sysChasses={...sysChasses,[l]:{...r,fin:true,degats:c.degats,vaincu:!!(r.vaincu||c.vaincu)}}; change=true; } });
+  if(!sysChasses[lundi]){ sysChasses={...sysChasses,[lundi]:sysMonstreNouveau(lundi,e)}; change=true; }
+  const rec=sysChasses[lundi], c=sysCombat(lundi,rec,e);
+  if(c.vaincu&&!rec.vaincu){ sysChasses={...sysChasses,[lundi]:{...rec,vaincu:true,le:td()}}; change=true; sysVictoireAnnonce=lundi; }
+  if(change)sysSauver('chasses');
+  return {lundi,rec:sysChasses[lundi],...c,vaincu:!!sysChasses[lundi].vaincu};
+}
+
+// ── Les coffres et le butin ──
+// Les coffres se gagnent par l'historique : un monstre vaincu, un donjon
+// nettoyé, chaque série de 7 quêtes, tous les 5 niveaux. Seule leur
+// ouverture s'écrit. Le contenu est tiré de la graine du coffre.
+const SYS_RARETES=[['commun','Commun','#a6b0c0',1],['rare','Rare','#4fa3ff',1.6],['epique','Épique','#a463ff',2.4],['legendaire','Légendaire','#ffb547',3.5],['mythique','Mythique','#ff4d6d',5]];
+// Les chances de chaque rareté (en %), selon le niveau du coffre (0 à 5).
+const SYS_TIRAGE=[[60,30,8,2,0],[40,38,16,5,1],[20,40,28,10,2],[0,35,40,20,5],[0,10,45,35,10],[0,0,35,45,20]];
+const SYS_SLOTS=[['arme','Arme'],['armure','Armure'],['bottes','Bottes'],['accessoire','Accessoire']];
+const SYS_BASES={arme:['Dague','Épée courte','Lame longue','Hache de guerre','Lance','Katana'],armure:['Gilet de cuir','Cotte de mailles','Plastron','Manteau de chasseur'],
+  bottes:['Bottes de cuir','Jambières','Bottes de course','Grèves'],accessoire:['Anneau','Amulette','Bracelet','Talisman']};
+const SYS_SUFFIXES=[[''],[' du veilleur',' de fer',' du guetteur'],[' de givre',' de braise',' de foudre',' d\'ombre'],[' de l\'aube',' du chasseur de portes',' du titan'],[' du souverain',' des abysses',' de l\'éclipse']];
+const SYS_FRAG_DEMONTER=[2,5,12,30,80];
+function sysCoffresGagnes(e){
+  const l=[], ep=sysReset.depuis||'0';
+  Object.entries(sysChasses).forEach(([lundi,r])=>{ if(r&&r.vaincu)l.push({id:'chasse:'+lundi,lib:`${r.nom}${r.elite?' (élite)':''} vaincu`,t:Math.min(5,SYS_TIER(r.rang)+(r.elite?1:0))}); });
+  goals.forEach(g=>{ const dj=sysDonjonDe(g); if(dj&&goalReached(g)&&!sysObjectifAvant(g))l.push({id:'donjon:'+g.id,lib:`Donjon « ${g.title} » nettoyé`,t:{E:1,D:2,C:2,B:3,A:4,S:5}[dj.rang]||1}); });
+  for(let n=7;n<=e.serieMax;n+=7)l.push({id:`serie:${ep}:${n}`,lib:`${n} quêtes de suite`,t:n>=28?2:1});
+  for(let n=5;n<=e.niveau;n+=5)l.push({id:`niveau:${ep}:${n}`,lib:`Niveau ${n} atteint`,t:SYS_TIER(sysRangDe(n))});
+  return l;
+}
+const sysCoffresFermes=e=>{ const o=new Set(sysInv.ouverts); return sysCoffresGagnes(e).filter(c=>!o.has(c.id)); };
+function sysObjetTire(coffre,niveau){
+  const r=sysAlea('objet|'+coffre.id), w=SYS_TIRAGE[coffre.t]||SYS_TIRAGE[0];
+  let x=r()*100, ra=0; for(;ra<4;ra++){ if(x<w[ra])break; x-=w[ra]; }
+  const slot=sysPioche(r,SYS_SLOTS)[0], p=SYS_RARETES[ra][3]*(1+niveau/25);
+  const bonus={deg:0,crit:0,stats:{}}, ajoute=(k,v)=>{ bonus.stats[k]=(bonus.stats[k]||0)+Math.max(1,Math.round(v)); };
+  if(slot==='arme'){ bonus.deg=Math.round(4*p); if(ra>=2)ajoute('force',2*p); }
+  if(slot==='armure')ajoute('vitalite',3*p);
+  if(slot==='bottes')ajoute('agilite',3*p);
+  if(slot==='accessoire'){ bonus.crit=Math.max(1,Math.round(1.5*p)); ajoute(r()<0.5?'intelligence':'perception',2*p); }
+  if(ra>=1)ajoute(sysPioche(r,SYS_STATS)[0],1.5*p);
+  return {id:'o'+sysHash(coffre.id).toString(36),src:coffre.id,slot,nom:sysPioche(r,SYS_BASES[slot])+sysPioche(r,SYS_SUFFIXES[ra]),rarete:ra,niv:niveau,bonus,amel:0,le:td()};
+}
+const sysStatLib=k=>(SYS_STATS.find(s=>s[0]===k)||[k,k])[1];
+function sysBonusTxt(o){
+  const b=sysObjetBonus(o), l=[];
+  if(b.deg)l.push(`+${b.deg} % de dégâts`); if(b.crit)l.push(`+${b.crit} % de critique`);
+  Object.entries(b.stats).forEach(([k,v])=>l.push(`+${v} ${sysStatLib(k)}`));
+  return l;
+}
+function sysObjetCarte(o){
+  const R=SYS_RARETES[o.rarete];
+  return `<div class="sys-obj-carte ra${o.rarete}">${sysIconeSvg(o.slot,o.rarete,64)}
+    <div class="sys-obj-nom" style="color:${R[2]}">${tdEsc(o.nom)}${o.amel?` +${o.amel}`:''}</div>
+    <div class="sys-obj-meta">${R[1]} · ${(SYS_SLOTS.find(s=>s[0]===o.slot)||['',''])[1]} · niveau ${o.niv}</div>
+    <div class="sys-obj-bonus">${sysBonusTxt(o).map(x=>`<span>${x}</span>`).join('')}</div></div>`;
+}
+async function sysCoffreOuvrir(){
+  const e=sysEtat(), c=sysCoffresFermes(e)[0]; if(!c)return;
+  const o=sysObjetTire(c,e.niveau), frag=3+Math.floor(sysAlea('frag|'+c.id)()*6);
+  sysInv={...sysInv,objets:[...sysInv.objets.filter(x=>x.id!==o.id),o],ouverts:[...sysInv.ouverts,c.id],fragments:(sysInv.fragments||0)+frag};
+  const corps=document.getElementById('sysCoffreCorps');
+  corps.innerHTML=`<div class="sys-coffre-scene" id="sysCoffreScene">${sysCoffreSvg(c.t,150)}</div><div class="sys-coffre-src">${tdEsc(c.lib)}</div><div id="sysCoffreObj" class="sys-coffre-obj"></div>`;
+  modalOuvre('sysCoffreModal');
+  const sauve=sysSauver('inventaire');
+  setTimeout(()=>{ const s=document.getElementById('sysCoffreScene'); if(s)s.classList.add('ouvert'); },450);
+  setTimeout(()=>{ const z=document.getElementById('sysCoffreObj'); if(!z)return;
+    const reste=sysCoffresFermes(sysEtat()).length, libre=!(sysInv.equipe||{})[o.slot];
+    z.innerHTML=`${sysObjetCarte(o)}<div class="sys-obj-frag">+${frag} 💠 fragments</div>
+      <div class="sys-obj-act"><button class="btn-nav" onclick="sysEquiper('${o.id}');${reste?'sysCoffreOuvrir()':'modalFerme(\'sysCoffreModal\')'}">${libre?'Équiper':'Équiper à la place'}</button>
+      ${reste?`<button class="btn-nav out" onclick="sysCoffreOuvrir()">Coffre suivant (${reste})</button>`:`<button class="btn-nav out" onclick="modalFerme('sysCoffreModal')">Garder</button>`}</div>`;
+    z.classList.add('vu'); },1050);
+  renderSysteme();
+  await sauve;
+}
+async function sysEquiper(id){
+  const o=sysInv.objets.find(x=>x.id===id); if(!o)return;
+  sysInv={...sysInv,equipe:{...(sysInv.equipe||{}),[o.slot]:id}};
+  modalFerme('sysObjetModal'); renderSysteme(); await sysSauver('inventaire');
+}
+async function sysRetirer(slot){
+  const eq={...(sysInv.equipe||{})}; delete eq[slot]; sysInv={...sysInv,equipe:eq};
+  modalFerme('sysObjetModal'); renderSysteme(); await sysSauver('inventaire');
+}
+const sysCoutAmel=o=>(o.amel+1)*(5+5*o.rarete);
+async function sysAmeliorer(id){
+  const o=sysInv.objets.find(x=>x.id===id); if(!o||o.amel>=10)return;
+  const cout=sysCoutAmel(o); if((sysInv.fragments||0)<cout){ toast('Pas assez de fragments','err'); return; }
+  sysInv={...sysInv,fragments:sysInv.fragments-cout,objets:sysInv.objets.map(x=>x.id===id?{...x,amel:x.amel+1}:x)};
+  toast(`[ Amélioration ] ${o.nom} +${o.amel+1}`);
+  sysObjetVoir(id); renderSysteme(); await sysSauver('inventaire');
+}
+async function sysDemanteler(id){
+  const o=sysInv.objets.find(x=>x.id===id); if(!o)return;
+  if(o.rarete>=2&&!confirm(`Démanteler « ${o.nom} » (${SYS_RARETES[o.rarete][1]}) ?`))return;
+  const gain=SYS_FRAG_DEMONTER[o.rarete]+3*(o.amel||0), eq={...(sysInv.equipe||{})};
+  Object.keys(eq).forEach(k=>{ if(eq[k]===id)delete eq[k]; });
+  sysInv={...sysInv,equipe:eq,fragments:(sysInv.fragments||0)+gain,objets:sysInv.objets.filter(x=>x.id!==id)};
+  toast(`[ Démantelé ] +${gain} 💠`);
+  modalFerme('sysObjetModal'); renderSysteme(); await sysSauver('inventaire');
+}
+function sysObjetVoir(id){
+  const o=sysInv.objets.find(x=>x.id===id); if(!o)return;
+  const porte=(sysInv.equipe||{})[o.slot]===id, cout=sysCoutAmel(o), frag=sysInv.fragments||0;
+  document.getElementById('sysObjCorps').innerHTML=`${sysObjetCarte(o)}
+    <div class="sys-obj-act">${porte?`<button class="btn-nav out" onclick="sysRetirer('${o.slot}')">Retirer</button>`:`<button class="btn-nav" onclick="sysEquiper('${o.id}')">Équiper</button>`}
+      <button class="btn-nav out" ${o.amel>=10||frag<cout?'disabled':''} onclick="sysAmeliorer('${o.id}')" title="+10 % sur tous ses bonus">${o.amel>=10?'Amélioration maximale':`Améliorer +${o.amel+1} · ${cout} 💠`}</button>
+      <button class="btn-nav out" onclick="sysDemanteler('${o.id}')" title="Le détruire contre des fragments">Démanteler · +${SYS_FRAG_DEMONTER[o.rarete]+3*(o.amel||0)} 💠</button></div>
+    <div class="ca-aide">${frag} 💠 fragment${frag>1?'s':''} en réserve.</div>`;
+  modalOuvre('sysObjetModal');
+}
+
+// ── La boutique ──
+// Tes vraies récompenses, avec leur prix : on les achète avec l'or gagné (la
+// cagnotte). Un achat s'écrit et se retranche de l'or.
+function sysDepenses(){ try{ return (sysBoutique.achats||[]).filter(a=>!sysReset.depuis||String(a.date)>=sysReset.depuis).reduce((t,a)=>t+(Number(a.prix)||0),0); }catch(e){ return 0; } }
+async function sysBtAjouter(){
+  const lib=document.getElementById('sysBtLib').value.trim(), prix=nbFr(document.getElementById('sysBtPrix').value,0);
+  if(!lib||!(prix>0)){ toast('Une récompense et son prix','err'); return; }
+  sysBoutique={...sysBoutique,articles:[...(sysBoutique.articles||[]),{id:'a'+Date.now().toString(36),lib,prix:Math.round(prix*100)/100}]};
+  renderSysteme(); await sysSauver('boutique');
+}
+async function sysBtSuppr(id){
+  const avant=sysBoutique.articles||[];
+  sysBoutique={...sysBoutique,articles:avant.filter(a=>a.id!==id)};
+  renderSysteme(); await sysSauver('boutique');
+  offerUndo('Récompense retirée',async()=>{ sysBoutique={...sysBoutique,articles:avant}; renderSysteme(); await sysSauver('boutique'); });
+}
+async function sysBtAcheter(id){
+  const a=(sysBoutique.articles||[]).find(x=>x.id===id); if(!a)return;
+  const prix=Number(a.prix)||0;
+  if(cagnotte()<prix){ toast('Pas assez d\'or','err'); return; }
+  if(!confirm(`Acheter « ${a.lib} » pour ${eur(prix)} ?`))return;
+  const achat={id:'h'+Date.now().toString(36),art:a.id,lib:a.lib,prix,date:td()};
+  sysBoutique={...sysBoutique,achats:[...(sysBoutique.achats||[]),achat]};
+  renderSysteme(); updateHStats();
+  sysFenetre('[ Boutique ]',a.lib,`Achat validé : −${eur(prix)}<br>Il te reste ${eur(cagnotte())}. Profites-en.`);
+  await sysSauver('boutique');
+  offerUndo('Achat enregistré',async()=>{ sysBoutique={...sysBoutique,achats:(sysBoutique.achats||[]).filter(x=>x.id!==achat.id)}; renderSysteme(); updateHStats(); await sysSauver('boutique'); });
+}
+
+// ── Les vues de la fenêtre ──
+let sysVueCur='quete';
+try{ sysVueCur=localStorage.getItem('kanban_sys_vue')||'quete'; }catch(e){}
+function sysVue(v){ sysVueCur=v; try{ localStorage.setItem('kanban_sys_vue',v); }catch(e){} renderSysteme(); }
+function sysMiniMonstre(ch){
+  const r=ch.rec, pct=Math.max(0,Math.round(ch.reste/r.pv*100));
+  return `<button class="sys-mini-m${ch.vaincu?' vaincu':''}" id="sysMiniM" onclick="sysVue('chasse')" title="La chasse de la semaine">
+    <span class="sys-mini-svg">${sysMonstreSvg(r,46)}</span><span class="sys-mini-c"><b>${tdEsc(r.nom)}${r.elite?' <em class="sys-elite">ÉLITE</em>':''}</b>
+    <span class="sys-pv"><span style="width:${ch.vaincu?0:pct}%"></span></span><small>${ch.vaincu?'VAINCU':`${ch.reste.toLocaleString('fr-FR')} PV restants`}</small></span></button>`;
+}
+function sysChasseHtml(ch){
+  if(!ch)return `<div class="sys-chasse"><div class="sys-t">Chasse de la semaine</div><div class="sys-vide">La chasse commence dès qu'il y a des habitudes actives.</div></div>`;
+  const r=ch.rec, pct=ch.vaincu?0:Math.max(0,Math.round(ch.reste/r.pv*100)), j=6-((new Date(td()+'T12:00:00').getDay()+6)%7);
+  const passees=Object.entries(sysChasses).filter(([l])=>l<ch.lundi).sort((a,c)=>c[0].localeCompare(a[0])).slice(0,6);
+  const jour=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short'});
+  return `<div class="sys-chasse">
+    <div class="sys-t">Chasse de la semaine <span class="sys-t-d">${ch.vaincu?'':j?`encore ${j} jour${j>1?'s':''}`:'dernier jour'}</span></div>
+    <div class="sys-ch-haut">
+      <div class="sys-ch-scene${ch.vaincu?' vaincu':''}" id="sysScene">${sysMonstreSvg(r,140)}</div>
+      <div class="sys-ch-info">
+        <div class="sys-ch-nom">${tdEsc(r.nom)}</div>
+        <div class="sys-ch-rang"><span class="sys-rang-mini r-${r.rang}">${r.rang}</span> niveau ${r.niveau}${r.elite?' · <em class="sys-elite">ÉLITE</em>':''}</div>
+        <div class="sys-pv gros"><span style="width:${pct}%"></span></div>
+        <div class="sys-ch-pv">${ch.vaincu?`<span class="sys-ok">VAINCU · +${r.elite?SYS_XP.elite:SYS_XP.monstre} XP · un coffre</span>`:`${ch.reste.toLocaleString('fr-FR')} / ${r.pv.toLocaleString('fr-FR')} PV`}</div>
+        ${ch.vaincu?'':`<div class="ca-aide">Environ ${Math.ceil(ch.reste/(SYS_XP.quete*(1+ch.deg/100)))} coches de quête pour l'abattre.</div>`}
+        <div class="sys-ch-regle">Chaque geste de la semaine frappe : une coche (renforcée par la stat de sa catégorie), la quête accomplie, le sport, la quête urgente.
+          Critique ${ch.crit} % · équipement +${ch.deg} % de dégâts.</div>
+      </div></div>
+    <div class="sys-ch-log">${ch.coups.length?ch.coups.slice().reverse().slice(0,10).map(c=>`<div class="sys-coup${c.crit?' crit':''}"><span>${jour(c.date)}</span><span>${tdEsc(c.lib)}</span><b>${c.crit?'CRITIQUE ':''}−${c.deg}</b></div>`).join('')
+      :'<div class="sys-vide">Aucun coup porté cette semaine. Une coche suffit pour commencer.</div>'}</div>
+    ${passees.length?`<div class="sys-ch-hist">${passees.map(([l,x])=>`<span class="sys-ch-h${x.vaincu?' ok':''}" title="Semaine du ${l}">${x.vaincu?'✓':'✗'} ${tdEsc(x.nom)}</span>`).join('')}</div>`:''}
+  </div>`;
+}
+function sysEquipementHtml(e,coffres){
+  const b=sysBonus(), eq=sysInv.equipe||{};
+  const slot=([k,lib])=>{ const o=sysInv.objets.find(x=>x.id===eq[k]);
+    return o?`<button class="sys-slot ra${o.rarete}" onclick="sysObjetVoir('${o.id}')">${sysIconeSvg(o.slot,o.rarete,30)}<span><small>${lib}</small>${tdEsc(o.nom)}${o.amel?` +${o.amel}`:''}</span></button>`
+      :`<div class="sys-slot vide">${sysIconeSvg(k,-1,30)}<span><small>${lib}</small>vide</span></div>`; };
+  const porte=new Set(Object.values(eq)), inv=sysInv.objets.slice().sort((a,c)=>Number(porte.has(c.id))-Number(porte.has(a.id))||c.rarete-a.rarete||c.niv-a.niv);
+  const frag=sysInv.fragments||0;
+  return `<div class="sys-eq">
+    <div class="sys-t">Équipement <span class="sys-t-d">💠 ${frag} fragment${frag>1?'s':''}</span></div>
+    <div class="sys-eq-perso"><div class="sys-eq-col">${SYS_SLOTS.slice(0,2).map(slot).join('')}</div>
+      <div class="sys-eq-fig">${sysJoueurSvg(e.rang,110)}</div>
+      <div class="sys-eq-col">${SYS_SLOTS.slice(2).map(slot).join('')}</div></div>
+    <div class="sys-eq-res">Dégâts +${b.deg} % · critique ${5+b.crit} %${Object.entries(b.stats).map(([k,v])=>` · ${sysStatLib(k)} +${v}`).join('')}</div>
+    ${coffres.length?`<button class="sys-coffres" onclick="sysCoffreOuvrir()">🎁 Ouvrir ${coffres.length>1?`les coffres (${coffres.length})`:'le coffre'}</button>`:''}
+    <div class="sys-t">Inventaire <span class="sys-t-d">${inv.length} objet${inv.length>1?'s':''}</span></div>
+    ${inv.length?`<div class="sys-inv">${inv.map(o=>`<button class="sys-objet ra${o.rarete}${porte.has(o.id)?' porte':''}" onclick="sysObjetVoir('${o.id}')" title="${MD_ATT(o.nom)}">${sysIconeSvg(o.slot,o.rarete,34)}${o.amel?`<i>+${o.amel}</i>`:''}</button>`).join('')}</div>`
+      :'<div class="sys-vide">Inventaire vide. Les coffres tombent des monstres vaincus, des donjons nettoyés, des séries de 7 quêtes et tous les 5 niveaux.</div>'}
+  </div>`;
+}
+function sysBoutiqueHtml(e){
+  const arts=sysBoutique.articles||[], achats=(sysBoutique.achats||[]).slice().reverse().slice(0,6);
+  return `<div class="sys-bout"><div class="sys-t">Boutique <span class="sys-t-d">🪙 ${eur(e.or)}</span></div>
+    <div class="sys-sous">Tes vraies récompenses, payées avec l'or gagné.</div>
+    ${arts.length?arts.map(a=>{ const prix=Number(a.prix)||0;
+      return `<div class="sys-art"><span class="sys-art-l">${tdEsc(a.lib)}</span><b>${eur(prix)}</b>
+      <button class="btn-nav nba-mini" ${e.or<prix?'disabled title="Pas assez d\'or"':''} onclick="sysBtAcheter('${a.id}')">Acheter</button>
+      <button class="sys-reg" onclick="sysBtSuppr('${a.id}')" title="Retirer de la boutique">✕</button></div>`; }).join('')
+      :'<div class="sys-vide">Aucune récompense en vente. Ajoute ce qui te fait envie : un resto, un jeu, un week-end.</div>'}
+    <div class="sys-art-n"><input id="sysBtLib" class="ca-q" placeholder="Récompense, ex : resto japonais"><input id="sysBtPrix" class="ca-q" inputmode="decimal" placeholder="prix €"><button class="btn-nav out" onclick="sysBtAjouter()">Ajouter</button></div>
+    ${achats.length?`<div class="sys-t">Achats</div>${achats.map(a=>`<div class="sys-achat"><span>${tdEsc(a.date)}</span><span>${tdEsc(a.lib)}</span><b>−${eur(Number(a.prix)||0)}</b></div>`).join('')}`:''}</div>`;
+}
+// Le coup porté : un chiffre qui s'envole du monstre quand ses PV baissent.
+let sysPvVu=null;
+function sysDegats(ch){
+  if(!ch)return; const avant=sysPvVu; sysPvVu={lundi:ch.lundi,deg:ch.degats};
+  if(!avant||avant.lundi!==ch.lundi||ch.degats<=avant.deg)return;
+  const d=ch.degats-avant.deg;
+  ['sysMiniM','sysScene'].forEach(id=>{ const t=document.getElementById(id); if(!t)return; t.classList.add('touche');
+    const f=document.createElement('span'); f.className='sys-degat'; f.textContent='−'+d; t.appendChild(f);
+    setTimeout(()=>{ f.remove(); t.classList.remove('touche'); },1200); });
 }
 
 // ── La fenêtre du Système ──
@@ -5314,6 +5864,7 @@ function renderSysteme(){
   const el=document.getElementById('sysBox'); if(!el)return;
   // Le premier calibrage se fait seul, dès qu'il y a des habitudes à mesurer.
   if(!sysCalib.le&&sysCharge&&habits.some(h=>h.active))sysCalibrer();
+  const ch=sysChasseMaj(sysEtat());
   const e=sysEtat(), aujd=td(), q=sysQueteJour(aujd);
   const faits=new Set(habitsLog.filter(l=>l.date===aujd).map(l=>String(l.habit_id)));
   const nOk=q.filter(h=>faits.has(String(h.id))).length, requis=sysQueteRequis(aujd,q.length), complete=q.length&&nOk>=requis;
@@ -5324,19 +5875,12 @@ function renderSysteme(){
   const titre=SYS_TITRES.find(t=>t[0]===sysTitres.actif&&t[3](e));
   const pct=Math.min(100,Math.round((e.xp-e.base)/((e.suivant-e.base)||1)*100));
   const choisie=sysQueteActuelle().length>0;
-  el.innerHTML=`<div class="sys-fen">
-    <div class="sys-statut">
-      <div class="sys-t">Statut <button class="sys-reg" onclick="sysPaliersOuvrir()" title="Les paliers : l'expérience de chaque rang, et le temps pour y arriver">Paliers</button></div>
-      <div class="sys-id"><div class="sys-rang r-${e.rang}" title="Rang ${e.rang}">${e.rang}</div>
-        <div><div class="sys-niv">Niveau <b>${e.niveau}</b></div>
-          <button class="sys-titre-p" onclick="sysTitresOuvrir()" title="Les titres">${titre?`« ${tdEsc(titre[1])} »`:`${sysTitresGagnes(e).length} titre${sysTitresGagnes(e).length>1?'s':''} · choisir`}</button>
-          <div class="sys-xp"><div class="sys-xp-b"><span style="width:${pct}%"></span></div><small>${e.xp-e.base} / ${e.suivant-e.base} XP · ${e.xp} au total</small></div>
-          <div class="sys-or" title="L'or : ta cagnotte, à dépenser en récompenses">🪙 ${eur(e.or)}</div></div></div>
-      <div class="sys-stats">${SYS_STATS.map(([k,lib,src])=>`<div class="sys-st" title="Nourrie par ${MD_ATT(src)}"><span>${lib}</span><b>${e.stats[k]}</b>
-        ${e.points?`<button class="sys-plus" onclick="sysAttribuer('${k}')" title="Attribuer un point">+</button>`:''}</div>`).join('')}</div>
-      ${e.points?`<div class="sys-pts">${e.points} point${e.points>1?'s':''} de stat à attribuer</div>`:''}
-    </div>
-    <div class="sys-quete">
+  const coffres=sysCoffresFermes(e), b=sysBonus();
+  const puissance=SYS_STATS.reduce((t,[k])=>t+e.stats[k]+(b.stats[k]||0),0)+b.deg;
+  const vues=[['quete','Quête',q.length?`${nOk}/${q.length}`:''],['chasse','Chasse',ch&&ch.vaincu?'✓':''],['portes','Portes',''],
+    ['equipement','Équipement',coffres.length?'🎁'+coffres.length:''],['boutique','Boutique','']];
+  const vue=vues.some(v=>v[0]===sysVueCur)?sysVueCur:'quete';
+  const queteHtml=`<div class="sys-quete">
       <div class="sys-t">Quête quotidienne <button class="sys-reg" onclick="sysQueteOuvrir()" title="Choisir les habitudes de la quête">⚙</button></div>
       ${!choisie?`<div class="sys-vide">Le Système attend ta quête : 3 à 5 habitudes, pas plus.<br><button class="btn-nav" onclick="sysQueteOuvrir()">Choisir ma quête quotidienne</button></div>`
       :!q.length?`<div class="sys-vide">Aucune habitude de la quête n'est prévue aujourd'hui. Repos.</div>`
@@ -5354,14 +5898,33 @@ function renderSysteme(){
         ${urg.statut==='faite'?'<div class="sys-ok">ACCOMPLIE</div>'
           :urg.statut==='acceptee'?(urg.type==='objectif'?`<button class="btn-nav" onclick="sysUrgenceStatut('faite')">C'est fait</button>`:'<div class="ca-aide">Acceptée : coche l\'habitude pour l\'accomplir.</div>')
           :`<div class="nba-act"><button class="btn-nav" onclick="sysUrgenceStatut('acceptee')">Accepter</button><button class="btn-nav out" onclick="sysUrgenceStatut('refusee')">Refuser</button></div>`}</div>`:''}
+    </div>`;
+  el.innerHTML=`<div class="sys-fen">
+    <div class="sys-statut">
+      <div class="sys-t">Statut <button class="sys-reg" onclick="sysPaliersOuvrir()" title="Les paliers : l'expérience de chaque rang, et le temps pour y arriver">Paliers</button></div>
+      <div class="sys-id"><div class="sys-rang r-${e.rang}" title="Rang ${e.rang}">${sysEmblemeSvg(e.rang,64)}</div>
+        <div><div class="sys-niv">Niveau <b>${e.niveau}</b></div>
+          <button class="sys-titre-p" onclick="sysTitresOuvrir()" title="Les titres">${titre?`« ${tdEsc(titre[1])} »`:`${sysTitresGagnes(e).length} titre${sysTitresGagnes(e).length>1?'s':''} · choisir`}</button>
+          <div class="sys-xp"><div class="sys-xp-b"><span style="width:${pct}%"></span></div><small>${e.xp-e.base} / ${e.suivant-e.base} XP · ${e.xp} au total</small></div>
+          <div class="sys-or" title="L'or : ta cagnotte, à dépenser à la boutique">🪙 ${eur(e.or)}</div></div></div>
+      <div class="sys-stats">${SYS_STATS.map(([k,lib,src])=>`<div class="sys-st" title="Nourrie par ${MD_ATT(src)}"><span>${lib}</span><b>${e.stats[k]}${b.stats[k]?`<i class="sys-eqb" title="Équipement">+${b.stats[k]}</i>`:''}</b>
+        ${e.points?`<button class="sys-plus" onclick="sysAttribuer('${k}')" title="Attribuer un point">+</button>`:''}</div>`).join('')}</div>
+      ${e.points?`<div class="sys-pts">${e.points} point${e.points>1?'s':''} de stat à attribuer</div>`:''}
+      <div class="sys-puis" title="La somme des stats (équipement compris) et des dégâts de l'arme">⚔ Puissance <b>${puissance}</b></div>
+      ${ch?sysMiniMonstre(ch):''}
+      ${coffres.length?`<button class="sys-coffres" onclick="sysCoffreOuvrir()">🎁 ${coffres.length} coffre${coffres.length>1?'s':''} à ouvrir</button>`:''}
     </div>
-    ${sysPortesHtml()}</div>`;
+    <div class="sys-droite">
+      <div class="sys-vues" role="tablist">${vues.map(([v,l,n])=>`<button class="sys-vue${v===vue?' on':''}" role="tab" aria-selected="${v===vue}" onclick="sysVue('${v}')">${l}${n?`<span>${n}</span>`:''}</button>`).join('')}</div>
+      ${vue==='quete'?queteHtml:vue==='chasse'?sysChasseHtml(ch):vue==='portes'?sysPortesHtml():vue==='equipement'?sysEquipementHtml(e,coffres):sysBoutiqueHtml(e)}
+    </div></div>`;
   clearInterval(sysTimer);
-  if(!complete&&q.length)sysTimer=setInterval(()=>{ const t=document.getElementById('sysTemps'); if(t)t.textContent='⏳ '+sysRestant(); else clearInterval(sysTimer); },1000);
-  sysAnnonces(e,complete);
+  if(vue==='quete'&&!complete&&q.length)sysTimer=setInterval(()=>{ const t=document.getElementById('sysTemps'); if(t)t.textContent='⏳ '+sysRestant(); else clearInterval(sysTimer); },1000);
+  sysDegats(ch);
+  sysAnnonces(e,complete,coffres);
 }
 // Les annonces : la première rencontre, le passage de niveau, la quête accomplie.
-function sysAnnonces(e,complete){
+function sysAnnonces(e,complete,coffres){
   let vu=null; try{ vu=JSON.parse(localStorage.getItem('kanban_sys_vu')||'null'); }catch(e2){}
   const aujd=td();
   // Sans habitude ni historique, rien à annoncer : la première rencontre
@@ -5378,18 +5941,27 @@ function sysAnnonces(e,complete){
   if(vu&&vu.donjons){ const n=faits.filter(id=>!vu.donjons.includes(id));
     if(n.length){ const g=goals.find(x=>String(x.id)===n[0]), dj=sysDonjonDe(g);
       sysFenetre('[ Donjon nettoyé ]',g.title,`Porte de rang ${dj.rang} — boss vaincu : +${SYS_DONJON_XP[dj.rang][0]} XP${g.reward_eur?`<br>Butin : ${eur(g.reward_eur)}`:''}${g.reward?`<br>${tdEsc(g.reward)}`:''}`); } }
+  // Le monstre vaincu, les coffres gagnés.
+  if(sysVictoireAnnonce){ const r=sysChasses[sysVictoireAnnonce]; sysVictoireAnnonce=null;
+    if(r&&vu)sysFenetre('[ Monstre vaincu ]',r.nom,`<div class="sys-ann-img">${sysMonstreSvg(r,110)}</div>+${r.elite?SYS_XP.elite:SYS_XP.monstre} XP · un coffre à ouvrir`); }
+  const gagnes=sysCoffresGagnes(e).map(c=>c.id);
+  if(vu&&vu.coffres&&coffres){ const n=coffres.filter(c=>!vu.coffres.includes(c.id)); if(n.length)toast(`[ Coffre obtenu ] ${n[0].lib}`); }
   // Le retour après une pause.
   if(vu&&sysDebutRetour(aujd)&&vu.retour!==aujd&&!(document.getElementById('sysAnnModal')||{classList:{contains:()=>false}}).classList.contains('open'))
     sysFenetre('[ Système ]','Le Joueur est de retour',`Mode retour pendant trois jours : la moitié de la quête suffit pour la prime.<br>Reprends en douceur.`);
-  try{ localStorage.setItem('kanban_sys_vu',JSON.stringify({niveau:e.niveau,quete:complete?aujd:(vu&&vu.quete)||'',titres,donjons:faits,
+  try{ localStorage.setItem('kanban_sys_vu',JSON.stringify({niveau:e.niveau,quete:complete?aujd:(vu&&vu.quete)||'',titres,donjons:faits,coffres:gagnes,
     retour:sysDebutRetour(aujd)?aujd:(vu&&vu.retour)||''})); }catch(e2){}
 }
+let sysFile=[];
 function sysFenetre(t,titre,txt){
+  const m=document.getElementById('sysAnnModal');
+  if(m.classList.contains('open')){ sysFile.push([t,titre,txt]); return; }
   document.getElementById('sysAnnT').textContent=t;
   document.getElementById('sysAnnTitre').textContent=titre;
   document.getElementById('sysAnnTxt').innerHTML=txt;
   modalOuvre('sysAnnModal');
 }
+function sysAnnFermer(){ modalFerme('sysAnnModal'); const n=sysFile.shift(); if(n)setTimeout(()=>sysFenetre(...n),180); }
 // Choisir la quête : 3 à 5 habitudes actives, chacune avec sa version minimale.
 function sysQueteOuvrir(){
   const cur=new Set(sysQueteActuelle());
@@ -8848,7 +9420,7 @@ document.addEventListener('keydown',e=>{
 // Il y avait trois recherches, chacune enfermee dans sa page : pour retrouver
 // quelque chose il fallait deja savoir ou c'etait.
 let cmdItems=[], cmdSel=0;
-const PAGES=[['today',"Aujourd'hui"],['board','Board'],['brain','Notes'],['adp','ADP'],['omega','Omega'],['review','Revue'],['metrics','Mesures'],
+const PAGES=[['board','Board'],['today',"Aujourd'hui"],['brain','Notes'],['adp','ADP'],['omega','Omega'],['review','Revue'],['metrics','Mesures'],
              ['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],['finances','Finances'],['crypto','Cryptobot']];
 
 function openCmd(){
@@ -9009,7 +9581,8 @@ const BK_TABLES=[
   // Le Système : la quête choisie et les points de stats répartis.
   ['systeme',      'Système',      ()=>Object.keys(SYS_CLES).map(id=>({id,v:SYS_CLES[id]()})),
     v=>{ (v||[]).forEach(x=>{ if(!x||!x.v)return; if(x.id==='quete')sysQuete=x.v; if(x.id==='stats')sysStats=x.v; if(x.id==='reset')sysReset=x.v;
-      if(x.id==='calibrage'&&x.v.k>0)sysCalib=x.v; if(x.id==='donjons')sysDonjons=x.v; if(x.id==='urgences')sysUrgences=x.v; if(x.id==='titres')sysTitres=x.v; }); sysCache(); }]];
+      if(x.id==='calibrage'&&x.v.k>0)sysCalib=x.v; if(x.id==='donjons')sysDonjons=x.v; if(x.id==='urgences')sysUrgences=x.v; if(x.id==='titres')sysTitres=x.v;
+      if(x.id==='chasses')sysChasses=x.v; if(x.id==='inventaire')sysInv=sysInvNorm(x.v); if(x.id==='boutique')sysBoutique=sysBoutNorm(x.v); }); sysCache(); }]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -9115,7 +9688,7 @@ async function applyBackup(){
       if(jpMesures.length)  ok=await sheetBatchUpsert('jp_mesures',jpMesures.map(jpMesRow))&&ok;
       if(jpCheck.length)    ok=await sheetBatchUpsert('jp_check',jpCheck.map(jpChkRow))&&ok;
       if(cartes.length){ await ensureCartesSheet(); ok=await sheetBatchUpsert(CA_SHEET,cartes.map(caRow))&&ok; }
-      if(sysQuete.versions.length||Object.keys(sysStats.alloc||{}).length||Object.keys(sysDonjons).length){ await sysOnglet();
+      if(sysQuete.versions.length||Object.keys(sysStats.alloc||{}).length||Object.keys(sysDonjons).length||sysInv.objets.length||(sysBoutique.articles||[]).length){ await sysOnglet();
         ok=await sheetBatchUpsert(SYS_SHEET,Object.keys(SYS_CLES).map(k=>[k,JSON.stringify(SYS_CLES[k]()),td()]))&&ok; }
       if(nbaSaisons.length||nbaParis.length||nbaPoker.length){ await nbaOnglets();
         if(nbaPoker.length)ok=await sheetBatchUpsert(NBA_T.poker,nbaPoker.map(nbaPokerRow))&&ok;
@@ -16315,7 +16888,8 @@ const goalReached=g=>g.status==='done'||goalProgress(g)>=100;
 function habitsEarned(){ return habitsLog.reduce((s,l)=>s+(l.reward_eur||0),0); }
 // Les objectifs atteints avant « Repartir de zéro » ne comptent plus dans l'or.
 function goalsBalance(){ return goals.filter(g=>goalReached(g)&&!sysObjectifAvant(g)).reduce((s,g)=>s+(g.reward_eur||0),0); }
-function cagnotte(){ return habitsEarned()+goalsBalance(); }
+// Les achats de la boutique du Système se retranchent de l'or.
+function cagnotte(){ return habitsEarned()+goalsBalance()-(typeof sysDepenses==='function'?sysDepenses():0); }
 const eur=n=>`${n<0?'−':''}${Math.abs(n).toFixed(2)}€`;
 
 function renderGoalsBanner(){
@@ -16734,7 +17308,7 @@ window.addEventListener('popstate',ev=>{
     }else{
       // Etat inconnu (arrivee directe, ou etat pousse par une autre page) :
       // on retombe sur l'accueil plutot que de laisser l'ecran incoherent.
-      switchPage('today');
+      switchPage('board');
     }
   }finally{ navSilence=false; }
 });
@@ -23137,7 +23711,7 @@ document.addEventListener('keydown',e=>{
   // 1-6 : navigation entre les six entrees, partout dans l'app
   if(/^[1-6]$/.test(e.key)){
     e.preventDefault();
-    switchPage(['today','board','brain','adp','omega','review'][parseInt(e.key,10)-1]);
+    switchPage(['board','today','brain','adp','omega','review'][parseInt(e.key,10)-1]);
     return;
   }
   // [ et ] : circuler dans les sous-onglets d'Omega
@@ -23192,7 +23766,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.108.0';
+const APP_VERSION='v1.109.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
