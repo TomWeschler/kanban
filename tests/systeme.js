@@ -22,6 +22,8 @@ await p.evaluate(async()=>{
   sysQuete={versions:[],minimum:{}}; sysStats={alloc:{}}; sysCharge=false;
   // Une pente fixe pour les épreuves (k = 50) : le calibrage s'éprouve à part.
   sysCalib={k:50,xpJour:null,le:'banc'};
+  // La configuration de novembre 2026 s'éprouve à part (section 16).
+  sysConfig={v:'2026-11'};
   accessToken='T'; cfg.spreadsheetId='S';
   window.S_ONGLETS={}; window.S_CREES=[];
   window.sheetTitres=async()=>Object.keys(S_ONGLETS);
@@ -377,7 +379,7 @@ chk('...écrit dans le classeur, et l\'on peut fermer la porte',p2.ligneDj==='g3
 chk('Titres : gagnés par l\'historique',/eveil/.test(p2.titres)&&/rachat/.test(p2.titres)&&/chasseurPortes/.test(p2.titres)&&/pourfendeur/.test(p2.titres)&&!/monarque/.test(p2.titres),p2.titres);
 chk('...la fenêtre montre gagnés et verrouillés',p2.boutons===p2.titres.split(',').length+'|'+(p2.nTitres-p2.titres.split(',').length),p2.boutons);
 chk('...le titre porté s\'affiche sous le niveau, écrit dans le classeur',/Pourfendeur/.test(p2.porte)&&p2.ligneTitre==='pourfendeur',JSON.stringify([p2.porte,p2.ligneTitre]));
-chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres,chasses,inventaire,boutique,classes,familiers',p2.bk);
+chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres,chasses,inventaire,boutique,classes,familiers,config',p2.bk);
 
 console.log('=== 11. PHASE 3 : ACCUEIL, THÈME, CHASSE, COFFRES, ÉQUIPEMENT, BOUTIQUE ===');
 // Une page neuve : l'accueil est le board, le thème Éveil s'applique.
@@ -781,42 +783,63 @@ chk('...l\'activité bonus frappe le monstre',p7.bonusCoup===true);
 chk('...seules les séances depuis la remise à zéro comptent',p7.reset===1.25,String(p7.reset));
 chk('« 2 Tâches importantes » se coche seule à la deuxième tâche d\'importance 4 ou plus',p7.une===false&&p7.faible===false&&p7.deux===true&&p7.pasDeux,JSON.stringify(p7));
 
-console.log('=== 16. LA RÉVISION DES HABITUDES ===');
+console.log('=== 16. LA QUÊTE IMPOSÉE, LA CONFIGURATION ===');
 const p8=await p.evaluate(async()=>{
   const out={}, aujd=td(); window.confirm=()=>true; sysFile=[]; modalFerme('sysAnnModal');
-  localStorage.removeItem('kanban_revision_habitudes'); revHabMasquee=false;
-  const H=(id,title,frequency,reward_eur,category)=>({id,title,frequency,reward_eur,category,active:true});
-  habits=[H(1778938803939,'Lessive','weekly:6',0.1,'Autre'),H(1778938900058,'Soin Ongles','weekly:3,6',0.1,'Autre'),H(1778940200486,'Comptabilité','weekly:0',1,'Finance'),
-    H(1778940221437,'Aquarium','weekly:0',1,'Autre'),H(1778949045719,'Anki','daily',0.5,'Esprit'),H(1778949821832,'Entretien Barbe','weekly:0',0.25,'Autre'),
-    H(1778950041496,'Travail 20 minutes','daily',0.5,'Esprit'),H(1778950264793,'Planning du Lendemain','daily',0.25,'Productivité'),H(1798949045718,'Journal','daily',0.25,'Productivité'),
-    H(2100000000003,'Salle matin 7h','weekly:1,3,5',1,'Santé'),H(2100000000002,'Sport Bonus','daily',0.25,'Santé'),H(1785961436809,'Immersion (1 article/20min)','daily',0.25,'Esprit'),
-    H(1786120215378,'CAC40 / Business','daily',0.5,'Finance')];
-  goals=[{id:'g1785682017843',title:'90kg',category:'Santé',status:'active',target_date:'2026-09-30',progress:0}];
-  allTasks=[]; tasks=allTasks; habitsLog=[];
-  let ecritH=null, ecritG=null, annul=null; window.saveHabits=async()=>{ ecritH=habits.map(h=>[h.title,h.active].join(':')); return true; };
-  window.sheetBatchUpsert=async(sh,rows)=>{ if(sh==='goals')ecritG=rows; return true; }; window.persist=async()=>true; window.offerUndo=(m,fn)=>{ annul=fn; };
-  // Le bandeau, dans la fenêtre du Système et sur la page des habitudes.
-  renderSysteme(); out.bandeau=!!document.querySelector('#sysBox .rev-hab')&&/Méditation 10 min/.test(document.querySelector('#sysBox .rev-hab').textContent)&&!/Coucher/.test(document.querySelector('#sysBox .rev-hab').textContent);
-  await revHabAppliquer();
-  const actives=habits.filter(h=>h.active).map(h=>h.title);
-  out.retirees=habits.filter(h=>!h.active).length;
-  out.gardees=['Comptabilité','Anki','Veille business 15 min'].every(t=>actives.includes(t));
-  out.nouvelles=['Rituel du soir (journal + 2 tâches de demain)','Japonais 20 min','Méditation 10 min','8 000 pas','Message à un proche'].every(t=>actives.includes(t));
-  out.taches=allTasks.map(t=>t.title+':'+t.recurrence+':'+new Date(t.due_date+'T12:00:00').getDay()).join(',');
-  out.objectif=goals[0].target_date+'|'+(ecritG&&ecritG[0][9]);
-  out.ecrit=!!ecritH&&ecritH.length===habits.length;
-  renderSysteme(); out.disparu=!document.querySelector('#sysBox .rev-hab');
-  await annul();
-  out.annule=habits.filter(h=>h.active).length===13&&allTasks.length===0&&goals[0].target_date==='2026-09-30'&&revHabEnAttente();
+  window.sysSauver=async()=>true;
+  const H=(id,title,frequency,category)=>({id,title,frequency,reward_eur:0.25,category,active:true});
+  habits=[H(1,'Anki','daily','Esprit'),H(2,'Lecture 10 pages','daily','Esprit'),H(3,'Pas de sucre','daily','Santé'),H(4,'Méditation 10 min','daily','Esprit'),
+    H(5,'8 000 pas','daily','Santé'),H(6,'Japonais 20 min','daily','Esprit'),H(7,'Comptabilité','weekly:0','Finance'),H(8,'Proteine (3 oeufs)','daily','Santé'),H(9,'Zero achat compulsif','daily','Finance')];
+  goals=[{id:'g1785687461934',title:'12 livres 2027',category:'Esprit',status:'active',target_date:'2027-12-02',checkpoints:JSON.stringify([{t:'1',d:false},{t:'2',d:false}])},
+    {id:'g1785683956237',title:'JLPT N5',category:'Esprit',status:'active',progress:0},{id:'g1785681906895',title:'85 kg',category:'Santé',status:'active',progress:0,target_date:'2026-12-31'}];
+  sysDonjons={}; sysChasses={}; sysClasses=sysClNorm({}); sysFam=sysFamNorm({}); sysInv=sysInvNorm({});
+  sysQuete={versions:[],minimum:{}}; sysConfig={}; sysCharge=true; accessToken='T';
+  // Sur ses donnees, sans attendre lundi : le Système configure tout, une fois.
+  habitsLog=[]; for(let d=1;d<=20;d++){ habitsLog.push({id:'a'+d,habit_id:1,date:J(d),reward_eur:0,category:'Esprit'}); habitsLog.push({id:'b'+d,habit_id:3,date:J(d),reward_eur:0,category:'Santé'}); }
+  switchPage('today'); await new Promise(r=>setTimeout(r,150)); renderSysteme();
+  out.config=sysConfig.v+'|'+sysQuete.auto+'|'+Object.keys(sysDonjons).length;
+  out.portes=['g1785687461934','g1785683956237','g1785681906895'].map(g=>(sysDonjons[g].habits||[]).join('+')).join(',');
+  out.annonce=/prend la main/.test(document.getElementById('sysAnnTitre').textContent)||sysFile.some(x=>/prend la main/.test(x[1]));
+  sysFile=[]; modalFerme('sysAnnModal');
+  out.mini=['1','2','4'].every(id=>sysQuete.minimum[id]);
+  // La quête : quatre habitudes quotidiennes, deux piliers, le point faible, un défi.
+  const v=sysQuete.versions.find(x=>x.depuis===aujd);
+  out.quete=!!v&&v.auto&&v.habits.length===4&&v.r.join('')==='ppfd';
+  out.quotidiennes=v.habits.every(id=>habits.find(h=>String(h.id)===id).frequency==='daily');
+  const lies=new Set(Object.values(sysDonjons).flatMap(d=>d.habits.map(String)));
+  out.piliers=v.habits.slice(0,2).every(id=>lies.has(id));
+  // Les piliers sont ceux qu'on tient le moins bien : pas Anki ni Pas de sucre, tenues 20 jours sur 28.
+  out.faibles=!v.habits.slice(0,2).includes('1')&&!v.habits.slice(0,2).includes('3');
+  // Une seule fois : pas de nouvelle version, pas de nouvelle annonce.
+  const n=sysQuete.versions.length; renderSysteme(); out.stable=sysQuete.versions.length===n&&!document.getElementById('sysAnnModal').classList.contains('open');
+  // La fenêtre : les raisons sous chaque habitude ; pas de choix possible.
+  out.raisons=[...document.querySelectorAll('#sysBox .sys-ligne small')].filter(x=>/Pilier|Point faible|Défi/.test(x.textContent)).length;
+  sysQueteOuvrir(); await new Promise(r=>setTimeout(r,20));
+  out.modal=document.getElementById('sysQTitre').textContent+'|'+document.querySelectorAll('#sysQListe input[type=checkbox]').length+'|'+document.querySelectorAll('#sysQListe [data-m]').length;
+  document.querySelector('#sysQListe [data-m]').value='1 minute'; await sysQueteEnregistrer();
+  out.miniEdit=sysQuete.minimum[v.habits[0]]==='1 minute'&&sysQuete.versions.length===n;
+  // La semaine suivante, la quête se réévalue ; le passé garde la sienne.
+  const vieux={...v,depuis:sysDecale(sysLundi(aujd),-7)}; sysQuete={...sysQuete,versions:[vieux]};
+  sysQueteAuto(); out.reevalue=sysQuete.versions.length===2&&sysQueteDu(vieux.depuis).join()===vieux.habits.join();
+  // Une habitude de la quête désactivée : la quête se refait sur-le-champ.
+  const cible=sysQueteActuelle()[0]; habits.find(h=>String(h.id)===cible).active=false;
+  sysQueteAuto(); out.refaite=!sysQueteActuelle().includes(cible)&&sysQueteActuelle().length===4;
+  habits.find(h=>String(h.id)===cible).active=true;
+  // En mode manuel (les épreuves précédentes), rien n'est imposé.
+  sysQuete={versions:[],minimum:{}}; out.manuel=sysQueteAuto()===false&&sysQuete.versions.length===0;
   return out;
 });
-chk('La révision des habitudes : un bandeau (Méditation, pas « Coucher avant 23h »)',p8.bandeau===true);
-chk('...dix habitudes passent en inactives, les autres restent ; « Veille business » renommée',p8.retirees===10&&p8.gardees,JSON.stringify([p8.retirees,p8.gardees]));
-chk('...cinq nouvelles habitudes',p8.nouvelles===true);
-chk('...quatre tâches récurrentes chaque semaine au bon jour',p8.taches==='Lessive:weekly:6,Soin des ongles:weekly:6,Aquarium:weekly:0,Entretien de la barbe:weekly:0',p8.taches);
-chk('...l\'objectif « 90 kg » recalé au 31 mars 2027, écrit dans le classeur',p8.objectif==='2027-03-31|2027-03-31',p8.objectif);
-chk('...les habitudes écrites, le bandeau disparaît',p8.ecrit&&p8.disparu,JSON.stringify([p8.ecrit,p8.disparu]));
-chk('...et l\'on peut tout annuler',p8.annule===true);
+chk('La configuration : la quête imposée, trois portes ouvertes, une seule fois et annoncée',p8.config==='2026-11|true|3'&&p8.annonce,JSON.stringify([p8.config,p8.annonce]));
+chk('...les portes et leurs habitudes : Lecture ; Anki et Japonais ; Pas de sucre, 8 000 pas et Protéines',p8.portes==='2,1+6,3+5+8',p8.portes);
+chk('...des versions minimales par défaut',p8.mini===true);
+chk('La quête : quatre habitudes quotidiennes, deux piliers, le point faible, un défi',p8.quete&&p8.quotidiennes&&p8.piliers,JSON.stringify([p8.quete,p8.quotidiennes,p8.piliers]));
+chk('...les piliers sont les habitudes des portes les moins tenues',p8.faibles===true);
+chk('...fixée pour la semaine (rien ne bouge au passage suivant)',p8.stable===true);
+chk('...la raison sous chaque habitude',p8.raisons===4,String(p8.raisons));
+chk('...on ne choisit plus : la fenêtre ne montre que les versions minimales, qu\'on règle',p8.modal==='LA QUÊTE DU SYSTÈME|0|4'&&p8.miniEdit,JSON.stringify([p8.modal,p8.miniEdit]));
+chk('...réévaluée chaque semaine, le passé garde la sienne',p8.reevalue===true);
+chk('...refaite si une de ses habitudes est désactivée',p8.refaite===true);
+chk('...rien d\'imposé en mode manuel',p8.manuel===true);
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();

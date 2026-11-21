@@ -1287,7 +1287,8 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sys-ql{display:grid;grid-template-columns:auto 1fr minmax(140px,0.9fr);gap:0.5rem;align-items:center;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px}
 .sys-ql-t{font-size:0.82rem}.sys-ql-t small{display:block;color:var(--text-dim);font-size:0.66rem}
 .sys-ql-min{min-width:0!important;padding:0.3rem 0.45rem!important;font-size:0.76rem!important}
-.sys-qc{font-size:0.74rem;color:var(--text-mid)}.sys-qc.ko{color:var(--danger)}
+.sys-qc{font-size:0.74rem;color:var(--text-mid)}
+.sys-ql.auto{grid-template-columns:1fr minmax(140px,0.9fr)}.sys-qc.ko{color:var(--danger)}
 .sys-pal-r{font-size:0.84rem;margin:0.4rem 0 0.6rem}
 .sys-fen>.sys-portes{grid-column:1/-1}
 .sys-portes-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.45rem}
@@ -1420,10 +1421,6 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sys-coffre-obj{opacity:0;transform:scale(.85);transition:opacity .35s,transform .35s}
 .sys-coffre-obj.vu{opacity:1;transform:none}
 .sys-ann-img{display:flex;justify-content:center;margin-bottom:0.4rem}
-.rev-hab{border:1px solid var(--accent);border-radius:6px;padding:0.7rem 0.9rem;margin:0 0 0.7rem;background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
-.rev-hab-t{font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem}
-.rev-hab-g{display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;color:var(--text-mid)}.rev-hab-g b{color:var(--text)}
-.rev-hab-a{display:flex;gap:0.5rem;margin-top:0.6rem}
 /* Le Codex */
 .sys-codex{position:fixed;inset:0;z-index:280;overflow-y:auto;color:#dbe9ff;
   background:radial-gradient(900px 500px at 85% 0%,rgba(124,77,255,.22),transparent 60%),radial-gradient(800px 500px at 0% 100%,rgba(61,139,255,.18),transparent 60%),rgba(4,6,16,.97)}
@@ -3254,10 +3251,9 @@ body,body *{font-family:var(--font-body)}
 </div>
 <div class="modal-bg" id="sysQueteModal">
   <div class="modal" style="width:min(560px,94vw)">
-    <div class="modal-hdr">QUÊTE QUOTIDIENNE</div>
+    <div class="modal-hdr" id="sysQTitre">QUÊTE QUOTIDIENNE</div>
     <button class="modal-close" onclick="modalFerme('sysQueteModal')">✕</button>
-    <div class="ca-aide">Les 3 à 5 habitudes qui comptent le plus. Pour chacune, une version minimale : les jours difficiles, la faire suffit.
-      Les autres restent des quêtes secondaires.</div>
+    <div class="ca-aide" id="sysQAide"></div>
     <div id="sysQListe" class="sys-qliste"></div>
     <div id="sysQCompte" class="sys-qc"></div>
     <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.6rem">
@@ -5017,69 +5013,8 @@ function freqLabel(freq) {
 // ════════════════════════════════════════════════════
 // HABITS PAGE RENDER
 // ════════════════════════════════════════════════════
-// ── La révision des habitudes (novembre 2026) ──
-// Une révision décidée ensemble, appliquée d'un clic avec la connexion de
-// l'utilisateur : les corvées deviennent des tâches récurrentes du board, des
-// habitudes fusionnent, de nouvelles arrivent, un objectif est recalé. Les
-// habitudes retirées passent en inactives (leur historique reste). On peut
-// annuler dans la foulée.
-const REV_HAB={
-  id:'2026-11',
-  retirer:['1778938803939','1778938900058','1778940221437','1778949821832','2100000000003','2100000000002','1798949045718','1778950264793','1778950041496','1785961436809'],
-  renommer:{'1786120215378':'Veille business 15 min'},
-  ajouter:[['Rituel du soir (journal + 2 tâches de demain)','daily',0.5,'Esprit'],['Japonais 20 min','daily',0.75,'Esprit'],
-    ['Méditation 10 min','daily',0.5,'Esprit'],['8 000 pas','daily',0.25,'Santé'],['Message à un proche','weekly:0',0.25,'Autre']],
-  // Les corvées : [titre, jour de la semaine (0 = dimanche)]
-  taches:[['Lessive',6],['Soin des ongles',6],['Aquarium',0],['Entretien de la barbe',0]],
-  objectif:['g1785682017843','2027-03-31']};
-const REV_LS='kanban_revision_habitudes';
-function revHabEnAttente(){
-  try{ if(localStorage.getItem(REV_LS)===REV_HAB.id)return false; }catch(e){}
-  return habits.some(h=>h.active&&REV_HAB.retirer.includes(String(h.id)));
-}
-function revHabHtml(){
-  if(!revHabEnAttente())return '';
-  const nom=id=>(habits.find(h=>String(h.id)===id)||{}).title;
-  const retirees=REV_HAB.retirer.map(nom).filter(Boolean);
-  return `<div class="rev-hab"><div class="rev-hab-t">Révision des habitudes proposée</div>
-    <div class="rev-hab-g"><div><b>Retirées</b> (passent en inactives) : ${retirees.map(tdEsc).join(', ')}</div>
-      <div><b>Nouvelles</b> : ${REV_HAB.ajouter.map(a=>tdEsc(a[0])).join(', ')}</div>
-      <div><b>Renommée</b> : « CAC40 / Business » → « Veille business 15 min »</div>
-      <div><b>Tâches récurrentes</b> sur le board : ${REV_HAB.taches.map(t=>tdEsc(t[0])).join(', ')}</div>
-      <div><b>Objectif</b> « 90 kg » recalé au 31 mars 2027</div></div>
-    <div class="rev-hab-a"><button class="btn-nav" onclick="revHabAppliquer()">Appliquer la révision</button>
-      <button class="btn-nav out" onclick="revHabMasquer()">Plus tard</button></div></div>`;
-}
-let revHabMasquee=false;
-function revHabMasquer(){ revHabMasquee=true; document.querySelectorAll('.rev-hab').forEach(x=>x.remove()); }
-const revProchain=jour=>{ const d=new Date(td()+'T12:00:00'); d.setDate(d.getDate()+((jour-d.getDay()+7)%7)); return ymd(d); };
-async function revHabAppliquer(){
-  if(!accessToken){ toast('Connecte-toi d\'abord : la révision s\'écrit dans ton classeur','err'); return; }
-  if(!confirm('Appliquer la révision des habitudes ?\n\nElle s\'écrit dans ton classeur (habitudes, tâches, objectif). Tu pourras annuler juste après.'))return;
-  const avant={habits:habits.map(h=>({...h})),tasks:allTasks.length};
-  const g=goals.find(x=>x.id===REV_HAB.objectif[0]), gAvant=g?{...g}:null;
-  habits.forEach(h=>{ const id=String(h.id); if(REV_HAB.retirer.includes(id))h.active=false; if(REV_HAB.renommer[id])h.title=REV_HAB.renommer[id]; });
-  REV_HAB.ajouter.forEach(([title,frequency,reward_eur,category])=>{ if(!habits.some(h=>h.title===title))habits.push({id:uid(),title,frequency,reward_eur,category,active:true}); });
-  const nouvelles=REV_HAB.taches.filter(([t])=>!allTasks.some(x=>x.title===t&&!x.completed_at)).map(([title,jour])=>{ const due=revProchain(jour);
-    return {id:uid(),title,column:taskColumnFromDate(due),importance:2,due_date:due,created_at:td(),completed_at:'',notes:'',project:'',recurrence:'weekly',checklist:'',snoozes:0}; });
-  allTasks.push(...nouvelles); refreshActive();
-  if(g)g.target_date=REV_HAB.objectif[1];
-  try{ localStorage.setItem(REV_LS,REV_HAB.id); }catch(e){}
-  render(); renderCurrentPage(); updateHStats();
-  const ok=await saveHabits(); await persist(); if(g)await sheetBatchUpsert('goals',[goalToRow(g)]);
-  toast(ok?'Révision appliquée':'ÉCHEC de l\'écriture des habitudes',ok?'ok':'err');
-  offerUndo('Révision des habitudes appliquée',async()=>{
-    habits=avant.habits; nouvelles.forEach(t=>{ const i=allTasks.indexOf(t); if(i>=0)allTasks.splice(i,1); }); refreshActive();
-    if(g&&gAvant)Object.assign(g,gAvant);
-    try{ localStorage.removeItem(REV_LS); }catch(e){}
-    render(); renderCurrentPage(); updateHStats();
-    await saveHabits(); await persist(); if(g)await sheetBatchUpsert('goals',[goalToRow(g)]);
-  },20000);
-}
-
 function renderHabitsPage() {
   renderHabHeader();
-  const hh=document.getElementById('habHeader'); if(hh&&!revHabMasquee&&revHabEnAttente())hh.insertAdjacentHTML('afterbegin',revHabHtml());
   renderHabToolbar();
   renderHabGrid();
   renderHeatmaps();
@@ -5315,7 +5250,7 @@ const SYS_STATS=[['force','Force','les séances de sport'],['vitalite','Vitalit�
 const SYS_CAT_STAT={'Santé':'vitalite','Productivité':'agilite','Esprit':'intelligence','Finance':'perception','Autre':'perception'};
 // Le point de départ : après « Repartir de zéro », le sport d'avant et les
 // objectifs déjà atteints ne comptent plus, ni en expérience ni en or.
-let sysQuete={versions:[],minimum:{}}, sysStats={alloc:{}}, sysReset={depuis:'',objectifs:[]}, sysCharge=false;
+let sysQuete={versions:[],minimum:{},auto:true}, sysStats={alloc:{}}, sysReset={depuis:'',objectifs:[]}, sysCharge=false;
 // Les donjons ({id d'objectif : {rang, habits liées, cible de coches, début}}),
 // les quêtes urgentes ({date : {type, lib, statut, xp}}) et le titre porté.
 let sysDonjons={}, sysUrgences={}, sysTitres={actif:''};
@@ -5329,14 +5264,16 @@ const sysBoutNorm=v=>({articles:Array.isArray(v&&v.articles)?v.articles:[],achat
 // familiers possédés (leur expérience gardée), l'équipé et depuis quand.
 const sysClNorm=v=>({liste:Array.isArray(v&&v.liste)?v.liste.filter(x=>x&&x.id):[],spes:Array.isArray(v&&v.spes)?v.spes.filter(x=>x&&x.id):[]});
 const sysFamNorm=v=>({possede:v&&v.possede&&typeof v.possede==='object'?v.possede:{},actif:String((v&&v.actif)||''),depuis:String((v&&v.depuis)||'')});
+// Les réglages appliqués une fois pour toutes (et sur tous les appareils).
+let sysConfig={};
 let sysChasses={}, sysInv=sysInvNorm({}), sysBoutique=sysBoutNorm({}), sysClasses=sysClNorm({}), sysFam=sysFamNorm({});
 try{ const c=JSON.parse(localStorage.getItem('kanban_systeme')||'null'); if(c){ sysQuete=c.quete||sysQuete; sysStats=c.stats||sysStats; sysReset=c.reset||sysReset;
   sysDonjons=c.donjons||sysDonjons; sysUrgences=c.urgences||sysUrgences; sysTitres=c.titres||sysTitres;
-  sysChasses=c.chasses||sysChasses; sysInv=sysInvNorm(c.inventaire); sysBoutique=sysBoutNorm(c.boutique); sysClasses=sysClNorm(c.classes); sysFam=sysFamNorm(c.familiers); } }catch(e){}
+  sysChasses=c.chasses||sysChasses; sysInv=sysInvNorm(c.inventaire); sysBoutique=sysBoutNorm(c.boutique); sysClasses=sysClNorm(c.classes); sysFam=sysFamNorm(c.familiers); sysConfig=c.config||{}; } }catch(e){}
 function sysCache(){ try{ localStorage.setItem('kanban_systeme',JSON.stringify({quete:sysQuete,stats:sysStats,reset:sysReset,calib:sysCalib,
-  donjons:sysDonjons,urgences:sysUrgences,titres:sysTitres,chasses:sysChasses,inventaire:sysInv,boutique:sysBoutique,classes:sysClasses,familiers:sysFam})); }catch(e){} }
+  donjons:sysDonjons,urgences:sysUrgences,titres:sysTitres,chasses:sysChasses,inventaire:sysInv,boutique:sysBoutique,classes:sysClasses,familiers:sysFam,config:sysConfig})); }catch(e){} }
 const SYS_CLES={quete:()=>sysQuete,stats:()=>sysStats,reset:()=>sysReset,calibrage:()=>sysCalib,donjons:()=>sysDonjons,urgences:()=>sysUrgences,titres:()=>sysTitres,
-  chasses:()=>sysChasses,inventaire:()=>sysInv,boutique:()=>sysBoutique,classes:()=>sysClasses,familiers:()=>sysFam};
+  chasses:()=>sysChasses,inventaire:()=>sysInv,boutique:()=>sysBoutique,classes:()=>sysClasses,familiers:()=>sysFam,config:()=>sysConfig};
 const sysObjectifAvant=g=>(sysReset.objectifs||[]).includes(String(g.id));
 
 // ── Le classeur ──
@@ -5353,7 +5290,8 @@ async function sysCharger(){
     await sysOnglet();
     const [rows]=await sheetBatchGet([`${SYS_SHEET}!A:C`]);
     rows.slice(1).forEach(r=>{ let v=null; try{ v=JSON.parse(r[1]||'null'); }catch(e){}
-      if(!v)return; if(r[0]==='quete')sysQuete={versions:Array.isArray(v.versions)?v.versions:[],minimum:v.minimum||{}}; if(r[0]==='stats')sysStats={alloc:v.alloc||{}};
+      if(!v)return; if(r[0]==='quete')sysQuete={versions:Array.isArray(v.versions)?v.versions:[],minimum:v.minimum||{},...(v.auto?{auto:true}:{})};
+      if(r[0]==='config'&&typeof v==='object')sysConfig=v; if(r[0]==='stats')sysStats={alloc:v.alloc||{}};
       if(r[0]==='calibrage'&&Number(v.k)>0)sysCalib={k:Number(v.k),xpJour:v.xpJour==null?null:Number(v.xpJour),le:String(v.le||'')};
       if(r[0]==='reset')sysReset={depuis:String(v.depuis||''),objectifs:Array.isArray(v.objectifs)?v.objectifs.map(String):[]};
       if(r[0]==='donjons'&&typeof v==='object')sysDonjons=v; if(r[0]==='urgences'&&typeof v==='object')sysUrgences=v; if(r[0]==='titres'&&typeof v==='object')sysTitres={actif:String(v.actif||'')};
@@ -6566,6 +6504,68 @@ function sysDegats(ch){
     setTimeout(()=>{ f.remove(); t.classList.remove('touche'); },1200); });
 }
 
+
+// ── La quête imposée ──
+// Le Système impose la quête quotidienne : on ne choisit pas ses épreuves.
+// Elle reste la même toute la semaine (la constance fait la force) et se
+// réévalue au premier passage de chaque semaine, sur tes données :
+// deux PILIERS (les habitudes de tes portes que tu tiens le moins bien), un
+// POINT FAIBLE (ton habitude la moins tenue sur quatre semaines), un DÉFI
+// (tiré au sort parmi le reste). Seulement des habitudes quotidiennes.
+// Chaque version est datée : le passé garde la sienne.
+const SYS_QUETE_TAILLE=4, SYS_RAISONS={p:'Pilier d\'une porte',f:'Point faible',d:'Défi de la semaine'};
+function sysQueteTaux(id,jusqua){
+  const debut=sysDecale(jusqua,-28), j=new Set(habitsLog.filter(l=>String(l.habit_id)===String(id)&&l.date>=debut&&l.date<jusqua).map(l=>l.date));
+  return j.size/28;
+}
+function sysQueteChoisir(aujd){
+  const cand=habits.filter(h=>h.active&&h.frequency==='daily'), r=sysAlea('quete|'+sysLundi(aujd));
+  const melange=l=>l.map(h=>[h,r()]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+  const parTaux=l=>melange(l).sort((a,b)=>sysQueteTaux(a.id,aujd)-sysQueteTaux(b.id,aujd));
+  const lies=new Set(); goals.forEach(g=>{ const dj=sysDonjonDe(g); if(dj&&!goalReached(g))(dj.habits||[]).forEach(id=>lies.add(String(id))); });
+  const choix=[], raisons=[], prendre=(h,k)=>{ if(h&&!choix.includes(h)){ choix.push(h); raisons.push(k); } };
+  parTaux(cand.filter(h=>lies.has(String(h.id)))).slice(0,2).forEach(h=>prendre(h,'p'));
+  prendre(parTaux(cand.filter(h=>!choix.includes(h)))[0],'f');
+  while(choix.length<SYS_QUETE_TAILLE){ const reste=melange(cand.filter(h=>!choix.includes(h))); if(!reste.length)break; prendre(reste[0],'d'); }
+  return {habits:choix.map(h=>String(h.id)),r:raisons};
+}
+// Au premier passage de la semaine (après avoir relu le classeur), la quête se réévalue.
+function sysQueteAuto(){
+  if(!sysQuete.auto||(accessToken&&!sysCharge))return false;
+  const aujd=td(), v=sysQuete.versions.filter(x=>x.depuis<=aujd).sort((a,b)=>a.depuis.localeCompare(b.depuis)).pop();
+  const valide=v&&v.auto&&v.depuis>=sysLundi(aujd)&&v.habits.every(id=>habits.some(h=>String(h.id)===String(id)&&h.active));
+  if(valide)return false;
+  const c=sysQueteChoisir(aujd); if(c.habits.length<SYS_QUETE_MIN)return false;
+  sysQuete={...sysQuete,versions:sysQuete.versions.filter(x=>x.depuis!==aujd).concat([{depuis:aujd,habits:c.habits,auto:true,r:c.r}])};
+  sysSauver('quete');
+  return true;
+}
+const sysQueteRaison=(date,id)=>{ const v=sysQuete.versions.filter(x=>x.depuis<=date).sort((a,b)=>a.depuis.localeCompare(b.depuis)).pop();
+  const i=v&&v.r?v.habits.map(String).indexOf(String(id)):-1; return i>=0?SYS_RAISONS[v.r[i]]||'':''; };
+// La configuration de novembre 2026, une fois pour toutes : la quête imposée,
+// trois portes sur les objectifs du moment, des versions minimales.
+const SYS_CONFIG_V='2026-11';
+function sysConfigurer(){
+  if(sysConfig.v===SYS_CONFIG_V||!accessToken||!sysCharge||!habits.length)return false;
+  const parTitre=re=>habits.find(h=>h.active&&re.test(h.title)), id=h=>h?String(h.id):null;
+  const portes=[['g1785687461934',[/^lecture/i]],['g1785683956237',[/^anki/i,/^japonais/i]],['g1785681906895',[/^pas de sucre/i,/^8\s?000 pas/i,/^prot[ée]ine/i]]];
+  const ouvertes=[], dj={...sysDonjons};
+  portes.forEach(([gid,res])=>{ const g=goals.find(x=>x.id===gid&&x.status!==GOAL_DELETED); if(!g||goalReached(g)||dj[gid])return;
+    dj[gid]={rang:sysRangSuggere(g),habits:res.map(re=>id(parTitre(re))).filter(Boolean),cible:0,debut:td()}; ouvertes.push(g.title); });
+  sysDonjons=dj;
+  const mini={...(sysQuete.minimum||{})};
+  [[/^anki/i,'10 cartes'],[/^lecture/i,'2 pages'],[/^m[ée]ditation/i,'3 minutes'],[/^pas de sucre/i,'aucun soda ni dessert'],[/^japonais/i,'5 minutes'],
+   [/^8\s?000 pas/i,'5 000 pas'],[/^rituel du soir/i,'une ligne de journal'],[/^veille business/i,'un article'],[/^ranger/i,'5 minutes'],[/^prot[ée]ine/i,'3 œufs']]
+    .forEach(([re,t])=>{ const h=parTitre(re); if(h&&!mini[h.id])mini[h.id]=t; });
+  sysQuete={...sysQuete,minimum:mini,auto:true};
+  sysConfig={...sysConfig,v:SYS_CONFIG_V};
+  sysQueteAuto();
+  sysSauver('donjons'); sysSauver('quete'); sysSauver('config');
+  sysFenetre('[ Système ]','Le Système prend la main',`Désormais, c'est le Système qui impose ta quête quotidienne : quatre habitudes, les mêmes toute la semaine, réévaluées chaque lundi selon tes données.`
+    +(ouvertes.length?`<br><br>${ouvertes.length} porte${ouvertes.length>1?'s se sont ouvertes':' s\'est ouverte'} : ${ouvertes.map(tdEsc).join(', ')}.`:''));
+  return true;
+}
+
 // ── La fenêtre du Système ──
 let sysTimer=null;
 function sysRestant(){
@@ -6577,6 +6577,7 @@ function renderSysteme(){
   const el=document.getElementById('sysBox'); if(!el)return;
   // Le premier calibrage se fait seul, dès qu'il y a des habitudes à mesurer.
   if(!sysCalib.le&&sysCharge&&habits.some(h=>h.active))sysCalibrer();
+  sysConfigurer(); sysQueteAuto();
   const ch=sysChasseMaj(sysEtat());
   const e=sysEtat(), aujd=td(), q=sysQueteJour(aujd);
   const faits=new Set(habitsLog.filter(l=>l.date===aujd).map(l=>String(l.habit_id)));
@@ -6596,15 +6597,16 @@ function renderSysteme(){
     ['equipement','Équipement',coffres.length?'🎁'+coffres.length:''],['boutique','Boutique','']];
   const vue=vues.some(v=>v[0]===sysVueCur)?sysVueCur:'quete';
   const queteHtml=`<div class="sys-quete">
-      <div class="sys-t">Quête quotidienne <button class="sys-reg" onclick="sysQueteOuvrir()" title="Choisir les habitudes de la quête">⚙</button></div>
-      ${!choisie?`<div class="sys-vide">Le Système attend ta quête : 3 à 5 habitudes, pas plus.<br><button class="btn-nav" onclick="sysQueteOuvrir()">Choisir ma quête quotidienne</button></div>`
+      <div class="sys-t">Quête quotidienne <button class="sys-reg" onclick="sysQueteOuvrir()" title="${sysQuete.auto?'La quête du Système : pourquoi ces habitudes, les versions minimales':'Choisir les habitudes de la quête'}">${sysQuete.auto?'ℹ':'⚙'}</button></div>
+      ${!choisie?(sysQuete.auto?`<div class="sys-vide">Le Système prépare ta quête : il lui faut au moins trois habitudes quotidiennes actives.</div>`
+        :`<div class="sys-vide">Le Système attend ta quête : 3 à 5 habitudes, pas plus.<br><button class="btn-nav" onclick="sysQueteOuvrir()">Choisir ma quête quotidienne</button></div>`)
       :!q.length?`<div class="sys-vide">Aucune habitude de la quête n'est prévue aujourd'hui. Repos.</div>`
       :`<div class="sys-sous">Préparation pour devenir plus fort</div>
       ${rachat?`<div class="sys-penal">⚠ ZONE DE PÉNALITÉ — hier, la quête n'a pas été accomplie. Accomplis-la aujourd'hui : prime doublée, +${prime} XP.</div>`:''}
       ${retour?`<div class="sys-retour">Mode retour : ${requis} sur ${q.length} suffi${requis>1?'sent':'t'} pour la prime, le temps de reprendre.</div>`:''}
       ${q.map(h=>{ const ok=faits.has(String(h.id)), mini=(sysQuete.minimum||{})[h.id];
         return `<button class="sys-ligne${ok?' ok':''}" onclick="toggleHabit(${JSON.stringify(h.id).replace(/"/g,'&quot;')})">
-          <span class="sys-case">${ok?'✓':''}</span><span class="sys-lib">${tdEsc(h.title)}${mini?`<small>minimum : ${tdEsc(mini)}</small>`:''}</span>
+          <span class="sys-case">${ok?'✓':''}</span><span class="sys-lib">${tdEsc(h.title)}${mini||sysQueteRaison(aujd,h.id)?`<small>${[sysQueteRaison(aujd,h.id),mini?'minimum : '+tdEsc(mini):''].filter(Boolean).join(' · ')}</small>`:''}</span>
           <span class="sys-gain">+${SYS_XP.quete} XP</span></button>`; }).join('')}
       <div class="sys-pied">${complete?`<span class="sys-ok">QUÊTE ACCOMPLIE · +${prime} XP</span>`
         :`<span>${nOk}/${requis<q.length?requis+' (sur '+q.length+')':q.length} · prime +${prime} XP</span><span class="sys-temps" id="sysTemps" title="Temps restant avant minuit">⏳ ${sysRestant()}</span>`}</div>`}
@@ -6614,7 +6616,7 @@ function renderSysteme(){
           :urg.statut==='acceptee'?(urg.type==='objectif'?`<button class="btn-nav" onclick="sysUrgenceStatut('faite')">C'est fait</button>`:'<div class="ca-aide">Acceptée : coche l\'habitude pour l\'accomplir.</div>')
           :`<div class="nba-act"><button class="btn-nav" onclick="sysUrgenceStatut('acceptee')">Accepter</button><button class="btn-nav out" onclick="sysUrgenceStatut('refusee')">Refuser</button></div>`}</div>`:''}
     </div>`;
-  el.innerHTML=`${revHabMasquee?'':revHabHtml()}<div class="sys-fen">
+  el.innerHTML=`<div class="sys-fen">
     <div class="sys-statut">
       <div class="sys-t">Statut <span><button class="sys-reg sys-codex-b" onclick="sysCodexOuvrir()" title="Le Codex : familiers, inventaire, classes, bestiaire, titres">📖 Codex</button>
         <button class="sys-reg" onclick="sysPaliersOuvrir()" title="Les paliers : l'expérience de chaque rang, et le temps pour y arriver">Paliers</button></span></div>
@@ -6690,6 +6692,21 @@ function sysFenetre(t,titre,txt){
 function sysAnnFermer(){ modalFerme('sysAnnModal'); const n=sysFile.shift(); if(n)setTimeout(()=>sysFenetre(...n),180); }
 // Choisir la quête : 3 à 5 habitudes actives, chacune avec sa version minimale.
 function sysQueteOuvrir(){
+  const titre=document.getElementById('sysQTitre'), aide=document.getElementById('sysQAide');
+  if(sysQuete.auto){
+    const aujd=td(), q=sysQueteActuelle().map(id=>habits.find(h=>String(h.id)===id)).filter(Boolean), lundi=sysDecale(sysLundi(aujd),7);
+    titre.textContent='LA QUÊTE DU SYSTÈME';
+    aide.innerHTML=`Le Système impose la quête : les mêmes habitudes toute la semaine, réévaluées le ${new Date(lundi+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}.
+      Deux piliers (les habitudes de tes portes que tu tiens le moins bien), ton point faible (la moins tenue sur quatre semaines), un défi tiré au sort.
+      Tu règles seulement la version minimale de chacune : les jours difficiles, la faire suffit.`;
+    document.getElementById('sysQListe').innerHTML=q.map(h=>`<label class="sys-ql auto"><span class="sys-ql-t">${tdEsc(h.title)}<small>${tdEsc(sysQueteRaison(aujd,h.id))} · tenue ${Math.round(sysQueteTaux(h.id,aujd)*100)} % sur 4 semaines</small></span>
+      <input type="text" class="ca-q sys-ql-min" data-m="${MD_ATT(String(h.id))}" value="${MD_ATT((sysQuete.minimum||{})[h.id]||'')}" placeholder="version minimale"></label>`).join('')
+      ||'<div class="ca-aide">Pas encore de quête : il faut au moins trois habitudes quotidiennes actives.</div>';
+    document.getElementById('sysQCompte').textContent='';
+    modalOuvre('sysQueteModal'); return;
+  }
+  titre.textContent='QUÊTE QUOTIDIENNE';
+  aide.textContent='Les 3 à 5 habitudes qui comptent le plus. Pour chacune, une version minimale : les jours difficiles, la faire suffit. Les autres restent des quêtes secondaires.';
   const cur=new Set(sysQueteActuelle());
   const l=habits.filter(h=>h.active).sort((a,b)=>HAB_CAT_ORDER.indexOf(a.category)-HAB_CAT_ORDER.indexOf(b.category)||String(a.title).localeCompare(String(b.title)));
   document.getElementById('sysQListe').innerHTML=l.map(h=>`<label class="sys-ql">
@@ -6707,6 +6724,12 @@ function sysQueteCompter(){
   el.className=n<SYS_QUETE_MIN||n>SYS_QUETE_MAX?'sys-qc ko':'sys-qc';
 }
 async function sysQueteEnregistrer(){
+  if(sysQuete.auto){
+    const mini={...(sysQuete.minimum||{})};
+    document.querySelectorAll('#sysQListe [data-m]').forEach(x=>{ const v=x.value.trim(); if(v)mini[x.dataset.m]=v; else delete mini[x.dataset.m]; });
+    sysQuete={...sysQuete,minimum:mini}; modalFerme('sysQueteModal'); renderSysteme();
+    if(!await sysSauver('quete'))toast('ÉCHEC de l\'enregistrement','err'); return;
+  }
   const ids=[...document.querySelectorAll('#sysQListe input[type=checkbox]:checked')].map(x=>x.dataset.h);
   if(ids.length<SYS_QUETE_MIN||ids.length>SYS_QUETE_MAX){ toast(`La quête compte ${SYS_QUETE_MIN} à ${SYS_QUETE_MAX} habitudes`,'err'); return; }
   const mini={...(sysQuete.minimum||{})};
@@ -10319,7 +10342,7 @@ const BK_TABLES=[
     v=>{ (v||[]).forEach(x=>{ if(!x||!x.v)return; if(x.id==='quete')sysQuete=x.v; if(x.id==='stats')sysStats=x.v; if(x.id==='reset')sysReset=x.v;
       if(x.id==='calibrage'&&x.v.k>0)sysCalib=x.v; if(x.id==='donjons')sysDonjons=x.v; if(x.id==='urgences')sysUrgences=x.v; if(x.id==='titres')sysTitres=x.v;
       if(x.id==='chasses')sysChasses=x.v; if(x.id==='inventaire')sysInv=sysInvNorm(x.v); if(x.id==='boutique')sysBoutique=sysBoutNorm(x.v);
-      if(x.id==='classes')sysClasses=sysClNorm(x.v); if(x.id==='familiers')sysFam=sysFamNorm(x.v); }); sysCache(); }]];
+      if(x.id==='classes')sysClasses=sysClNorm(x.v); if(x.id==='familiers')sysFam=sysFamNorm(x.v); if(x.id==='config')sysConfig=x.v; }); sysCache(); }]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -24508,7 +24531,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.115.0';
+const APP_VERSION='v1.116.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
