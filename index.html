@@ -512,6 +512,18 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .td-row.done .td-lbl{opacity:0.45}
 .td-row.done .td-name{text-decoration:line-through}
 .td-row.mini .td-name{text-decoration:none}
+.td-sp-tete{display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap}
+.td-sp-rs{display:flex;gap:0.35rem;flex-wrap:wrap;margin-top:0.5rem}.td-sp-rs.mini{margin:0 0 0 auto}
+.td-sp-r{background:none;border:1px solid var(--border2);color:var(--text-mid);border-radius:4px;font:inherit;font-size:0.68rem;padding:0.2rem 0.55rem;cursor:pointer}
+.td-sp-r:hover{border-color:var(--accent);color:var(--text)}
+.td-sp-corps{margin-top:0.4rem}
+.td-sp-h{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);margin:0.55rem 0 0.2rem}
+.td-sp-p{font-size:0.74rem;color:var(--text-mid);margin:0.1rem 0}
+.td-sp-bonus{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-top:0.55rem;padding:0.35rem 0.5rem;border:1px dashed var(--border2);border-radius:5px;font-size:0.74rem}
+.td-sp-bonus.fait{border-style:solid;border-color:var(--green);color:var(--green)}
+.td-sp-feel{display:flex;align-items:center;gap:0.3rem;margin-top:0.5rem;font-size:0.7rem;color:var(--text-dim)}
+.td-sp-feel span{margin-right:0.2rem}.td-sp-feel .sp-feel-btn{font-size:1rem;padding:0.1rem 0.3rem}
+.td-sp-b.save{margin-left:auto;border-color:var(--accent);color:var(--accent)}
 .td-mini{flex-shrink:0;background:none;border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);color:var(--warn);border-radius:99px;
   font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.08em;padding:0.12rem 0.5rem;cursor:pointer;opacity:0.75}
 .td-mini:hover{opacity:1;border-color:var(--warn)}
@@ -2937,6 +2949,7 @@ body,body *{font-family:var(--font-body)}
   <nav class="nav-tabs">
     <button class="nav-tab active" data-page="board" onclick="switchPage('board')">BOARD</button>
     <button class="nav-tab" data-page="today" onclick="switchPage('today')">AUJOURD'HUI</button>
+    <button class="nav-tab" data-page="sport" onclick="switchPage('sport')">SÉANCE</button>
     <button class="nav-tab" data-page="brain" onclick="switchPage('brain')">NOTES</button>
     <button class="nav-tab nav-masque" data-page="adp" onclick="switchPage('adp')">ADP</button>
     <button class="nav-tab" data-page="omega" onclick="switchPage('omega')">OMEGA</button>
@@ -7338,28 +7351,57 @@ async function renderTodayPage(){
       ? (due.length?habSections:'<div class="td-empty">Aucune habitude prévue.</div>')
       : '');
 
-  // ── séance du jour ──
-  const plan=sportPlanFor(today),log=sportLogFor(today);
-  const st=log?(log.status||''):'';
-  document.getElementById('tdSport').innerHTML=
-    `<div class="td-t">Séance${st?` <span class="td-n">${tdEsc(sportStatusLabel(st))}</span>`:''}</div>`+
-    (plan?`<div class="td-sport">
-        <div class="td-sport-h">${tdEsc(plan.type||'')}${plan.duration?` · ${plan.duration} min`:''}</div>
-        <div class="td-sport-t">${tdEsc(plan.title||'')}</div>
-        ${plan.content?`<div class="td-sport-c">${tdEsc(plan.content).replace(/\n/g,'<br>')}</div>`:''}
-        ${plan.bonus?`<div class="td-sport-b">★ ${tdEsc(plan.bonus)}</div>`:''}
-      </div>`:'<div class="td-empty">Aucune séance programmée.</div>')+
-    // Les taches et les habitudes se cochent ici ; la seance ne renvoyait qu'a
-    // un autre onglet. Elle se traite desormais sur place.
-    (plan&&!/repos/i.test(plan.type)?`<div class="td-sp-act">`+
-      [['done','✅ Fait'],['partial','◐ Partiel'],['skipped','✕ Pas fait']].map(([v,l])=>
-        `<button class="td-sp-b${st===v?' on '+v:''}" onclick="quickSportStatus('${v}')">${l}</button>`).join('')+
-      `</div>`:'')+
-    `<button class="td-go" onclick="switchPage('sport')">Ouvrir SPORT →</button>`;
+  renderTodaySport();
 
   renderTodayAdp();
   renderSignals();
 }
+// ── La séance du jour, sur la page Aujourd'hui ──
+// Toute la séance, comme sur la page SÉANCE : chaque exercice avec son statut
+// (✓ ~ ✗), la dernière charge tenue, la gêne et le poids du jour ; l'activité
+// bonus, le ressenti, et les raccourcis (éditer le programme, ouvrir la page).
+// Les saisies sont les mêmes brouillons que la page SÉANCE : on peut commencer
+// ici et finir là-bas.
+const SP_RESSENTIS=['😵','😕','😐','🙂','💪'];
+function renderTodaySport(){
+  const el=document.getElementById('tdSport'); if(!el)return;
+  const today=td(), plan=sportPlanFor(today), log=sportLogFor(today), st=log?(log.status||''):'';
+  const ouvrir=`<button class="td-sp-r" onclick="switchPage('sport')" title="Ouvrir la page SÉANCE">↗ Séance</button>`;
+  if(!plan){ el.innerHTML=`<div class="td-t">Séance</div><div class="td-empty">Aucune séance programmée.</div>
+    <div class="td-sp-rs"><button class="td-sp-r" onclick="openSportPlanModal('${today}')">＋ Programmer la séance</button>${ouvrir}</div>`; return; }
+  const repos=/repos/i.test(plan.type||''), col=sportTypeColor(plan.type), existing=sportExisting(), items=sportParseProgram(plan.content);
+  const feel=sportDraft.feeling??(log&&log.feeling)??0, bonusFait=!!(log&&log.bonusDone);
+  const corps=items.map(it=>{
+    if(it.type==='head')return `<div class="td-sp-h">${sportExBold(it.text)}</div>`;
+    if(it.type==='p')return `<div class="td-sp-p">${sportExBold(it.text)}</div>`;
+    const i=it.idx, status=sportExDraft[i]?.status ?? existing[i]?.status ?? '';
+    const weight=sportExDraft[i]?.weight ?? existing[i]?.weight ?? it.sugg ?? '', gene=sportExDraft[i]?.gene ?? existing[i]?.gene ?? false;
+    const prec=sportExDernier(it.text,today);
+    return `<div class="sp-ex-row${gene?' gene':''}">
+      <button class="sp-ex-status st-${status||'none'}" onclick="sportCycleEx(${i})" title="Statut : fait → partiel → pas fait">${SP_EX_ICON[status]}</button>
+      <div class="sp-ex-txt">${sportExBold(it.text)}${prec?`<span class="sp-ex-prev" title="Dernière charge tenue, le ${sportEsc(prec.date)}">dernier : ${prec.kg} kg</span>`:''}</div>
+      <button class="sp-ex-gene${gene?' on':''}" onclick="sportToggleGene(${i})" title="Signaler une gêne sur ce mouvement">⚠</button>
+      <input class="sp-ex-w" data-spexw="${i}" type="text" inputmode="decimal" placeholder="kg" value="${sportEsc(weight)}">
+    </div>`; }).join('');
+  el.innerHTML=`<div class="td-t">Séance${st?` <span class="td-n">${tdEsc(sportStatusLabel(st))}</span>`:''}</div>
+    <div class="td-sport">
+      <div class="td-sp-tete"><span class="sp-type-badge" style="color:${col};background:${col}22;border:1px solid ${col}55">${tdEsc(plan.type||'')}</span>
+        ${plan.duration?`<span class="sp-dur">⏱ ${plan.duration} min</span>`:''}
+        <span class="td-sp-rs mini"><button class="td-sp-r" onclick="openSportPlanModal('${today}')" title="Éditer le programme du jour">✎ Éditer</button>${ouvrir}</span></div>
+      <div class="td-sport-t">${tdEsc(plan.title||'')||'Séance du jour'}</div>
+      ${items.some(it=>it.type==='ex')?`<div class="sp-ex-hint">Statut ✓ ~ ✗ et charge sur chaque ligne, puis Enregistrer</div>`:''}
+      <div class="td-sp-corps sp-content">${corps||'<div class="td-sp-p">Aucun détail fourni.</div>'}</div>
+      ${plan.bonus?`<div class="td-sp-bonus${bonusFait?' fait':''}"><span>✨ ${tdEsc(plan.bonus)}</span>
+        <button class="td-sp-r" onclick="sportToggleBonus()">${bonusFait?'✓ Bonus fait':'Bonus fait ?'}</button></div>`:''}
+    </div>
+    ${repos?'':`<div class="td-sp-feel"><span>Ressenti</span>${SP_RESSENTIS.map((e,k)=>`<button class="sp-feel-btn${feel===k+1?' sel':''}" onclick="sportTdRessenti(${k+1})">${e}</button>`).join('')}</div>
+    <div class="td-sp-act">${[['done','✅ Fait'],['partial','◐ Partiel'],['skipped','✕ Pas fait']].map(([v,l])=>
+      `<button class="td-sp-b${st===v?' on '+v:''}" onclick="sportTdStatut('${v}')">${l}</button>`).join('')}
+      <button class="td-sp-b save" onclick="sportTdEnregistrer()" title="Enregistrer les statuts, les charges et le ressenti">💾 Enregistrer</button></div>`}`;
+}
+function sportTdRessenti(f){ sportCaptureExInputs(); sportDraft.feeling=f; renderTodaySport(); }
+async function sportTdStatut(v){ sportCaptureExInputs(); sportDraft.status=v; await saveSportLog(); renderTodayPage(); updateHStats(); }
+async function sportTdEnregistrer(){ sportCaptureExInputs(); await saveSportLog(); renderTodayPage(); updateHStats(); }
 // La saisie des mesures vivait ici ; elle est restee sur la page Mesures, ou
 // elle a son contexte. La page du matin s'en tient a ce qui se coche.
 
@@ -7411,21 +7453,6 @@ function renderTodayAdp(){
 
 // Enregistre le statut du jour sans quitter la page, en preservant ce qui a
 // deja ete saisi (ressenti, poids, exercices).
-async function quickSportStatus(st){
-  const d=td();
-  const prev=sportLogFor(d);
-  const before=prev?prev.status:'';
-  if(before===st)return;
-  const log=Object.assign({date:d,status:'',exercises:'',feeling:0,weight:0,comment:'',bonusDone:false},prev||{},{status:st});
-  showLoad(true);const ok=await sportUpsertLog(log);showLoad(false);
-  if(!ok){ toast("ÉCHEC de l'enregistrement",'err'); return; }
-  renderTodayPage();updateHStats();
-  offerUndo(`Séance · ${sportStatusLabel(st)}`,async()=>{
-    const back=Object.assign({},log,{status:before});
-    await sportUpsertLog(back);
-    renderTodayPage();updateHStats();
-  });
-}
 
 // Une ligne d'habitude, avec les mêmes repères que la page HABITUDES :
 // émoji déduit du titre, pastille de catégorie, fréquence, série et gain.
@@ -8298,7 +8325,9 @@ function setNoteOrder(o){
 // ── Navigation : OMEGA regroupe les pages de suivi ────────────────────────
 // Neuf onglets ne tenaient plus. Les cinq pages de pilotage passent en
 // sous-onglets d'une seule entree ; les pages elles-memes sont inchangees.
-const OMEGA=[['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],
+// La séance de sport a quitté OMEGA pour le menu principal (« SÉANCE ») : elle
+// se consulte au téléphone, à la salle.
+const OMEGA=[['objectifs','Objectifs'],['habits','Habitudes'],
              ['jp','日本語'],['cartes','Cartes'],
              ['metrics','Mesures'],['finances','Finances'],['crypto','Cryptobot']];
 // Les pages qu'on n'utilise pas : masquées du menu, pas supprimées — leurs
@@ -10208,7 +10237,7 @@ document.addEventListener('click',e=>{
 
 // ── Aide-memoire des raccourcis ───────────────────────────────────────────
 const SHORTCUTS=[
-  ['Navigation',[['1 … 6','Aujourd\'hui · Board · Notes · ADP · Omega · Revue'],
+  ['Navigation',[['1 … 6','Board · Aujourd\'hui · Séance · Notes · Omega · NBA'],
                  ['[ et ]','Sous-onglet précédent / suivant dans Omega'],
                  ['Ctrl + K','Palette : chercher partout, ou lancer une action']]],
   ['Actions',[['N','Nouvel élément selon la page (tâche, note, objectif)'],
@@ -10251,7 +10280,7 @@ document.addEventListener('keydown',e=>{
 // quelque chose il fallait deja savoir ou c'etait.
 let cmdItems=[], cmdSel=0;
 const PAGES=[['board','Board'],['today',"Aujourd'hui"],['brain','Notes'],['adp','ADP'],['omega','Omega'],['review','Revue'],['metrics','Mesures'],
-             ['objectifs','Objectifs'],['habits','Habitudes'],['sport','Sport'],['finances','Finances'],['crypto','Cryptobot']];
+             ['objectifs','Objectifs'],['habits','Habitudes'],['sport','Séance'],['finances','Finances'],['crypto','Cryptobot']];
 
 function openCmd(){
   modalOuvre('cmdModal');
@@ -23968,7 +23997,7 @@ async function sportToggleBonus(){
     bonusDone:!(ex&&ex.bonusDone)};
   showLoad(true);const okB=await sportUpsertLog(log);showLoad(false);
   if(!okB)toast("ÉCHEC de l'enregistrement — réessaie",'err');
-  renderSportBonus();renderSportBanner();
+  renderSportBonus();renderSportBanner(); if(curPage==='today'){ renderTodaySport(); updateHStats(); }
 }
 // Écrit la pesée dans la série « poids » des Mesures. Ne crée pas la mesure si
 // elle n'existe pas — on ne fabrique pas une série que l'utilisateur n'a pas
@@ -24180,7 +24209,9 @@ function renderSportToday(){
 }
 
 function sportCaptureExInputs(){
-  document.querySelectorAll('[data-spexw]').forEach(inp=>{
+  // Les deux pages (SÉANCE et Aujourd'hui) portent les mêmes champs : on ne lit
+  // que ceux de la page ouverte, l'autre peut être en retard.
+  document.querySelectorAll('.page.active [data-spexw]').forEach(inp=>{
     const i=inp.getAttribute('data-spexw');
     sportExDraft[i]={...(sportExDraft[i]||{}),weight:inp.value};
   });
@@ -24191,7 +24222,7 @@ function sportCycleEx(i){
   const cur=sportExDraft[i]?.status ?? existing[i]?.status ?? '';
   const next=SP_EX_CYCLE[(SP_EX_CYCLE.indexOf(cur)+1)%SP_EX_CYCLE.length];
   sportExDraft[i]={...(sportExDraft[i]||{}),status:next};
-  renderSportToday();
+  renderSportToday(); if(curPage==='today')renderTodaySport();
 }
 // Une gêne se signale sur LE mouvement concerné, pas sur la séance entière :
 // c'est ce qui permet à la stratégie de lever le pied sur un exercice précis
@@ -24201,7 +24232,7 @@ function sportToggleGene(i){
   const existing=sportExisting();
   const cur=sportExDraft[i]?.gene ?? existing[i]?.gene ?? false;
   sportExDraft[i]={...(sportExDraft[i]||{}),gene:!cur};
-  renderSportToday();
+  renderSportToday(); if(curPage==='today')renderTodaySport();
   if(!cur)toast('Gêne signalée — précise-la dans le commentaire','info');
 }
 
@@ -24545,10 +24576,10 @@ document.addEventListener('keydown',e=>{
     else openModal();
     return;
   }
-  // 1-6 : navigation entre les six entrees, partout dans l'app
+  // 1-6 : navigation entre les six entrées visibles du menu, partout dans l'app
   if(/^[1-6]$/.test(e.key)){
     e.preventDefault();
-    switchPage(['board','today','brain','adp','omega','review'][parseInt(e.key,10)-1]);
+    switchPage(['board','today','sport','brain','omega','nba'][parseInt(e.key,10)-1]);
     return;
   }
   // [ et ] : circuler dans les sous-onglets d'Omega
@@ -24603,7 +24634,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.122.0';
+const APP_VERSION='v1.123.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

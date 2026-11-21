@@ -963,6 +963,57 @@ const p12=await p.evaluate(async()=>{
 chk('Les focus du jour : les catégories de la quête, comptées, en couleur',p12.focus==='Santé ×2,Esprit,Finance',p12.focus);
 chk('...chaque habitude porte sa catégorie et sa couleur',p12.cats==='Esprit,Santé,Santé,Finance'&&p12.couleur,JSON.stringify([p12.cats,p12.couleur]));
 
+console.log('=== 21. LA SÉANCE SUR LA PAGE AUJOURD\'HUI, L\'ONGLET SÉANCE ===');
+const p13=await p.evaluate(async()=>{
+  const out={}, aujd=td(); sysFile=[]; modalFerme('sysAnnModal'); window.offerUndo=()=>{};
+  window.sportUpsertLog=async l=>{ sportLogs=sportLogs.filter(x=>x.date!==l.date).concat([{...l}]); return true; }; window.sportSyncPoids=async()=>null;
+  sportLoaded=true; sportDraft={status:null,feeling:null,weight:null,comment:null}; sportExDraft={};
+  sportLogs=[{date:J(7),status:'done',exercises:JSON.stringify([{ex:'Développé couché 3×8',status:'done',weight:'45'}]),feeling:4,weight:0,comment:'',bonusDone:false}];
+  sportPlans=[{date:aujd,type:'Muscu',duration:45,title:'Haut du corps',content:'# Échauffement\n5 min rameur\n# Bloc\n- Développé couché 3×8 @47.5kg\n- Tirage horizontal 3×10',bonus:'10 min de marche'}];
+  switchPage('today'); await new Promise(r=>setTimeout(r,150));
+  const c=()=>document.getElementById('tdSport');
+  out.lignes=c().querySelectorAll('.sp-ex-row').length+'|'+c().querySelectorAll('.td-sp-h').length;
+  out.dernier=/dernier : 45 kg/.test(c().textContent)&&c().querySelector('[data-spexw="0"]').value==='47.5';
+  out.raccourcis=!!c().querySelector('[onclick^="openSportPlanModal"]')&&!!c().querySelector('[onclick="switchPage(\'sport\')"]')&&/10 min de marche/.test(c().textContent);
+  // Cocher un exercice, noter une charge, le ressenti, puis Enregistrer.
+  c().querySelector('.sp-ex-row .sp-ex-status').click(); await new Promise(r=>setTimeout(r,20));
+  out.cycle=c().querySelector('.sp-ex-row .sp-ex-status').classList.contains('st-done');
+  c().querySelector('[data-spexw="1"]').value='30';
+  c().querySelectorAll('.td-sp-feel .sp-feel-btn')[4].click(); await new Promise(r=>setTimeout(r,20));
+  out.garde=c().querySelector('[data-spexw="1"]').value==='30';
+  [...c().querySelectorAll('.td-sp-b')].find(b=>/Enregistrer/.test(b.textContent)).click(); await new Promise(r=>setTimeout(r,120));
+  const l=sportLogFor(aujd), ex=l?JSON.parse(l.exercises):[];
+  out.enregistre=!!l&&l.status==='done'&&l.feeling===5&&ex[0].status==='done'&&ex[0].weight==='47.5'&&ex[1].weight==='30';
+  out.statutAffiche=/Fait/.test(c().querySelector('.td-t').textContent);
+  // Le statut de la séance en un clic.
+  [...c().querySelectorAll('.td-sp-b')].find(b=>/Partiel/.test(b.textContent)).click(); await new Promise(r=>setTimeout(r,120));
+  out.partiel=sportLogFor(aujd).status==='partial'&&JSON.parse(sportLogFor(aujd).exercises)[1].weight==='30';
+  // Le bonus.
+  [...c().querySelectorAll('.td-sp-r')].find(b=>/Bonus/.test(b.textContent)).click(); await new Promise(r=>setTimeout(r,120));
+  out.bonus=sportLogFor(aujd).bonusDone===true&&/Bonus fait/.test(c().textContent);
+  // Éditer le programme : la fenêtre s'ouvre.
+  c().querySelector('[onclick^="openSportPlanModal"]').click(); await new Promise(r=>setTimeout(r,30));
+  out.editer=document.getElementById('sportPlanModal').classList.contains('open'); modalFerme('sportPlanModal');
+  // Sans séance : programmer.
+  sportPlans=[]; renderTodayPage(); out.vide=/Programmer la séance/.test(c().textContent);
+  // L'onglet SÉANCE dans le menu principal, plus dans OMEGA ; la touche 3.
+  const tab=document.querySelector('.nav-tabs .nav-tab[data-page="sport"]'); out.onglet=!!tab&&tab.textContent.trim()==='SÉANCE'&&getComputedStyle(tab).display!=='none';
+  out.omega=!OMEGA.some(([v])=>v==='sport');
+  document.dispatchEvent(new KeyboardEvent('keydown',{key:'3',bubbles:true})); await new Promise(r=>setTimeout(r,120));
+  out.touche=curPage==='sport'&&document.querySelector('.nav-tab.active').dataset.page==='sport';
+  switchPage('today'); await new Promise(r=>setTimeout(r,80));
+  return out;
+});
+chk('La séance du jour sur la page Aujourd\'hui : les exercices, par blocs',p13.lignes==='2|2',p13.lignes);
+chk('...la dernière charge tenue, la charge suggérée pré-remplie',p13.dernier===true);
+chk('...les raccourcis (éditer, ouvrir la page Séance) et l\'activité bonus',p13.raccourcis===true);
+chk('...cocher un exercice, noter une charge et le ressenti (la saisie se garde)',p13.cycle&&p13.garde,JSON.stringify([p13.cycle,p13.garde]));
+chk('...Enregistrer : statuts, charges, ressenti écrits ; le statut de la séance affiché',p13.enregistre&&p13.statutAffiche,JSON.stringify([p13.enregistre,p13.statutAffiche]));
+chk('...le statut de la séance en un clic, sans perdre les charges',p13.partiel===true);
+chk('...le bonus se coche ici',p13.bonus===true);
+chk('...« Éditer » ouvre le programme du jour ; sans séance, « Programmer »',p13.editer&&p13.vide,JSON.stringify([p13.editer,p13.vide]));
+chk('L\'onglet « SÉANCE » dans le menu principal (plus dans OMEGA), touche 3',p13.onglet&&p13.omega&&p13.touche,JSON.stringify([p13.onglet,p13.omega,p13.touche]));
+
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
 const ko=R.filter(x=>!x[1]);
