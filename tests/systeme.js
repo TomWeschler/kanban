@@ -589,10 +589,10 @@ chk('Au combat : Guerrier et Seigneur de guerre se cumulent sur le sport (+40 % 
 chk('Le familier équipé ajoute son bonus, qui croît avec son niveau',p4.famBonus&&p4.croit,JSON.stringify([p4.famBonus,p4.croit]));
 chk('...il prend l\'XP des gestes tant qu\'il est équipé',p4.famXp===true);
 chk('...en changer garde l\'acquis jusqu\'à hier, écrit dans le classeur',p4.change==='renard|true|true'&&p4.ligneFam==='renard',p4.change+' '+p4.ligneFam);
-chk('Le butin : un familier toujours pour l\'élite, environ un coffre sur six sinon',p4.elite&&p4.freq>50&&p4.freq<150,JSON.stringify([p4.elite,p4.freq]));
+chk('Le butin : un familier toujours pour l\'élite, environ un coffre ordinaire sur quatre sinon',p4.elite&&p4.freq>100&&p4.freq<200,JSON.stringify([p4.elite,p4.freq]));
 chk('...le Maître des bêtes les rend plus fréquents',p4.maitre===true);
 chk('...un doublon devient de l\'expérience',p4.doublon===true);
-chk('L\'onglet Familiers : la collection des 20, verrouillés en silhouette ; le familier sous le statut',p4.grille==='28|26|true'&&p4.statutFam,p4.grille);
+chk('L\'onglet Familiers : la collection des 20, verrouillés en silhouette ; le familier sous le statut',p4.grille==='37|35|true'&&p4.statutFam,p4.grille);
 chk('L\'onglet Classes : classes apprises, spécialisations, classes à apprendre',p4.vueCl==='2|4|8',p4.vueCl);
 chk('Le titre « Spécialiste » ; la sauvegarde emporte classes et familiers',p4.titre&&p4.bk,JSON.stringify([p4.titre,p4.bk]));
 
@@ -679,8 +679,77 @@ chk('...environ un sur trois aux étapes',p5.etape>140&&p5.etape<260,String(p5.e
 chk('...jamais dans un coffre ordinaire',p5.jamais===true);
 chk('Les coffres de donjon : un par étape franchie, le boss à la fin',p5.etapes==='2|0'&&p5.bossCoffre,JSON.stringify([p5.etapes,p5.bossCoffre]));
 chk('Maître des portes : le boss donne deux objets et un familier de donjon',p5.double&&p5.famDonjon,JSON.stringify([p5.double,p5.famDonjon]));
-chk('L\'onglet Familiers : la collection des coffres et celle des donjons',p5.collections==='2|28',p5.collections);
+chk('L\'onglet Familiers : les collections des coffres, de la chasse et des donjons',p5.collections==='3|37',p5.collections);
 chk('Les titres « Explorateur des profondeurs » et « L\'Élu »',p5.titres===true);
+
+console.log('=== 14. FAMILIERS DE CHASSE ET CODEX ===');
+const p6=await p.evaluate(async()=>{
+  const out={}, aujd=td(); window.confirm=()=>true; sysFile=[]; modalFerme('sysAnnModal');
+  // Les familiers de chasse : neuf, jamais communs, seulement sur les monstres de la semaine.
+  const ch=SYS_FAMILIERS.filter(f=>f.chasse); out.nb=ch.length+'|'+ch.every(f=>f.ra>=1);
+  out.elite=(()=>{ for(let i=0;i<40;i++){ const f=sysFamTireChasse({id:'chasse:x'+i,t:2,elite:true},{}); if(!f||!f.chasse)return false; } return true; })();
+  let n=0; for(let i=0;i<600;i++)if(sysFamTireChasse({id:'chasse:y'+i,t:1},{}))n++; out.freq=n;
+  out.ailleurs=(()=>{ for(let i=0;i<800;i++){ const f=sysFamTire({id:'z'+i,t:3,elite:i%2===0},{}); if(f&&(f.chasse||f.donjon))return false; const g=sysFamTireDonjon({id:'d'+i,t:3,donjon:'boss'},{}); if(g&&g.chasse)return false; } return true; })();
+  // Un monstre d'élite vaincu : son coffre donne un familier de chasse.
+  sysFam=sysFamNorm({}); sysInv=sysInvNorm({}); goals=[]; sysDonjons={}; sysClasses=sysClNorm({});
+  sysChasses={[sysDecale(sysLundi(aujd),-7)]:{famille:'loup',nom:'Loup des cendres',niveau:3,rang:'G',elite:true,pv:100,vaincu:true,fin:true}};
+  sysInv={...sysInv,ouverts:sysCoffresGagnes(sysEtat()).filter(c=>!c.id.startsWith('chasse:')).map(c=>c.id)};
+  await sysCoffreOuvrir(); await new Promise(r=>setTimeout(r,1200));
+  out.drop=Object.keys(sysFam.possede).some(id=>(sysFamDef(id)||{}).chasse)&&/se joint/.test(document.getElementById('sysCoffreObj').textContent);
+  modalFerme('sysCoffreModal');
+  // Le Codex : il s'ouvre depuis la fenêtre, plein écran.
+  switchPage('today'); await new Promise(r=>setTimeout(r,150)); sysVue('quete');
+  const bouton=document.querySelector('#sysBox .sys-codex-b'); out.bouton=!!bouton; bouton.click(); await new Promise(r=>setTimeout(r,30));
+  const cx=document.getElementById('sysCodex');
+  out.ouvert=!cx.hidden&&getComputedStyle(cx).position==='fixed'&&cx.querySelectorAll('.sys-codex-vues .sys-vue').length;
+  out.fam=cx.querySelectorAll('.sys-cx-fam').length+'|'+cx.querySelectorAll('.sys-cx-fam.verrou').length;
+  sysCodexFiltrer('fam','chasse'); out.filtre=cx.querySelectorAll('.sys-cx-fam').length;
+  sysCodexFiltrer('fam','possedes'); out.possedes=cx.querySelectorAll('.sys-cx-fam').length===Object.keys(sysFam.possede).length;
+  // Équiper depuis le Codex : il se redessine.
+  sysFam={...sysFam,possede:{...sysFam.possede,renard:{xp:0,le:aujd}}}; sysCodexRendre();
+  const b=[...cx.querySelectorAll('.sys-cx-fam button')].find(x=>/Équiper/.test(x.textContent));
+  b.click(); await new Promise(r=>setTimeout(r,50)); out.equipe=!!cx.querySelector('.sys-cx-fam.actif .sys-cx-eq');
+  // L'inventaire : filtres par emplacement et par rareté, tri.
+  sysInv={...sysInv,objets:[{id:'i1',slot:'arme',nom:'Dague',rarete:0,niv:3,bonus:{deg:4,crit:0,stats:{}},amel:0,le:'2026-01-01'},
+    {id:'i2',slot:'armure',nom:'Plastron',rarete:3,niv:5,bonus:{deg:0,crit:0,stats:{vitalite:20}},amel:2,le:'2026-02-01'},
+    {id:'i3',slot:'arme',nom:'Katana',rarete:2,niv:9,bonus:{deg:12,crit:0,stats:{}},amel:0,le:'2026-03-01'}],equipe:{armure:'i2'}};
+  sysCodexVoir('inventaire'); sysCodexFiltrer('fam','tous');
+  const noms=()=>[...cx.querySelectorAll('.sys-cx-objs .sys-cx-obj b')].map(x=>x.textContent.trim());
+  out.tri=noms().join(',');
+  sysCodexFiltrer('slot','arme'); out.slot=noms().join(',');
+  sysCodexFiltrer('tri','niveau'); out.niveau=noms().join(',');
+  sysCodexFiltrer('slot','tous'); sysCodexFiltrer('ra','3'); out.ra=noms().join(','); sysCodexFiltrer('ra','tous'); sysCodexFiltrer('tri','rarete');
+  out.eqs=cx.querySelectorAll('.sys-cx-eqs .sys-cx-obj').length+'|'+cx.querySelectorAll('.sys-cx-eqs .sys-cx-obj.vide').length;
+  // Un clic sur un objet ouvre sa fiche, au-dessus du Codex.
+  cx.querySelector('.sys-cx-objs .sys-cx-obj').click(); await new Promise(r=>setTimeout(r,30));
+  const m=document.getElementById('sysObjetModal'); out.fiche=m.classList.contains('open')&&+getComputedStyle(m).zIndex>+getComputedStyle(cx).zIndex;
+  modalFerme('sysObjetModal');
+  // Le bestiaire.
+  sysChasses={a1:{famille:'loup',nom:'Loup A',rang:'G',elite:false,pv:1,vaincu:true},a2:{famille:'loup',nom:'Loup B',rang:'G',elite:true,pv:1,vaincu:true},a3:{famille:'ogre',nom:'Ogre',rang:'G',elite:false,pv:1,vaincu:false}};
+  sysCodexVoir('bestiaire');
+  out.best=cx.querySelectorAll('.sys-cx-best').length+'|'+cx.querySelectorAll('.sys-cx-best:not(.verrou)').length+'|'+/2\/2 vaincus · 1 élite/.test(cx.textContent);
+  sysCodexVoir('classes'); out.classes=!!cx.querySelector('.sys-cl');
+  sysCodexVoir('titres'); out.titres=cx.querySelectorAll('.sys-titre').length===SYS_TITRES.length;
+  // Échap le ferme.
+  document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'})); out.ferme=cx.hidden;
+  out.titreChasse=sysTitresGagnes(sysEtat()).includes('trophee');
+  sysVue('quete');
+  return out;
+});
+chk('Neuf familiers de chasse, jamais communs',p6.nb==='9|true',p6.nb);
+chk('...toujours sur un monstre d\'élite, quatre fois sur dix sinon',p6.elite&&p6.freq>180&&p6.freq<300,JSON.stringify([p6.elite,p6.freq]));
+chk('...jamais ailleurs (coffres ordinaires, donjons)',p6.ailleurs===true);
+chk('...le coffre d\'un monstre d\'élite en donne un',p6.drop===true);
+chk('Le Codex s\'ouvre depuis la fenêtre du Système, en plein écran',p6.bouton&&p6.ouvert===5,JSON.stringify([p6.bouton,p6.ouvert]));
+chk('...les familiers : tous, trouvés ou en silhouette',p6.fam.split('|')[0]==='37',p6.fam);
+chk('...filtrés par provenance, ou par ceux trouvés',p6.filtre===9&&p6.possedes,JSON.stringify([p6.filtre,p6.possedes]));
+chk('...on y équipe un familier, il se redessine',p6.equipe===true);
+chk('L\'inventaire : trié par rareté, filtré par emplacement, trié par niveau, filtré par rareté',p6.tri==='Plastron +2,Katana,Dague'&&p6.slot==='Katana,Dague'&&p6.niveau==='Katana,Dague'&&p6.ra==='Plastron +2',JSON.stringify([p6.tri,p6.slot,p6.niveau,p6.ra]));
+chk('...les quatre emplacements équipés en tête',p6.eqs==='4|3',p6.eqs);
+chk('...la fiche d\'un objet s\'ouvre au-dessus du Codex',p6.fiche===true);
+chk('Le bestiaire : les familles rencontrées, vaincus et élites',p6.best==='19|2|true',p6.best);
+chk('...et les classes, les titres ; Échap ferme le Codex',p6.classes&&p6.titres&&p6.ferme,JSON.stringify([p6.classes,p6.titres,p6.ferme]));
+chk('Le titre « Premier trophée »',p6.titreChasse===true);
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
