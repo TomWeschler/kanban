@@ -4555,9 +4555,6 @@ document.addEventListener('click',e=>{
 const LS_THEME = 'kanban_theme';
 function applySavedTheme() {
   let saved = localStorage.getItem(LS_THEME) || 'eveil';
-  // L'Éveil (bleu et violet néon) s'applique une fois, à sa sortie ; ensuite
-  // le choix du thème reste libre.
-  try{ if(!localStorage.getItem('kanban_theme_eveil')){ localStorage.setItem('kanban_theme_eveil','1'); saved='eveil'; } }catch(e){}
   setTheme(saved, true);
 }
 function setTheme(name, silent) {
@@ -5309,16 +5306,14 @@ const sysBoutNorm=v=>({articles:Array.isArray(v&&v.articles)?v.articles:[],achat
 // familiers possédés (leur expérience gardée), l'équipé et depuis quand.
 const sysClNorm=v=>({liste:Array.isArray(v&&v.liste)?v.liste.filter(x=>x&&x.id):[],spes:Array.isArray(v&&v.spes)?v.spes.filter(x=>x&&x.id):[]});
 const sysFamNorm=v=>({possede:v&&v.possede&&typeof v.possede==='object'?v.possede:{},actif:String((v&&v.actif)||''),depuis:String((v&&v.depuis)||'')});
-// Les réglages appliqués une fois pour toutes (et sur tous les appareils).
-let sysConfig={};
 let sysChasses={}, sysInv=sysInvNorm({}), sysBoutique=sysBoutNorm({}), sysClasses=sysClNorm({}), sysFam=sysFamNorm({});
 try{ const c=JSON.parse(localStorage.getItem('kanban_systeme')||'null'); if(c){ sysQuete=c.quete||sysQuete; sysStats=c.stats||sysStats; sysReset=c.reset||sysReset;
   sysDonjons=c.donjons||sysDonjons; sysUrgences=c.urgences||sysUrgences; sysTitres=c.titres||sysTitres;
-  sysChasses=c.chasses||sysChasses; sysInv=sysInvNorm(c.inventaire); sysBoutique=sysBoutNorm(c.boutique); sysClasses=sysClNorm(c.classes); sysFam=sysFamNorm(c.familiers); sysConfig=c.config||{}; } }catch(e){}
+  sysChasses=c.chasses||sysChasses; sysInv=sysInvNorm(c.inventaire); sysBoutique=sysBoutNorm(c.boutique); sysClasses=sysClNorm(c.classes); sysFam=sysFamNorm(c.familiers); } }catch(e){}
 function sysCache(){ try{ localStorage.setItem('kanban_systeme',JSON.stringify({quete:sysQuete,stats:sysStats,reset:sysReset,calib:sysCalib,
-  donjons:sysDonjons,urgences:sysUrgences,titres:sysTitres,chasses:sysChasses,inventaire:sysInv,boutique:sysBoutique,classes:sysClasses,familiers:sysFam,config:sysConfig})); }catch(e){} }
+  donjons:sysDonjons,urgences:sysUrgences,titres:sysTitres,chasses:sysChasses,inventaire:sysInv,boutique:sysBoutique,classes:sysClasses,familiers:sysFam})); }catch(e){} }
 const SYS_CLES={quete:()=>sysQuete,stats:()=>sysStats,reset:()=>sysReset,calibrage:()=>sysCalib,donjons:()=>sysDonjons,urgences:()=>sysUrgences,titres:()=>sysTitres,
-  chasses:()=>sysChasses,inventaire:()=>sysInv,boutique:()=>sysBoutique,classes:()=>sysClasses,familiers:()=>sysFam,config:()=>sysConfig};
+  chasses:()=>sysChasses,inventaire:()=>sysInv,boutique:()=>sysBoutique,classes:()=>sysClasses,familiers:()=>sysFam};
 const sysObjectifAvant=g=>(sysReset.objectifs||[]).includes(String(g.id));
 
 // ── Le classeur ──
@@ -5335,8 +5330,7 @@ async function sysCharger(){
     await sysOnglet();
     const [rows]=await sheetBatchGet([`${SYS_SHEET}!A:C`]);
     rows.slice(1).forEach(r=>{ let v=null; try{ v=JSON.parse(r[1]||'null'); }catch(e){}
-      if(!v)return; if(r[0]==='quete')sysQuete={versions:Array.isArray(v.versions)?v.versions:[],minimum:v.minimum||{},...(v.auto?{auto:true}:{}),...(v.arch?{arch:v.arch}:{})};
-      if(r[0]==='config'&&typeof v==='object')sysConfig=v; if(r[0]==='stats')sysStats={alloc:v.alloc||{}};
+      if(!v)return; if(r[0]==='quete')sysQuete={versions:Array.isArray(v.versions)?v.versions:[],minimum:v.minimum||{},...(v.auto?{auto:true}:{}),...(v.arch?{arch:v.arch}:{})}; if(r[0]==='stats')sysStats={alloc:v.alloc||{}};
       if(r[0]==='calibrage'&&Number(v.k)>0)sysCalib={k:Number(v.k),xpJour:v.xpJour==null?null:Number(v.xpJour),le:String(v.le||'')};
       if(r[0]==='reset')sysReset={depuis:String(v.depuis||''),objectifs:Array.isArray(v.objectifs)?v.objectifs.map(String):[]};
       if(r[0]==='donjons'&&typeof v==='object')sysDonjons=v; if(r[0]==='urgences'&&typeof v==='object')sysUrgences=v; if(r[0]==='titres'&&typeof v==='object')sysTitres={actif:String(v.actif||'')};
@@ -6612,53 +6606,6 @@ function sysQueteArchive(){
 }
 const sysQueteRaison=(date,id)=>{ const v=sysQuete.versions.filter(x=>x.depuis<=date).sort((a,b)=>a.depuis.localeCompare(b.depuis)).pop();
   const i=v&&v.r?v.habits.map(String).indexOf(String(id)):-1; return i>=0?SYS_RAISONS[v.r[i]]||'':''; };
-// La configuration de novembre 2026, une fois pour toutes : la quête imposée,
-// trois portes sur les objectifs du moment, des versions minimales.
-const SYS_CONFIG_V='2026-11';
-function sysConfigurer(){
-  if(sysConfig.v===SYS_CONFIG_V||!accessToken||!sysCharge||!habits.length)return false;
-  const parTitre=re=>habits.find(h=>h.active&&re.test(h.title)), id=h=>h?String(h.id):null;
-  const portes=[['g1785687461934',[/^lecture/i]],['g1785683956237',[/^anki/i,/^japonais/i]],['g1785681906895',[/^pas de sucre/i,/^8\s?000 pas/i,/^prot[ée]ine/i]]];
-  const ouvertes=[], dj={...sysDonjons};
-  portes.forEach(([gid,res])=>{ const g=goals.find(x=>x.id===gid&&x.status!==GOAL_DELETED); if(!g||goalReached(g)||dj[gid])return;
-    dj[gid]={rang:sysRangSuggere(g),habits:res.map(re=>id(parTitre(re))).filter(Boolean),cible:0,debut:td()}; ouvertes.push(g.title); });
-  sysDonjons=dj;
-  const mini={...(sysQuete.minimum||{})};
-  [[/^anki/i,'10 cartes'],[/^lecture/i,'2 pages'],[/^m[ée]ditation/i,'3 minutes'],[/^pas de sucre/i,'aucun soda ni dessert'],[/^japonais/i,'5 minutes'],
-   [/^8\s?000 pas/i,'5 000 pas'],[/^rituel du soir/i,'une ligne de journal'],[/^veille business/i,'un article'],[/^ranger/i,'5 minutes'],[/^prot[ée]ine/i,'3 œufs']]
-    .forEach(([re,t])=>{ const h=parTitre(re); if(h&&!mini[h.id])mini[h.id]=t; });
-  sysQuete={...sysQuete,minimum:mini,auto:true};
-  sysConfig={...sysConfig,v:SYS_CONFIG_V};
-  sysQueteAuto();
-  sysSauver('donjons'); sysSauver('quete'); sysSauver('config');
-  sysFenetre('[ Système ]','Le Système prend la main',`Désormais, c'est le Système qui impose ta quête quotidienne : quatre habitudes, tirées chaque jour parmi celles prévues ce jour-là, selon tes données.`
-    +(ouvertes.length?`<br><br>${ouvertes.length} porte${ouvertes.length>1?'s se sont ouvertes':' s\'est ouverte'} : ${ouvertes.map(tdEsc).join(', ')}.`:''));
-  return true;
-}
-
-
-// L'équilibre de l'or (21 novembre 2026), une fois pour toutes : environ
-// 1,50 € possible par jour dans chacun des quatre domaines (le sport compte
-// en Santé, par la page Sport). La créatine devient le « mini » des
-// protéines ; Rituel du soir et Ranger passent en Productivité.
-const SYS_EQUILIBRE_V='2026-11-21';
-const SYS_EQUILIBRE=[[/^pilules? cr[ée]atine/i,{active:false}],[/^pas de sucre/i,{reward_eur:0.40}],[/^8\s?000 pas/i,{reward_eur:0.30}],[/^prot[ée]ine/i,{reward_eur:0.35}],
-  [/^2 t[âa]ches/i,{reward_eur:0.70}],[/^rituel du soir/i,{reward_eur:0.40,category:'Productivité'}],[/^ranger/i,{reward_eur:0.25,category:'Productivité'}],[/^planning semaine/i,{reward_eur:1.00}],
-  [/^anki/i,{reward_eur:0.40}],[/^japonais/i,{reward_eur:0.50}],[/^m[ée]ditation/i,{reward_eur:0.35}],[/^lecture/i,{reward_eur:0.25}],
-  [/^z[ée]ro achat/i,{reward_eur:0.60}],[/^veille business/i,{reward_eur:0.60}],[/^comptabilit/i,{reward_eur:2.00}]];
-function sysEquilibrer(){
-  if(sysConfig.e===SYS_EQUILIBRE_V||!accessToken||!sysCharge||!habits.length)return false;
-  let n=0;
-  SYS_EQUILIBRE.forEach(([re,chg])=>{ const h=habits.find(x=>(x.active||chg.active===false)&&re.test(x.title)); if(h){ Object.assign(h,chg); n++; } });
-  const prot=habits.find(x=>x.active&&/^prot[ée]ine/i.test(x.title));
-  if(prot)sysQuete={...sysQuete,minimum:{...(sysQuete.minimum||{}),[prot.id]:'la pilule de créatine'}};
-  sysConfig={...sysConfig,e:SYS_EQUILIBRE_V};
-  saveHabits(); sysSauver('quete'); sysSauver('config');
-  if(n){ const o=orParDomaine();
-    sysFenetre('[ Système ]','L\'or rééquilibré',`Environ 1,50 € possible par jour dans chaque domaine :<br>${HAB_CAT_ORDER.filter(c=>c!=='Autre').map(c=>`${c} ${eur(o[c]||0)}`).join(' · ')}
-      <br><br>La créatine devient la version minimale des protéines ; Rituel du soir et Ranger passent en Productivité.`); }
-  return true;
-}
 // L'or possible par jour dans chaque domaine : les habitudes actives à leur
 // fréquence, et les séances programmées (en Santé).
 function orParDomaine(){
@@ -6680,7 +6627,7 @@ function renderSysteme(){
   const el=document.getElementById('sysBox'); if(!el)return;
   // Le premier calibrage se fait seul, dès qu'il y a des habitudes à mesurer.
   if(!sysCalib.le&&sysCharge&&habits.some(h=>h.active))sysCalibrer();
-  sysConfigurer(); sysEquilibrer(); sysQueteAuto();
+  sysQueteAuto();
   const ch=sysChasseMaj(sysEtat());
   const e=sysEtat(), aujd=td(), q=sysQueteJour(aujd);
   const faits=new Set(habitsLog.filter(l=>l.date===aujd).map(l=>String(l.habit_id)));
@@ -10455,7 +10402,7 @@ const BK_TABLES=[
     v=>{ (v||[]).forEach(x=>{ if(!x||!x.v)return; if(x.id==='quete')sysQuete=x.v; if(x.id==='stats')sysStats=x.v; if(x.id==='reset')sysReset=x.v;
       if(x.id==='calibrage'&&x.v.k>0)sysCalib=x.v; if(x.id==='donjons')sysDonjons=x.v; if(x.id==='urgences')sysUrgences=x.v; if(x.id==='titres')sysTitres=x.v;
       if(x.id==='chasses')sysChasses=x.v; if(x.id==='inventaire')sysInv=sysInvNorm(x.v); if(x.id==='boutique')sysBoutique=sysBoutNorm(x.v);
-      if(x.id==='classes')sysClasses=sysClNorm(x.v); if(x.id==='familiers')sysFam=sysFamNorm(x.v); if(x.id==='config')sysConfig=x.v; }); sysCache(); }]];
+      if(x.id==='classes')sysClasses=sysClNorm(x.v); if(x.id==='familiers')sysFam=sysFamNorm(x.v); }); sysCache(); }]];
 
 function exportBackup(){
   const data={exported_at:new Date().toISOString(),version:APP_VERSION};
@@ -24645,7 +24592,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.120.0';
+const APP_VERSION='v1.121.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

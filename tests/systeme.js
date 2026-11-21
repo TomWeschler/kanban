@@ -22,8 +22,6 @@ await p.evaluate(async()=>{
   sysQuete={versions:[],minimum:{}}; sysStats={alloc:{}}; sysCharge=false;
   // Une pente fixe pour les épreuves (k = 50) : le calibrage s'éprouve à part.
   sysCalib={k:50,xpJour:null,le:'banc'};
-  // La configuration de novembre 2026 s'éprouve à part (section 16).
-  sysConfig={v:'2026-11',e:'2026-11-21'};
   accessToken='T'; cfg.spreadsheetId='S';
   window.S_ONGLETS={}; window.S_CREES=[];
   window.sheetTitres=async()=>Object.keys(S_ONGLETS);
@@ -379,7 +377,7 @@ chk('...écrit dans le classeur, et l\'on peut fermer la porte',p2.ligneDj==='g3
 chk('Titres : gagnés par l\'historique',/eveil/.test(p2.titres)&&/rachat/.test(p2.titres)&&/chasseurPortes/.test(p2.titres)&&/pourfendeur/.test(p2.titres)&&!/monarque/.test(p2.titres),p2.titres);
 chk('...la fenêtre montre gagnés et verrouillés',p2.boutons===p2.titres.split(',').length+'|'+(p2.nTitres-p2.titres.split(',').length),p2.boutons);
 chk('...le titre porté s\'affiche sous le niveau, écrit dans le classeur',/Pourfendeur/.test(p2.porte)&&p2.ligneTitre==='pourfendeur',JSON.stringify([p2.porte,p2.ligneTitre]));
-chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres,chasses,inventaire,boutique,classes,familiers,config',p2.bk);
+chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres,chasses,inventaire,boutique,classes,familiers',p2.bk);
 
 console.log('=== 11. PHASE 3 : ACCUEIL, THÈME, CHASSE, COFFRES, ÉQUIPEMENT, BOUTIQUE ===');
 // Une page neuve : l'accueil est le board, le thème Éveil s'applique.
@@ -783,7 +781,7 @@ chk('...l\'activité bonus frappe le monstre',p7.bonusCoup===true);
 chk('...seules les séances depuis la remise à zéro comptent',p7.reset===1.25,String(p7.reset));
 chk('« 2 Tâches importantes » se coche seule à la deuxième tâche d\'importance 4 ou plus',p7.une===false&&p7.faible===false&&p7.deux===true&&p7.pasDeux,JSON.stringify(p7));
 
-console.log('=== 16. LA QUÊTE IMPOSÉE, LA CONFIGURATION ===');
+console.log('=== 16. LA QUÊTE IMPOSÉE ===');
 const p8=await p.evaluate(async()=>{
   const out={}, aujd=td(); window.confirm=()=>true; sysFile=[]; modalFerme('sysAnnModal');
   window.sysSauver=async()=>true;
@@ -793,15 +791,11 @@ const p8=await p.evaluate(async()=>{
   goals=[{id:'g1785687461934',title:'12 livres 2027',category:'Esprit',status:'active',target_date:'2027-12-02',checkpoints:JSON.stringify([{t:'1',d:false},{t:'2',d:false}])},
     {id:'g1785683956237',title:'JLPT N5',category:'Esprit',status:'active',progress:0},{id:'g1785681906895',title:'85 kg',category:'Santé',status:'active',progress:0,target_date:'2026-12-31'}];
   sysDonjons={}; sysChasses={}; sysClasses=sysClNorm({}); sysFam=sysFamNorm({}); sysInv=sysInvNorm({});
-  sysQuete={versions:[],minimum:{}}; sysConfig={}; sysCharge=true; accessToken='T';
-  // Sur ses donnees, sans attendre lundi : le Système configure tout, une fois.
+  sysQuete={versions:[],minimum:{'1':'10 cartes','2':'2 pages','4':'3 minutes'},auto:true}; sysCharge=true; accessToken='T';
+  sysDonjons={g1785687461934:{rang:'S',habits:['2'],cible:0,debut:aujd},g1785683956237:{rang:'C',habits:['1','6'],cible:0,debut:aujd},g1785681906895:{rang:'D',habits:['3','5','8'],cible:0,debut:aujd}};
   habitsLog=[]; for(let d=1;d<=20;d++){ habitsLog.push({id:'a'+d,habit_id:1,date:J(d),reward_eur:0,category:'Esprit'}); habitsLog.push({id:'b'+d,habit_id:3,date:J(d),reward_eur:0,category:'Santé'}); }
   switchPage('today'); await new Promise(r=>setTimeout(r,150)); renderSysteme();
-  out.config=sysConfig.v+'|'+sysQuete.auto+'|'+Object.keys(sysDonjons).length;
-  out.portes=['g1785687461934','g1785683956237','g1785681906895'].map(g=>(sysDonjons[g].habits||[]).join('+')).join(',');
-  out.annonce=/prend la main/.test(document.getElementById('sysAnnTitre').textContent)||sysFile.some(x=>/prend la main/.test(x[1]));
   sysFile=[]; modalFerme('sysAnnModal');
-  out.mini=['1','2','4'].every(id=>sysQuete.minimum[id]);
   // La quête : quatre habitudes quotidiennes, deux piliers, le point faible, un défi.
   const v=sysQuete.versions.find(x=>x.depuis===aujd);
   out.quete=!!v&&v.auto&&v.habits.length===4&&v.r.join('')==='ppfd';
@@ -845,9 +839,6 @@ const p8=await p.evaluate(async()=>{
   sysQuete={versions:[],minimum:{}}; out.manuel=sysQueteAuto()===false&&sysQuete.versions.length===0;
   return out;
 });
-chk('La configuration : la quête imposée, trois portes ouvertes, une seule fois et annoncée',p8.config==='2026-11|true|3'&&p8.annonce,JSON.stringify([p8.config,p8.annonce]));
-chk('...les portes et leurs habitudes : Lecture ; Anki et Japonais ; Pas de sucre, 8 000 pas et Protéines',p8.portes==='2,1+6,3+5+8',p8.portes);
-chk('...des versions minimales par défaut',p8.mini===true);
 chk('La quête : quatre habitudes prévues aujourd\'hui, deux piliers, le point faible, un défi',p8.quete&&p8.quotidiennes&&p8.piliers,JSON.stringify([p8.quete,p8.quotidiennes,p8.piliers]));
 chk('...les piliers sont les habitudes des portes les moins tenues',p8.faibles===true);
 chk('...fixée pour la journée (rien ne bouge au passage suivant)',p8.stable===true);
@@ -937,33 +928,23 @@ chk('...on passe au complet, on décoche',p10.complet&&p10.decoche,JSON.stringif
 
 console.log('=== 19. L\'ÉQUILIBRE DE L\'OR ===');
 const p11=await p.evaluate(async()=>{
-  const out={}, aujd=td(); sysFile=[]; modalFerme('sysAnnModal');
-  let ecrit=null; window.saveHabits=async()=>{ ecrit=habits.map(h=>h.title+':'+h.category+':'+h.reward_eur+':'+h.active).join('|'); return true; }; window.sysSauver=async()=>true;
+  const out={}; sysFile=[]; modalFerme('sysAnnModal');
   const H=(title,frequency,reward_eur,category)=>({id:title.length*1000+Math.round(reward_eur*100),title,frequency,reward_eur,category,active:true});
-  habits=[H('Pilules Créatines','daily',0.1,'Santé'),H('Pas de sucre','daily',0.25,'Santé'),H('8 000 pas','daily',0.25,'Santé'),H('Proteine (3 oeufs + Cantine + shaker)','daily',0.25,'Santé'),
-    H('2 Tâches Importantes','daily',0.75,'Productivité'),H('Planning semaine & Revue','weekly:0',0.5,'Productivité'),
-    H('Anki','daily',0.5,'Esprit'),H('Rituel du soir (journal + 2 tâches de demain)','daily',0.5,'Esprit'),H('Japonais 20 min','daily',0.75,'Esprit'),H('Méditation 10 min','daily',0.5,'Esprit'),H('Lecture 10 pages','daily',0.25,'Esprit'),
-    H('Zero achat compulsif','daily',0.25,'Finance'),H('Veille business 15 min','daily',0.5,'Finance'),H('Comptabilité','weekly:0',1,'Finance'),
-    H('Ranger Nettoyer','daily',0.25,'Autre'),H('Message à un proche','weekly:0',0.25,'Autre')];
-  sportPlans=[]; sysQuete={versions:[],minimum:{},auto:true}; sysConfig={v:'2026-11'}; sysCharge=true; accessToken='T';
-  renderSysteme();
-  out.applique=sysConfig.e==='2026-11-21'&&!!ecrit;
+  habits=[H('Pas de sucre','daily',0.4,'Santé'),H('8 000 pas','daily',0.3,'Santé'),H('Proteine','daily',0.35,'Santé'),
+    H('2 Tâches Importantes','daily',0.7,'Productivité'),H('Rituel du soir','daily',0.4,'Productivité'),H('Ranger','daily',0.25,'Productivité'),H('Planning semaine','weekly:0',1,'Productivité'),
+    H('Anki','daily',0.4,'Esprit'),H('Japonais','daily',0.5,'Esprit'),H('Méditation','daily',0.35,'Esprit'),H('Lecture','daily',0.25,'Esprit'),
+    H('Zero achat','daily',0.6,'Finance'),H('Veille','daily',0.6,'Finance'),H('Comptabilité','weekly:0',2,'Finance'),{...H('Inactive','daily',5,'Finance'),active:false}];
+  sportPlans=[];
   const o=orParDomaine(); out.o=['Santé','Productivité','Esprit','Finance'].map(c=>o[c].toFixed(2)).join('|');
   out.equilibre=['Santé','Productivité','Esprit','Finance'].every(c=>Math.abs(o[c]-1.5)<0.05);
-  out.creatine=habits.find(h=>/créatine/i.test(h.title)).active===false&&sysQuete.minimum[habits.find(h=>/^prot/i.test(h.title)).id]==='la pilule de créatine';
-  out.cats=habits.find(h=>/^rituel/i.test(h.title)).category+'|'+habits.find(h=>/^ranger/i.test(h.title)).category;
-  out.annonce=/rééquilibré/.test(document.getElementById('sysAnnTitre').textContent)||sysFile.some(x=>/rééquilibré/.test(x[1]));
-  sysFile=[]; modalFerme('sysAnnModal');
-  const n=ecrit; ecrit=null; renderSysteme(); out.uneFois=ecrit===null;
+  sportPlans=[0,2,4,7,9,11].map(i=>({date:sysDecale(td(),i),type:'Muscu'})); out.seances=Math.abs(orParDomaine()['Santé']-(1.05+6/28))<0.001;
   habDayFilter='all'; switchPage('habits'); await new Promise(r=>setTimeout(r,80));
   out.indic=document.querySelectorAll('#habHeader .hg-equil-c').length>=4&&/Or possible par jour/.test(document.getElementById('habHeader').textContent);
   switchPage('today'); await new Promise(r=>setTimeout(r,60));
   return out;
 });
-chk('L\'équilibre de l\'or s\'applique une fois, écrit dans le classeur, et s\'annonce',p11.applique&&p11.uneFois&&p11.annonce,JSON.stringify([p11.applique,p11.uneFois,p11.annonce]));
-chk('...environ 1,50 € possible par jour dans chaque domaine (le sport en Santé)',p11.equilibre===true,p11.o);
-chk('...la créatine devient le mini des protéines',p11.creatine===true);
-chk('...Rituel du soir et Ranger passent en Productivité',p11.cats==='Productivité|Productivité',p11.cats);
+chk('L\'or possible par jour dans chaque domaine (hebdomadaires ramenées au jour, inactives exclues, sport en Santé)',p11.equilibre===true,p11.o);
+chk('...les séances programmées comptent en Santé',p11.seances===true);
 chk('...l\'indicateur d\'équilibre sur la page Habitudes',p11.indic===true);
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
