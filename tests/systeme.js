@@ -805,7 +805,7 @@ const p8=await p.evaluate(async()=>{
   // La quête : quatre habitudes quotidiennes, deux piliers, le point faible, un défi.
   const v=sysQuete.versions.find(x=>x.depuis===aujd);
   out.quete=!!v&&v.auto&&v.habits.length===4&&v.r.join('')==='ppfd';
-  out.quotidiennes=v.habits.every(id=>habits.find(h=>String(h.id)===id).frequency==='daily');
+  out.quotidiennes=v.habits.every(id=>isHabitDueOnDate(habits.find(h=>String(h.id)===id).frequency,new Date(aujd+'T12:00:00')));
   const lies=new Set(Object.values(sysDonjons).flatMap(d=>d.habits.map(String)));
   out.piliers=v.habits.slice(0,2).every(id=>lies.has(id));
   // Les piliers sont ceux qu'on tient le moins bien : pas Anki ni Pas de sucre, tenues 20 jours sur 28.
@@ -819,8 +819,24 @@ const p8=await p.evaluate(async()=>{
   document.querySelector('#sysQListe [data-m]').value='1 minute'; await sysQueteEnregistrer();
   out.miniEdit=sysQuete.minimum[v.habits[0]]==='1 minute'&&sysQuete.versions.length===n;
   // La semaine suivante, la quête se réévalue ; le passé garde la sienne.
-  const vieux={...v,depuis:sysDecale(sysLundi(aujd),-7)}; sysQuete={...sysQuete,versions:[vieux]};
+  const vieux={...v,depuis:J(1)}; sysQuete={...sysQuete,versions:[vieux]};
   sysQueteAuto(); out.reevalue=sysQuete.versions.length===2&&sysQueteDu(vieux.depuis).join()===vieux.habits.join();
+  // Les habitudes du jour : une hebdomadaire entre dans le tirage le jour où elle est prévue, jamais un autre.
+  const dow=new Date(aujd+'T12:00:00').getDay(), sauve=habits;
+  habits=[H(21,'Hebdo du jour','weekly:'+dow,'Finance'),H(22,'Hebdo d\'un autre jour','weekly:'+((dow+3)%7),'Finance'),H(23,'A','daily','Esprit'),H(24,'B','daily','Esprit'),H(25,'C','daily','Esprit')];
+  const ch=sysQueteChoisir(aujd).habits; out.hebdo=ch.includes('21')&&!ch.includes('22')&&ch.length===4;
+  // Un autre jour, un autre tirage (au moins une fois sur une semaine).
+  habits=sauve; const tirages=new Set([0,1,2,3,4,5,6].map(i=>sysQueteChoisir(sysDecale(aujd,i)).habits.join()));
+  out.varie=tirages.size>1;
+  // La tenue d'une hebdomadaire : rapportée aux jours où elle était prévue.
+  habits=[H(31,'Hebdo','weekly:'+dow,'Finance')]; habitsLog=[1,2,3,4].map(i=>({id:'w'+i,habit_id:31,date:sysDecale(aujd,-7*i),reward_eur:0,category:'Finance'}));
+  out.tenueHebdo=Math.round(sysQueteTaux(31,aujd)*100); habits=sauve;
+  // L'archive : les vieilles quêtes compactées, l'XP du passé intacte.
+  habitsLog=[]; const versions=[]; for(let i=300;i>=0;i--)versions.push({depuis:J(i),habits:['1','2','3','4'].map(x=>x+''),auto:true,r:['p','p','f','d']});
+  versions[0].habits=['5','6','8','9'];
+  sysQuete={versions,minimum:{},auto:true}; const q=sysQueteCompacter(sysQuete);
+  out.compacte=JSON.stringify(q).length<20000&&q.versions.length<=61&&!!q.arch;
+  sysQuete=q; out.archive=sysQueteDu(J(300)).join()==='5,6,8,9'&&sysQueteDu(J(100)).join()==='1,2,3,4'&&sysQueteDu(aujd).join()==='1,2,3,4';
   // Une habitude de la quête désactivée : la quête se refait sur-le-champ.
   const cible=sysQueteActuelle()[0]; habits.find(h=>String(h.id)===cible).active=false;
   sysQueteAuto(); out.refaite=!sysQueteActuelle().includes(cible)&&sysQueteActuelle().length===4;
@@ -832,14 +848,69 @@ const p8=await p.evaluate(async()=>{
 chk('La configuration : la quête imposée, trois portes ouvertes, une seule fois et annoncée',p8.config==='2026-11|true|3'&&p8.annonce,JSON.stringify([p8.config,p8.annonce]));
 chk('...les portes et leurs habitudes : Lecture ; Anki et Japonais ; Pas de sucre, 8 000 pas et Protéines',p8.portes==='2,1+6,3+5+8',p8.portes);
 chk('...des versions minimales par défaut',p8.mini===true);
-chk('La quête : quatre habitudes quotidiennes, deux piliers, le point faible, un défi',p8.quete&&p8.quotidiennes&&p8.piliers,JSON.stringify([p8.quete,p8.quotidiennes,p8.piliers]));
+chk('La quête : quatre habitudes prévues aujourd\'hui, deux piliers, le point faible, un défi',p8.quete&&p8.quotidiennes&&p8.piliers,JSON.stringify([p8.quete,p8.quotidiennes,p8.piliers]));
 chk('...les piliers sont les habitudes des portes les moins tenues',p8.faibles===true);
-chk('...fixée pour la semaine (rien ne bouge au passage suivant)',p8.stable===true);
+chk('...fixée pour la journée (rien ne bouge au passage suivant)',p8.stable===true);
 chk('...la raison sous chaque habitude',p8.raisons===4,String(p8.raisons));
 chk('...on ne choisit plus : la fenêtre ne montre que les versions minimales, qu\'on règle',p8.modal==='LA QUÊTE DU SYSTÈME|0|4'&&p8.miniEdit,JSON.stringify([p8.modal,p8.miniEdit]));
-chk('...réévaluée chaque semaine, le passé garde la sienne',p8.reevalue===true);
+chk('...tirée chaque jour, le passé garde la sienne',p8.reevalue===true);
+chk('...parmi les habitudes du jour : une hebdomadaire le jour où elle est prévue',p8.hebdo===true);
+chk('...un autre jour, un autre tirage',p8.varie===true);
+chk('La tenue d\'une hebdomadaire se rapporte aux jours où elle était prévue (4 sur 4 : 100 %)',p8.tenueHebdo===100,String(p8.tenueHebdo));
+chk('Les vieilles quêtes s\'archivent en compact ; l\'XP du passé ne bouge pas',p8.compacte&&p8.archive,JSON.stringify([p8.compacte,p8.archive]));
 chk('...refaite si une de ses habitudes est désactivée',p8.refaite===true);
 chk('...rien d\'imposé en mode manuel',p8.manuel===true);
+
+console.log('=== 17. FAIT EN ENTIER OU EN MINI ===');
+const p9=await p.evaluate(async()=>{
+  const out={}, aujd=td(); sysFile=[]; modalFerme('sysAnnModal');
+  let ecrit=null, ajout=null; window.rewriteHabitsLog=async()=>{ ecrit=habitsLog.map(l=>l.habit_id+':'+(l.mini?'mini':'')).join(','); return true; };
+  window.appendHabitsLog=async e=>{ ajout=e; return true; }; window.offerUndo=()=>{};
+  const H=(id,title)=>({id,title,frequency:'daily',reward_eur:0.5,category:'Esprit',active:true});
+  habits=[H(11,'Anki'),H(12,'Lecture'),H(13,'Méditation'),H(14,'Japonais')]; habitsLog=[]; goals=[]; sysDonjons={}; sportLogs=[]; sysUrgences={};
+  sysQuete={versions:[{depuis:aujd,habits:['11','12','13','14'],auto:true,r:['p','p','f','d']}],minimum:{'11':'10 cartes'},auto:true};
+  sysReset={depuis:'',objectifs:[]}; sysCalib={k:50,xpJour:null,le:'banc'};
+  sysVue('quete'); await new Promise(r=>setTimeout(r,20));
+  out.cases=document.querySelectorAll('#sysBox .sys-ligne-w').length+'|'+document.querySelectorAll('#sysBox .sys-mini-b').length;
+  out.titreMini=(document.querySelector('#sysBox .sys-mini-b')||{}).title;
+  const or0=cagnotte(), xp0=sysEtat().xp;
+  // Le mini : même comportement (XP, or), noté « mini ».
+  await toggleHabitNiveau(11,'mini');
+  out.mini=habitsLog.length===1&&habitsLog[0].mini===true&&ajout&&ajout.mini===true;
+  out.memeOr=Math.round((cagnotte()-or0)*100)/100; out.memeXp=sysEtat().xp-xp0;
+  out.vue=!!document.querySelector('#sysBox .sys-mini-b.on')&&!!document.querySelector('#sysBox .sys-ligne.mini');
+  // Passer du mini au complet, et l'inverse, sans décocher.
+  await toggleHabitNiveau(11,'complet'); out.complet=habitsLog.length===1&&!habitsLog[0].mini&&ecrit==='11:';
+  await toggleHabitNiveau(11,'mini'); out.retour=habitsLog.length===1&&habitsLog[0].mini===true&&ecrit==='11:mini';
+  // Recliquer le même niveau décoche.
+  await toggleHabitNiveau(11,'mini'); out.decoche=habitsLog.length===0;
+  // La quête accomplie avec des minis : la prime tombe, le pied dit combien en mini.
+  await toggleHabitNiveau(11,'mini'); await toggleHabitNiveau(12,'complet'); await toggleHabitNiveau(13,'mini'); await toggleHabitNiveau(14,'complet');
+  out.quete=sysQueteFaite(aujd)&&/QUÊTE ACCOMPLIE \(dont 2 en mini\)/.test(document.querySelector('#sysBox .sys-pied').textContent);
+  // Le point faible : un mini compte pour moitié.
+  habitsLog=[{id:'m1',habit_id:11,date:J(1),reward_eur:0.5,category:'Esprit',mini:true},{id:'m2',habit_id:12,date:J(1),reward_eur:0.5,category:'Esprit'}];
+  out.tenue=sysQueteTaux(11,aujd)*28+'|'+sysQueteTaux(12,aujd)*28;
+  // Les indicateurs de la page Habitudes : entier et mini distingués.
+  habitsLog=[{id:'a',habit_id:11,date:aujd,reward_eur:0.5,category:'Esprit',mini:true},{id:'b',habit_id:12,date:aujd,reward_eur:0.5,category:'Esprit'}];
+  habDayFilter='all'; switchPage('habits'); await new Promise(r=>setTimeout(r,80));
+  const hdr=document.getElementById('habHeader').textContent.replace(/\s+/g,' ');
+  out.hdr=hdr; out.filtre=habDayFilter;
+  out.kpi=/2\/4 dont 1 mini/.test(hdr)&&/entier \/ mini\s*1 \/ 1/.test(hdr);
+  out.pastille=document.querySelectorAll('#habGrid .hg-dot.done.mini').length===1&&document.querySelectorAll('#habGrid .hg-dot.done:not(.mini)').length===1;
+  out.semaine=/\(1 mini\)/.test(document.getElementById('habGrid').textContent);
+  switchPage('today'); await new Promise(r=>setTimeout(r,80));
+  return out;
+});
+chk('Deux cases par habitude de la quête : « Fait » et « Mini » (avec la version minimale)',p9.cases==='4|4'&&/10 cartes/.test(p9.titreMini),JSON.stringify([p9.cases,p9.titreMini]));
+chk('Le mini coché : noté « mini » dans le classeur',p9.mini===true);
+chk('...même comportement : même or, même XP',p9.memeOr===0.5&&p9.memeXp===20,JSON.stringify([p9.memeOr,p9.memeXp]));
+chk('...la case Mini allumée, la ligne en ambre',p9.vue===true);
+chk('Passer du mini au complet et inversement, sans décocher',p9.complet&&p9.retour,JSON.stringify([p9.complet,p9.retour]));
+chk('...recliquer le même niveau décoche',p9.decoche===true);
+chk('La quête accomplie avec des minis : prime gagnée, « dont 2 en mini »',p9.quete===true);
+chk('Le point faible : un mini compte pour moitié dans la tenue',p9.tenue==='0.5|1',p9.tenue);
+chk('Les indicateurs distinguent : « 2/4 dont 1 mini », « entier / mini » du mois',p9.kpi===true,p9.hdr+' / '+p9.filtre);
+chk('...la pastille à moitié pleine, le compte de la semaine',p9.pastille&&p9.semaine,JSON.stringify([p9.pastille,p9.semaine]));
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
