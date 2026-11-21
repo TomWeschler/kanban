@@ -23,7 +23,7 @@ await p.evaluate(async()=>{
   // Une pente fixe pour les épreuves (k = 50) : le calibrage s'éprouve à part.
   sysCalib={k:50,xpJour:null,le:'banc'};
   // La configuration de novembre 2026 s'éprouve à part (section 16).
-  sysConfig={v:'2026-11'};
+  sysConfig={v:'2026-11',e:'2026-11-21'};
   accessToken='T'; cfg.spreadsheetId='S';
   window.S_ONGLETS={}; window.S_CREES=[];
   window.sheetTitres=async()=>Object.keys(S_ONGLETS);
@@ -934,6 +934,37 @@ const p10=await p.evaluate(async()=>{
 chk('Les quêtes secondaires ont aussi leur case « Mini » (et leur version minimale)',p10.cases==='2|2'&&p10.minimum,JSON.stringify([p10.cases,p10.minimum]));
 chk('...le mini se coche, la ligne le montre',p10.mini===true);
 chk('...on passe au complet, on décoche',p10.complet&&p10.decoche,JSON.stringify([p10.complet,p10.decoche]));
+
+console.log('=== 19. L\'ÉQUILIBRE DE L\'OR ===');
+const p11=await p.evaluate(async()=>{
+  const out={}, aujd=td(); sysFile=[]; modalFerme('sysAnnModal');
+  let ecrit=null; window.saveHabits=async()=>{ ecrit=habits.map(h=>h.title+':'+h.category+':'+h.reward_eur+':'+h.active).join('|'); return true; }; window.sysSauver=async()=>true;
+  const H=(title,frequency,reward_eur,category)=>({id:title.length*1000+Math.round(reward_eur*100),title,frequency,reward_eur,category,active:true});
+  habits=[H('Pilules Créatines','daily',0.1,'Santé'),H('Pas de sucre','daily',0.25,'Santé'),H('8 000 pas','daily',0.25,'Santé'),H('Proteine (3 oeufs + Cantine + shaker)','daily',0.25,'Santé'),
+    H('2 Tâches Importantes','daily',0.75,'Productivité'),H('Planning semaine & Revue','weekly:0',0.5,'Productivité'),
+    H('Anki','daily',0.5,'Esprit'),H('Rituel du soir (journal + 2 tâches de demain)','daily',0.5,'Esprit'),H('Japonais 20 min','daily',0.75,'Esprit'),H('Méditation 10 min','daily',0.5,'Esprit'),H('Lecture 10 pages','daily',0.25,'Esprit'),
+    H('Zero achat compulsif','daily',0.25,'Finance'),H('Veille business 15 min','daily',0.5,'Finance'),H('Comptabilité','weekly:0',1,'Finance'),
+    H('Ranger Nettoyer','daily',0.25,'Autre'),H('Message à un proche','weekly:0',0.25,'Autre')];
+  sportPlans=[]; sysQuete={versions:[],minimum:{},auto:true}; sysConfig={v:'2026-11'}; sysCharge=true; accessToken='T';
+  renderSysteme();
+  out.applique=sysConfig.e==='2026-11-21'&&!!ecrit;
+  const o=orParDomaine(); out.o=['Santé','Productivité','Esprit','Finance'].map(c=>o[c].toFixed(2)).join('|');
+  out.equilibre=['Santé','Productivité','Esprit','Finance'].every(c=>Math.abs(o[c]-1.5)<0.05);
+  out.creatine=habits.find(h=>/créatine/i.test(h.title)).active===false&&sysQuete.minimum[habits.find(h=>/^prot/i.test(h.title)).id]==='la pilule de créatine';
+  out.cats=habits.find(h=>/^rituel/i.test(h.title)).category+'|'+habits.find(h=>/^ranger/i.test(h.title)).category;
+  out.annonce=/rééquilibré/.test(document.getElementById('sysAnnTitre').textContent)||sysFile.some(x=>/rééquilibré/.test(x[1]));
+  sysFile=[]; modalFerme('sysAnnModal');
+  const n=ecrit; ecrit=null; renderSysteme(); out.uneFois=ecrit===null;
+  habDayFilter='all'; switchPage('habits'); await new Promise(r=>setTimeout(r,80));
+  out.indic=document.querySelectorAll('#habHeader .hg-equil-c').length>=4&&/Or possible par jour/.test(document.getElementById('habHeader').textContent);
+  switchPage('today'); await new Promise(r=>setTimeout(r,60));
+  return out;
+});
+chk('L\'équilibre de l\'or s\'applique une fois, écrit dans le classeur, et s\'annonce',p11.applique&&p11.uneFois&&p11.annonce,JSON.stringify([p11.applique,p11.uneFois,p11.annonce]));
+chk('...environ 1,50 € possible par jour dans chaque domaine (le sport en Santé)',p11.equilibre===true,p11.o);
+chk('...la créatine devient le mini des protéines',p11.creatine===true);
+chk('...Rituel du soir et Ranger passent en Productivité',p11.cats==='Productivité|Productivité',p11.cats);
+chk('...l\'indicateur d\'équilibre sur la page Habitudes',p11.indic===true);
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();

@@ -684,6 +684,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .hg-dot.done::after{content:'✓'}
 .hg-dot.done.mini::after{content:'½';color:#fff;text-shadow:0 0 2px #000}
 .hg-mini-k{font-size:0.6em;color:var(--text-dim);font-weight:400}
+.hg-equil{display:flex;flex-wrap:wrap;gap:0.4rem 1rem;align-items:center;margin:0.2rem 0 0.8rem;font-size:0.72rem;color:var(--text-mid)}
+.hg-equil-t{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-dim)}
+.hg-equil-c{position:relative;padding-bottom:4px;min-width:7.5rem}
+.hg-equil-c i{position:absolute;left:0;bottom:0;height:2px;border-radius:1px;opacity:0.8}
 .hg-dot.notdue{opacity:0.3;cursor:pointer}
 .hg-dot.notdue:not(.done){border-style:dashed}
 .hg-dot.future{opacity:0.18;cursor:not-allowed;pointer-events:none;border-style:dotted}
@@ -5075,9 +5079,18 @@ function renderHabHeader(){
         <div><div class="hg-kpi-lbl">Ce mois</div><div class="hg-kpi-val green">+${monthEarned.toFixed(2)}€</div></div>
         <div><div class="hg-kpi-lbl">Total</div><div class="hg-kpi-val">${totalEarned.toFixed(0)}€</div></div>
       </div>
-    </div>`;
+    </div>${habEquilibreHtml()}`;
 }
 
+// L'équilibre de l'or entre les domaines : ce que chacun peut rapporter par
+// jour (hebdomadaires ramenées à la journée, séances de sport en Santé).
+function habEquilibreHtml(){
+  if(typeof orParDomaine!=='function')return '';
+  const o=orParDomaine(), cats=HAB_CAT_ORDER.filter(c=>c!=='Autre'||o[c]), max=Math.max(...cats.map(c=>o[c]||0),0.01);
+  return `<div class="hg-equil" title="L'or possible par jour dans chaque domaine (les hebdomadaires ramenées à la journée, les séances de sport en Santé)">
+    <span class="hg-equil-t">Or possible par jour</span>${cats.map(c=>`<span class="hg-equil-c"><i style="background:${HAB_CAT_COLOR[c]};width:${Math.round((o[c]||0)/max*100)}%"></i>
+      <b style="color:${HAB_CAT_COLOR[c]}">${c}</b> ${(o[c]||0).toFixed(2).replace('.',',')} €</span>`).join('')}</div>`;
+}
 function renderHabToolbar() {
   const week = habWeekDates(habWeekOffset);
   const MONTHS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
@@ -6623,6 +6636,39 @@ function sysConfigurer(){
   return true;
 }
 
+
+// L'équilibre de l'or (21 novembre 2026), une fois pour toutes : environ
+// 1,50 € possible par jour dans chacun des quatre domaines (le sport compte
+// en Santé, par la page Sport). La créatine devient le « mini » des
+// protéines ; Rituel du soir et Ranger passent en Productivité.
+const SYS_EQUILIBRE_V='2026-11-21';
+const SYS_EQUILIBRE=[[/^pilules? cr[ée]atine/i,{active:false}],[/^pas de sucre/i,{reward_eur:0.40}],[/^8\s?000 pas/i,{reward_eur:0.30}],[/^prot[ée]ine/i,{reward_eur:0.35}],
+  [/^2 t[âa]ches/i,{reward_eur:0.70}],[/^rituel du soir/i,{reward_eur:0.40,category:'Productivité'}],[/^ranger/i,{reward_eur:0.25,category:'Productivité'}],[/^planning semaine/i,{reward_eur:1.00}],
+  [/^anki/i,{reward_eur:0.40}],[/^japonais/i,{reward_eur:0.50}],[/^m[ée]ditation/i,{reward_eur:0.35}],[/^lecture/i,{reward_eur:0.25}],
+  [/^z[ée]ro achat/i,{reward_eur:0.60}],[/^veille business/i,{reward_eur:0.60}],[/^comptabilit/i,{reward_eur:2.00}]];
+function sysEquilibrer(){
+  if(sysConfig.e===SYS_EQUILIBRE_V||!accessToken||!sysCharge||!habits.length)return false;
+  let n=0;
+  SYS_EQUILIBRE.forEach(([re,chg])=>{ const h=habits.find(x=>(x.active||chg.active===false)&&re.test(x.title)); if(h){ Object.assign(h,chg); n++; } });
+  const prot=habits.find(x=>x.active&&/^prot[ée]ine/i.test(x.title));
+  if(prot)sysQuete={...sysQuete,minimum:{...(sysQuete.minimum||{}),[prot.id]:'la pilule de créatine'}};
+  sysConfig={...sysConfig,e:SYS_EQUILIBRE_V};
+  saveHabits(); sysSauver('quete'); sysSauver('config');
+  if(n){ const o=orParDomaine();
+    sysFenetre('[ Système ]','L\'or rééquilibré',`Environ 1,50 € possible par jour dans chaque domaine :<br>${HAB_CAT_ORDER.filter(c=>c!=='Autre').map(c=>`${c} ${eur(o[c]||0)}`).join(' · ')}
+      <br><br>La créatine devient la version minimale des protéines ; Rituel du soir et Ranger passent en Productivité.`); }
+  return true;
+}
+// L'or possible par jour dans chaque domaine : les habitudes actives à leur
+// fréquence, et les séances programmées (en Santé).
+function orParDomaine(){
+  const o={}; habits.filter(h=>h.active).forEach(h=>{ o[h.category]=(o[h.category]||0)+sysParJour(h.frequency)*(h.reward_eur||0); });
+  const a=new Date(td()+'T12:00:00'), z=new Date(a); z.setDate(z.getDate()+28);
+  const seances=(sportPlans||[]).filter(p=>p.date>=ymd(a)&&p.date<ymd(z)&&!/repos/i.test(p.type||'')).length;
+  o['Santé']=(o['Santé']||0)+(seances?seances/28:3/7)*SPORT_OR.done;
+  return o;
+}
+
 // ── La fenêtre du Système ──
 let sysTimer=null;
 function sysRestant(){
@@ -6634,7 +6680,7 @@ function renderSysteme(){
   const el=document.getElementById('sysBox'); if(!el)return;
   // Le premier calibrage se fait seul, dès qu'il y a des habitudes à mesurer.
   if(!sysCalib.le&&sysCharge&&habits.some(h=>h.active))sysCalibrer();
-  sysConfigurer(); sysQueteAuto();
+  sysConfigurer(); sysEquilibrer(); sysQueteAuto();
   const ch=sysChasseMaj(sysEtat());
   const e=sysEtat(), aujd=td(), q=sysQueteJour(aujd);
   const faits=new Set(habitsLog.filter(l=>l.date===aujd).map(l=>String(l.habit_id)));
@@ -24599,7 +24645,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.119.0';
+const APP_VERSION='v1.120.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
