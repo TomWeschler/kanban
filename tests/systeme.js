@@ -377,7 +377,7 @@ chk('...écrit dans le classeur, et l\'on peut fermer la porte',p2.ligneDj==='g3
 chk('Titres : gagnés par l\'historique',/eveil/.test(p2.titres)&&/rachat/.test(p2.titres)&&/chasseurPortes/.test(p2.titres)&&/pourfendeur/.test(p2.titres)&&!/monarque/.test(p2.titres),p2.titres);
 chk('...la fenêtre montre gagnés et verrouillés',p2.boutons===p2.titres.split(',').length+'|'+(p2.nTitres-p2.titres.split(',').length),p2.boutons);
 chk('...le titre porté s\'affiche sous le niveau, écrit dans le classeur',/Pourfendeur/.test(p2.porte)&&p2.ligneTitre==='pourfendeur',JSON.stringify([p2.porte,p2.ligneTitre]));
-chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres,chasses,inventaire,boutique',p2.bk);
+chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres,chasses,inventaire,boutique,classes,familiers',p2.bk);
 
 console.log('=== 11. PHASE 3 : ACCUEIL, THÈME, CHASSE, COFFRES, ÉQUIPEMENT, BOUTIQUE ===');
 // Une page neuve : l'accueil est le board, le thème Éveil s'applique.
@@ -498,6 +498,103 @@ chk('...l\'achat se retranche de l\'or, s\'écrit et s\'annonce',p3.achat==='0.5
 chk('...pas d\'achat sans assez d\'or',p3.tropCher===true);
 chk('Les titres de chasse ; « Souverain des portes »',p3.titres===true);
 chk('Repartir de zéro remet aussi le monstre de la semaine',p3.reset===true);
+
+console.log('=== 12. CLASSES ET FAMILIERS ===');
+const p4=await p.evaluate(async()=>{
+  const out={}, L=(h,d)=>({id:'z'+Math.random(),habit_id:h,date:d,reward_eur:0.5,category:'Santé'}), aujd=td();
+  window.confirm=()=>true; sysFile=[]; modalFerme('sysAnnModal');
+  sysReset={depuis:'',objectifs:[]}; sysChasses={}; sysInv=sysInvNorm({}); sysClasses=sysClNorm({}); sysFam=sysFamNorm({}); sysUrgences={};
+  sysCalib={k:50,xpJour:null,le:'banc'}; habitsLog=[]; sportLogs=[]; goals=[];
+  sysQuete={versions:[{depuis:J(400),habits:['1','2','4']}],minimum:{}};
+  // Sans classe : l'onglet propose les six.
+  sysVue('classes'); await new Promise(r=>setTimeout(r,20));
+  out.choix=document.querySelectorAll('#sysBox .sys-cl-carte').length;
+  // La première classe, et le familier offert.
+  await sysClasseChoisir('guerrier');
+  out.classe=sysClasses.liste.map(x=>x.id+'|'+(x.le===aujd)).join(',');
+  out.famDepart=sysFam.actif+'|'+!!sysFam.possede.renard;
+  out.lignes=['classes','familiers'].every(k=>S_ONGLETS.systeme.some(x=>x[0]===k));
+  out.annonce=/Éveil de classe/.test(document.getElementById('sysAnnT').textContent); sysAnnFermer(); sysFile=[];
+  // L'XP de classe : son domaine en entier, un quart du reste, depuis qu'on l'a apprise.
+  sportLogs=[{date:aujd,status:'done'},{date:J(3),status:'done'}]; habitsLog=[L(2,aujd)];
+  out.xpCl=sysClasseXp(sysClasses.liste[0],sysEvenements())+'|'+(SYS_XP.sport+Math.round(SYS_XP.quete*0.25));
+  // Les paliers : niveau 10, un éveil.
+  sysClasses={...sysClasses,liste:[{id:'guerrier',le:J(400)}]}; sysCalib={k:10,xpJour:null,le:'banc'};
+  for(let d=0;d<400;d++)sportLogs.push({date:J(d),status:'done'});
+  let et=sysClassesEtat(); out.palier=et.l[0].niv+'|'+et.eveils;
+  const niv=et.l[0].niv, att=SYS_CL_PALIERS.filter(p=>niv>=p).length;
+  out.eveilsOk=et.eveils===att;
+  // Apprendre une classe consomme un éveil.
+  await sysClasseApprendre('mage'); et=sysClassesEtat();
+  out.appris=sysClasses.liste.length+'|'+et.eveils;
+  // Les spécialisations : la première dès le niveau 10, la seconde dès le 20 ; un éveil chacune.
+  out.speOuv=sysSpeOuverte('berserker',et)+'|'+sysSpeOuverte('archimage',et);
+  await sysSpePrendre('berserker'); sysAnnFermer(); await sysSpePrendre('seigneur');
+  et=sysClassesEtat(); out.spe=sysClasses.spes.map(x=>x.id).join(',')+'|'+et.eveils;
+  await sysClasseApprendre('rodeur'); await sysSpePrendre('paladin');
+  out.speRefus=sysClasses.liste.length===2&&sysClasses.spes.length===2;
+  sysAnnFermer(); sysFile=[];
+  // Les effets au combat : le Guerrier et le Berserker renforcent le sport.
+  const lundi=sysLundi(aujd); sysChasses={[lundi]:{famille:'loup',nom:'Loup d\'essai',niveau:1,rang:'G',elite:false,pv:99999,vaincu:false}};
+  const e=sysEtat(), rec=sysChasses[lundi], sansFam={...sysFam};
+  sysFam=sysFamNorm({});
+  const c1=sysCombat(lundi,rec,e); const sauve=sysClasses; sysClasses=sysClNorm({});
+  const c0=sysCombat(lundi,rec,e); sysClasses=sauve;
+  const sp=c=>c.coups.find(x=>x.lib==='Séance de sport'&&x.date===aujd);
+  out.ratio=Math.round(sp(c1).deg/sp(c0).deg*100)/100; out.ratioAttendu=Math.round(2.0*1.15*100)/100;
+  // Le familier : son bonus s'ajoute, croît avec son niveau.
+  sysFam={possede:{salamandre:{xp:0,le:aujd}},actif:'salamandre',depuis:aujd};
+  const E1=sysEffets(); out.famBonus=E1.deg-15===sysFamBonus(sysFamDef('salamandre'),sysFamNiveau(sysFamXp('salamandre')),E1.fam).deg&&E1.deg>15;
+  out.croit=sysFamBonus(sysFamDef('salamandre'),10,0).deg>sysFamBonus(sysFamDef('salamandre'),1,0).deg;
+  // L'XP du familier équipé ; en changer garde l'acquis jusqu'à hier.
+  sysFam={possede:{salamandre:{xp:0,le:J(10)},renard:{xp:0,le:J(10)}},actif:'salamandre',depuis:J(5)};
+  const ev=sysEvenements(), gagne=ev.reduce((t,[d,x])=>d>=J(5)&&d<aujd?t+x:t,0);
+  out.famXp=sysFamXp('salamandre')>gagne;
+  await sysFamEquiper('renard');
+  out.change=sysFam.actif+'|'+(sysFam.possede.salamandre.xp===gagne)+'|'+(sysFam.depuis===aujd);
+  out.ligneFam=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='familiers')||[])[1]||'{}').actif;
+  // Le butin de familiers : toujours pour l'élite, environ un coffre sur six sinon.
+  out.elite=!!sysFamTire({id:'essai',t:0,elite:true},sysEffets());
+  let n=0; for(let i=0;i<600;i++)if(sysFamTire({id:'f'+i,t:0},{famLoot:0}))n++; out.freq=n;
+  let m=0; for(let i=0;i<600;i++)if(sysFamTire({id:'f'+i,t:0},{famLoot:1}))m++; out.maitre=m>n*1.6;
+  // Un doublon devient de l'expérience.
+  sysFam={possede:Object.fromEntries(SYS_FAMILIERS.map(f=>[f.id,{xp:0,le:aujd}])),actif:'renard',depuis:aujd};
+  const avantXp=Object.values(sysFam.possede).reduce((t,x)=>t+x.xp,0);
+  sysChasses={...sysChasses,[sysDecale(lundi,-7)]:{famille:'ogre',nom:'Ogre d\'essai',niveau:1,rang:'G',elite:true,pv:100,vaincu:true,fin:true}};
+  await sysCoffreOuvrir(); await new Promise(r=>setTimeout(r,1200));
+  const apresXp=Object.values(sysFam.possede).reduce((t,x)=>t+x.xp,0);
+  out.doublon=apresXp>avantXp&&(apresXp-avantXp)%300===0&&/Doublon/.test(document.getElementById('sysCoffreObj').textContent);
+  modalFerme('sysCoffreModal');
+  // Les onglets.
+  sysFam={possede:{renard:{xp:0,le:aujd},lynx:{xp:0,le:aujd}},actif:'lynx',depuis:aujd};
+  sysVue('familiers'); await new Promise(r=>setTimeout(r,20));
+  out.grille=document.querySelectorAll('#sysBox .sys-fam-c').length+'|'+document.querySelectorAll('#sysBox .sys-fam-c.verrou').length+'|'+!!document.querySelector('#sysBox .sys-fam-actif');
+  out.statutFam=/Lynx/.test((document.querySelector('#sysBox .sys-fam-statut')||{textContent:''}).textContent);
+  sysVue('classes'); await new Promise(r=>setTimeout(r,20));
+  out.vueCl=document.querySelectorAll('#sysBox .sys-cl-l').length+'|'+document.querySelectorAll('#sysBox .sys-spe').length+'|'+document.querySelectorAll('#sysBox .sys-cl-mini').length;
+  out.titre=sysTitresGagnes(sysEtat()).includes('specialiste');
+  out.bk=BK_TABLES.find(x=>x[0]==='systeme')[2]().map(x=>x.id).includes('classes')&&BK_TABLES.find(x=>x[0]==='systeme')[2]().map(x=>x.id).includes('familiers');
+  sysFile=[]; modalFerme('sysAnnModal'); sysVue('quete');
+  return out;
+});
+chk('Sans classe, l\'onglet propose les six classes',p4.choix===6,String(p4.choix));
+chk('La première classe se choisit, datée du jour ; le Renard est offert et équipé',p4.classe==='guerrier|true'&&p4.famDepart==='renard|true'&&p4.annonce,JSON.stringify([p4.classe,p4.famDepart,p4.annonce]));
+chk('...écrit dans le classeur (classes, familiers)',p4.lignes===true);
+chk('L\'XP de classe : son domaine en entier, un quart du reste',p4.xpCl.split('|')[0]===p4.xpCl.split('|')[1],p4.xpCl);
+chk('Les paliers 10, 20, 30 donnent chacun un éveil (niveau 30 : trois)',p4.eveilsOk&&p4.palier==='30|3',p4.palier);
+chk('...apprendre une classe en consomme un',p4.appris.startsWith('2|'),p4.appris);
+chk('...les deux spécialisations d\'une classe montée, pas celle d\'une classe neuve',p4.speOuv==='true|false'&&p4.spe==='berserker,seigneur|0',JSON.stringify([p4.speOuv,p4.spe]));
+chk('...plus rien sans éveil',p4.speRefus===true);
+chk('Au combat : Guerrier, Seigneur de guerre (sport +40 % +60 %) et Berserker (+15 %) se cumulent',Math.abs(p4.ratio-p4.ratioAttendu)<=0.03,JSON.stringify([p4.ratio,p4.ratioAttendu]));
+chk('Le familier équipé ajoute son bonus, qui croît avec son niveau',p4.famBonus&&p4.croit,JSON.stringify([p4.famBonus,p4.croit]));
+chk('...il prend l\'XP des gestes tant qu\'il est équipé',p4.famXp===true);
+chk('...en changer garde l\'acquis jusqu\'à hier, écrit dans le classeur',p4.change==='renard|true|true'&&p4.ligneFam==='renard',p4.change+' '+p4.ligneFam);
+chk('Le butin : un familier toujours pour l\'élite, environ un coffre sur six sinon',p4.elite&&p4.freq>50&&p4.freq<150,JSON.stringify([p4.elite,p4.freq]));
+chk('...le Maître des bêtes les rend plus fréquents',p4.maitre===true);
+chk('...un doublon devient de l\'expérience',p4.doublon===true);
+chk('L\'onglet Familiers : la collection des 20, verrouillés en silhouette ; le familier sous le statut',p4.grille==='20|18|true'&&p4.statutFam,p4.grille);
+chk('L\'onglet Classes : classes apprises, spécialisations, classes à apprendre',p4.vueCl==='2|4|4',p4.vueCl);
+chk('Le titre « Spécialiste » ; la sauvegarde emporte classes et familiers',p4.titre&&p4.bk,JSON.stringify([p4.titre,p4.bk]));
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
