@@ -201,7 +201,6 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .col-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.85rem;color:var(--text-dim);font-family:'Space Mono',var(--sys-mono);font-size:0.52rem;letter-spacing:0.12em;padding:1rem}
 .col-empty-gif{width:130px;height:130px;border-radius:8px;object-fit:cover;opacity:0.55;filter:saturate(1.05);box-shadow:0 4px 18px rgba(0,0,0,0.4);transition:opacity 0.25s,transform 0.25s}
 .col-empty-gif:hover{opacity:0.85;transform:scale(1.04)}
-.col-empty-txt{opacity:0.55;letter-spacing:0.18em}
 
 /* BOARD FILTER BAR */
 .board-filters{flex-shrink:0;display:flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;border-bottom:1px solid var(--border);background:rgba(9,9,14,0.7)}
@@ -6959,7 +6958,6 @@ function render() {
       const gifIdx = (Math.abs(col.charCodeAt(0)+col.charCodeAt(col.length-1)) % 3) + 1;
       body.innerHTML = `<div class="col-empty">
         <img class="col-empty-gif" src="gifs/zen${gifIdx}.gif" alt="" loading="lazy">
-        <div class="col-empty-txt">VIDE — RESPIRE</div>
       </div>`;
     }
     else ct.forEach(t=>body.appendChild(mkCard(t,now)));
@@ -24601,7 +24599,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.118.0';
+const APP_VERSION='v1.119.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
