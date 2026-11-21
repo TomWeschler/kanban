@@ -512,6 +512,11 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .td-row{display:flex;align-items:center;gap:0.55rem;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.03)}
 .td-row.done .td-lbl{opacity:0.45}
 .td-row.done .td-name{text-decoration:line-through}
+.td-row.mini .td-name{text-decoration:none}
+.td-mini{flex-shrink:0;background:none;border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);color:var(--warn);border-radius:99px;
+  font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.08em;padding:0.12rem 0.5rem;cursor:pointer;opacity:0.75}
+.td-mini:hover{opacity:1;border-color:var(--warn)}
+.td-mini.on{opacity:1;background:color-mix(in srgb,var(--warn) 18%,transparent);border-color:var(--warn)}
 .td-check{flex-shrink:0;width:15px;height:15px;border-radius:4px;border:1px solid var(--border2);background:none;cursor:pointer;transition:background 0.12s,border-color 0.12s}
 .td-check:hover{border-color:var(--green)}
 .td-check.on{background:var(--green);border-color:var(--green)}
@@ -6757,7 +6762,13 @@ function sysQueteOuvrir(){
       Tu règles seulement la version minimale de chacune : les jours difficiles, la faire suffit.`;
     document.getElementById('sysQListe').innerHTML=q.map(h=>`<label class="sys-ql auto"><span class="sys-ql-t">${tdEsc(h.title)}<small>${tdEsc(sysQueteRaison(aujd,h.id))} · tenue ${Math.round(sysQueteTaux(h.id,aujd)*100)} % sur 4 semaines</small></span>
       <input type="text" class="ca-q sys-ql-min" data-m="${MD_ATT(String(h.id))}" value="${MD_ATT((sysQuete.minimum||{})[h.id]||'')}" placeholder="version minimale"></label>`).join('')
-      ||'<div class="ca-aide">Pas encore de quête : il faut au moins trois habitudes quotidiennes actives.</div>';
+      ||'<div class="ca-aide">Pas encore de quête : il faut au moins trois habitudes prévues aujourd\'hui.</div>';
+    // Les quêtes secondaires ont aussi leur version minimale.
+    const enQ=new Set(q.map(h=>String(h.id))), autres=habits.filter(h=>h.active&&!enQ.has(String(h.id)))
+      .sort((a,b)=>HAB_CAT_ORDER.indexOf(a.category)-HAB_CAT_ORDER.indexOf(b.category)||String(a.title).localeCompare(String(b.title)));
+    if(autres.length)document.getElementById('sysQListe').insertAdjacentHTML('beforeend',`<div class="sys-t" style="margin-top:0.5rem">Quêtes secondaires</div>`+
+      autres.map(h=>`<label class="sys-ql auto"><span class="sys-ql-t">${tdEsc(h.title)}<small>${tdEsc(h.category)} · ${tdEsc(freqLabel(h.frequency))}</small></span>
+      <input type="text" class="ca-q sys-ql-min" data-m="${MD_ATT(String(h.id))}" value="${MD_ATT((sysQuete.minimum||{})[h.id]||'')}" placeholder="version minimale"></label>`).join(''));
     document.getElementById('sysQCompte').textContent='';
     modalOuvre('sysQueteModal'); return;
   }
@@ -7416,17 +7427,19 @@ async function quickSportStatus(st){
 
 // Une ligne d'habitude, avec les mêmes repères que la page HABITUDES :
 // émoji déduit du titre, pastille de catégorie, fréquence, série et gain.
+// Comme dans la quête : une case « fait en entier », une case « mini ».
 function habRowToday(h,doneSet,today){
-  const ok=doneSet.has(String(h.id));
+  const l=habitsLog.find(x=>String(x.habit_id)===String(h.id)&&x.date===today), fait=!!l, enMini=!!(l&&l.mini), ok=fait&&!enMini;
   const color=HAB_CAT_COLOR[h.category]||'var(--text-mid)';
-  const streak=getStreak(h.id,h.frequency);
-  return `<div class="td-row${ok?' done':''}">
-    <button class="td-check${ok?' on':''}" onclick="toggleHabit(${h.id},'${today}')" title="${ok?'Décocher':'Cocher'}"></button>
+  const streak=getStreak(h.id,h.frequency), mini=(typeof sysQuete!=='undefined'&&sysQuete.minimum||{})[h.id];
+  return `<div class="td-row${fait?' done':''}${enMini?' mini':''}">
+    <button class="td-check${ok?' on':''}" onclick="toggleHabitNiveau(${h.id},'complet','${today}')" title="${ok?'Décocher':'Faite en entier'}" aria-pressed="${ok}"></button>
     <span class="td-icon">${habitIcon(h.title)}</span>
     <span class="td-lbl">
       <span class="hg-cat-dot" style="background:${color}" title="${tdEsc(h.category)}"></span><span class="td-name">${tdEsc(h.title)}</span>
-      <span class="td-meta">${tdEsc(freqLabel(h.frequency))}${streak>0?` · 🔥 ${streak}`:''}</span>
+      <span class="td-meta">${tdEsc(freqLabel(h.frequency))}${streak>0?` · 🔥 ${streak}`:''}${mini?` · minimum : ${tdEsc(mini)}`:''}</span>
     </span>
+    <button class="td-mini${enMini?' on':''}" onclick="toggleHabitNiveau(${h.id},'mini','${today}')" title="${MD_ATT(mini?'Version minimale : '+mini:'Version minimale')}" aria-pressed="${enMini}">${enMini?'✓ ':''}Mini</button>
     <span class="td-eur">+${h.reward_eur.toFixed(2)}€</span>
   </div>`;
 }
@@ -24588,7 +24601,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.117.0';
+const APP_VERSION='v1.118.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

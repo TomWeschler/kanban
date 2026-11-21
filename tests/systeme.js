@@ -815,7 +815,7 @@ const p8=await p.evaluate(async()=>{
   // La fenêtre : les raisons sous chaque habitude ; pas de choix possible.
   out.raisons=[...document.querySelectorAll('#sysBox .sys-ligne small')].filter(x=>/Pilier|Point faible|Défi/.test(x.textContent)).length;
   sysQueteOuvrir(); await new Promise(r=>setTimeout(r,20));
-  out.modal=document.getElementById('sysQTitre').textContent+'|'+document.querySelectorAll('#sysQListe input[type=checkbox]').length+'|'+document.querySelectorAll('#sysQListe [data-m]').length;
+  out.modal=document.getElementById('sysQTitre').textContent+'|'+document.querySelectorAll('#sysQListe input[type=checkbox]').length+'|'+document.querySelectorAll('#sysQListe [data-m]').length+'|'+habits.filter(h=>h.active).length;
   document.querySelector('#sysQListe [data-m]').value='1 minute'; await sysQueteEnregistrer();
   out.miniEdit=sysQuete.minimum[v.habits[0]]==='1 minute'&&sysQuete.versions.length===n;
   // La semaine suivante, la quête se réévalue ; le passé garde la sienne.
@@ -852,7 +852,7 @@ chk('La quête : quatre habitudes prévues aujourd\'hui, deux piliers, le point 
 chk('...les piliers sont les habitudes des portes les moins tenues',p8.faibles===true);
 chk('...fixée pour la journée (rien ne bouge au passage suivant)',p8.stable===true);
 chk('...la raison sous chaque habitude',p8.raisons===4,String(p8.raisons));
-chk('...on ne choisit plus : la fenêtre ne montre que les versions minimales, qu\'on règle',p8.modal==='LA QUÊTE DU SYSTÈME|0|4'&&p8.miniEdit,JSON.stringify([p8.modal,p8.miniEdit]));
+chk('...on ne choisit plus : la fenêtre ne règle que les versions minimales (quête et quêtes secondaires)',(()=>{ const [t,c,m,n]=p8.modal.split('|'); return t==='LA QUÊTE DU SYSTÈME'&&c==='0'&&m===n; })()&&p8.miniEdit,JSON.stringify([p8.modal,p8.miniEdit]));
 chk('...tirée chaque jour, le passé garde la sienne',p8.reevalue===true);
 chk('...parmi les habitudes du jour : une hebdomadaire le jour où elle est prévue',p8.hebdo===true);
 chk('...un autre jour, un autre tirage',p8.varie===true);
@@ -911,6 +911,29 @@ chk('La quête accomplie avec des minis : prime gagnée, « dont 2 en mini »',p
 chk('Le point faible : un mini compte pour moitié dans la tenue',p9.tenue==='0.5|1',p9.tenue);
 chk('Les indicateurs distinguent : « 2/4 dont 1 mini », « entier / mini » du mois',p9.kpi===true,p9.hdr+' / '+p9.filtre);
 chk('...la pastille à moitié pleine, le compte de la semaine',p9.pastille&&p9.semaine,JSON.stringify([p9.pastille,p9.semaine]));
+
+console.log('=== 18. LES MINIS DES QUÊTES SECONDAIRES ===');
+const p10=await p.evaluate(async()=>{
+  const out={}, aujd=td(); window.offerUndo=()=>{}; window.rewriteHabitsLog=async()=>true; window.appendHabitsLog=async()=>true;
+  const H=(id,title)=>({id,title,frequency:'daily',reward_eur:0.25,category:'Santé',active:true});
+  habits=[H(11,'Anki'),H(12,'Lecture'),H(13,'Méditation'),H(14,'Japonais'),H(15,'8 000 pas'),H(16,'Protéines')]; habitsLog=[];
+  sysQuete={versions:[{depuis:aujd,habits:['11','12','13','14'],auto:true,r:['p','p','f','d']}],minimum:{'15':'5 000 pas'},auto:true};
+  tdHabOpen=true; switchPage('today'); await new Promise(r=>setTimeout(r,120));
+  const lignes=()=>[...document.querySelectorAll('#tdHabits .td-row')];
+  out.cases=lignes().length+'|'+document.querySelectorAll('#tdHabits .td-mini').length;
+  out.minimum=/minimum : 5 000 pas/.test(document.getElementById('tdHabits').textContent);
+  const pas=()=>lignes().find(x=>/8 000 pas/.test(x.textContent));
+  pas().querySelector('.td-mini').click(); await new Promise(r=>setTimeout(r,60));
+  out.mini=habitsLog.length===1&&habitsLog[0].mini===true&&pas().classList.contains('mini')&&pas().querySelector('.td-mini.on')!==null;
+  pas().querySelector('.td-check').click(); await new Promise(r=>setTimeout(r,60));
+  out.complet=habitsLog.length===1&&!habitsLog[0].mini&&pas().querySelector('.td-check.on')!==null;
+  pas().querySelector('.td-check').click(); await new Promise(r=>setTimeout(r,60));
+  out.decoche=habitsLog.length===0;
+  return out;
+});
+chk('Les quêtes secondaires ont aussi leur case « Mini » (et leur version minimale)',p10.cases==='2|2'&&p10.minimum,JSON.stringify([p10.cases,p10.minimum]));
+chk('...le mini se coche, la ligne le montre',p10.mini===true);
+chk('...on passe au complet, on décoche',p10.complet&&p10.decoche,JSON.stringify([p10.complet,p10.decoche]));
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
