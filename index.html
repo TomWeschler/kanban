@@ -7255,9 +7255,10 @@ function openModal(id, prefill, proj){
 function syncColFromDue(){ document.getElementById('fCol').value=taskColumnFromDate(document.getElementById('fDue').value); }
 function syncDueFromCol(){ document.getElementById('fDue').value=dueDateForColumn(document.getElementById('fCol').value); }
 
-// Repli des habitudes sur la page du jour. Variable de session, jamais
-// persistée : chaque ouverture repart replié.
-let tdHabOpen=false;
+// Repli des quêtes secondaires sur la page du jour. Variable de session,
+// jamais persistée : chaque ouverture repart dépliée (l'accueil est le board,
+// la page du jour n'est plus ce qu'on montre en ouvrant le site).
+let tdHabOpen=true;
 function tdToggleHab(){ tdHabOpen=!tdHabOpen; renderTodayPage(); }
 
 // ── Vue « Aujourd'hui » ───────────────────────────────────────────────────
@@ -7336,11 +7337,9 @@ async function renderTodayPage(){
     return `<div class="td-sec" style="color:${catColor}">◆ ${cat.toUpperCase()}</div>`+
       inCat.map(h=>habRowToday(h,doneSet,today)).join('');
   }).join('');
-  // La liste des habitudes est ce que la page du jour a de plus personnel, et
-  // c'est la page d'accueil : elle s'ouvre repliée. Le compteur reste visible —
-  // il dit qu'il reste à faire sans dire QUOI, ce qui suffit d'un coup d'œil.
-  // L'état n'est PAS mémorisé : montrer son écran deux jours de suite ne doit
-  // pas dépendre de ce qu'on a déplié la veille.
+  // Les quêtes secondaires s'ouvrent dépliées ; on peut les replier, le
+  // compteur restant visible. L'état n'est pas mémorisé d'une ouverture à
+  // l'autre.
   document.getElementById('tdHabits').innerHTML=
     `<button class="td-t td-fold${tdHabOpen?' open':''}" onclick="tdToggleHab()"
        title="${tdHabOpen?'Replier':'Déplier'} la liste des habitudes"
@@ -24634,7 +24633,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.123.0';
+const APP_VERSION='v1.124.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
