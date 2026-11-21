@@ -1420,6 +1420,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .sys-coffre-obj{opacity:0;transform:scale(.85);transition:opacity .35s,transform .35s}
 .sys-coffre-obj.vu{opacity:1;transform:none}
 .sys-ann-img{display:flex;justify-content:center;margin-bottom:0.4rem}
+.rev-hab{border:1px solid var(--accent);border-radius:6px;padding:0.7rem 0.9rem;margin:0 0 0.7rem;background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+.rev-hab-t{font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem}
+.rev-hab-g{display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;color:var(--text-mid)}.rev-hab-g b{color:var(--text)}
+.rev-hab-a{display:flex;gap:0.5rem;margin-top:0.6rem}
 /* Le Codex */
 .sys-codex{position:fixed;inset:0;z-index:280;overflow-y:auto;color:#dbe9ff;
   background:radial-gradient(900px 500px at 85% 0%,rgba(124,77,255,.22),transparent 60%),radial-gradient(800px 500px at 0% 100%,rgba(61,139,255,.18),transparent 60%),rgba(4,6,16,.97)}
@@ -5013,8 +5017,69 @@ function freqLabel(freq) {
 // ════════════════════════════════════════════════════
 // HABITS PAGE RENDER
 // ════════════════════════════════════════════════════
+// ── La révision des habitudes (novembre 2026) ──
+// Une révision décidée ensemble, appliquée d'un clic avec la connexion de
+// l'utilisateur : les corvées deviennent des tâches récurrentes du board, des
+// habitudes fusionnent, de nouvelles arrivent, un objectif est recalé. Les
+// habitudes retirées passent en inactives (leur historique reste). On peut
+// annuler dans la foulée.
+const REV_HAB={
+  id:'2026-11',
+  retirer:['1778938803939','1778938900058','1778940221437','1778949821832','2100000000003','2100000000002','1798949045718','1778950264793','1778950041496','1785961436809'],
+  renommer:{'1786120215378':'Veille business 15 min'},
+  ajouter:[['Rituel du soir (journal + 2 tâches de demain)','daily',0.5,'Esprit'],['Japonais 20 min','daily',0.75,'Esprit'],
+    ['Méditation 10 min','daily',0.5,'Esprit'],['8 000 pas','daily',0.25,'Santé'],['Message à un proche','weekly:0',0.25,'Autre']],
+  // Les corvées : [titre, jour de la semaine (0 = dimanche)]
+  taches:[['Lessive',6],['Soin des ongles',6],['Aquarium',0],['Entretien de la barbe',0]],
+  objectif:['g1785682017843','2027-03-31']};
+const REV_LS='kanban_revision_habitudes';
+function revHabEnAttente(){
+  try{ if(localStorage.getItem(REV_LS)===REV_HAB.id)return false; }catch(e){}
+  return habits.some(h=>h.active&&REV_HAB.retirer.includes(String(h.id)));
+}
+function revHabHtml(){
+  if(!revHabEnAttente())return '';
+  const nom=id=>(habits.find(h=>String(h.id)===id)||{}).title;
+  const retirees=REV_HAB.retirer.map(nom).filter(Boolean);
+  return `<div class="rev-hab"><div class="rev-hab-t">Révision des habitudes proposée</div>
+    <div class="rev-hab-g"><div><b>Retirées</b> (passent en inactives) : ${retirees.map(tdEsc).join(', ')}</div>
+      <div><b>Nouvelles</b> : ${REV_HAB.ajouter.map(a=>tdEsc(a[0])).join(', ')}</div>
+      <div><b>Renommée</b> : « CAC40 / Business » → « Veille business 15 min »</div>
+      <div><b>Tâches récurrentes</b> sur le board : ${REV_HAB.taches.map(t=>tdEsc(t[0])).join(', ')}</div>
+      <div><b>Objectif</b> « 90 kg » recalé au 31 mars 2027</div></div>
+    <div class="rev-hab-a"><button class="btn-nav" onclick="revHabAppliquer()">Appliquer la révision</button>
+      <button class="btn-nav out" onclick="revHabMasquer()">Plus tard</button></div></div>`;
+}
+let revHabMasquee=false;
+function revHabMasquer(){ revHabMasquee=true; document.querySelectorAll('.rev-hab').forEach(x=>x.remove()); }
+const revProchain=jour=>{ const d=new Date(td()+'T12:00:00'); d.setDate(d.getDate()+((jour-d.getDay()+7)%7)); return ymd(d); };
+async function revHabAppliquer(){
+  if(!accessToken){ toast('Connecte-toi d\'abord : la révision s\'écrit dans ton classeur','err'); return; }
+  if(!confirm('Appliquer la révision des habitudes ?\n\nElle s\'écrit dans ton classeur (habitudes, tâches, objectif). Tu pourras annuler juste après.'))return;
+  const avant={habits:habits.map(h=>({...h})),tasks:allTasks.length};
+  const g=goals.find(x=>x.id===REV_HAB.objectif[0]), gAvant=g?{...g}:null;
+  habits.forEach(h=>{ const id=String(h.id); if(REV_HAB.retirer.includes(id))h.active=false; if(REV_HAB.renommer[id])h.title=REV_HAB.renommer[id]; });
+  REV_HAB.ajouter.forEach(([title,frequency,reward_eur,category])=>{ if(!habits.some(h=>h.title===title))habits.push({id:uid(),title,frequency,reward_eur,category,active:true}); });
+  const nouvelles=REV_HAB.taches.filter(([t])=>!allTasks.some(x=>x.title===t&&!x.completed_at)).map(([title,jour])=>{ const due=revProchain(jour);
+    return {id:uid(),title,column:taskColumnFromDate(due),importance:2,due_date:due,created_at:td(),completed_at:'',notes:'',project:'',recurrence:'weekly',checklist:'',snoozes:0}; });
+  allTasks.push(...nouvelles); refreshActive();
+  if(g)g.target_date=REV_HAB.objectif[1];
+  try{ localStorage.setItem(REV_LS,REV_HAB.id); }catch(e){}
+  render(); renderCurrentPage(); updateHStats();
+  const ok=await saveHabits(); await persist(); if(g)await sheetBatchUpsert('goals',[goalToRow(g)]);
+  toast(ok?'Révision appliquée':'ÉCHEC de l\'écriture des habitudes',ok?'ok':'err');
+  offerUndo('Révision des habitudes appliquée',async()=>{
+    habits=avant.habits; nouvelles.forEach(t=>{ const i=allTasks.indexOf(t); if(i>=0)allTasks.splice(i,1); }); refreshActive();
+    if(g&&gAvant)Object.assign(g,gAvant);
+    try{ localStorage.removeItem(REV_LS); }catch(e){}
+    render(); renderCurrentPage(); updateHStats();
+    await saveHabits(); await persist(); if(g)await sheetBatchUpsert('goals',[goalToRow(g)]);
+  },20000);
+}
+
 function renderHabitsPage() {
   renderHabHeader();
+  const hh=document.getElementById('habHeader'); if(hh&&!revHabMasquee&&revHabEnAttente())hh.insertAdjacentHTML('afterbegin',revHabHtml());
   renderHabToolbar();
   renderHabGrid();
   renderHeatmaps();
@@ -6549,7 +6614,7 @@ function renderSysteme(){
           :urg.statut==='acceptee'?(urg.type==='objectif'?`<button class="btn-nav" onclick="sysUrgenceStatut('faite')">C'est fait</button>`:'<div class="ca-aide">Acceptée : coche l\'habitude pour l\'accomplir.</div>')
           :`<div class="nba-act"><button class="btn-nav" onclick="sysUrgenceStatut('acceptee')">Accepter</button><button class="btn-nav out" onclick="sysUrgenceStatut('refusee')">Refuser</button></div>`}</div>`:''}
     </div>`;
-  el.innerHTML=`<div class="sys-fen">
+  el.innerHTML=`${revHabMasquee?'':revHabHtml()}<div class="sys-fen">
     <div class="sys-statut">
       <div class="sys-t">Statut <span><button class="sys-reg sys-codex-b" onclick="sysCodexOuvrir()" title="Le Codex : familiers, inventaire, classes, bestiaire, titres">📖 Codex</button>
         <button class="sys-reg" onclick="sysPaliersOuvrir()" title="Les paliers : l'expérience de chaque rang, et le temps pour y arriver">Paliers</button></span></div>
@@ -24443,7 +24508,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.114.0';
+const APP_VERSION='v1.115.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

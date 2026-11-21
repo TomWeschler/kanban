@@ -781,6 +781,43 @@ chk('...l\'activité bonus frappe le monstre',p7.bonusCoup===true);
 chk('...seules les séances depuis la remise à zéro comptent',p7.reset===1.25,String(p7.reset));
 chk('« 2 Tâches importantes » se coche seule à la deuxième tâche d\'importance 4 ou plus',p7.une===false&&p7.faible===false&&p7.deux===true&&p7.pasDeux,JSON.stringify(p7));
 
+console.log('=== 16. LA RÉVISION DES HABITUDES ===');
+const p8=await p.evaluate(async()=>{
+  const out={}, aujd=td(); window.confirm=()=>true; sysFile=[]; modalFerme('sysAnnModal');
+  localStorage.removeItem('kanban_revision_habitudes'); revHabMasquee=false;
+  const H=(id,title,frequency,reward_eur,category)=>({id,title,frequency,reward_eur,category,active:true});
+  habits=[H(1778938803939,'Lessive','weekly:6',0.1,'Autre'),H(1778938900058,'Soin Ongles','weekly:3,6',0.1,'Autre'),H(1778940200486,'Comptabilité','weekly:0',1,'Finance'),
+    H(1778940221437,'Aquarium','weekly:0',1,'Autre'),H(1778949045719,'Anki','daily',0.5,'Esprit'),H(1778949821832,'Entretien Barbe','weekly:0',0.25,'Autre'),
+    H(1778950041496,'Travail 20 minutes','daily',0.5,'Esprit'),H(1778950264793,'Planning du Lendemain','daily',0.25,'Productivité'),H(1798949045718,'Journal','daily',0.25,'Productivité'),
+    H(2100000000003,'Salle matin 7h','weekly:1,3,5',1,'Santé'),H(2100000000002,'Sport Bonus','daily',0.25,'Santé'),H(1785961436809,'Immersion (1 article/20min)','daily',0.25,'Esprit'),
+    H(1786120215378,'CAC40 / Business','daily',0.5,'Finance')];
+  goals=[{id:'g1785682017843',title:'90kg',category:'Santé',status:'active',target_date:'2026-09-30',progress:0}];
+  allTasks=[]; tasks=allTasks; habitsLog=[];
+  let ecritH=null, ecritG=null, annul=null; window.saveHabits=async()=>{ ecritH=habits.map(h=>[h.title,h.active].join(':')); return true; };
+  window.sheetBatchUpsert=async(sh,rows)=>{ if(sh==='goals')ecritG=rows; return true; }; window.persist=async()=>true; window.offerUndo=(m,fn)=>{ annul=fn; };
+  // Le bandeau, dans la fenêtre du Système et sur la page des habitudes.
+  renderSysteme(); out.bandeau=!!document.querySelector('#sysBox .rev-hab')&&/Méditation 10 min/.test(document.querySelector('#sysBox .rev-hab').textContent)&&!/Coucher/.test(document.querySelector('#sysBox .rev-hab').textContent);
+  await revHabAppliquer();
+  const actives=habits.filter(h=>h.active).map(h=>h.title);
+  out.retirees=habits.filter(h=>!h.active).length;
+  out.gardees=['Comptabilité','Anki','Veille business 15 min'].every(t=>actives.includes(t));
+  out.nouvelles=['Rituel du soir (journal + 2 tâches de demain)','Japonais 20 min','Méditation 10 min','8 000 pas','Message à un proche'].every(t=>actives.includes(t));
+  out.taches=allTasks.map(t=>t.title+':'+t.recurrence+':'+new Date(t.due_date+'T12:00:00').getDay()).join(',');
+  out.objectif=goals[0].target_date+'|'+(ecritG&&ecritG[0][9]);
+  out.ecrit=!!ecritH&&ecritH.length===habits.length;
+  renderSysteme(); out.disparu=!document.querySelector('#sysBox .rev-hab');
+  await annul();
+  out.annule=habits.filter(h=>h.active).length===13&&allTasks.length===0&&goals[0].target_date==='2026-09-30'&&revHabEnAttente();
+  return out;
+});
+chk('La révision des habitudes : un bandeau (Méditation, pas « Coucher avant 23h »)',p8.bandeau===true);
+chk('...dix habitudes passent en inactives, les autres restent ; « Veille business » renommée',p8.retirees===10&&p8.gardees,JSON.stringify([p8.retirees,p8.gardees]));
+chk('...cinq nouvelles habitudes',p8.nouvelles===true);
+chk('...quatre tâches récurrentes chaque semaine au bon jour',p8.taches==='Lessive:weekly:6,Soin des ongles:weekly:6,Aquarium:weekly:0,Entretien de la barbe:weekly:0',p8.taches);
+chk('...l\'objectif « 90 kg » recalé au 31 mars 2027, écrit dans le classeur',p8.objectif==='2027-03-31|2027-03-31',p8.objectif);
+chk('...les habitudes écrites, le bandeau disparaît',p8.ecrit&&p8.disparu,JSON.stringify([p8.ecrit,p8.disparu]));
+chk('...et l\'on peut tout annuler',p8.annule===true);
+
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
 const ko=R.filter(x=>!x[1]);
