@@ -5226,7 +5226,7 @@ async function toggleHabit(habitId, dateStr) {
 // répartis) vit dans l'onglet « systeme » du classeur, une ligne par clé.
 const SYS_SHEET='systeme', SYS_HEADER=['id','valeur','updated_at'];
 // Ce que rapporte chaque geste.
-const SYS_XP={habitude:10,quete:20,queteComplete:50,sport:30,sportPartiel:15,objectif:100,urgence:40,monstre:100,elite:150};
+const SYS_XP={habitude:10,quete:20,queteComplete:50,sport:30,sportPartiel:15,objectif:100,urgence:40,monstre:100,elite:150,sportBonus:10};
 // Un objectif devient un DONJON : un rang de E à S, des étapes (ses
 // checkpoints), un boss final (l'objectif atteint). Ce que rapportent le boss
 // et chaque étape, selon le rang de la porte.
@@ -5403,7 +5403,7 @@ function sysEtat(){
   const vaincus=Object.entries(sysChasses||{}).filter(([l,r])=>r&&r.vaincu&&l>=debutChasse).map(([,r])=>r);
   vaincus.forEach(r=>{ xp+=r.elite?SYS_XP.elite:SYS_XP.monstre; });
   // Le sport, l'objectif atteint.
-  (sportLogs||[]).filter(s=>!sysReset.depuis||String(s.date)>=sysReset.depuis).forEach(s=>{ const g=s.status==='done'?SYS_XP.sport:s.status==='partial'?SYS_XP.sportPartiel:0; xp+=g; stat.force+=g; });
+  (sportLogs||[]).filter(s=>!sysReset.depuis||String(s.date)>=sysReset.depuis).forEach(s=>{ const g=(s.status==='done'?SYS_XP.sport:s.status==='partial'?SYS_XP.sportPartiel:0)+(s.bonusDone?SYS_XP.sportBonus:0); xp+=g; stat.force+=g; });
   // Les objectifs : un donjon rapporte selon son rang, à chaque étape et au
   // boss ; un objectif hors donjon, 100 XP une fois atteint.
   const donjonsFaits=[];
@@ -5462,7 +5462,7 @@ function sysMaxJour(){
   xp+=qj*SYS_XP.queteComplete;
   const a=new Date(td()+'T12:00:00'), z=new Date(a); z.setDate(z.getDate()+28);
   const seances=(sportPlans||[]).filter(p=>p.date>=ymd(a)&&p.date<ymd(z)&&!/repos/i.test(p.type||'')).length;
-  xp+=seances/28*SYS_XP.sport;
+  xp+=seances/28*SYS_XP.sport; eur+=seances/28*SPORT_OR.done;
   return {xp,eur,seances};
 }
 const sysDuree=j=>!isFinite(j)?'—':j<1?'aujourd\'hui':j<60?`${Math.ceil(j)} jours`:j<700?`${Math.round(j/30.4)} mois`:`${(j/365).toFixed(1).replace('.',',')} ans`;
@@ -5866,6 +5866,7 @@ function sysCombat(lundi,rec,e){
   sysJoursActifs().filter(dans).filter(d=>sysQueteFaite(d)).forEach(d=>frappe(d,'Quête quotidienne accomplie',SYS_XP.queteComplete*(sysRachat(d)?2:1),moy,'q|'+d,'general','quete'));
   (sportLogs||[]).filter(s=>dans(String(s.date))&&(s.status==='done'||s.status==='partial'))
     .forEach(s=>frappe(String(s.date),'Séance de sport',s.status==='done'||E.sportPlein?SYS_XP.sport:SYS_XP.sportPartiel,S.force,'s|'+s.date,'force'));
+  (sportLogs||[]).filter(s=>dans(String(s.date))&&s.bonusDone).forEach(s=>frappe(String(s.date),'Activité bonus',SYS_XP.sportBonus,S.force,'sb|'+s.date,'force'));
   Object.entries(sysUrgences).forEach(([d,u])=>{ if(u&&u.statut==='faite'&&dans(d))frappe(d,'Quête urgente',Number(u.xp)||SYS_XP.urgence,moy,'u|'+d,'general','urgence'); });
   coups.sort((a,c)=>a.date.localeCompare(c.date));
   // Dans l'ordre des coups : le premier du jour (Ombre furtive), l'exécution
@@ -6097,7 +6098,7 @@ function sysEvenements(){
     const h=habit.get(String(l.habit_id)), cat=(h&&h.category)||l.category||'Autre';
     ev.push([l.date,sysQueteDu(l.date).includes(String(l.habit_id))?SYS_XP.quete:SYS_XP.habitude,SYS_CAT_STAT[cat]||'perception']); });
   sysJoursActifs().forEach(d=>{ if(sysQueteFaite(d))ev.push([d,SYS_XP.queteComplete*(sysRachat(d)?2:1),'general']); });
-  (sportLogs||[]).forEach(s=>{ const g=s.status==='done'?SYS_XP.sport:s.status==='partial'?SYS_XP.sportPartiel:0; if(g)ev.push([String(s.date),g,'force']); });
+  (sportLogs||[]).forEach(s=>{ const g=(s.status==='done'?SYS_XP.sport:s.status==='partial'?SYS_XP.sportPartiel:0)+(s.bonusDone?SYS_XP.sportBonus:0); if(g)ev.push([String(s.date),g,'force']); });
   Object.entries(sysUrgences).forEach(([d,u])=>{ if(u&&u.statut==='faite')ev.push([d,Number(u.xp)||SYS_XP.urgence,'general']); });
   Object.entries(sysChasses).forEach(([l,r])=>{ if(r&&r.vaincu)ev.push([r.le||sysDecale(l,6),r.elite?SYS_XP.elite:SYS_XP.monstre,'general']); });
   return ev;
@@ -6950,10 +6951,20 @@ function nextDueAfter(due,rec,minYmd){
   return nd;
 }
 
+// L'habitude « 2 Tâches importantes » se coche seule : deux tâches
+// d'importance 4 ou plus terminées dans la journée sur le board.
+function autoTachesImportantes(){
+  const h=habits.find(x=>x.active&&/t[âa]ches?\s+importantes?/i.test(x.title)); if(!h)return false;
+  const n=allTasks.filter(t=>t.completed_at===td()&&Number(t.importance)>=4).length;
+  if(n<2||habitsLog.some(l=>String(l.habit_id)===String(h.id)&&l.date===td()))return false;
+  toggleHabit(h.id); toast(`« ${h.title} » cochée : deux tâches importantes terminées`,'ok');
+  return true;
+}
 async function completeTask(id){
   const t=allTasks.find(x=>x.id===id);if(!t)return;
   const prev=t.completed_at;
   t.completed_at=td();
+  autoTachesImportantes();
   // une tâche récurrente réapparaît immédiatement à sa prochaine échéance
   let spawned=null;
   if(t.recurrence){
@@ -17547,10 +17558,15 @@ async function renderGoalsPage(){
 // qui restent gérées à la main.
 const goalReached=g=>g.status==='done'||goalProgress(g)>=100;
 function habitsEarned(){ return habitsLog.reduce((s,l)=>s+(l.reward_eur||0),0); }
+// Le sport rapporte son or depuis la page Sport (et non plus par des habitudes
+// en double) : une séance complète, une partielle, l'activité bonus.
+const SPORT_OR={done:1,partial:0.5,bonus:0.25};
+function sportEarned(){ const d=(typeof sysReset!=='undefined'&&sysReset.depuis)||'';
+  return (sportLogs||[]).filter(l=>!d||String(l.date)>=d).reduce((t,l)=>t+(SPORT_OR[l.status]||0)+(l.bonusDone?SPORT_OR.bonus:0),0); }
 // Les objectifs atteints avant « Repartir de zéro » ne comptent plus dans l'or.
 function goalsBalance(){ return goals.filter(g=>goalReached(g)&&!sysObjectifAvant(g)).reduce((s,g)=>s+(g.reward_eur||0),0); }
 // Les achats de la boutique du Système se retranchent de l'or.
-function cagnotte(){ return habitsEarned()+goalsBalance()-(typeof sysDepenses==='function'?sysDepenses():0); }
+function cagnotte(){ return habitsEarned()+sportEarned()+goalsBalance()-(typeof sysDepenses==='function'?sysDepenses():0); }
 const eur=n=>`${n<0?'−':''}${Math.abs(n).toFixed(2)}€`;
 
 function renderGoalsBanner(){
@@ -24427,7 +24443,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.113.0';
+const APP_VERSION='v1.114.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

@@ -76,7 +76,7 @@ chk('Les seuils de niveau : 50 × N × (N − 1)',nv.seuils==='0,100,300,1000,45
 chk('Les rangs, de G à SSS : G et F sous les rangs de chasseur, SS et SSS au-delà du S',nv.rangs==='G,G,F,F,E,E,D,C,B,A,A,S,S,SS,SS,SSS,SSS',nv.rangs);
 chk('Les stats, nourries par le sport et les catégories',nv.stats==='{"force":10,"vitalite":10,"agilite":10,"intelligence":10,"perception":11}',nv.stats);
 chk('...3 points à répartir par niveau gagné',nv.points===3,String(nv.points));
-chk('L\'or, c\'est la cagnotte',Math.abs(nv.or-(-17.3))<0.001,String(nv.or));
+chk('L\'or, c\'est la cagnotte (habitudes, objectifs, et les séances : 1 € complète, 0,50 € partielle)',Math.abs(nv.or-(-15.8))<0.001,String(nv.or));
 
 console.log('=== 2. LA FENÊTRE DU SYSTÈME ET LA PREMIÈRE RENCONTRE ===');
 const fe=await p.evaluate(async()=>{
@@ -219,7 +219,7 @@ chk('« Si tu fais tout » : chaque habitude active, la quête et sa prime',pal.
 chk('...et les séances de sport programmées',pal.sport===138.6,String(pal.sport));
 chk('Les paliers : chaque rang, son niveau, l\'XP cumulée',pal.ouvert&&pal.lignes==='G:1:0 F:5:1 000 E:10:4 500 D:20:19 000 C:30:43 500 B:45:99 000 A:60:177 000 S:80:316 000 SS:100:495 000 SSS:120:714 000',pal.lignes);
 chk('...le temps, la date et l\'or pour y arriver',/S\s*80\s*316 000/.test(pal.s)&&/ans/.test(pal.s)&&/€/.test(pal.s),pal.s);
-chk('...au rythme annoncé',/Si tu fais tout : 139 XP et 1\.60€ d'or par jour/.test(pal.rythme),pal.rythme);
+chk('...au rythme annoncé',/Si tu fais tout : 139 XP et 1\.89€ d'or par jour/.test(pal.rythme),pal.rythme);
 chk('Les durées se lisent : jours, mois, années',pal.duree==="aujourd'hui / 17 jours / 13 mois / 3,3 ans",pal.duree);
 
 console.log('=== 8. REPARTIR DE ZÉRO ===');
@@ -750,6 +750,36 @@ chk('...la fiche d\'un objet s\'ouvre au-dessus du Codex',p6.fiche===true);
 chk('Le bestiaire : les familles rencontrées, vaincus et élites',p6.best==='19|2|true',p6.best);
 chk('...et les classes, les titres ; Échap ferme le Codex',p6.classes&&p6.titres&&p6.ferme,JSON.stringify([p6.classes,p6.titres,p6.ferme]));
 chk('Le titre « Premier trophée »',p6.titreChasse===true);
+
+console.log('=== 15. SPORT SANS DOUBLON, TÂCHES IMPORTANTES ===');
+const p7=await p.evaluate(async()=>{
+  const out={}, aujd=td(); sysFile=[]; modalFerme('sysAnnModal');
+  sysReset={depuis:'',objectifs:[]}; goals=[]; sysBoutique=sysBoutNorm({}); habitsLog=[];
+  sportLogs=[];
+  const or0=cagnotte(), x0=sysEtat().xp;
+  sportLogs=[{date:aujd,status:'done',bonusDone:true},{date:J(1),status:'partial'},{date:J(2),status:'skipped'}];
+  out.or=Math.round((cagnotte()-or0)*100)/100; out.xp=sysEtat().xp-x0;
+  const ev=sysEvenements().filter(x=>x[2]==='force').reduce((t,x)=>t+x[1],0); out.ev=ev;
+  const c=sysCombat(sysLundi(aujd),{famille:'loup',nom:'L',rang:'G',elite:false,pv:99999},sysEtat());
+  out.bonusCoup=c.coups.some(x=>x.lib==='Activité bonus'&&x.date===aujd);
+  sysReset={depuis:aujd,objectifs:[]}; out.reset=Math.round((cagnotte()-or0)*100)/100; sysReset={depuis:'',objectifs:[]};
+  // « 2 Tâches importantes » : cochée seule à la deuxième tâche d'importance 4+.
+  habits=[...habits.filter(h=>h.id!==77),{id:77,title:'2 Tâches Importantes',frequency:'daily',reward_eur:0.75,category:'Productivité',active:true}];
+  window.persist=async()=>true;
+  allTasks=[{id:'t1',title:'A',importance:5,due_date:aujd,completed_at:''},{id:'t2',title:'B',importance:2,due_date:aujd,completed_at:''},{id:'t3',title:'C',importance:4,due_date:aujd,completed_at:''}];
+  tasks=allTasks;
+  const coche=()=>habitsLog.some(l=>String(l.habit_id)==='77'&&l.date===aujd);
+  await completeTask('t1'); out.une=coche();
+  await completeTask('t2'); out.faible=coche();
+  await completeTask('t3'); await new Promise(r=>setTimeout(r,30)); out.deux=coche();
+  const n=habitsLog.length; autoTachesImportantes(); out.pasDeux=habitsLog.length===n;
+  return out;
+});
+chk('Une séance rapporte son or : 1 € complète (+0,25 € de bonus), 0,50 € partielle, rien si sautée',p7.or===1.75,String(p7.or));
+chk('...et son XP une seule fois (30 + 10 de bonus + 15)',p7.xp===55&&p7.ev===55,JSON.stringify([p7.xp,p7.ev]));
+chk('...l\'activité bonus frappe le monstre',p7.bonusCoup===true);
+chk('...seules les séances depuis la remise à zéro comptent',p7.reset===1.25,String(p7.reset));
+chk('« 2 Tâches importantes » se coche seule à la deuxième tâche d\'importance 4 ou plus',p7.une===false&&p7.faible===false&&p7.deux===true&&p7.pasDeux,JSON.stringify(p7));
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
