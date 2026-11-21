@@ -115,7 +115,7 @@ const qc=await p.evaluate(async()=>{
   out.quete=sysQueteActuelle().join(',');
   out.version=JSON.stringify(sysQuete.versions.map(v=>v.depuis===td()));
   out.ligne=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='quete')||[])[1]||'{}');
-  out.lignes=[...document.querySelectorAll('.sys-ligne')].map(x=>x.querySelector('.sys-lib').textContent.replace(/\s+/g,' ').trim()).join(' / ');
+  out.lignes=[...document.querySelectorAll('.sys-ligne')].map(x=>{ const c=x.querySelector('.sys-lib').cloneNode(true); c.querySelectorAll('.sys-cat').forEach(y=>y.remove()); return c; }).map(c=>c.textContent.replace(/\s+/g,' ').trim()).join(' / ');
   out.secondaires=(document.querySelector('#tdHabits .td-fold')||{textContent:''}).textContent.replace(/\s+/g,' ').trim();
   out.temps=(document.getElementById('sysTemps')||{textContent:''}).textContent;
   // 6 coches au passé : la quête d'aujourd'hui ne réécrit pas leur valeur.
@@ -946,6 +946,22 @@ const p11=await p.evaluate(async()=>{
 chk('L\'or possible par jour dans chaque domaine (hebdomadaires ramenées au jour, inactives exclues, sport en Santé)',p11.equilibre===true,p11.o);
 chk('...les séances programmées comptent en Santé',p11.seances===true);
 chk('...l\'indicateur d\'équilibre sur la page Habitudes',p11.indic===true);
+
+console.log('=== 20. LES FOCUS DU JOUR ===');
+const p12=await p.evaluate(async()=>{
+  const out={}, aujd=td();
+  const H=(id,title,category)=>({id,title,frequency:'daily',reward_eur:0.4,category,active:true});
+  habits=[H(41,'Anki','Esprit'),H(42,'Pas de sucre','Santé'),H(43,'8 000 pas','Santé'),H(44,'Zero achat','Finance')]; habitsLog=[];
+  sysQuete={versions:[{depuis:aujd,habits:['41','42','43','44'],auto:true,r:['p','p','f','d']}],minimum:{},auto:true};
+  sysVue('quete'); await new Promise(r=>setTimeout(r,20));
+  out.focus=[...document.querySelectorAll('#sysBox .sys-focus b')].map(b=>b.textContent.trim()).join(',');
+  out.cats=[...document.querySelectorAll('#sysBox .sys-ligne .sys-cat')].map(x=>x.textContent).join(',');
+  out.couleur=getComputedStyle(document.querySelector('#sysBox .sys-ligne-w')).getPropertyValue('--cat').trim().length>0;
+  out.lib=[...document.querySelectorAll('.sys-ligne')].map(x=>x.querySelector('.sys-lib').textContent).join('|');
+  return out;
+});
+chk('Les focus du jour : les catégories de la quête, comptées, en couleur',p12.focus==='Santé ×2,Esprit,Finance',p12.focus);
+chk('...chaque habitude porte sa catégorie et sa couleur',p12.cats==='Esprit,Santé,Santé,Finance'&&p12.couleur,JSON.stringify([p12.cats,p12.couleur]));
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();

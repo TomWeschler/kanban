@@ -1282,6 +1282,14 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
   color:#dbe9ff;font:inherit;text-align:left;padding:0.4rem 0.55rem;margin-bottom:0.3rem;cursor:pointer}
 .sys-ligne:hover{border-color:#4fa3ff}
 .sys-ligne-w{display:flex;gap:0.3rem;align-items:stretch;margin-bottom:0.3rem}.sys-ligne-w .sys-ligne{flex:1;margin-bottom:0!important}
+/* La catégorie de chaque habitude de la quête, en couleur : les focus du jour d'un coup d'œil. */
+.sys-ligne-w .sys-ligne{border-left:3px solid var(--cat)!important;box-shadow:inset 6px 0 12px -8px var(--cat)}
+.sys-cat{display:inline-block;font-style:normal;font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--cat);
+  border:1px solid color-mix(in srgb,var(--cat) 55%,transparent);border-radius:3px;padding:0 0.3rem;margin-right:0.45rem;vertical-align:2px}
+.sys-focus{display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;margin-bottom:0.45rem}
+.sys-focus span{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:#7f99c2;margin-right:0.2rem}
+.sys-focus b{font-size:0.68rem;font-weight:600;color:var(--cat);border:1px solid var(--cat);border-radius:99px;padding:0.05rem 0.5rem;
+  background:color-mix(in srgb,var(--cat) 12%,transparent);text-shadow:0 0 6px color-mix(in srgb,var(--cat) 60%,transparent)}
 .sys-ligne.mini{border-color:rgba(255,181,71,.55);background:rgba(255,181,71,.06)}
 .sys-mini-b{display:flex;align-items:center;gap:0.35rem;padding:0 0.55rem;border-radius:4px;border:1px solid rgba(255,181,71,.35);background:rgba(255,181,71,.05);
   color:#ffcf85;font:inherit;font-size:0.68rem;cursor:pointer}
@@ -6653,12 +6661,15 @@ function renderSysteme(){
         :`<div class="sys-vide">Le Système attend ta quête : 3 à 5 habitudes, pas plus.<br><button class="btn-nav" onclick="sysQueteOuvrir()">Choisir ma quête quotidienne</button></div>`)
       :!q.length?`<div class="sys-vide">Aucune habitude de la quête n'est prévue aujourd'hui. Repos.</div>`
       :`<div class="sys-sous">Préparation pour devenir plus fort</div>
+      <div class="sys-focus"><span>Focus du jour</span>${HAB_CAT_ORDER.map(c=>[c,q.filter(h=>h.category===c).length]).filter(x=>x[1])
+        .map(([c,n])=>`<b style="--cat:${HAB_CAT_COLOR[c]||'var(--text-mid)'}">${tdEsc(c)}${n>1?` ×${n}`:''}</b>`).join('')}</div>
       ${rachat?`<div class="sys-penal">⚠ ZONE DE PÉNALITÉ — hier, la quête n'a pas été accomplie. Accomplis-la aujourd'hui : prime doublée, +${prime} XP.</div>`:''}
       ${retour?`<div class="sys-retour">Mode retour : ${requis} sur ${q.length} suffi${requis>1?'sent':'t'} pour la prime, le temps de reprendre.</div>`:''}
       ${q.map(h=>{ const l=habitsLog.find(x=>String(x.habit_id)===String(h.id)&&x.date===aujd), ok=!!l&&!l.mini, enMini=!!l&&!!l.mini, mini=(sysQuete.minimum||{})[h.id];
         const hid=JSON.stringify(h.id).replace(/"/g,'&quot;');
-        return `<div class="sys-ligne-w"><button class="sys-ligne${ok?' ok':enMini?' mini':''}" onclick="toggleHabitNiveau(${hid},'complet')" title="Faite en entier">
-          <span class="sys-case">${ok?'✓':''}</span><span class="sys-lib">${tdEsc(h.title)}${mini||sysQueteRaison(aujd,h.id)?`<small>${[sysQueteRaison(aujd,h.id),mini?'minimum : '+tdEsc(mini):''].filter(Boolean).join(' · ')}</small>`:''}</span>
+        const cc=HAB_CAT_COLOR[h.category]||'var(--text-mid)';
+        return `<div class="sys-ligne-w" style="--cat:${cc}"><button class="sys-ligne${ok?' ok':enMini?' mini':''}" onclick="toggleHabitNiveau(${hid},'complet')" title="Faite en entier">
+          <span class="sys-case">${ok?'✓':''}</span><span class="sys-lib"><i class="sys-cat">${tdEsc(h.category)}</i>${tdEsc(h.title)}${mini||sysQueteRaison(aujd,h.id)?`<small>${[sysQueteRaison(aujd,h.id),mini?'minimum : '+tdEsc(mini):''].filter(Boolean).join(' · ')}</small>`:''}</span>
           <span class="sys-gain">+${SYS_XP.quete} XP</span></button>
           <button class="sys-mini-b${enMini?' on':''}" onclick="toggleHabitNiveau(${hid},'mini')" title="${MD_ATT(mini?'Version minimale : '+mini:'Version minimale')}" aria-pressed="${enMini}"><span class="sys-case">${enMini?'✓':''}</span>Mini</button></div>`; }).join('')}
       <div class="sys-pied">${complete?`<span class="sys-ok">QUÊTE ACCOMPLIE${nMini?` (dont ${nMini} en mini)`:''} · +${prime} XP</span>`
@@ -24592,7 +24603,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.121.0';
+const APP_VERSION='v1.122.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
