@@ -30,6 +30,19 @@
   ],
   "shortcuts": [
     {
+      "name": "Quête du jour",
+      "short_name": "Quête",
+      "description": "La quête du Système et la séance du jour",
+      "url": "./?page=today",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
       "name": "Nouvelle tâche",
       "short_name": "Tâche",
       "description": "Saisir une tâche, le reste par défaut",

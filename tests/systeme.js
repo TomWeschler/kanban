@@ -22,6 +22,8 @@ await p.evaluate(async()=>{
   sysQuete={versions:[],minimum:{}}; sysStats={alloc:{}}; sysCharge=false;
   // Une pente fixe pour les épreuves (k = 50) : le calibrage s'éprouve à part.
   sysCalib={k:50,xpJour:null,le:'banc'};
+  // Le rapport du dimanche s'éprouve à part (section 22) : ailleurs il ne s'ouvre pas seul.
+  window.RAPPORT_AUTO=sysRapportAuto; window.sysRapportAuto=()=>{};
   accessToken='T'; cfg.spreadsheetId='S';
   window.S_ONGLETS={}; window.S_CREES=[];
   window.sheetTitres=async()=>Object.keys(S_ONGLETS);
@@ -377,7 +379,7 @@ chk('...écrit dans le classeur, et l\'on peut fermer la porte',p2.ligneDj==='g3
 chk('Titres : gagnés par l\'historique',/eveil/.test(p2.titres)&&/rachat/.test(p2.titres)&&/chasseurPortes/.test(p2.titres)&&/pourfendeur/.test(p2.titres)&&!/monarque/.test(p2.titres),p2.titres);
 chk('...la fenêtre montre gagnés et verrouillés',p2.boutons===p2.titres.split(',').length+'|'+(p2.nTitres-p2.titres.split(',').length),p2.boutons);
 chk('...le titre porté s\'affiche sous le niveau, écrit dans le classeur',/Pourfendeur/.test(p2.porte)&&p2.ligneTitre==='pourfendeur',JSON.stringify([p2.porte,p2.ligneTitre]));
-chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres,chasses,inventaire,boutique,classes,familiers',p2.bk);
+chk('...la sauvegarde emporte donjons, urgences et titres',p2.bk==='quete,stats,reset,calibrage,donjons,urgences,titres,chasses,inventaire,boutique,classes,familiers,pacte',p2.bk);
 
 console.log('=== 11. PHASE 3 : ACCUEIL, THÈME, CHASSE, COFFRES, ÉQUIPEMENT, BOUTIQUE ===');
 // Une page neuve : l'accueil est le board, le thème Éveil s'applique.
@@ -1013,6 +1015,98 @@ chk('...le statut de la séance en un clic, sans perdre les charges',p13.partiel
 chk('...le bonus se coche ici',p13.bonus===true);
 chk('...« Éditer » ouvre le programme du jour ; sans séance, « Programmer »',p13.editer&&p13.vide,JSON.stringify([p13.editer,p13.vide]));
 chk('L\'onglet « SÉANCE » dans le menu principal (plus dans OMEGA), touche 3',p13.onglet&&p13.omega&&p13.touche,JSON.stringify([p13.onglet,p13.omega,p13.touche]));
+
+console.log('=== 22. POUR S\'Y TENIR : QUAND, BOUCLIER, OMBRE, RAPPORT, PACTE, RITUEL ===');
+const p14=await p.evaluate(async()=>{
+  const out={}, aujd=td(), L=sysLundi(aujd); sysFile=[]; modalFerme('sysAnnModal'); window.offerUndo=()=>{}; window.sysSauver=async()=>true;
+  const H=(id,title,category)=>({id,title,frequency:'daily',reward_eur:0.5,category,active:true});
+  const lg=(id,d,mini)=>({id:'q'+Math.random(),habit_id:id,date:d,reward_eur:0.5,category:'Esprit',...(mini?{mini:true}:{})});
+  habits=[H(51,'Anki','Esprit'),H(52,'Pas de sucre','Santé'),H(53,'Zero achat','Finance'),H(54,'Rituel du soir (journal + 2 tâches de demain)','Productivité')];
+  goals=[]; sysDonjons={}; sysChasses={}; sportLogs=[]; sysUrgences={}; sysInv=sysInvNorm({}); sysReset={depuis:'',objectifs:[]}; sysBoutique=sysBoutNorm({});
+  const L2=sysDecale(L,-14);
+  // ── 1. Le quand : l'ordre de la journée, le déclencheur affiché, réglé dans la fenêtre ℹ
+  sysQuete={versions:[{depuis:L2,habits:['51','52','53'],auto:true,r:['p','p','f']},{depuis:aujd,habits:['51','52','53'],auto:true,r:['p','p','f']}],minimum:{},auto:true,
+    quand:{'51':{m:'soir',t:'au coucher'},'52':{m:'matin',t:'au petit-déjeuner'},'53':{m:'midi'}}};
+  habitsLog=[]; sysVue('quete'); await new Promise(r=>setTimeout(r,20));
+  out.ordre=[...document.querySelectorAll('#sysBox .sys-ligne-w .sys-ligne')].map(x=>x.querySelector('.sys-lib').childNodes[1].textContent.trim()).join(',');
+  out.quand=/☀ Matin · au petit-déjeuner/.test(document.querySelector('#sysBox .sys-quete').textContent);
+  sysQueteOuvrir(); await new Promise(r=>setTimeout(r,20));
+  out.champs=document.querySelectorAll('#sysQListe [data-qm]').length===4&&document.querySelectorAll('#sysQListe [data-qt]').length===4;
+  document.querySelector('#sysQListe [data-qm="53"]').value='soir'; document.querySelector('#sysQListe [data-qt="53"]').value='après le dîner';
+  await sysQueteEnregistrer(); out.reglage=JSON.stringify(sysQuete.quand['53']);
+  // ── 2. Le bouclier : une semaine complète en donne un ; un jour raté le consomme ; pas deux de suite
+  const remplir=(a,z,sauf)=>{ for(let d=a;d<=z;d=sysDecale(d,1))if(!sauf.includes(d))[51,52,53].forEach(id=>habitsLog.push(lg(id,d))); };
+  habitsLog=[]; remplir(L2,sysDecale(aujd,-1),[sysDecale(aujd,-1)]);
+  let pleines=0; for(let d=sysDecale(L2,6);d<sysDecale(aujd,-1);d=sysDecale(d,7))pleines++;
+  let sb=sysSerieBouclier(); out.bouclier=[sb.boucliers===Math.min(2,pleines)-1,sb.dernier,sb.obligatoire,sb.serie===sysEcart(L2,aujd)-1].join('|');
+  renderSysteme(); out.bandeau=!!document.querySelector('#sysBox .sys-bouclier');
+  habitsLog=[]; remplir(L2,sysDecale(aujd,-1),[sysDecale(aujd,-1),sysDecale(aujd,-2)]);
+  sb=sysSerieBouclier(); out.deux=sb.serie+'|'+sb.dernier;
+  habitsLog=[]; remplir(L2,sysDecale(aujd,-1),[]); sb=sysSerieBouclier(); out.plein=sb.boucliers>=1&&sb.serie===sysEcart(L2,aujd);
+  // ── 7. L'ombre : la semaine précédente, à jour égal ; battue, un coffre
+  habitsLog=[lg(51,sysDecale(L,-14)),lg(51,sysDecale(L,-7)),lg(52,sysDecale(L,-7)),lg(53,sysDecale(L,-6)),lg(51,aujd)];
+  const ev=sysEvenements(), o=sysOmbre(ev);
+  out.ombre=o.moi===sysXpPeriode(ev,L,aujd)&&o.elle===sysXpPeriode(ev,sysDecale(L,-7),sysDecale(L,-7+o.jour));
+  out.battue=sysOmbresBattues(ev).includes(sysDecale(L,-7))&&!sysOmbresBattues(ev).includes(sysDecale(L,-14));
+  out.coffreOmbre=sysCoffresGagnes(sysEtat()).some(c=>c.id==='ombre:'+sysDecale(L,-7));
+  renderSysteme(); out.carteOmbre=!!document.querySelector('#sysBox .sys-ombre');
+  // ── 4. Le rapport : le bilan, les ajustements, les actions
+  const LP=sysDecale(L,-7); habitsLog=[];
+  for(let d=LP;d<=sysDecale(LP,6);d=sysDecale(d,1)){ habitsLog.push(lg(51,d)); habitsLog.push(lg(52,d,true)); }
+  const r=sysRapport(LP);
+  out.rap=[r.prevus,r.faits,r.minisQ].join('|');
+  out.sugg=r.sugg.map(x=>x.k+':'+(x.id||x.cat)).join(',');
+  let ecritH=false; window.saveHabits=async()=>{ ecritH=true; return true; };
+  sysRapportOuvrir(LP); await new Promise(r=>setTimeout(r,20));
+  out.modal=document.getElementById('sysRapportModal').classList.contains('open')&&document.querySelectorAll('#sysRapCorps .sys-rap-s').length===r.sugg.length;
+  const iP=r.sugg.findIndex(x=>x.k==='pause'), iF=r.sugg.findIndex(x=>x.k==='focus');
+  await sysRapportAction(iP,'pause'); out.pause=habits.find(h=>h.id===53).active===false&&ecritH;
+  await sysRapportAction(iF,'focus'); out.focus=JSON.stringify(sysQuete.focus);
+  modalFerme('sysRapportModal'); habits.find(h=>h.id===53).active=true;
+  habits.push(H(55,'Budget','Finance'),H(56,'Lecture','Esprit'),H(57,'Marche','Santé'));
+  const cat=sysQuete.focus.cat, ch=sysQueteChoisir(aujd), di=ch.r.indexOf('d');
+  out.focusTire=di>=0&&habits.find(h=>String(h.id)===ch.habits[di]).category===cat;
+  out.vu=sysQuete.rapport===LP;
+  // L'ouverture seule : la semaine écoulée (ou le dimanche soir, la semaine en cours), une fois.
+  document.querySelectorAll('.modal-bg.open').forEach(m=>modalFerme(m.id)); sysFile=[];
+  sysQuete={...sysQuete,rapport:''}; window.RAPPORT_AUTO(); await new Promise(r=>setTimeout(r,20));
+  out.auto=document.getElementById('sysRapportModal').classList.contains('open'); modalFerme('sysRapportModal');
+  window.RAPPORT_AUTO(); out.uneFois=!document.getElementById('sysRapportModal').classList.contains('open');
+  // ── 5. Le Pacte : il commence lundi ; raté, l'or est scellé ; tenu, il est libéré
+  sysPacte={actif:false,objectif:5,part:50,depuis:''}; sysPacteOuvrir(); await new Promise(r=>setTimeout(r,20));
+  await sysPacteEnregistrer(true); out.debut=sysPacte.actif&&sysPacte.depuis===(new Date(aujd+'T12:00:00').getDay()===1?aujd:sysDecale(L,7));
+  habitsLog=[]; remplir(L2,sysDecale(L2,2),[]);
+  const orAvant=habitsEarned(); sysPacte={actif:true,objectif:5,part:50,depuis:L2};
+  let pe=sysPacteEtat(); out.scelle=Math.abs(pe.scelle-sysOrSemaine(L2,sysDecale(L2,6))*0.5)<0.001&&pe.scelle>0;
+  out.cagnotte=Math.abs((habitsEarned()+sportEarned()-pe.scelle)-cagnotte())<0.001;
+  remplir(LP,sysDecale(LP,5),[]); pe=sysPacteEtat(); out.libere=pe.scelle===0;
+  renderSysteme(); out.statut=/Pacte/.test(document.querySelector('#sysBox .sys-statut').textContent);
+  window.confirm=()=>true; sysPacteOuvrir(); await sysPacteEnregistrer(false); out.rompu=sysPacte.actif===false&&sysPacteScelle()===0;
+  // ── 3. Le rituel du soir ouvre le journal du jour, ses lignes prêtes
+  habitsLog=[]; window.appendHabitsLog=async()=>true;
+  await toggleHabitNiveau(54,'complet'); await new Promise(r=>setTimeout(r,200));
+  const n=noteByTitle(dailyTitle()); out.rituel=curPage==='brain'&&!!n&&/## Rituel du soir/.test(n.content);
+  switchPage('today'); await new Promise(r=>setTimeout(r,80));
+  const man=await (await fetch('manifest.webmanifest')).json(); out.raccourci=man.shortcuts[0].url==='./?page=today'&&/Quête/.test(man.shortcuts[0].name);
+  return out;
+});
+chk('Le quand : la quête dans l\'ordre de la journée, avec son déclencheur',p14.ordre==='Pas de sucre,Zero achat,Anki'&&p14.quand,JSON.stringify([p14.ordre,p14.quand]));
+chk('...réglé dans la fenêtre ℹ (moment et déclencheur de chaque habitude)',p14.champs&&p14.reglage==='{"m":"soir","t":"après le dîner"}',JSON.stringify([p14.champs,p14.reglage]));
+chk('Le bouclier : gagné par une semaine complète, consommé par un jour raté, la série tient',p14.bouclier==='true|bouclier|true|true',p14.bouclier);
+chk('...« aujourd\'hui est obligatoire » s\'affiche',p14.bandeau===true);
+chk('...pas deux jours de suite : la série casse',p14.deux==='0|casse',p14.deux);
+chk('...sans raté, les boucliers s\'accumulent et la série court',p14.plein===true);
+chk('L\'ombre : ta semaine contre la précédente, à jour égal',p14.ombre&&p14.carteOmbre,JSON.stringify([p14.ombre,p14.carteOmbre]));
+chk('...battue sur une semaine entière : un coffre',p14.battue&&p14.coffreOmbre,JSON.stringify([p14.battue,p14.coffreOmbre]));
+chk('Le rapport : quêtes, minis, ajustements (pause, minimum relevé, domaine faible)',p14.rap==='7|0|7'&&/pause:53/.test(p14.sugg)&&/minimum:52/.test(p14.sugg)&&/bravo:51/.test(p14.sugg)&&/focus:/.test(p14.sugg)&&p14.modal,JSON.stringify([p14.rap,p14.sugg,p14.modal]));
+chk('...« Pause » met l\'habitude en pause, « Focus » fixe le domaine de la semaine suivante',p14.pause&&/"cat":"(Finance|Santé|Esprit|Productivité)"/.test(p14.focus),JSON.stringify([p14.pause,p14.focus]));
+chk('...le défi du jour est tiré dans le domaine du focus',p14.focusTire===true);
+chk('...il s\'ouvre seul une fois par semaine',p14.vu&&p14.auto&&p14.uneFois,JSON.stringify([p14.vu,p14.auto,p14.uneFois]));
+chk('Le Pacte commence le lundi qui suit',p14.debut===true);
+chk('...semaine ratée : la part d\'or scellée, retirée de la cagnotte',p14.scelle&&p14.cagnotte,JSON.stringify([p14.scelle,p14.cagnotte]));
+chk('...semaine tenue : tout est libéré ; affiché sous l\'or ; rompre libère',p14.libere&&p14.statut&&p14.rompu,JSON.stringify([p14.libere,p14.statut,p14.rompu]));
+chk('Le rituel du soir coché ouvre le journal du jour, ses lignes prêtes',p14.rituel===true);
+chk('Le raccourci « Quête du jour » sur l\'icône de l\'app',p14.raccourci===true);
 
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
