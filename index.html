@@ -696,6 +696,10 @@ header{flex-shrink:0;height:56px;background:var(--bg);backdrop-filter:blur(24px)
 .hg-dot.done::after{content:'✓'}
 .hg-dot.done.mini::after{content:'½';color:#fff;text-shadow:0 0 2px #000}
 .hg-mini-k{font-size:0.6em;color:var(--text-dim);font-weight:400}
+.hg-name-mini{font-size:0.62rem;color:var(--warn);opacity:0.85;margin-top:1px}
+.hg-name-quand{color:var(--text-dim)}
+.hf-aide{text-transform:none;letter-spacing:0;color:var(--text-dim);font-weight:400}
+.hf-quand{display:flex;gap:0.4rem}.hf-quand select{flex:0 0 8.5rem}.hf-quand input{flex:1;min-width:0}
 .hg-equil{display:flex;flex-wrap:wrap;gap:0.4rem 1rem;align-items:center;margin:0.2rem 0 0.8rem;font-size:0.72rem;color:var(--text-mid)}
 .hg-equil-t{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-dim)}
 .hg-equil-c{position:relative;padding-bottom:4px;min-width:7.5rem}
@@ -3837,6 +3841,13 @@ body,body *{font-family:var(--font-body)}
     <div class="field"><label>Récompense (€)</label>
       <input type="text" inputmode="decimal" id="hfReward" placeholder="Ex: 2,00"/>
     </div>
+    <div class="field"><label>Version minimale <span class="hf-aide">— les jours difficiles, la faire suffit (case « Mini »)</span></label>
+      <input type="text" id="hfMini" placeholder="Ex: 10 cartes, 2 pages, 3 minutes" autocomplete="off"/>
+    </div>
+    <div class="field"><label>Quand <span class="hf-aide">— le moment et le déclencheur : la quête suit l'ordre de ta journée</span></label>
+      <div class="hf-quand"><select id="hfMoment"><option value="">—</option></select>
+        <input type="text" id="hfDecl" placeholder="Ex: après le café, dans le métro" autocomplete="off"/></div>
+    </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeHabitModal()">Annuler</button>
       <button class="btn-del" id="hbtnDel" style="display:none" onclick="deleteHabit()">Supprimer</button>
@@ -5243,7 +5254,8 @@ function renderHabGrid() {
           <span class="hg-name-icon">${tdEsc(icon)}</span>
           <div class="hg-name-txt">
             <div class="hg-name-title"><span class="hg-cat-dot" style="background:${color}"></span>${tdEsc(h.title)}${h.active?'':' <span class="hg-paused-tag">pause</span>'}</div>
-            <div class="hg-name-meta"><span class="hg-name-reward">+${h.reward_eur.toFixed(2)}€</span>${streak>0?`<span class="hg-name-streak">🔥 ${streak}</span>`:''}<span>${freqLabel(h.frequency)}</span></div>
+            <div class="hg-name-meta"><span class="hg-name-reward">+${h.reward_eur.toFixed(2)}€</span>${streak>0?`<span class="hg-name-streak">🔥 ${streak}</span>`:''}<span>${freqLabel(h.frequency)}</span>${sysQuandTxt(h.id)?`<span class="hg-name-quand">${sysQuandTxt(h.id)}</span>`:''}</div>
+            ${(sysQuete.minimum||{})[h.id]?`<div class="hg-name-mini">mini : ${tdEsc(sysQuete.minimum[h.id])}</div>`:''}
           </div>
         </div>
       </td>
@@ -7112,6 +7124,11 @@ function openHabitModal(id) {
   setCat('Finance');
   document.getElementById('hbtnDel').style.display = 'none';
   document.getElementById('habitModalTitle').textContent = 'NOUVELLE HABITUDE';
+  // La version minimale et le quand vivent dans la quête du Système (clé « quete ») :
+  // on les règle ici, avec le reste de l'habitude.
+  const hm=document.getElementById('hfMoment');
+  hm.innerHTML='<option value="">—</option>'+SYS_MOMENTS.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  document.getElementById('hfMini').value=''; hm.value=''; document.getElementById('hfDecl').value='';
 
   if (id) {
     const h = habits.find(h => h.id === id);
@@ -7123,6 +7140,8 @@ function openHabitModal(id) {
     setCat(h.category);
     document.getElementById('hbtnDel').style.display = 'block';
     document.getElementById('habitModalTitle').textContent = 'ÉDITER L\'HABITUDE';
+    document.getElementById('hfMini').value=(sysQuete.minimum||{})[h.id]||'';
+    hm.value=sysQuand(h.id).m||''; document.getElementById('hfDecl').value=sysQuand(h.id).t||'';
   }
 
   modalOuvre('habitModal');
@@ -7147,15 +7166,25 @@ async function saveHabit() {
     reward_eur: nbFr(document.getElementById('hfReward').value,0),
     category: selCat, active: true
   };
+  let hid;
   if (editId) {
     const h = habits.find(h => h.id === parseInt(editId));
-    if (h) Object.assign(h, data);
+    if (h) { Object.assign(h, data); hid=h.id; }
   } else {
-    habits.push({ id: uid(), ...data });
+    hid=uid(); habits.push({ id: hid, ...data });
   }
+  // La version minimale et le quand, rangés dans la quête du Système.
+  const mini=document.getElementById('hfMini').value.trim(), m=document.getElementById('hfMoment').value, t=document.getElementById('hfDecl').value.trim();
+  const qAvant=JSON.stringify([(sysQuete.minimum||{})[hid]||'',sysQuand(hid)]);
+  const minimum={...(sysQuete.minimum||{})}, quand={...(sysQuete.quand||{})};
+  if(mini)minimum[hid]=mini; else delete minimum[hid];
+  if(m||t)quand[hid]={...(m?{m}:{}),...(t?{t}:{})}; else delete quand[hid];
+  sysQuete={...sysQuete,minimum,quand};
+  const qChange=hid!=null&&JSON.stringify([minimum[hid]||'',quand[hid]||{}])!==qAvant;
   closeHabitModal();
   await saveHabits();
-  renderHabitsPage();
+  if(qChange)await sysSauver('quete');
+  renderHabitsPage(); if(curPage==='today')renderTodayPage();
   toast('Habitude enregistrée','ok');
 }
 
@@ -24908,7 +24937,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.125.0';
+const APP_VERSION='v1.126.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.

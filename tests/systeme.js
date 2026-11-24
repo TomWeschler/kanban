@@ -1108,6 +1108,36 @@ chk('...semaine tenue : tout est libéré ; affiché sous l\'or ; rompre libère
 chk('Le rituel du soir coché ouvre le journal du jour, ses lignes prêtes',p14.rituel===true);
 chk('Le raccourci « Quête du jour » sur l\'icône de l\'app',p14.raccourci===true);
 
+console.log('=== 23. LE MINI ET LE QUAND, ÉDITÉS DANS HABITUDES ===');
+const p15=await p.evaluate(async()=>{
+  const out={}; sysFile=[]; modalFerme('sysAnnModal'); let sauve=0; window.sysSauver=async k=>{ if(k==='quete')sauve++; return true; }; window.saveHabits=async()=>true;
+  habits=[{id:61,title:'Anki',frequency:'daily',reward_eur:0.4,category:'Esprit',active:true}];
+  sysQuete={versions:[],minimum:{'61':'10 cartes'},auto:true,quand:{'61':{m:'soir',t:'au coucher'}}};
+  habDayFilter='all'; switchPage('habits'); await new Promise(r=>setTimeout(r,80));
+  out.grille=/mini : 10 cartes/.test(document.getElementById('habGrid').textContent)&&/🌙 Soir · au coucher/.test(document.getElementById('habGrid').textContent);
+  openHabitModal(61); await new Promise(r=>setTimeout(r,90));
+  out.rempli=[document.getElementById('hfMini').value,document.getElementById('hfMoment').value,document.getElementById('hfDecl').value].join('|');
+  document.getElementById('hfMini').value='5 cartes'; document.getElementById('hfMoment').value='matin'; document.getElementById('hfDecl').value='avec le café';
+  await saveHabit();
+  out.edite=sysQuete.minimum['61']+'|'+JSON.stringify(sysQuete.quand['61'])+'|'+sauve;
+  // Rien changé dans le mini ni le quand : la quête ne se réécrit pas.
+  openHabitModal(61); await new Promise(r=>setTimeout(r,90)); await saveHabit(); out.inchange=sauve===1;
+  // Vider le minimum le retire.
+  openHabitModal(61); await new Promise(r=>setTimeout(r,90)); document.getElementById('hfMini').value=''; await saveHabit(); out.vide=!('61' in sysQuete.minimum);
+  // Une nouvelle habitude naît avec son minimum.
+  openHabitModal(null); await new Promise(r=>setTimeout(r,90));
+  out.neuf=document.getElementById('hfMini').value===''&&document.getElementById('hfMoment').value==='';
+  document.getElementById('hfTitle').value='Gainage'; document.getElementById('hfMini').value='30 secondes'; await saveHabit();
+  const g=habits.find(h=>h.title==='Gainage'); out.cree=!!g&&sysQuete.minimum[g.id]==='30 secondes';
+  switchPage('today'); await new Promise(r=>setTimeout(r,60));
+  return out;
+});
+chk('La grille des habitudes montre le minimum et le quand',p15.grille===true);
+chk('La fenêtre d\'une habitude porte sa version minimale, son moment et son déclencheur',p15.rempli==='10 cartes|soir|au coucher',p15.rempli);
+chk('...on les modifie là ; ils s\'écrivent dans la quête du Système',p15.edite==='5 cartes|{"m":"matin","t":"avec le café"}|1',p15.edite);
+chk('...sans changement, rien ne se réécrit ; vider le minimum le retire',p15.inchange&&p15.vide,JSON.stringify([p15.inchange,p15.vide]));
+chk('...une nouvelle habitude naît avec son minimum',p15.neuf&&p15.cree,JSON.stringify([p15.neuf,p15.cree]));
+
 chk('Aucune erreur JS',errs.length===0,errs.join(' | '));
 await b.close();
 const ko=R.filter(x=>!x[1]);
