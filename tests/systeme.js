@@ -324,6 +324,8 @@ const p2=await p.evaluate(async()=>{
   sysVue('portes'); out.portes=document.querySelectorAll('#sysBox .sys-porte').length; sysVue('quete');
   await sysUrgenceStatut('acceptee');
   out.ligneUrg=JSON.parse((S_ONGLETS.systeme.find(x=>x[0]==='urgences')||[])[1]||'{}')[td()].statut;
+  // Un monstre hors d'atteinte : une victoire (+100 XP) ne doit pas brouiller la mesure, quel que soit le jour.
+  sysChasses={[sysLundi(td())]:{famille:'loup',nom:'Loup d\'essai',niveau:1,rang:'G',elite:false,pv:9999999,vaincu:false}};
   const xu=sysEtat().xp;
   habitsLog.push(L(5,td())); renderSysteme(); await new Promise(r=>setTimeout(r,80));
   out.urgFaite=[sysUrgences[td()].statut,sysEtat().xp-xu].join('|');
@@ -1129,10 +1131,18 @@ const p15=await p.evaluate(async()=>{
   out.neuf=document.getElementById('hfMini').value===''&&document.getElementById('hfMoment').value==='';
   document.getElementById('hfTitle').value='Gainage'; document.getElementById('hfMini').value='30 secondes'; await saveHabit();
   const g=habits.find(h=>h.title==='Gainage'); out.cree=!!g&&sysQuete.minimum[g.id]==='30 secondes';
+  // La pastille du jour : clic → fait, clic → ½ mini, clic → vide.
+  habitsLog=[]; window.appendHabitsLog=async()=>true; window.rewriteHabitsLog=async()=>true; window.offerUndo=()=>{};
+  habDayFilter='all'; switchPage('habits'); await new Promise(r=>setTimeout(r,80));
+  const dot=()=>document.querySelector('#habGrid .hg-row .hg-cell.hg-col-today .hg-dot');
+  const etats=[]; for(let i=0;i<3;i++){ dot().click(); await new Promise(r=>setTimeout(r,60));
+    const l=habitsLog.find(x=>String(x.habit_id)==='61'&&x.date===td()); etats.push(!l?'vide':l.mini?'mini':'fait'); }
+  out.cycle=etats.join('>')+'|'+(dot().getAttribute('aria-checked'));
   switchPage('today'); await new Promise(r=>setTimeout(r,60));
   return out;
 });
 chk('La grille des habitudes montre le minimum et le quand',p15.grille===true);
+chk('Une pastille de la grille tourne : fait → ½ mini → vide',p15.cycle==='fait>mini>vide|false',p15.cycle);
 chk('La fenêtre d\'une habitude porte sa version minimale, son moment et son déclencheur',p15.rempli==='10 cartes|soir|au coucher',p15.rempli);
 chk('...on les modifie là ; ils s\'écrivent dans la quête du Système',p15.edite==='5 cartes|{"m":"matin","t":"avec le café"}|1',p15.edite);
 chk('...sans changement, rien ne se réécrit ; vider le minimum le retire',p15.inchange&&p15.vide,JSON.stringify([p15.inchange,p15.vide]));

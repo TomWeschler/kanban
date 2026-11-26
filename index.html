@@ -5193,6 +5193,11 @@ function renderHabToolbar() {
     </div>`;
 }
 
+// Un clic sur une pastille fait tourner trois états : vide → fait → ½ mini → vide.
+function habCycle(id,ds){
+  const l=habitsLog.find(x=>String(x.habit_id)===String(id)&&x.date===ds);
+  return toggleHabitNiveau(id,!l?'complet':!l.mini?'mini':'mini',ds);
+}
 function renderHabGrid() {
   const TODAY = habDateToYmd(new Date());
   const week = habWeekDates(habWeekOffset);
@@ -5240,12 +5245,13 @@ function renderHabGrid() {
         if (done) cls += enMini ? ' done mini' : ' done';
         if (!due) cls += ' notdue';
         if (isFuture) cls += ' future';
-        const style = enMini ? `style="background:linear-gradient(135deg,${color} 50%,transparent 50%);border-color:${color}" title="Version minimale"` : done ? `style="background:${color};border-color:${color}"` : '';
+        const style = enMini ? `style="background:linear-gradient(135deg,${color} 50%,transparent 50%);border-color:${color}"` : done ? `style="background:${color};border-color:${color}"` : '';
         // Une pastille vide annoncee « bouton » ne dit rien : on lui donne la
         // semantique d'une case a cocher, son etat, et de quoi se nommer.
         const a11y = isFuture ? '' :
-          `onclick="toggleHabit(${h.id},'${ds}')" tabindex="0" role="checkbox" aria-checked="${done}" `+
-          `aria-label="${tdEsc(h.title)} — ${ds}"`;
+          `onclick="habCycle(${h.id},'${ds}')" tabindex="0" role="checkbox" aria-checked="${enMini?'mixed':done}" `+
+          `title="${enMini?'Version minimale':done?'Faite en entier':'À faire'} — clic : fait → ½ mini → vide" `+
+          `aria-label="${tdEsc(h.title)} — ${ds}${enMini?' — version minimale':''}"`;
         return `<td class="hg-cell${isToday?' hg-col-today':''}"><div class="${cls}" ${style} ${a11y}></div></td>`;
       }).join('');
       body += `<tr class="hg-row${h.active?'':' paused'}">
@@ -24937,7 +24943,7 @@ let swRecharger=()=>location.reload();
 let swRemplacer=u=>location.replace(u);
 // On interroge le navigateur plutot que de garder une reference : la
 // verification fonctionne alors meme si l'enregistrement s'est fait apres coup.
-const APP_VERSION='v1.126.0';
+const APP_VERSION='v1.127.0';
 // Deux mecanismes complementaires. Le service worker sait se mettre a jour,
 // mais son declenchement depend du navigateur ; la sonde de version, elle, est
 // deterministe : un petit fichier lu SANS cache, compare a la version en cours.
